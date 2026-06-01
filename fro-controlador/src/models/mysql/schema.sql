@@ -367,3 +367,11 @@ CREATE TABLE Financiador(
     rut_institucion VARCHAR(12) NOT NULL UNIQUE,
     convenio_activo BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+CREATE TABLE Parametro_Global(
+    parametro_id INT PRIMARY KEY AUTO_INCREMENT,
+    clave VARCHAR(50) NOT NULL UNIQUE,
+    valor VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
