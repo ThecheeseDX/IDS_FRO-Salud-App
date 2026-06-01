@@ -84,7 +84,7 @@ CREATE TABLE Sede_Online(
     contraseña VARCHAR(50) NOT NULL,
     codigo VARCHAR(50) NOT NULL,
     PRIMARY KEY (sede_id),
-    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id),
+    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id)
 );
 
 CREATE TABLE Sede_Horario(
@@ -93,7 +93,7 @@ CREATE TABLE Sede_Horario(
     hora_apertura TIME PRIMARY KEY NOT NULL,
     hora_apertura TIME NOT NULL,
     PRIMARY KEY (sede_id),
-    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id),
+    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id)
 );
 
 CREATE TABLE Profesional (
@@ -140,7 +140,7 @@ CREATE TABLE Paciente (
     contacto_emergencia_id INT,
     usuario_id INT NOT NULL UNIQUE,
     comuna_id INT NOT NULL,
-    FOREIGN KEY contacto_emergencia_id REFERENCES Contacto_Emergencia(contacto_emergencia_id),
+    FOREIGN KEY (contacto_emergencia_id) REFERENCES Contacto_Emergencia(contacto_emergencia_id),
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
     FOREIGN KEY (comuna_id) REFERENCES Comuna(comuna_id)
 );
@@ -220,7 +220,7 @@ CREATE TABLE Episodio_Clinico (
     estado VARCHAR(255),
     paciente_id INT,
     profesional_id INT,
-    FOREIGN KEY (paciente_id) REFERENCES Paciente(pacie)te_id
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );
 
@@ -245,7 +245,7 @@ CREATE TABLE Derivacion_Interna (
     momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     episodio_clinico_id INT NOT NULL,
     profesional_origen_id INT NOT NULL,
-    profesional_dest_noid INT NOT NULL,
+    profesional_destino_id INT NOT NULL,
     FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
     FOREIGN KEY (profesional_origen_id) REFERENCES Profesional(profesional_id),
     FOREIGN KEY (profesional_destino_id) REFERENCES Profesional(profesional_id)
@@ -282,22 +282,13 @@ CREATE TABLE Pauta_Tratamiento(
 
 CREATE TABLE Pauta_Ejercicio(
     pauta_tratamiento_id INT,
-    nombre_ejercicio VARCHAR(255) PRIMARY K
-,); Y
-    PRIMARY KEY (pauta_tratamiento_id),
+    nombre_ejercicio VARCHAR(255),
+    PRIMARY KEY (pauta_tratamiento_id, nombre_ejercicio),
     FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)
-    material_terapeutico_id INT,
-    pauta_tratamiento_id INT,
-    cantidad INT NOT NULL,
-    frecuencia VARCHAR (100) NOT NULL,
- PRIMARY KEY (paumaterial_terapeutico_id
-    PRIMARY KEY (pauta_tratamiento_id),
-    FOREIGN KEY (material_terapeutico_id) REFERENCES Material_Terapeutico(material_terapeutico_id)
-    FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)UA YmatEK YR  AMIRP TNI di_otneimat
 );
 
 CREATE TABLE Pauta_Material(
-    material_terapeurico_id INT,
+    material_terapeutico_id INT,
     pauta_tratamiento_id INT,
     cantidad INT NOT NULL,
     frecuencia VARCHAR(100) NOT NULL,
