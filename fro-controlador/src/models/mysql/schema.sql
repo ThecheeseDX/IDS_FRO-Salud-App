@@ -89,8 +89,8 @@ CREATE TABLE Sede_Online(
 
 CREATE TABLE Sede_Horario(
     sede_id INT,
-    dia_semana TINYINT PRIMARY KEY NOT NULL,
-    hora_apertura TIME PRIMARY KEY NOT NULL,
+    dia_semana TINYINT NOT NULL,
+    hora_apertura TIME NOT NULL,
     hora_cierre TIME NOT NULL,
     PRIMARY KEY (sede_id),
     FOREIGN KEY (sede_id) REFERENCES Sede(sede_id)
