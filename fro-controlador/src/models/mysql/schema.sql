@@ -110,6 +110,13 @@ CREATE TABLE Profesional (
     FOREIGN KEY (especialidad_id) REFERENCES especialidad(especialidad_id)
 );
 
+CREATE TABLE Profesional_Autorizado (
+    rut_autorizado VARCHAR(10) PRIMARY KEY AUTO_INCREMENT,
+    habilitado BOOLEAN DEFAULT FALSE,
+    administrador_id INT NOT NULL,
+    FOREIGN KEY (administrador_id) References Usuario(usuario_id)
+);
+
 CREATE TABLE Especialidad (
     especialidad_id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL UNIQUE,
@@ -373,5 +380,7 @@ CREATE TABLE Parametro_Global(
     clave VARCHAR(50) NOT NULL UNIQUE,
     valor VARCHAR(255) NOT NULL,
     descripcion TEXT,
-    ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    administrador_id INT NOT NULL,
+    FOREIGN KEY (administrador_id) References Usuario(usuario_id)
 );
