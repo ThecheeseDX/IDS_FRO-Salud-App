@@ -91,7 +91,6 @@ CREATE TABLE Sede_Horario(
     sede_id INT,
     dia_semana TINYINT PRIMARY KEY NOT NULL,
     hora_apertura TIME PRIMARY KEY NOT NULL,
-    hora_apertura TIME NOT NULL,
     PRIMARY KEY (sede_id),
     FOREIGN KEY (sede_id) REFERENCES Sede(sede_id)
 );
@@ -120,7 +119,7 @@ CREATE TABLE Profesional_Disponibilidad (
     profesional_id INT,
     dia_semana TINYINT PRIMARY KEY NOT NULL,
     hora_inicio TIME PRIMARY KEY NOT NULL,
-    hora_fin TIME NOT NULL
+    hora_fin TIME NOT NULL,
     PRIMARY KEY (profesional_id),
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );
@@ -287,16 +286,6 @@ CREATE TABLE Pauta_Ejercicio(
     FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)
 );
 
-CREATE TABLE Pauta_Material(
-    material_terapeutico_id INT,
-    pauta_tratamiento_id INT,
-    cantidad INT NOT NULL,
-    frecuencia VARCHAR(100) NOT NULL,
-    PRIMARY KEY (material_terapeutico_id, pauta_tratamiento_id),
-    FOREIGN KEY (material_terapeutico_id) REFERENCES Material_Terapeutico(material_terapeutico_id),
-    FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)
-);
-
 CREATE TABLE Material_Terapeutico(
     material_terapeutico_id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL UNIQUE,
@@ -305,6 +294,16 @@ CREATE TABLE Material_Terapeutico(
     categoria VARCHAR(50) NOT NULL,
     formato VARCHAR(20) NOT NULL,
     disponibilidad BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE Pauta_Material(
+    material_terapeutico_id INT,
+    pauta_tratamiento_id INT,
+    cantidad INT NOT NULL,
+    frecuencia VARCHAR(100) NOT NULL,
+    PRIMARY KEY (material_terapeutico_id, pauta_tratamiento_id),
+    FOREIGN KEY (material_terapeutico_id) REFERENCES Material_Terapeutico(material_terapeutico_id),
+    FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)
 );
 
 CREATE TABLE Cita(
