@@ -1,0 +1,17 @@
+# Dependencias de Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos específicos de Expo (para fro-vista)
+.expo/
+*.log
+
+# Archivos de entorno
+.env
