@@ -102,11 +102,10 @@ CREATE TABLE Profesional (
     reseña_curricular TEXT NOT NULL,
     calificacion_promedio DECIMAL(3,2) NOT NULL,
     foto_url VARCHAR(255) NOT NULL,
+    tipo_sede ENUM('DOMICILIO', 'ONLINE', 'AMBOS') NOT NULL,
     usuario_id INT NOT NULL,
-    sede_id INT NOT NULL,
     especialidad_id INT NOT NULL,
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
-    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id),
     FOREIGN KEY (especialidad_id) REFERENCES especialidad(especialidad_id)
 );
 
