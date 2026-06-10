@@ -1,5 +1,5 @@
-const app = require('./src/app');
 const dotenv = require('dotenv');
+const app = require('./src/app');
 
 // Cargar variables de entorno al inicio
 dotenv.config();

@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const app = express();
 
+const authRoutes = require('./routes/authRoutes');
 // Middlewares globales obligatorios
 app.use(cors()); // Permite que la aplicación móvil hable con el controlador
 app.use(express.json()); // Habilita la lectura de payloads en formato JSON
@@ -11,5 +12,7 @@ app.use(express.json()); // Habilita la lectura de payloads en formato JSON
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Servidor operativo' });
 });
+
+app.use('/api/auth', authRoutes);
 
 module.exports = app;

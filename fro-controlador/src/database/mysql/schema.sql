@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT_EXISTS fro_salud_db;
+CREATE DATABASE IF NOT EXISTS fro_salud_db;
 USE fro_salud_db;
 
 CREATE TABLE Rol (
@@ -111,7 +111,7 @@ CREATE TABLE Profesional (
 );
 
 CREATE TABLE Profesional_Autorizado (
-    rut_autorizado VARCHAR(10) PRIMARY KEY AUTO_INCREMENT,
+    rut_autorizado VARCHAR(10) PRIMARY KEY,
     habilitado BOOLEAN DEFAULT FALSE,
     administrador_id INT NOT NULL,
     FOREIGN KEY (administrador_id) References Usuario(usuario_id)
@@ -124,11 +124,11 @@ CREATE TABLE Especialidad (
 );
 
 CREATE TABLE Profesional_Disponibilidad (
-    profesional_id INT,
-    dia_semana TINYINT PRIMARY KEY NOT NULL,
-    hora_inicio TIME PRIMARY KEY NOT NULL,
+    profesional_id INT NOT NULL,
+    dia_semana TINYINT NOT NULL,
+    hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
-    PRIMARY KEY (profesional_id),
+    PRIMARY KEY (profesional_id, dia_semana, hora_inicio),
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );
 
