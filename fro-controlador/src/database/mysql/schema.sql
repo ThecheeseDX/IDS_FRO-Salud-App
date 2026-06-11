@@ -383,3 +383,34 @@ CREATE TABLE Parametro_Global(
     administrador_id INT NOT NULL,
     FOREIGN KEY (administrador_id) References Usuario(usuario_id)
 );
+
+INSERT INTO Comuna (nombre) VALUES 
+('Las Condes'),
+('Providencia'),
+('Ñuñoa'),
+('Vitacura'),
+('Lo Barnechea'),
+('Peñalolén'),
+('Colina'),
+('Padre Hurtado'),
+('Peñaflor'),
+('La Reina');
+
+INSERT INTO Rol (nombre_rol) VALUES 
+('Paciente'),
+('Profesional'),
+('Administrador');
+
+INSERT INTO Especialidad (nombre, descripcion) VALUES 
+('Nutricionista', 'Evaluación y tratamiento nutricional'),
+('Kinesiología', 'Rehabilitación física y motora'),
+('Kinesiología Respiratoria', 'Terapia y rehabilitación respiratoria');
+
+-- 2. Creamos un usuario Administrador "fantasma" (Requisito por tu llave foránea en Profesional_Autorizado)
+INSERT INTO Usuario (rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id) 
+VALUES ('ADMIN-1', 'Sistema', 'Admin', 'Admin', 'admin@sistema.cl', 'hash_falso', 3);
+
+-- 3. Insertamos un RUT de prueba en la nómina de autorizados (Ej: 123456789)
+-- Cambia '123456789' por el RUT que usarás para probar el registro de profesional.
+INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
+VALUES ('123456789', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));

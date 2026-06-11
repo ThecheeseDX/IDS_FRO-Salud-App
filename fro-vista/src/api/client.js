@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const COMPUTADORA_IP = '192.168.1.45'; 
+const COMPUTADORA_IP = '192.168.1.130'; 
 
 const apiClient = axios.create({
   baseURL: `http://${COMPUTADORA_IP}:3000/api`,

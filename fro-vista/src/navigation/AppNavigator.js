@@ -27,7 +27,7 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="Register" 
           component={RegisterScreen} 
-          options={{ title: 'Crear Cuenta Paciente' }}
+          options={{ title: 'Crear Cuenta' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
