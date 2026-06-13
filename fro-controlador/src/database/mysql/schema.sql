@@ -414,3 +414,9 @@ VALUES ('ADMIN-1', 'Sistema', 'Admin', 'Admin', 'admin@sistema.cl', 'hash_falso'
 -- Cambia '123456789' por el RUT que usarás para probar el registro de profesional.
 INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
 VALUES ('123456789', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));
+
+-- Migración CU04 sin columna otp_intentos
+ALTER TABLE Usuario
+    MODIFY COLUMN cuenta_activo BOOLEAN DEFAULT FALSE,
+    ADD COLUMN otp_codigo      VARCHAR(6)   NULL,
+    ADD COLUMN otp_expiracion  TIMESTAMP    NULL;
