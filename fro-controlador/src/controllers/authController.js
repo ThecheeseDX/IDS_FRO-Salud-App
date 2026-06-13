@@ -1,6 +1,10 @@
 const pool = require('../config/database');
 const bcrypt = require('bcrypt'); // Asegúrate de tener npm install bcrypt
 
+const jwt = require('jsonwebtoken'); // ◄ NUEVA: Importamos JWT para firmar pases digitales
+const UserModel = require('../models/userModel'); // ◄ NUEVA: Importamos el modelo del Paso 2
+const { comparePassword } = require('../utils/encriptar_bcrypt'); // ◄ NUEVA: Utilitario de la Fase 0
+
 exports.registrarPaciente = async (req, res) => {
     const {
         rut, nombres, apellido_paterno, apellido_materno, email, telefono,
@@ -175,5 +179,68 @@ exports.verificarUnicidad = async (req, res) => {
         res.status(200).json({ mensaje: 'Datos únicos, puede continuar.' });
     } catch (error) {
         res.status(500).json({ error: 'Error interno al consultar el modelo de datos.' });
+    }
+};
+
+// =========================================================
+// CU05: AUTENTICANDO USUARIO Y RESGUARDANDO CREDENCIALES
+// =========================================================
+exports.login = async (req, res) => {
+    // 1. Captura y Desestructuración
+    const { rut, contrasena } = req.body;
+
+    // Validación básica inicial del lado del servidor
+    if (!rut || !contrasena) {
+        return res.status(400).json({ error: 'El RUT y la contraseña son obligatorios.' });
+    }
+
+    try {
+        // 2. Búsqueda en Repositorio (Utiliza el modelo modular del Paso 2)
+        // Trae al usuario y su rol_id, siempre que cuenta_activo sea TRUE
+        const usuario = await UserModel.findByRutActive(rut);
+
+        // EXCEPCIÓN 4: Si el usuario no existe (o está inactivo), denegamos el acceso de forma genérica
+        if (!usuario) {
+            return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
+        }
+
+        // 3. Contraste Criptográfico (Utiliza la función de la Fase 0)
+        // Compara la contraseña en texto plano con el hash guardado en la BD
+        const contrasenaCorrecta = await comparePassword(contrasena, usuario.contrasena_hash);
+
+        // EXCEPCIÓN 4: Si los hashes no coinciden, denegamos el acceso usando el mismo mensaje
+        if (!contrasenaCorrecta) {
+            return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
+        }
+
+        // 4. Firma del Token de Acceso (JWT)
+        // El payload solo guarda datos de identidad seguros: id del usuario y el nombre de su rol
+        const payload = {
+            usuario_id: usuario.usuario_id,
+            nombre_rol: usuario.nombre_rol
+        };
+
+        // Firmamos el token usando el secreto del .env y le damos una duración de 8 horas (jornada laboral)
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+
+        // FLUJO NORMAL: Retornamos éxito junto al token y los datos esenciales para la vista
+        res.status(200).json({
+            mensaje: 'Autenticación exitosa.',
+            token,
+            usuario: {
+                usuario_id: usuario.usuario_id,
+                nombres: usuario.nombres,
+                apellido_paterno: usuario.apellido_paterno,
+                rol: usuario.nombre_rol
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error crítico en Login:", error);
+
+        // EXCEPCIÓN 2 y 3: Captura caídas del motor criptográfico o de la conexión a la base de datos
+        res.status(500).json({ 
+            error: 'Servicio de autenticación no disponible temporalmente. Intente nuevamente en unos segundos.' 
+        });
     }
 };

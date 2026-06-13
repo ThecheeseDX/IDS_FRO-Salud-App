@@ -6,6 +6,7 @@ const comunaController = require('../controllers/comunaController');
 // POST
 router.post('/registrar', authController.registrarPaciente);
 router.post('/verificar-unicidad', authController.verificarUnicidad);
+router.post('/login', authController.login);
 
 // GET
 router.get('/comunas', comunaController.obtenerComunas);

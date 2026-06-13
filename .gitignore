@@ -12,6 +12,8 @@ Thumbs.db
 # Archivos específicos de Expo (para fro-vista)
 .expo/
 *.log
+.web/
 
 # Archivos de entorno
 .env
+.env.local
