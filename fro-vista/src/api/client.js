@@ -105,4 +105,15 @@ export const getHistorialPaciente = async (pacienteId) => {
 
 // =========================================================================
 
+export const getPacientesUsuarioProfesional = async (usuarioId, buscar = '') => {
+  const response = await apiClient.get(
+    `/profesionales/usuario/${usuarioId}/pacientes`,
+    {
+      params: { buscar },
+    }
+  );
+
+  return response.data;
+};
+
 export default apiClient;

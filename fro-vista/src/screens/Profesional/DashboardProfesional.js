@@ -4,7 +4,6 @@ import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 
-
 export default function DashboardProfesional({ navigation }) {
   const { userData, logoutSession } = useContext(AuthContext);
 
@@ -16,13 +15,18 @@ export default function DashboardProfesional({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dr(a). {userData?.apellido_paterno}</Text>
-      <Text style={styles.subtitle}>Panel Interno de Gestión (CU11)</Text>
+      <Text style={styles.subtitle}>Panel Interno de Gestión</Text>
 
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('Episodio')}
+      >
+        <Text style={styles.cardIcon}>📁</Text>
+        <Text style={styles.cardTitle}>Episodios Clínicos</Text>
         <Text style={styles.cardText}>
-          Aquí se cargará la nómina de pacientes y agenda del día.
+          Consultar y registrar episodios de pacientes.
         </Text>
-      </View>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.primaryBtn}
@@ -62,7 +66,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#c8e6c9',
-    marginBottom: 30,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  cardIcon: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2e7d32',
+    marginBottom: 4,
   },
   cardText: {
     color: '#666',
@@ -86,6 +101,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 10,
   },
   logoutText: {
     color: '#fff',

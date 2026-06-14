@@ -5,21 +5,18 @@ import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Contexto de autenticación
 import { AuthContext } from '../context/AuthContext';
 
-// Pantallas públicas
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 
-// Pantallas Paciente
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 
-// Pantallas Profesional
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
 import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
+import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -101,17 +98,19 @@ export default function AppNavigator() {
             <Stack.Screen
               name="PacientesAsignados"
               component={PacientesAsignadosScreen}
-              options={{
-                title: 'Pacientes Asignados',
-              }}
+              options={{ title: 'Pacientes Asignados' }}
             />
 
             <Stack.Screen
               name="HistorialPaciente"
               component={HistorialPacienteScreen}
-              options={{
-                title: 'Historial Paciente',
-              }}
+              options={{ title: 'Historial Paciente' }}
+            />
+
+            <Stack.Screen
+              name="Episodio"
+              component={EpisodioScreen}
+              options={{ title: 'Episodios Clínicos' }}
             />
           </>
         ) : (
