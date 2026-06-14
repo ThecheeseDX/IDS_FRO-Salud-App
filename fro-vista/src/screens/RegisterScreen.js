@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, ScrollView, Alert, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import apiClient from '../api/client'; 
+import apiClient from '../api/client';
 
 const RegisterScreen = ({ navigation }) => {
-    // ESTADOS GLOBALES
     const [esProfesional, setEsProfesional] = useState(false);
     const [comunas, setComunas] = useState([]);
     const [especialidades, setEspecialidades] = useState([]);
     const [errores, setErrores] = useState({});
-
-    // Matriz de disponibilidad (Arreglo dinámico)
     const [disponibilidad, setDisponibilidad] = useState([]);
 
     const [formData, setFormData] = useState({
-        // Datos Base
         rut: '', nombres: '', apellido_paterno: '', apellido_materno: '', email: '', telefono: '', contrasena: '', confirmar_contrasena: '',
-        // Paciente
         sexo_clinico: '', calle: '', numero_calle: '', departamento: '', comuna_id: '', emergencia_nombre: '', emergencia_parentesco: '', emergencia_telefono: '',
-        // Profesional
         num_registro_salud: '', especialidad_id: '', tipo_sede: '', resena_curricular: ''
     });
 
@@ -41,9 +35,8 @@ const RegisterScreen = ({ navigation }) => {
         if (errores[name]) setErrores({ ...errores, [name]: false });
     };
 
-    // FUNCIÓN CLAVE: Valida contra la nómina (Excepción 2)
     const validarRUTProfesional = async () => {
-        if(formData.rut.length < 8) {
+        if (formData.rut.length < 8) {
             Alert.alert("Error", "Ingrese un RUT válido primero.");
             return;
         }
@@ -89,11 +82,11 @@ const RegisterScreen = ({ navigation }) => {
             nuevosErrores.contrasena = true; nuevosErrores.confirmar_contrasena = true; esValido = false;
             Alert.alert("Alerta de discrepancia", "Las contraseñas no coinciden.");
         }
-        if(formData.rut.length < 8) { nuevosErrores.rut = true; esValido = false; }
+        if (formData.rut.length < 8) { nuevosErrores.rut = true; esValido = false; }
 
         if (!esProfesional) {
-            if(formData.comuna_id === '') { nuevosErrores.comuna_id = true; esValido = false; }
-            if(formData.sexo_clinico === '') { nuevosErrores.sexo_clinico = true; esValido = false; }
+            if (formData.comuna_id === '') { nuevosErrores.comuna_id = true; esValido = false; }
+            if (formData.sexo_clinico === '') { nuevosErrores.sexo_clinico = true; esValido = false; }
         } else {
             if(formData.num_registro_salud === '') { nuevosErrores.num_registro_salud = true; esValido = false; }
             if(formData.especialidad_id === '') { nuevosErrores.especialidad_id = true; esValido = false; }
@@ -117,17 +110,14 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     const confirmarCreacionCuenta = async () => {
-        // Validación local (Sintáctica)
         if (!validarFormatosSintacticos()) return;
-        
+
         try {
-            // CU03: Consulta síncrona al Controlador para verificar unicidad
             const response = await apiClient.post('/auth/verificar-unicidad', {
                 rut: formData.rut,
                 email: formData.email
             });
 
-            // Si el Controlador responde 200 (OK), lanzamos la alerta final
             if (response.status === 200) {
                 const mensajeDinamico = esProfesional
                     ? "¿Declara que los datos de contacto y la matriz horaria ingresada son precisos y veraces?"
@@ -143,29 +133,27 @@ const RegisterScreen = ({ navigation }) => {
                 );
             }
         } catch (error) {
-            // Manejo de Excepciones del CU03
             if (error.response && error.response.status === 409) {
-                // Excepción 2 y 4: Duplicidad encontrada
-                const campoError = error.response.data.campo; // El Controlador nos dice si fue 'rut' o 'email'
-                
-                // Marcamos en rojo el campo específico que falló
+                const campoError = error.response.data.campo;
                 setErrores(prevErrores => ({ ...prevErrores, [campoError]: true }));
                 Alert.alert("Aviso de Duplicidad", error.response.data.error);
-                
             } else if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('Network'))) {
-                // Excepción 1 y 3: Pérdida de red o latencia excedida
-                Alert.alert("Error de Conexión", "El servicio de validación no está disponible o hubo un problema de red. Verifique su conexión y reintente.");
+                Alert.alert("Error de Conexión", "El servicio de validación no está disponible. Verifique su conexión y reintente.");
             } else {
                 Alert.alert("Error del sistema", "Ocurrió un error inesperado al validar la información.");
             }
         }
     };
 
+    // ── CAMBIO CU04 ───────────────────────────────────────────────────────────
+    // Antes: navegaba directo a Login al recibir 201.
+    // Ahora: el backend devuelve { usuario_id, email } junto al 201,
+    //        y navegamos a OTPScreen pasando esos datos como parámetros.
+    // ─────────────────────────────────────────────────────────────────────────
     const procesarRegistro = async () => {
         try {
             let response;
             if (esProfesional) {
-                // Preparamos payload incluyendo el arreglo dinámico
                 const payloadProfesional = { ...formData, disponibilidad };
                 response = await apiClient.post('/auth/registrar-profesional', payloadProfesional);
             } else {
@@ -173,7 +161,17 @@ const RegisterScreen = ({ navigation }) => {
             }
 
             if (response.status === 201) {
-                Alert.alert("Éxito", response.data.mensaje, [{ text: "OK", onPress: () => navigation.navigate('Login') }]);
+                const { usuario_id, email } = response.data;
+
+                // Enmascarar email para mostrarlo en OTPScreen (ej: j***@gmail.com)
+                const partes = email.split('@');
+                const emailMascarado = partes[0][0] + '***@' + partes[1];
+
+                navigation.navigate('OTP', {
+                    usuario_id,
+                    canal: 'EMAIL',
+                    destino: emailMascarado,
+                });
             }
         } catch (error) {
             const msg = error.response ? error.response.data.error : "No se pudo conectar con el servidor.";
@@ -182,40 +180,38 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     return (
-        <KeyboardAvoidingView 
-            style={{ flex: 1, backgroundColor: '#f5f5f5' }} 
+        <KeyboardAvoidingView
+            style={{ flex: 1, backgroundColor: '#f5f5f5' }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
                 <Text style={styles.title}>{esProfesional ? "Alta de Profesional" : "Registro Único"}</Text>
-                
+
                 <Text style={styles.sectionHeader}>Sección 1: Identidad y Credenciales</Text>
-                
-                {/* Fila del RUT con Botón de Validación */}
+
                 <View style={styles.row}>
-                    <TextInput style={[styles.input, {width: '55%'}, errores.rut && styles.inputError]} placeholder="RUT (Sin puntos ni guion)" value={formData.rut} onChangeText={(v) => handleChange('rut', v)} />
+                    <TextInput style={[styles.input, { width: '55%' }, errores.rut && styles.inputError]} placeholder="RUT (Sin puntos ni guion)" value={formData.rut} onChangeText={(v) => handleChange('rut', v)} />
                     <TouchableOpacity style={styles.btnValidar} onPress={validarRUTProfesional}>
                         <Text style={styles.txtBtnValidar}>Acreditar RUT Médico</Text>
                     </TouchableOpacity>
                 </View>
 
                 <TextInput style={[styles.input, errores.nombres && styles.inputError]} placeholder="Nombres" value={formData.nombres} onChangeText={(v) => handleChange('nombres', v)} />
-                
+
                 <View style={styles.row}>
                     <TextInput style={[styles.input, styles.halfInput, errores.apellido_paterno && styles.inputError]} placeholder="Apellido Paterno" value={formData.apellido_paterno} onChangeText={(v) => handleChange('apellido_paterno', v)} />
                     <TextInput style={[styles.input, styles.halfInput, errores.apellido_materno && styles.inputError]} placeholder="Apellido Materno" value={formData.apellido_materno} onChangeText={(v) => handleChange('apellido_materno', v)} />
                 </View>
 
-                <TextInput style={[styles.input, errores.email && styles.inputError]} placeholder="Correo Electrónico" keyboardType="email-address" value={formData.email} onChangeText={(v) => handleChange('email', v)} autoCapitalize="none"/>
+                <TextInput style={[styles.input, errores.email && styles.inputError]} placeholder="Correo Electrónico" keyboardType="email-address" value={formData.email} onChangeText={(v) => handleChange('email', v)} autoCapitalize="none" />
                 <TextInput style={[styles.input, errores.telefono && styles.inputError]} placeholder="Teléfono (+56 9 XXXX XXXX)" keyboardType="phone-pad" value={formData.telefono} onChangeText={(v) => handleChange('telefono', v)} />
                 <TextInput style={[styles.input, errores.contrasena && styles.inputError]} placeholder="Contraseña" secureTextEntry value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
                 <TextInput style={[styles.input, errores.confirmar_contrasena && styles.inputError]} placeholder="Confirmar Contraseña" secureTextEntry value={formData.confirmar_contrasena} onChangeText={(v) => handleChange('confirmar_contrasena', v)} />
 
-                {/* SECCIÓN CONDICIONAL: PACIENTE */}
                 {!esProfesional && (
                     <View>
                         <Text style={styles.sectionHeader}>Sección 2: Parámetros Paciente</Text>
-                        
+
                         <View style={[styles.pickerContainer, errores.sexo_clinico && styles.inputError]}>
                             <Picker selectedValue={formData.sexo_clinico} onValueChange={(v) => handleChange('sexo_clinico', v)}>
                                 <Picker.Item label="Seleccione su Sexo..." value="" color="#999" />
@@ -236,7 +232,7 @@ const RegisterScreen = ({ navigation }) => {
                             <TextInput style={[styles.input, styles.halfInput]} placeholder="Número" value={formData.numero_calle} onChangeText={(v) => handleChange('numero_calle', v)} />
                             <TextInput style={[styles.input, styles.halfInput]} placeholder="Depto (Opcional)" value={formData.departamento} onChangeText={(v) => handleChange('departamento', v)} />
                         </View>
-                        
+
                         <Text style={styles.subHeader}>Contacto de Emergencia</Text>
                         <TextInput style={styles.input} placeholder="Nombre Contacto" value={formData.emergencia_nombre} onChangeText={(v) => handleChange('emergencia_nombre', v)} />
                         <View style={styles.row}>
@@ -246,13 +242,12 @@ const RegisterScreen = ({ navigation }) => {
                     </View>
                 )}
 
-                {/* SECCIÓN CONDICIONAL: PROFESIONAL */}
                 {esProfesional && (
                     <View>
-                        <Text style={[styles.sectionHeader, {backgroundColor: '#d1ecf1'}]}>Sección 3: Acreditación Profesional</Text>
-                        
+                        <Text style={[styles.sectionHeader, { backgroundColor: '#d1ecf1' }]}>Sección 3: Acreditación Profesional</Text>
+
                         <TextInput style={[styles.input, errores.num_registro_salud && styles.inputError]} placeholder="Número de Registro Superintendencia" value={formData.num_registro_salud} onChangeText={(v) => handleChange('num_registro_salud', v)} />
-                        
+
                         <View style={[styles.pickerContainer, errores.especialidad_id && styles.inputError]}>
                             <Picker selectedValue={formData.especialidad_id} onValueChange={(v) => handleChange('especialidad_id', v)}>
                                 <Picker.Item label="Especialidad Clínica..." value="" color="#999" />
@@ -269,14 +264,13 @@ const RegisterScreen = ({ navigation }) => {
                             </Picker>
                         </View>
 
-                        <TextInput style={[styles.input, {height: 80, textAlignVertical: 'top'}]} placeholder="Reseña Curricular (Breve)" multiline numberOfLines={3} value={formData.resena_curricular} onChangeText={(v) => handleChange('resena_curricular', v)} />
+                        <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} placeholder="Reseña Curricular (Breve)" multiline numberOfLines={3} value={formData.resena_curricular} onChangeText={(v) => handleChange('resena_curricular', v)} />
 
-                        {/* MATRIZ DE HORARIOS */}
                         <Text style={styles.subHeader}>Matriz de Jornada Laboral</Text>
                         {disponibilidad.map((bloque, index) => (
                             <View key={index} style={styles.horarioBox}>
                                 <View style={styles.pickerContainerHorario}>
-                                    <Picker selectedValue={bloque.dia_semana} onValueChange={(v) => actualizarHorario(index, 'dia_semana', v)} style={{height: 55, justifyContent: 'center'}}>
+                                    <Picker selectedValue={bloque.dia_semana} onValueChange={(v) => actualizarHorario(index, 'dia_semana', v)} style={{ height: 55, justifyContent: 'center' }}>
                                         <Picker.Item label="Lunes" value="1" />
                                         <Picker.Item label="Martes" value="2" />
                                         <Picker.Item label="Miércoles" value="3" />
@@ -287,10 +281,10 @@ const RegisterScreen = ({ navigation }) => {
                                     </Picker>
                                 </View>
                                 <View style={styles.row}>
-                                    <TextInput style={[styles.input, {width: '40%', marginBottom: 0}]} placeholder="Inicio (ej 08:00)" value={bloque.hora_inicio} onChangeText={(v) => actualizarHorario(index, 'hora_inicio', v)} />
-                                    <TextInput style={[styles.input, {width: '40%', marginBottom: 0}]} placeholder="Fin (ej 13:00)" value={bloque.hora_fin} onChangeText={(v) => actualizarHorario(index, 'hora_fin', v)} />
+                                    <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="Inicio (ej 08:00)" value={bloque.hora_inicio} onChangeText={(v) => actualizarHorario(index, 'hora_inicio', v)} />
+                                    <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="Fin (ej 13:00)" value={bloque.hora_fin} onChangeText={(v) => actualizarHorario(index, 'hora_fin', v)} />
                                     <TouchableOpacity style={styles.btnEliminar} onPress={() => eliminarHorario(index)}>
-                                        <Text style={{color: '#fff', fontWeight: 'bold'}}>X</Text>
+                                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>X</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -317,14 +311,11 @@ const styles = StyleSheet.create({
     halfInput: { width: '48%' },
     inputError: { borderColor: '#ff4444', borderWidth: 2 },
     pickerContainer: { borderWidth: 1, borderColor: '#ccc', backgroundColor: '#fff', borderRadius: 25, marginBottom: 15, overflow: 'hidden' },
-    
-    // Estilos nuevos para Profesional
     btnValidar: { backgroundColor: '#457b9d', width: '40%', borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
     txtBtnValidar: { color: '#fff', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
     horarioBox: { backgroundColor: '#fff', padding: 10, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ddd' },
     pickerContainerHorario: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, marginBottom: 10, overflow: 'hidden' },
     btnEliminar: { backgroundColor: '#e63946', width: '15%', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-    
     buttonContainer: { marginTop: 25, marginBottom: 50 }
 });
 
