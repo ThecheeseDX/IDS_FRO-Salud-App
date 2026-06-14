@@ -52,31 +52,19 @@ export default function DashboardPaciente({ navigation }) {
         ) : (
           <>
             <View style={styles.dataCard}>
-              <Text style={styles.dataTitle}>Información Protegida:</Text>
+              <Text style={styles.dataTitle}>Información de sesión:</Text>
               <Text style={styles.dataText}>{datosSensibles}</Text>
             </View>
 
-            {/* CU14: Motor de búsqueda de citas */}
+            {/* CU14 + CU15: Motor de búsqueda y agendamiento integrado */}
             <TouchableOpacity
               style={styles.menuBtn}
               onPress={() => navigation.navigate('BuscarCita')}
             >
               <Text style={styles.menuIcon}>🔎</Text>
-              <Text style={styles.menuTitle}>Buscar Cita</Text>
+              <Text style={styles.menuTitle}>Buscar y agendar cita</Text>
               <Text style={styles.menuSubtitle}>
-                Filtra por especialidad, modalidad y fecha.
-              </Text>
-            </TouchableOpacity>
-
-            {/* CU15: Agendamiento con bloqueo síncronico */}
-            <TouchableOpacity
-              style={styles.menuBtn}
-              onPress={() => navigation.navigate('Agendamiento')}
-            >
-              <Text style={styles.menuIcon}>📅</Text>
-              <Text style={styles.menuTitle}>Agendar Cita</Text>
-              <Text style={styles.menuSubtitle}>
-                Reserva un horario seleccionado.
+                Filtra por especialidad, modalidad y fecha, y reserva tu hora directamente.
               </Text>
             </TouchableOpacity>
           </>
@@ -91,9 +79,9 @@ export default function DashboardPaciente({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f4f6f8' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f4f6f8',
   },
   header: {
     backgroundColor: '#0052cc',
@@ -102,21 +90,21 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15,
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: '#ffffff' 
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
-  subtitle: { 
-    fontSize: 16, 
-    color: '#e0e0e0', 
-    marginTop: 5 
+  subtitle: {
+    fontSize: 16,
+    color: '#e0e0e0',
+    marginTop: 5,
   },
-  content: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20 
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   dataCard: {
     backgroundColor: '#ffffff',
@@ -128,16 +116,16 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 16,
   },
-  dataTitle: { 
-    fontWeight: 'bold', 
-    fontSize: 16, 
-    color: '#333', 
-    marginBottom: 10 
+  dataTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
   },
-  dataText: { 
-    fontSize: 14, 
-    color: '#0052cc', 
-    fontStyle: 'italic' 
+  dataText: {
+    fontSize: 14,
+    color: '#0052cc',
+    fontStyle: 'italic',
   },
   menuBtn: {
     backgroundColor: '#fff',
@@ -150,20 +138,20 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 14,
   },
-  menuIcon: { 
-    fontSize: 36, 
-    marginBottom: 8 
+  menuIcon: {
+    fontSize: 36,
+    marginBottom: 8,
   },
-  menuTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    color: '#0052cc', 
-    marginBottom: 4 
+  menuTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0052cc',
+    marginBottom: 4,
   },
-  menuSubtitle: { 
-    fontSize: 13, 
-    color: '#666', 
-    textAlign: 'center' 
+  menuSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
   },
   logoutButton: {
     backgroundColor: '#d32f2f',
@@ -172,9 +160,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  logoutButtonText: { 
-    color: '#ffffff', 
-    fontWeight: 'bold', 
-    fontSize: 16 
+  logoutButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

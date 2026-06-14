@@ -4,7 +4,6 @@ import React, { useContext } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 
 import { AuthContext } from '../context/AuthContext';
 
@@ -13,14 +12,12 @@ import RegisterScreen from '../screens/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
+import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
 import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
-
-// CU15: Pantalla de agendamiento
-import AgendamientoScreen from '../screens/Paciente/AgendamientoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,13 +55,11 @@ export default function AppNavigator() {
               component={LoginScreen}
               options={{ title: 'Ingreso al Sistema' }}
             />
-
             <Stack.Screen
               name="Register"
               component={RegisterScreen}
               options={{ title: 'Crear Cuenta' }}
             />
-
             <Stack.Screen
               name="OTP"
               component={OTPScreen}
@@ -86,17 +81,11 @@ export default function AppNavigator() {
                 gestureEnabled: false,
               }}
             />
+            {/* CU14 + CU15: búsqueda y agendamiento integrados en una sola pantalla */}
             <Stack.Screen
               name="BuscarCita"
               component={BuscarCitaScreen}
-              options={{ title: 'Buscar Cita Médica' }}
-            />
-
-            {/* CU15: Agendamiento con bloqueo síncronico */}
-            <Stack.Screen
-              name="Agendamiento"
-              component={AgendamientoScreen}
-              options={{ title: 'Agendar Cita' }}
+              options={{ title: 'Buscar y Agendar Cita' }}
             />
           </>
         ) : userData?.rol === 'Profesional' ? (
@@ -110,19 +99,16 @@ export default function AppNavigator() {
                 gestureEnabled: false,
               }}
             />
-
             <Stack.Screen
               name="PacientesAsignados"
               component={PacientesAsignadosScreen}
               options={{ title: 'Pacientes Asignados' }}
             />
-
             <Stack.Screen
               name="HistorialPaciente"
               component={HistorialPacienteScreen}
               options={{ title: 'Historial Paciente' }}
             />
-
             {/* CU13: Episodios clínicos */}
             <Stack.Screen
               name="Episodio"
