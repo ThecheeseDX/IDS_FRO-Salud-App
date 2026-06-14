@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext'; // ◄ NUEVO
 import { 
   StyleSheet, 
   Text, 
@@ -20,6 +21,7 @@ export default function LoginScreen({ navigation }) {
   const [rutError, setRutError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { loginSession } = useContext(AuthContext);
 
   // --- PASO 6: VALIDACIÓN SINTÁCTICA EN TIEMPO REAL (Excepción 1) ---
   useEffect(() => {
@@ -40,38 +42,23 @@ export default function LoginScreen({ navigation }) {
 
   // --- PASO 7: DESPACHO DE PETICIÓN HTTP ---
   const handleLogin = async () => {
-    // Limpiamos alertas previas y mostramos el spinner
     setLoginError('');
     setIsLoading(true);
 
     try {
-      // 1. Despacho HTTP: Enviamos los datos al backend
-      // Usamos la ruta relativa '/login' porque la baseURL ya tiene '/api/auth'
       const response = await apiClient.post('/auth/login', {
         rut: rut,
         contrasena: password
       });
 
-      // 2. BLOQUE EXITOSO (Código HTTP 200)
       setIsLoading(false);
       const { token, usuario, mensaje } = response.data;
 
-      // =====================================================================
-      // 🛡️ PERSISTENCIA BASE (Guía de escalabilidad para el equipo)
-      // =====================================================================
-      // TODO: Para mantener la sesión viva si el usuario cierra la app, 
-      // el equipo deberá instalar e implementar 'expo-secure-store'.
-      // Ejemplo de cómo deberán hacerlo:
-      // await SecureStore.setItemAsync('jwt_token', token);
-      // await SecureStore.setItemAsync('user_rol', usuario.rol);
-      console.log("✅ Token JWT listo para ser almacenado en el dispositivo:", token);
+      // ◄ NUEVO: Usamos la función del contexto para guardar el token en el teléfono
+      await loginSession(token, usuario);
+      console.log("✅ Sesión guardada globalmente para el rol:", usuario.rol);
       
-      // =====================================================================
-      // 🔀 ENRUTAMIENTO DINÁMICO POR ROL
-      // =====================================================================
-      // Usamos navigation.replace() en lugar de navigate() para "destruir" 
-      // la pantalla de Login de la memoria y que el usuario no pueda volver atrás.
-      
+      // Mantenemos tus redirecciones por ahora (luego el AppNavigator lo hará solo)
       if (usuario.rol === 'Paciente') {
         navigation.replace('DashboardPaciente');
       } else if (usuario.rol === 'Profesional') {
@@ -79,7 +66,6 @@ export default function LoginScreen({ navigation }) {
       } else if (usuario.rol === 'Administrador') {
         navigation.replace('DashboardAdmin');
       } else {
-        // Fallback en caso de roles no mapeados
         Alert.alert("Acceso Autorizado", "Bienvenido, pero tu rol no tiene una vista asignada.");
       }
     } catch (error) {
