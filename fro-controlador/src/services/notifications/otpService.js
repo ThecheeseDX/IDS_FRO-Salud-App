@@ -70,11 +70,19 @@ async function validarOTP(usuarioId, codigoIngresado) {
 // ── Enviar OTP por Email ───────────────────────────────────────────────────
 async function enviarPorEmail(destinatario, codigo) {
   const nodemailer = require("nodemailer");
+
+  console.log("SMTP_HOST:", process.env.SMTP_HOST);
+  console.log("SMTP_PORT:", process.env.SMTP_PORT);
+  console.log("SMTP_USER:", process.env.SMTP_USER);
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT, 10),
     secure: process.env.SMTP_PORT === "465",
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
   });
 
   await transporter.sendMail({

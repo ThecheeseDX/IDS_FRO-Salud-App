@@ -1,9 +1,10 @@
 // Ruta: fro-vista/src/api/client.js
+
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// IMPORTANTE: Recuerda cambiar esto por la IP local de tu computador (ej: 192.168.1.15)
-const COMPUTADORA_IP = '192.168.100.9'; 
+// IMPORTANTE: Cambiar por la IP local de tu computador
+const COMPUTADORA_IP = '192.168.1.10';
 
 const apiClient = axios.create({
   baseURL: `http://${COMPUTADORA_IP}:3000/api`,
@@ -14,55 +15,94 @@ const apiClient = axios.create({
 });
 
 // =========================================================================
-// 📤 INTERCEPTOR DE PETICIONES (Request) - Creado por el equipo
+// 📤 INTERCEPTOR DE PETICIONES
 // =========================================================================
+
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      // Busca el token cifrado y lo inyecta en la cabecera
       const token = await SecureStore.getItemAsync('userToken');
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error("Error al obtener token en el interceptor:", error);
+      console.error('Error al obtener token:', error);
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // =========================================================================
-// 📥 INTERCEPTOR DE RESPUESTAS (Response) - Manejo de Excepción 1 (401)
+// 📥 INTERCEPTOR DE RESPUESTAS
 // =========================================================================
+
 apiClient.interceptors.response.use(
-  (response) => {
-    // Petición exitosa, la dejamos pasar al controlador de la pantalla
-    return response;
-  },
+  (response) => response,
+
   async (error) => {
-    // Verificamos si el backend nos detuvo con un error de autorización
     if (error.response && error.response.status === 401) {
-      console.warn("🔒 RBAC [Excepción 1]: Token expirado/inválido. Limpiando bóveda segura...");
-      
+      console.warn(
+        '🔒 RBAC [Excepción 1]: Token expirado/inválido. Limpiando bóveda segura...'
+      );
+
       try {
-        // Borramos las credenciales cifradas para forzar el cierre de sesión
         await SecureStore.deleteItemAsync('userToken');
         await SecureStore.deleteItemAsync('userData');
       } catch (storeError) {
-        console.error("Error al limpiar SecureStore:", storeError);
+        console.error('Error al limpiar SecureStore:', storeError);
       }
-
-      // El estado global (AuthContext) de la app detectará eventualmente la falta de datos, 
-      // o la pantalla actual forzará el desvío al LoginScreen.
     }
-    
-    // Rechazamos la promesa para que la pantalla atrape el error 
-    // y pueda mostrar alertas visuales (ej. Excepción 2 o 4).
+
     return Promise.reject(error);
   }
 );
+
+// =========================================================================
+// 🔐 AUTH
+// =========================================================================
+
+export const login = async (rut, contrasena) => {
+  const response = await apiClient.post('/auth/login', {
+    rut,
+    contrasena,
+  });
+
+  return response.data;
+};
+
+// =========================================================================
+// 👨‍⚕️ CU11 - PACIENTES ASIGNADOS
+// =========================================================================
+
+export const getPacientesProfesional = async (
+  profesionalId,
+  buscar = ''
+) => {
+  const response = await apiClient.get(
+    `/profesionales/${profesionalId}/pacientes`,
+    {
+      params: { buscar },
+    }
+  );
+
+  return response.data;
+};
+
+// =========================================================================
+// 📋 HISTORIAL PACIENTE
+// =========================================================================
+
+export const getHistorialPaciente = async (pacienteId) => {
+  const response = await apiClient.get(
+    `/profesionales/pacientes/${pacienteId}/historial`
+  );
+
+  return response.data;
+};
+
+// =========================================================================
 
 export default apiClient;
