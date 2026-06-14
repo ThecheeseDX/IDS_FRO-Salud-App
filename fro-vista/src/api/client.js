@@ -116,4 +116,18 @@ export const getPacientesUsuarioProfesional = async (usuarioId, buscar = '') => 
   return response.data;
 };
 
+// =========================================================================
+//  CU29 - FICHA CLÍNICA / ANAMNESIS
+// =========================================================================
+
+export const getFichaClinica = async (pacienteId) => {
+  const response = await apiClient.get(`/clinica/ficha/${pacienteId}`);
+  return response.data;
+};
+
+export const guardarAnamnesis = async (payload) => {
+  const response = await apiClient.post('/clinica/ficha', payload);
+  return response.data;
+};
+
 export default apiClient;

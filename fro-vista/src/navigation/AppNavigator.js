@@ -19,6 +19,8 @@ import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosS
 import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
 
+import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
+
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -114,6 +116,12 @@ export default function AppNavigator() {
               name="Episodio"
               component={EpisodioScreen}
               options={{ title: 'Episodios Clínicos' }}
+            />
+            {/* CU29*/}
+            <Stack.Screen
+              name="Anamnesis"
+              component={AnamnesisScreen}
+              options={{ title: 'Evaluación Inicial' }}
             />
           </>
         ) : (
