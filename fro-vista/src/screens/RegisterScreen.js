@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, ScrollView, Alert, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import apiClient from '../api/client';
+import { validateRut } from '../utils/validators';
 
 const RegisterScreen = ({ navigation }) => {
     const [esProfesional, setEsProfesional] = useState(false);
@@ -36,7 +37,7 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     const validarRUTProfesional = async () => {
-        if (formData.rut.length < 8) {
+        if (!validateRut(formData.rut)) {
             Alert.alert("Error", "Ingrese un RUT válido primero.");
             return;
         }
@@ -82,7 +83,10 @@ const RegisterScreen = ({ navigation }) => {
             nuevosErrores.contrasena = true; nuevosErrores.confirmar_contrasena = true; esValido = false;
             Alert.alert("Alerta de discrepancia", "Las contraseñas no coinciden.");
         }
-        if (formData.rut.length < 8) { nuevosErrores.rut = true; esValido = false; }
+        if (!validateRut(formData.rut)) { 
+            nuevosErrores.rut = true; 
+            esValido = false; 
+        }
 
         if (!esProfesional) {
             if (formData.comuna_id === '') { nuevosErrores.comuna_id = true; esValido = false; }

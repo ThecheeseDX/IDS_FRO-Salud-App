@@ -17,4 +17,4 @@ Thumbs.db
 # Archivos de entorno
 .env
 .env.local
-client.js
+fro-vista/src/api/client.js
