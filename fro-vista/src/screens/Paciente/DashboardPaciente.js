@@ -15,14 +15,15 @@ export default function DashboardPaciente({ navigation }) {
   const cargarDatosProtegidos = async () => {
     setIsLoading(true);
     setErrorRed(false);
+
     try {
       const response = await apiClient.get('/auth/mi-perfil');
       setDatosSensibles(response.data.mensaje);
-      setIsLoading(false);
     } catch (error) {
       if (!error.response || error.response.status >= 500) {
         setErrorRed(true);
       }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -35,7 +36,9 @@ export default function DashboardPaciente({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Panel de Paciente</Text>
-        <Text style={styles.subtitle}>Bienvenido, {userData?.nombres || 'Usuario'}</Text>
+        <Text style={styles.subtitle}>
+          Bienvenido, {userData?.nombres || 'Usuario'}
+        </Text>
       </View>
 
       <View style={styles.content}>
@@ -53,14 +56,28 @@ export default function DashboardPaciente({ navigation }) {
               <Text style={styles.dataText}>{datosSensibles}</Text>
             </View>
 
-            {/* CU15: Botón de agendamiento */}
+            {/* CU14: Motor de búsqueda de citas */}
             <TouchableOpacity
-              style={styles.agendarBtn}
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('BuscarCita')}
+            >
+              <Text style={styles.menuIcon}>🔎</Text>
+              <Text style={styles.menuTitle}>Buscar Cita</Text>
+              <Text style={styles.menuSubtitle}>
+                Filtra por especialidad, modalidad y fecha.
+              </Text>
+            </TouchableOpacity>
+
+            {/* CU15: Agendamiento con bloqueo síncronico */}
+            <TouchableOpacity
+              style={styles.menuBtn}
               onPress={() => navigation.navigate('Agendamiento')}
             >
-              <Text style={styles.agendarIcon}>📅</Text>
-              <Text style={styles.agendarTitle}>Agendar Cita</Text>
-              <Text style={styles.agendarSubtitle}>Selecciona un profesional y horario disponible.</Text>
+              <Text style={styles.menuIcon}>📅</Text>
+              <Text style={styles.menuTitle}>Agendar Cita</Text>
+              <Text style={styles.menuSubtitle}>
+                Reserva un horario seleccionado.
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -74,31 +91,90 @@ export default function DashboardPaciente({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f6f8' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f4f6f8' 
+  },
   header: {
-    backgroundColor: '#0052cc', padding: 20, paddingTop: 40,
-    borderBottomLeftRadius: 15, borderBottomRightRadius: 15
+    backgroundColor: '#0052cc',
+    padding: 20,
+    paddingTop: 40,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
   },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#ffffff' },
-  subtitle: { fontSize: 16, color: '#e0e0e0', marginTop: 5 },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#ffffff' 
+  },
+  subtitle: { 
+    fontSize: 16, 
+    color: '#e0e0e0', 
+    marginTop: 5 
+  },
+  content: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 20 
+  },
   dataCard: {
-    backgroundColor: '#ffffff', padding: 20, borderRadius: 10,
-    borderWidth: 1, borderColor: '#e0e0e0', width: '100%', elevation: 2, marginBottom: 16
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    width: '100%',
+    elevation: 2,
+    marginBottom: 16,
   },
-  dataTitle: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 10 },
-  dataText: { fontSize: 14, color: '#0052cc', fontStyle: 'italic' },
-  agendarBtn: {
-    backgroundColor: '#fff', padding: 20, borderRadius: 10,
-    borderWidth: 1, borderColor: '#0052cc', width: '100%',
-    alignItems: 'center', elevation: 2
+  dataTitle: { 
+    fontWeight: 'bold', 
+    fontSize: 16, 
+    color: '#333', 
+    marginBottom: 10 
   },
-  agendarIcon: { fontSize: 36, marginBottom: 8 },
-  agendarTitle: { fontSize: 18, fontWeight: 'bold', color: '#0052cc', marginBottom: 4 },
-  agendarSubtitle: { fontSize: 13, color: '#666', textAlign: 'center' },
+  dataText: { 
+    fontSize: 14, 
+    color: '#0052cc', 
+    fontStyle: 'italic' 
+  },
+  menuBtn: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#0052cc',
+    width: '100%',
+    alignItems: 'center',
+    elevation: 2,
+    marginBottom: 14,
+  },
+  menuIcon: { 
+    fontSize: 36, 
+    marginBottom: 8 
+  },
+  menuTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#0052cc', 
+    marginBottom: 4 
+  },
+  menuSubtitle: { 
+    fontSize: 13, 
+    color: '#666', 
+    textAlign: 'center' 
+  },
   logoutButton: {
-    backgroundColor: '#d32f2f', margin: 20,
-    padding: 15, borderRadius: 8, alignItems: 'center'
+    backgroundColor: '#d32f2f',
+    margin: 20,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  logoutButtonText: { color: '#ffffff', fontWeight: 'bold', fontSize: 16 }
+  logoutButtonText: { 
+    color: '#ffffff', 
+    fontWeight: 'bold', 
+    fontSize: 16 
+  },
 });

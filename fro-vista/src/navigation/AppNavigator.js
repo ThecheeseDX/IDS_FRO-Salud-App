@@ -4,6 +4,7 @@ import React, { useContext } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 
 import { AuthContext } from '../context/AuthContext';
 
@@ -84,6 +85,11 @@ export default function AppNavigator() {
                 headerBackVisible: false,
                 gestureEnabled: false,
               }}
+            />
+            <Stack.Screen
+              name="BuscarCita"
+              component={BuscarCitaScreen}
+              options={{ title: 'Buscar Cita Médica' }}
             />
 
             {/* CU15: Agendamiento con bloqueo síncronico */}
