@@ -13,11 +13,13 @@ const apiClient = axios.create({
   },
 });
 
-// Interceptor: Antes de que cualquier petición salga de la app hacia el backend,
-// busca el token guardado y lo inyecta en la cabecera.
+// =========================================================================
+// 📤 INTERCEPTOR DE PETICIONES (Request) - Creado por el equipo
+// =========================================================================
 apiClient.interceptors.request.use(
   async (config) => {
     try {
+      // Busca el token cifrado y lo inyecta en la cabecera
       const token = await SecureStore.getItemAsync('userToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -28,6 +30,37 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// =========================================================================
+// 📥 INTERCEPTOR DE RESPUESTAS (Response) - Manejo de Excepción 1 (401)
+// =========================================================================
+apiClient.interceptors.response.use(
+  (response) => {
+    // Petición exitosa, la dejamos pasar al controlador de la pantalla
+    return response;
+  },
+  async (error) => {
+    // Verificamos si el backend nos detuvo con un error de autorización
+    if (error.response && error.response.status === 401) {
+      console.warn("🔒 RBAC [Excepción 1]: Token expirado/inválido. Limpiando bóveda segura...");
+      
+      try {
+        // Borramos las credenciales cifradas para forzar el cierre de sesión
+        await SecureStore.deleteItemAsync('userToken');
+        await SecureStore.deleteItemAsync('userData');
+      } catch (storeError) {
+        console.error("Error al limpiar SecureStore:", storeError);
+      }
+
+      // El estado global (AuthContext) de la app detectará eventualmente la falta de datos, 
+      // o la pantalla actual forzará el desvío al LoginScreen.
+    }
+    
+    // Rechazamos la promesa para que la pantalla atrape el error 
+    // y pueda mostrar alertas visuales (ej. Excepción 2 o 4).
     return Promise.reject(error);
   }
 );

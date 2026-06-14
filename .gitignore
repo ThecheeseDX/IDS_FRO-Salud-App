@@ -14,6 +14,10 @@ Thumbs.db
 *.log
 .web/
 
+#De los CU
+logs/
+auditoria/
+
 # Archivos de entorno
 .env
 .env.local
