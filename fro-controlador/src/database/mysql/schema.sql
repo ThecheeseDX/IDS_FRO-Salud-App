@@ -420,3 +420,6 @@ ALTER TABLE Usuario
     MODIFY COLUMN cuenta_activo BOOLEAN DEFAULT FALSE,
     ADD COLUMN otp_codigo      VARCHAR(6)   NULL,
     ADD COLUMN otp_expiracion  TIMESTAMP    NULL;
+
+--comando solo para crear la sede en la tabla
+INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);

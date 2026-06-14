@@ -18,6 +18,9 @@ import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosS
 import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
 
+// CU15: Pantalla de agendamiento
+import AgendamientoScreen from '../screens/Paciente/AgendamientoScreen';
+
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -82,6 +85,13 @@ export default function AppNavigator() {
                 gestureEnabled: false,
               }}
             />
+
+            {/* CU15: Agendamiento con bloqueo síncronico */}
+            <Stack.Screen
+              name="Agendamiento"
+              component={AgendamientoScreen}
+              options={{ title: 'Agendar Cita' }}
+            />
           </>
         ) : userData?.rol === 'Profesional' ? (
           <>
@@ -107,6 +117,7 @@ export default function AppNavigator() {
               options={{ title: 'Historial Paciente' }}
             />
 
+            {/* CU13: Episodios clínicos */}
             <Stack.Screen
               name="Episodio"
               component={EpisodioScreen}
