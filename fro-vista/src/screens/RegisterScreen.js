@@ -98,13 +98,21 @@ const RegisterScreen = ({ navigation }) => {
             if(formData.num_registro_salud === '') { nuevosErrores.num_registro_salud = true; esValido = false; }
             if(formData.especialidad_id === '') { nuevosErrores.especialidad_id = true; esValido = false; }
             if(formData.tipo_sede === '') { nuevosErrores.tipo_sede = true; esValido = false; }
-            if(disponibilidad.length === 0) { Alert.alert("Agenda Vacía", "Debe agregar al menos un bloque horario."); esValido = false; }
+            if(disponibilidad.length === 0) { 
+                Alert.alert("Agenda Vacía", "Debe agregar al menos un bloque horario."); 
+                esValido = false; 
+            }
         }
 
         setErrores(nuevosErrores);
-        if (!esValido && !nuevosErrores.contrasena && disponibilidad.length > 0) {
-            Alert.alert("Error", "Revise los campos en rojo.");
+        
+        // SOLUCIÓN: Verificamos dinámicamente si hay algún error rojo en el formulario
+        const tieneErroresRojos = Object.keys(nuevosErrores).some(key => key !== 'contrasena' && key !== 'confirmar_contrasena');
+        
+        if (tieneErroresRojos) {
+            Alert.alert("Error", "Por favor, revise los campos marcados en rojo.");
         }
+
         return esValido;
     };
 
@@ -121,9 +129,13 @@ const RegisterScreen = ({ navigation }) => {
 
             // Si el Controlador responde 200 (OK), lanzamos la alerta final
             if (response.status === 200) {
+                const mensajeDinamico = esProfesional
+                    ? "¿Declara que los datos de contacto y la matriz horaria ingresada son precisos y veraces?"
+                    : "¿Declara que sus datos personales y de contacto ingresados son precisos y veraces?";
+
                 Alert.alert(
                     "Confirmación de Datos",
-                    "¿Declara que los datos de contacto y la matriz horaria ingresada son precisos y veraces?",
+                    mensajeDinamico,
                     [
                         { text: "Cancelar (Revisar)", style: "cancel" },
                         { text: "Confirmar y Registrar", onPress: procesarRegistro }
