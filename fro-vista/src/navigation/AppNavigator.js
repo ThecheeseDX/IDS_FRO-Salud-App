@@ -11,8 +11,9 @@ import RegisterScreen from '../screens/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
-// CU13: Pantalla de episodios clínicos
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
+// CU15: Pantalla de agendamiento
+import AgendamientoScreen from '../screens/Paciente/AgendamientoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,12 @@ export default function AppNavigator() {
               component={DashboardPaciente}
               options={{ title: 'Mi Salud', headerBackVisible: false, gestureEnabled: false }}
             />
+            {/* CU15: Agendamiento con bloqueo síncronico */}
+            <Stack.Screen
+              name="Agendamiento"
+              component={AgendamientoScreen}
+              options={{ title: 'Agendar Cita' }}
+            />
           </>
         ) : userData?.rol === 'Profesional' ? (
           // ── ESCENARIO C: Profesional Autenticado ──
@@ -64,7 +71,7 @@ export default function AppNavigator() {
               component={DashboardProfesional}
               options={{ title: 'Mi Agenda', headerBackVisible: false, gestureEnabled: false }}
             />
-            {/* CU13: Episodios clínicos — acceso auditado automáticamente */}
+            {/* CU13: Episodios clínicos */}
             <Stack.Screen
               name="Episodio"
               component={EpisodioScreen}
