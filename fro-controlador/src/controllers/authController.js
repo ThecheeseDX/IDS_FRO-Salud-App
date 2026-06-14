@@ -1,9 +1,12 @@
 const pool = require('../config/database');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const UserModel = require('../models/userModel');
+const { comparePassword } = require('../utils/encriptar_bcrypt');
 const { crearOTP, validarOTP, enviarPorEmail } = require('../services/notifications/otpService');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REGISTRO PACIENTE (sin cambios)
+// REGISTRO PACIENTE
 // ─────────────────────────────────────────────────────────────────────────────
 exports.registrarPaciente = async (req, res) => {
     const {
@@ -52,16 +55,16 @@ exports.registrarPaciente = async (req, res) => {
 
         await connection.commit();
 
-        // ── CAMBIO CU04: devolvemos usuario_id y email para que el frontend
-        //    navegue a OTPScreen en vez de ir directo al Login ──────────────
+        // CU04: Generar y enviar OTP inmediatamente tras el registro
         const { codigo } = await crearOTP(usuario_id);
         try {
             await enviarPorEmail(email, codigo);
         } catch (errorSMTP) {
-            console.error("Error SMTP en registro:", errorSMTP);
+            console.error("Error SMTP en registro paciente:", errorSMTP);
             // No bloqueamos el registro si falla el correo,
             // el usuario puede reenviar desde OTPScreen
         }
+
         res.status(201).json({
             mensaje: 'Paciente registrado. Verifica tu cuenta con el código enviado a tu correo.',
             usuario_id,
@@ -80,7 +83,7 @@ exports.registrarPaciente = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OBTENER ESPECIALIDADES (sin cambios)
+// OBTENER ESPECIALIDADES
 // ─────────────────────────────────────────────────────────────────────────────
 exports.obtenerEspecialidades = async (req, res) => {
     try {
@@ -92,7 +95,7 @@ exports.obtenerEspecialidades = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VALIDAR PROFESIONAL (sin cambios)
+// VALIDAR PROFESIONAL
 // ─────────────────────────────────────────────────────────────────────────────
 exports.validarProfesional = async (req, res) => {
     const { rut } = req.params;
@@ -114,7 +117,7 @@ exports.validarProfesional = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REGISTRAR PROFESIONAL (sin cambios)
+// REGISTRAR PROFESIONAL
 // ─────────────────────────────────────────────────────────────────────────────
 exports.registrarProfesional = async (req, res) => {
     const {
@@ -128,7 +131,7 @@ exports.registrarProfesional = async (req, res) => {
         await connection.beginTransaction();
 
         const saltRounds = 10;
-        const contrasena_hash = await require('bcrypt').hash(contrasena, saltRounds);
+        const contrasena_hash = await bcrypt.hash(contrasena, saltRounds);
         const rolProfesionalId = 2;
 
         const [userResult] = await connection.execute(
@@ -159,18 +162,16 @@ exports.registrarProfesional = async (req, res) => {
 
         await connection.commit();
 
-        // ── CAMBIO CU04: igual que paciente, devolvemos usuario_id y email ─
+        // CU04: Generar y enviar OTP inmediatamente tras el registro
         const { codigo } = await crearOTP(usuario_id);
         try {
             await enviarPorEmail(email, codigo);
         } catch (errorSMTP) {
-            console.error("Error SMTP en registro:", errorSMTP);
-            // No bloqueamos el registro si falla el correo,
-            // el usuario puede reenviar desde OTPScreen
+            console.error("Error SMTP en registro profesional:", errorSMTP);
         }
 
         res.status(201).json({
-            mensaje: 'Paciente registrado. Verifica tu cuenta con el código enviado a tu correo.',
+            mensaje: 'Profesional registrado. Verifica tu cuenta con el código enviado a tu correo.',
             usuario_id,
             email
         });
@@ -185,7 +186,7 @@ exports.registrarProfesional = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VERIFICAR UNICIDAD (sin cambios)
+// VERIFICAR UNICIDAD
 // ─────────────────────────────────────────────────────────────────────────────
 exports.verificarUnicidad = async (req, res) => {
     const { rut, email } = req.body;
@@ -209,7 +210,6 @@ exports.verificarUnicidad = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // CU04 — SOLICITAR OTP
 // POST /api/auth/otp/solicitar
-// Body: { usuario_id }
 // ─────────────────────────────────────────────────────────────────────────────
 exports.solicitarOTP = async (req, res) => {
     const { usuario_id } = req.body;
@@ -232,10 +232,8 @@ exports.solicitarOTP = async (req, res) => {
             return res.status(409).json({ error: 'La cuenta ya está activa.' });
         }
 
-        // Genera el código y lo persiste en las columnas otp_codigo / otp_expiracion
         const { codigo } = await crearOTP(usuario_id);
 
-        // Envío por SMTP — Excepción 1 del CU04
         try {
             await enviarPorEmail(usuarios[0].email, codigo);
         } catch (errorSMTP) {
@@ -262,7 +260,6 @@ exports.solicitarOTP = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // CU04 — VERIFICAR OTP
 // POST /api/auth/otp/verificar
-// Body: { usuario_id, codigo }
 // ─────────────────────────────────────────────────────────────────────────────
 exports.verificarOTP = async (req, res) => {
     const { usuario_id, codigo } = req.body;
@@ -273,7 +270,6 @@ exports.verificarOTP = async (req, res) => {
     }
 
     try {
-        // comprobar_exactitud_vigencia() — Excepción 3 del CU04
         const resultado = await validarOTP(usuario_id, codigo);
         console.log("resultado validarOTP:", resultado);
 
@@ -281,7 +277,6 @@ exports.verificarOTP = async (req, res) => {
             return res.status(400).json({ error: resultado.error, mensaje: resultado.mensaje });
         }
 
-        // UPDATE Usuario SET cuenta_activo = TRUE — Excepción 4 del CU04
         try {
             await pool.query(
                 `UPDATE Usuario
@@ -308,5 +303,55 @@ exports.verificarOTP = async (req, res) => {
     } catch (error) {
         console.error('[verificarOTP]', error);
         return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU05 — LOGIN
+// POST /api/auth/login
+// ─────────────────────────────────────────────────────────────────────────────
+exports.login = async (req, res) => {
+    const { rut, contrasena } = req.body;
+
+    if (!rut || !contrasena) {
+        return res.status(400).json({ error: 'El RUT y la contraseña son obligatorios.' });
+    }
+
+    try {
+        const usuario = await UserModel.findByRutActive(rut);
+
+        if (!usuario) {
+            return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
+        }
+
+        const contrasenaCorrecta = await comparePassword(contrasena, usuario.contrasena_hash);
+
+        if (!contrasenaCorrecta) {
+            return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
+        }
+
+        const payload = {
+            usuario_id: usuario.usuario_id,
+            nombre_rol: usuario.nombre_rol
+        };
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+
+        res.status(200).json({
+            mensaje: 'Autenticación exitosa.',
+            token,
+            usuario: {
+                usuario_id: usuario.usuario_id,
+                nombres: usuario.nombres,
+                apellido_paterno: usuario.apellido_paterno,
+                rol: usuario.nombre_rol
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error crítico en Login:", error);
+        res.status(500).json({
+            error: 'Servicio de autenticación no disponible temporalmente. Intente nuevamente en unos segundos.'
+        });
     }
 };
