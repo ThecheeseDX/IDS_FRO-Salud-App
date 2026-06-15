@@ -1,7 +1,7 @@
 // Ruta: fro-vista/src/screens/Profesional/DashboardProfesional.js
 
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 
 export default function DashboardProfesional({ navigation }) {
@@ -13,7 +13,7 @@ export default function DashboardProfesional({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>
         Dr(a). {userData?.apellido_paterno}
       </Text>
@@ -31,6 +31,18 @@ export default function DashboardProfesional({ navigation }) {
         <Text style={styles.cardTitle}>Episodios Clínicos</Text>
         <Text style={styles.cardText}>
           Consultar y registrar episodios de pacientes.
+        </Text>
+      </TouchableOpacity>
+
+      {/* CU32 */}
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('EvolucionClinica')}
+      >
+        <Text style={styles.cardIcon}>📈</Text>
+        <Text style={styles.cardTitle}>Evolución Clínica</Text>
+        <Text style={styles.cardText}>
+          Definir metas terapéuticas y registrar el avance del paciente.
         </Text>
       </TouchableOpacity>
 
@@ -66,16 +78,20 @@ export default function DashboardProfesional({ navigation }) {
           Cerrar Sesión
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#e8f5e9',
-    justifyContent: 'center',
+  },
+
+  content: {
+    padding: 20,
+    paddingBottom: 40,
+    flexGrow: 1,
   },
 
   title: {
