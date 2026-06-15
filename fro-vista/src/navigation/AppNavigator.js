@@ -18,8 +18,8 @@ import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
 import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
-
 import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
+import InalterabilidadScreen from '../screens/Profesional/InalterabilidadScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -52,24 +52,12 @@ export default function AppNavigator() {
       >
         {userToken == null ? (
           <>
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{ title: 'Ingreso al Sistema' }}
-            />
-            <Stack.Screen
-              name="Register"
-              component={RegisterScreen}
-              options={{ title: 'Crear Cuenta' }}
-            />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Ingreso al Sistema' }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear Cuenta' }} />
             <Stack.Screen
               name="OTP"
               component={OTPScreen}
-              options={{
-                title: 'Verificar Cuenta',
-                headerBackVisible: false,
-                gestureEnabled: false,
-              }}
+              options={{ title: 'Verificar Cuenta', headerBackVisible: false, gestureEnabled: false }}
             />
           </>
         ) : userData?.rol === 'Paciente' ? (
@@ -77,13 +65,8 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardPaciente"
               component={DashboardPaciente}
-              options={{
-                title: 'Mi Salud',
-                headerBackVisible: false,
-                gestureEnabled: false,
-              }}
+              options={{ title: 'Mi Salud', headerBackVisible: false, gestureEnabled: false }}
             />
-            {/* CU14 + CU15: búsqueda y agendamiento integrados en una sola pantalla */}
             <Stack.Screen
               name="BuscarCita"
               component={BuscarCitaScreen}
@@ -95,42 +78,17 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardProfesional"
               component={DashboardProfesional}
-              options={{
-                title: 'Mi Agenda',
-                headerBackVisible: false,
-                gestureEnabled: false,
-              }}
+              options={{ title: 'Mi Agenda', headerBackVisible: false, gestureEnabled: false }}
             />
-            <Stack.Screen
-              name="PacientesAsignados"
-              component={PacientesAsignadosScreen}
-              options={{ title: 'Pacientes Asignados' }}
-            />
-            <Stack.Screen
-              name="HistorialPaciente"
-              component={HistorialPacienteScreen}
-              options={{ title: 'Historial Paciente' }}
-            />
-            {/* CU13: Episodios clínicos */}
-            <Stack.Screen
-              name="Episodio"
-              component={EpisodioScreen}
-              options={{ title: 'Episodios Clínicos' }}
-            />
-            {/* CU29*/}
-            <Stack.Screen
-              name="Anamnesis"
-              component={AnamnesisScreen}
-              options={{ title: 'Evaluación Inicial' }}
-            />
+            <Stack.Screen name="PacientesAsignados" component={PacientesAsignadosScreen} options={{ title: 'Pacientes Asignados' }} />
+            <Stack.Screen name="HistorialPaciente" component={HistorialPacienteScreen} options={{ title: 'Historial Paciente' }} />
+            <Stack.Screen name="Episodio" component={EpisodioScreen} options={{ title: 'Episodios Clínicos' }} />
+            <Stack.Screen name="Anamnesis" component={AnamnesisScreen} options={{ title: 'Evaluación Inicial' }} />
+            <Stack.Screen name="Inalterabilidad" component={InalterabilidadScreen} options={{ title: 'Inalterabilidad Clínica' }} />
           </>
         ) : (
           <>
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{ title: 'Rol no autorizado' }}
-            />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Rol no autorizado' }} />
           </>
         )}
       </Stack.Navigator>
