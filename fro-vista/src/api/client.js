@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const COMPUTADORA_IP = '192.168.100.9';
+const COMPUTADORA_IP = '192.168.1.10';
 
 const apiClient = axios.create({
   baseURL: `http://${COMPUTADORA_IP}:3000/api`,
@@ -78,9 +78,12 @@ export const getPacientesProfesional = async (profesionalId, buscar = '') => {
 // 📋 HISTORIAL PACIENTE
 // =========================================================================
 
-export const getHistorialPaciente = async (pacienteId) => {
+export const getHistorialPaciente = async (pacienteId, usuarioId) => {
   const response = await apiClient.get(
-    `/profesionales/pacientes/${pacienteId}/historial`
+    `/profesionales/pacientes/${pacienteId}/historial`,
+    {
+      params: { usuarioId },
+    }
   );
 
   return response.data;

@@ -1,37 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
-  FlatList,
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
-} from "react-native";
+  ScrollView,
+} from 'react-native';
 
-import { getHistorialPaciente } from "../../api/client";
+import { getHistorialPaciente } from '../../api/client';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function HistorialPacienteScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route.params;
+  const { userData } = useContext(AuthContext);
 
   const [historial, setHistorial] = useState([]);
+  const [episodios, setEpisodios] = useState([]);
+  const [evoluciones, setEvoluciones] = useState([]);
+  const [paciente, setPaciente] = useState(null);
+  const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const cargarHistorial = async () => {
     try {
       setLoading(true);
-      setError("");
+      setError('');
 
-      const data = await getHistorialPaciente(pacienteId);
+      const data = await getHistorialPaciente(
+        pacienteId,
+        userData?.usuario_id
+      );
 
       if (data.ok) {
-        setHistorial(data.historial);
+        setPaciente(data.paciente || null);
+        setHistorial(data.historial || []);
+        setEpisodios(data.episodios || []);
+        setEvoluciones(data.evoluciones || []);
+        setMensajeMultimedia(data.mensajeMultimedia || '');
       } else {
-        setError(data.message || "Error al recuperar historial");
+        setError(data.message || 'Error al recuperar historial');
       }
     } catch (err) {
-      console.error("ERROR HISTORIAL:", err?.response?.data || err.message);
-      setError("Error al recuperar historial");
+      console.error('ERROR HISTORIAL:', err?.response?.data || err.message);
+      setError(
+        err?.response?.data?.message ||
+          'Error de conexión con la base de datos'
+      );
     } finally {
       setLoading(false);
     }
@@ -40,33 +56,32 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   useEffect(() => {
     cargarHistorial();
   }, []);
-  
+
   const formatearFecha = (fecha) => {
-  return new Date(fecha).toLocaleString("es-CL", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+    if (!fecha) return 'No informado';
+
+    return new Date(fecha).toLocaleString('es-CL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
-  const renderAtencion = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.fecha}>{formatearFecha(item.fecha_hora_inicio)}</Text>
-      <Text>Estado: {item.estado}</Text>
-      <Text>Profesional: {item.profesional}</Text>
-      <Text>Especialidad: {item.especialidad}</Text>
-      <Text>Modalidad: {item.tipo_sede}</Text>
-    </View>
-  );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Historial de atenciones</Text>
-      <Text>Paciente: {nombrePaciente}</Text>
-      <Text>ID paciente: {pacienteId}</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.titulo}>Ficha Clínica Electrónica</Text>
+      <Text style={styles.subtitulo}>Historial consolidado del paciente</Text>
 
-      {/* ── CU29: Acceso a registro de Anamnesis / Evaluación Inicial ─────── */}
+      <View style={styles.infoPaciente}>
+        <Text style={styles.infoTitulo}>Paciente</Text>
+        <Text>Nombre: {paciente?.nombre_completo || nombrePaciente}</Text>
+        <Text>ID paciente: {pacienteId}</Text>
+        <Text>RUT: {paciente?.rut || 'No informado'}</Text>
+        <Text>Sexo clínico: {paciente?.sexo_clinico || 'No informado'}</Text>
+      </View>
+
       <TouchableOpacity
         style={styles.botonAnamnesis}
         onPress={() =>
@@ -81,7 +96,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
       {loading && <ActivityIndicator size="large" style={styles.loading} />}
 
-      {error !== "" && (
+      {error !== '' && (
         <View style={styles.errorContainer}>
           <Text style={styles.error}>{error}</Text>
           <TouchableOpacity style={styles.boton} onPress={cargarHistorial}>
@@ -90,81 +105,189 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         </View>
       )}
 
-      {!loading && !error && historial.length === 0 && (
-        <Text style={styles.sinResultados}>Sin historial registrado</Text>
+      {!loading && error === '' && (
+        <>
+          {mensajeMultimedia !== '' && (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningTitle}>Multimedia no disponible</Text>
+              <Text style={styles.warningText}>{mensajeMultimedia}</Text>
+            </View>
+          )}
+
+          <Text style={styles.seccionTitulo}>Atenciones / Citas</Text>
+
+          {historial.length === 0 ? (
+            <Text style={styles.sinResultados}>Sin atenciones registradas</Text>
+          ) : (
+            historial.map((item) => (
+              <View key={item.cita_id} style={styles.card}>
+                <Text style={styles.fecha}>
+                  {formatearFecha(item.fecha_hora_inicio)}
+                </Text>
+                <Text>Estado: {item.estado}</Text>
+                <Text>Profesional: {item.profesional}</Text>
+                <Text>Especialidad: {item.especialidad}</Text>
+                <Text>Modalidad: {item.tipo_sede}</Text>
+              </View>
+            ))
+          )}
+
+          <Text style={styles.seccionTitulo}>Episodios Clínicos</Text>
+
+          {episodios.length === 0 ? (
+            <Text style={styles.sinResultados}>Sin episodios registrados</Text>
+          ) : (
+            episodios.map((item) => (
+              <View key={item.episodio_clinico_id} style={styles.cardEpisodio}>
+                <Text style={styles.fecha}>
+                  Episodio #{item.episodio_clinico_id}
+                </Text>
+                <Text>Motivo: {item.motivo_consulta}</Text>
+                <Text>Estado: {item.estado || 'No informado'}</Text>
+                <Text>Inicio: {formatearFecha(item.fecha_inicio)}</Text>
+                <Text>Término: {formatearFecha(item.fecha_terminado)}</Text>
+              </View>
+            ))
+          )}
+
+          <Text style={styles.seccionTitulo}>Evoluciones Clínicas</Text>
+
+          {evoluciones.length === 0 ? (
+            <Text style={styles.sinResultados}>
+              Sin evoluciones clínicas registradas
+            </Text>
+          ) : (
+            evoluciones.map((item) => (
+              <View key={item.evolucion_clinica_id} style={styles.cardEvolucion}>
+                <Text style={styles.fecha}>
+                  Evolución #{item.evolucion_clinica_id}
+                </Text>
+                <Text>Episodio: #{item.episodio_clinico_id}</Text>
+                <Text>Motivo episodio: {item.motivo_consulta}</Text>
+                <Text>
+                  Porcentaje objetivo:{' '}
+                  {item.porcentaje_objetivo ?? 'No informado'}%
+                </Text>
+                <Text>
+                  Respuesta fisiológica:{' '}
+                  {item.respuesta_fisiologica || 'No informado'}
+                </Text>
+                <Text>
+                  Técnicas aplicadas:{' '}
+                  {item.tecnicas_aplicadas || 'No informado'}
+                </Text>
+                <Text>Inalterable: {item.inalterable === 1 ? 'Sí' : 'No'}</Text>
+                <Text>
+                  Firma digital:{' '}
+                  {item.firma_digital ? 'Registrada' : 'No registrada'}
+                </Text>
+                <Text>Hora firma: {formatearFecha(item.hora_firma_digital)}</Text>
+              </View>
+            ))
+          )}
+        </>
       )}
 
-      <FlatList
-        data={historial}
-        keyExtractor={(item) => item.cita_id.toString()}
-        renderItem={renderAtencion}
-        style={styles.lista}
-      />
-    </View>
+      <View style={{ height: 30 }} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
   titulo: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#1f2937',
+  },
+  subtitulo: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 16,
   },
-  loading: {
-    marginTop: 20,
+  infoPaciente: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f9fafb',
   },
-  lista: {
-    marginTop: 16,
+  infoTitulo: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 6,
+    color: '#2563eb',
+  },
+  loading: { marginTop: 20 },
+  seccionTitulo: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 18,
+    marginBottom: 10,
+    color: '#111827',
   },
   card: {
     padding: 14,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: '#f9f9f9',
   },
-  fecha: {
-    fontWeight: "bold",
-    marginBottom: 6,
+  cardEpisodio: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#93c5fd',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#eff6ff',
   },
-  errorContainer: {
-    marginTop: 20,
+  cardEvolucion: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#86efac',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f0fdf4',
   },
-  error: {
-    color: "red",
-    marginBottom: 10,
-  },
+  fecha: { fontWeight: 'bold', marginBottom: 6 },
+  errorContainer: { marginTop: 20 },
+  error: { color: 'red', marginBottom: 10 },
   boton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: '#2563eb',
     padding: 12,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  botonTexto: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  botonTexto: { color: '#fff', fontWeight: 'bold' },
   botonAnamnesis: {
-    backgroundColor: "#2e7d32",
+    backgroundColor: '#2e7d32',
     padding: 14,
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 12,
     marginBottom: 4,
   },
   botonAnamnesisTexto: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 15,
   },
-  sinResultados: {
-    marginTop: 20,
-    color: "#666",
+  warningBox: {
+    backgroundColor: '#fff7ed',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f97316',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
   },
+  warningTitle: {
+    fontWeight: 'bold',
+    color: '#c2410c',
+    marginBottom: 4,
+  },
+  warningText: { color: '#7c2d12' },
+  sinResultados: { color: '#666', marginBottom: 12 },
 });
