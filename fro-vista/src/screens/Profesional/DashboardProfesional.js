@@ -46,6 +46,24 @@ export default function DashboardProfesional({ navigation }) {
         </Text>
       </TouchableOpacity>
 
+      {/* CU38 */}
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('MarcasTemporales')}
+      >
+        <View style={styles.timeIcon}>
+          <View style={styles.clockFace}>
+            <View style={styles.clockHour} />
+            <View style={styles.clockMinute} />
+            <View style={styles.clockCenter} />
+          </View>
+        </View>
+        <Text style={styles.cardTitle}>Marcas Temporales</Text>
+        <Text style={styles.cardText}>
+          Registrar inicio, termino y duracion de cada atencion.
+        </Text>
+      </TouchableOpacity>
+
       {/* CU40 */}
       <TouchableOpacity
         style={styles.card}
@@ -145,6 +163,54 @@ const styles = StyleSheet.create({
   cardIcon: {
     fontSize: 36,
     marginBottom: 8,
+  },
+
+  timeIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#e8f5e9',
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+
+  clockFace: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 3,
+    borderColor: '#2e7d32',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  clockHour: {
+    position: 'absolute',
+    width: 3,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: '#2e7d32',
+    top: 7,
+  },
+
+  clockMinute: {
+    position: 'absolute',
+    width: 10,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#2e7d32',
+    left: 15,
+    top: 15,
+  },
+
+  clockCenter: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#ef5350',
   },
 
   interventionIcon: {

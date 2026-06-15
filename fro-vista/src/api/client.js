@@ -136,4 +136,29 @@ export const guardarIntervencion = async (episodioId, payload) => {
   return response.data;
 };
 
+// =========================================================================
+// CU38 - MARCAS TEMPORALES DE LA PRESTACION
+// =========================================================================
+
+export const getCitasMarcasTemporales = async () => {
+  const response = await apiClient.get('/citas/marcas-temporales');
+  return response.data;
+};
+
+export const iniciarAtencion = async (citaId, payload = {}) => {
+  const response = await apiClient.post(
+    `/citas/marcas-temporales/${citaId}/iniciar`,
+    payload
+  );
+  return response.data;
+};
+
+export const finalizarAtencion = async (citaId, payload = {}) => {
+  const response = await apiClient.post(
+    `/citas/marcas-temporales/${citaId}/finalizar`,
+    payload
+  );
+  return response.data;
+};
+
 export default apiClient;
