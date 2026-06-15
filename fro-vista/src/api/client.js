@@ -46,4 +46,69 @@ apiClient.interceptors.response.use(
   }
 );
 
+// =========================================================================
+// 🔐 AUTH
+// =========================================================================
+
+export const login = async (rut, contrasena) => {
+  const response = await apiClient.post('/auth/login', {
+    rut,
+    contrasena,
+  });
+
+  return response.data;
+};
+
+// =========================================================================
+// 👨‍⚕️ CU11 - PACIENTES ASIGNADOS
+// =========================================================================
+
+export const getPacientesProfesional = async (profesionalId, buscar = '') => {
+  const response = await apiClient.get(
+    `/profesionales/${profesionalId}/pacientes`,
+    {
+      params: { buscar },
+    }
+  );
+
+  return response.data;
+};
+
+// =========================================================================
+// 📋 HISTORIAL PACIENTE
+// =========================================================================
+
+export const getHistorialPaciente = async (pacienteId) => {
+  const response = await apiClient.get(
+    `/profesionales/pacientes/${pacienteId}/historial`
+  );
+
+  return response.data;
+};
+
+export const getPacientesUsuarioProfesional = async (usuarioId, buscar = '') => {
+  const response = await apiClient.get(
+    `/profesionales/usuario/${usuarioId}/pacientes`,
+    {
+      params: { buscar },
+    }
+  );
+
+  return response.data;
+};
+
+// =========================================================================
+// CU29 - FICHA CLÍNICA / ANAMNESIS
+// =========================================================================
+
+export const getFichaClinica = async (pacienteId) => {
+  const response = await apiClient.get(`/clinica/ficha/${pacienteId}`);
+  return response.data;
+};
+
+export const guardarAnamnesis = async (payload) => {
+  const response = await apiClient.post('/clinica/ficha', payload);
+  return response.data;
+};
+
 export default apiClient;

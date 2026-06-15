@@ -10,7 +10,7 @@ import {
 
 import { getHistorialPaciente } from "../../api/client";
 
-export default function HistorialPacienteScreen({ route }) {
+export default function HistorialPacienteScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route.params;
 
   const [historial, setHistorial] = useState([]);
@@ -65,6 +65,19 @@ export default function HistorialPacienteScreen({ route }) {
       <Text style={styles.titulo}>Historial de atenciones</Text>
       <Text>Paciente: {nombrePaciente}</Text>
       <Text>ID paciente: {pacienteId}</Text>
+
+      {/* ── CU29: Acceso a registro de Anamnesis / Evaluación Inicial ─────── */}
+      <TouchableOpacity
+        style={styles.botonAnamnesis}
+        onPress={() =>
+          navigation.navigate('Anamnesis', {
+            pacienteId,
+            nombrePaciente,
+          })
+        }
+      >
+        <Text style={styles.botonAnamnesisTexto}>📋 Registrar Anamnesis</Text>
+      </TouchableOpacity>
 
       {loading && <ActivityIndicator size="large" style={styles.loading} />}
 
@@ -136,6 +149,19 @@ const styles = StyleSheet.create({
   botonTexto: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  botonAnamnesis: {
+    backgroundColor: "#2e7d32",
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  botonAnamnesisTexto: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
   },
   sinResultados: {
     marginTop: 20,

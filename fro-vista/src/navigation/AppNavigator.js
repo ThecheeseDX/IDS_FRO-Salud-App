@@ -11,8 +11,16 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
+import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
+
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
-// ◄ NUEVO: Importamos la pantalla del Administrador (CU59) ►
+import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
+import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
+import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
+import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
+import InalterabilidadScreen from '../screens/Profesional/InalterabilidadScreen';
+
+// ◄ CU59: Pantalla del Administrador ►
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 
 const Stack = createNativeStackNavigator();
@@ -42,37 +50,47 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Ingreso al Sistema' }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear Cuenta' }} />
-            <Stack.Screen 
-              name="OTP" 
-              component={OTPScreen} 
-              options={{ title: 'Verificar Cuenta', headerBackVisible: false, gestureEnabled: false }} 
+            <Stack.Screen
+              name="OTP"
+              component={OTPScreen}
+              options={{ title: 'Verificar Cuenta', headerBackVisible: false, gestureEnabled: false }}
             />
           </>
         ) : userData?.rol === 'Paciente' ? (
           // ── ESCENARIO B: Paciente Autenticado ──
           <>
-            <Stack.Screen 
-              name="DashboardPaciente" 
-              component={DashboardPaciente} 
-              options={{ title: 'Mi Salud', headerBackVisible: false, gestureEnabled: false }} 
+            <Stack.Screen
+              name="DashboardPaciente"
+              component={DashboardPaciente}
+              options={{ title: 'Mi Salud', headerBackVisible: false, gestureEnabled: false }}
+            />
+            <Stack.Screen
+              name="BuscarCita"
+              component={BuscarCitaScreen}
+              options={{ title: 'Buscar y Agendar Cita' }}
             />
           </>
         ) : userData?.rol === 'Profesional' ? (
           // ── ESCENARIO C: Profesional Autenticado ──
           <>
-            <Stack.Screen 
-              name="DashboardProfesional" 
-              component={DashboardProfesional} 
-              options={{ title: 'Mi Agenda', headerBackVisible: false, gestureEnabled: false }} 
+            <Stack.Screen
+              name="DashboardProfesional"
+              component={DashboardProfesional}
+              options={{ title: 'Mi Agenda', headerBackVisible: false, gestureEnabled: false }}
             />
+            <Stack.Screen name="PacientesAsignados" component={PacientesAsignadosScreen} options={{ title: 'Pacientes Asignados' }} />
+            <Stack.Screen name="HistorialPaciente" component={HistorialPacienteScreen} options={{ title: 'Historial Paciente' }} />
+            <Stack.Screen name="Episodio" component={EpisodioScreen} options={{ title: 'Episodios Clínicos' }} />
+            <Stack.Screen name="Anamnesis" component={AnamnesisScreen} options={{ title: 'Evaluación Inicial' }} />
+            <Stack.Screen name="Inalterabilidad" component={InalterabilidadScreen} options={{ title: 'Inalterabilidad Clínica' }} />
           </>
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──
           <>
-            <Stack.Screen 
-              name="ParametrosScreen" 
-              component={ParametrosScreen} 
-              options={{ title: 'Configuración Maestra', headerBackVisible: false, gestureEnabled: false }} 
+            <Stack.Screen
+              name="ParametrosScreen"
+              component={ParametrosScreen}
+              options={{ title: 'Configuración Maestra', headerBackVisible: false, gestureEnabled: false }}
             />
           </>
         ) : (

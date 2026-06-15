@@ -5,6 +5,7 @@ const authRoutes = require('./routes/authRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const clinicaRoutes = require('./routes/clinicaRoutes');
 const citaRoutes = require('./routes/citaRoutes');
+const inalterabilidadRoutes = require('./routes/InalterabilidadRoutes');
 const parametroRoutes = require('./routes/parametroRoutes');
 
 const app = express();
@@ -13,13 +14,17 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'OK', message: 'Servidor operativo' });
+    res.status(200).json({
+        status: 'OK',
+        message: 'Servidor operativo'
+    });
 });
 
-app.use('/api/citas', citaRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profesionales', profesionalRoutes);
 app.use('/api/clinica', clinicaRoutes);
+app.use('/api/citas', citaRoutes);
+app.use('/api/inalterabilidad', inalterabilidadRoutes);
 app.use('/api/parametros', parametroRoutes);
 
 module.exports = app;

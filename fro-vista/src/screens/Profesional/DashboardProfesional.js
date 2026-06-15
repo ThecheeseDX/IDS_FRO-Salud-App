@@ -14,9 +14,15 @@ export default function DashboardProfesional({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Dr(a). {userData?.apellido_paterno}</Text>
-      <Text style={styles.subtitle}>Panel Interno de Gestión</Text>
+      <Text style={styles.title}>
+        Dr(a). {userData?.apellido_paterno}
+      </Text>
 
+      <Text style={styles.subtitle}>
+        Panel Interno de Gestión
+      </Text>
+
+      {/* CU13 */}
       <TouchableOpacity
         style={styles.card}
         onPress={() => navigation.navigate('Episodio')}
@@ -28,15 +34,37 @@ export default function DashboardProfesional({ navigation }) {
         </Text>
       </TouchableOpacity>
 
+      {/* CU11 */}
       <TouchableOpacity
         style={styles.primaryBtn}
         onPress={() => navigation.navigate('PacientesAsignados')}
       >
-        <Text style={styles.primaryText}>Ver pacientes asignados</Text>
+        <Text style={styles.primaryText}>
+          Ver pacientes asignados
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      {/* CU30 */}
+      <TouchableOpacity
+        style={styles.securityBtn}
+        onPress={() => navigation.navigate('Inalterabilidad')}
+      >
+        <Text style={styles.securityIcon}>🔒</Text>
+        <Text style={styles.securityTitle}>
+          Asegurar Inalterabilidad
+        </Text>
+        <Text style={styles.securityText}>
+          Finalizar registros clínicos y protegerlos contra modificaciones.
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={handleLogout}
+      >
+        <Text style={styles.logoutText}>
+          Cerrar Sesión
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -49,17 +77,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8f5e9',
     justifyContent: 'center',
   },
+
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2e7d32',
     marginBottom: 5,
   },
+
   subtitle: {
     fontSize: 16,
     color: '#555',
     marginBottom: 30,
   },
+
   card: {
     backgroundColor: '#fff',
     padding: 20,
@@ -69,21 +100,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: 'center',
   },
+
   cardIcon: {
     fontSize: 36,
     marginBottom: 8,
   },
+
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2e7d32',
     marginBottom: 4,
   },
+
   cardText: {
     color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
   },
+
   primaryBtn: {
     backgroundColor: '#2563eb',
     padding: 15,
@@ -91,11 +126,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+
   primaryText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },
+
+  securityBtn: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ff9800',
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+
+  securityIcon: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
+
+  securityTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ef6c00',
+    marginBottom: 4,
+  },
+
+  securityText: {
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
   logoutBtn: {
     backgroundColor: '#d32f2f',
     padding: 15,
@@ -103,6 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+
   logoutText: {
     color: '#fff',
     fontWeight: 'bold',
