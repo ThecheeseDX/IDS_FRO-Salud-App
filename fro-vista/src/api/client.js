@@ -114,4 +114,26 @@ export const guardarAnamnesis = async (payload) => {
   return response.data;
 };
 
+// =========================================================================
+// CU40 - INTERVENCION Y RESPUESTA FISIOLOGICA
+// =========================================================================
+
+export const getSesionesIntervencion = async () => {
+  const response = await apiClient.get('/clinica/intervenciones/sesiones');
+  return response.data;
+};
+
+export const getIntervencion = async (episodioId) => {
+  const response = await apiClient.get(`/clinica/intervenciones/${episodioId}`);
+  return response.data;
+};
+
+export const guardarIntervencion = async (episodioId, payload) => {
+  const response = await apiClient.put(
+    `/clinica/intervenciones/${episodioId}`,
+    payload
+  );
+  return response.data;
+};
+
 export default apiClient;
