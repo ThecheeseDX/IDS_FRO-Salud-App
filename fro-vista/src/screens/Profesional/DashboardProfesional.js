@@ -48,11 +48,13 @@ export default function DashboardProfesional({ navigation }) {
 
       {/* CU11 */}
       <TouchableOpacity
-        style={styles.primaryBtn}
+        style={styles.patientCard}
         onPress={() => navigation.navigate('PacientesAsignados')}
       >
-        <Text style={styles.primaryText}>
-          Ver pacientes asignados
+        <Text style={styles.cardIcon}>👥</Text>
+        <Text style={styles.patientTitle}>Pacientes Asignados</Text>
+        <Text style={styles.cardText}>
+          Consultar la lista de pacientes asignados al profesional.
         </Text>
       </TouchableOpacity>
 
@@ -135,18 +137,21 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  primaryBtn: {
-    backgroundColor: '#2563eb',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
+  patientCard: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#90caf9',
     marginBottom: 16,
+    alignItems: 'center',
   },
 
-  primaryText: {
-    color: '#fff',
+  patientTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    fontSize: 16,
+    color: '#2563eb',
+    marginBottom: 4,
   },
 
   securityBtn: {
