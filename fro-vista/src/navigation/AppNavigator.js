@@ -21,6 +21,8 @@ import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
 import InalterabilidadScreen from '../screens/Profesional/InalterabilidadScreen';
 // ◄ CU32: Pantalla de Evolución Clínica ►
 import EvolucionClinicaScreen from '../screens/Profesional/EvolucionClinicaScreen';
+import IntervencionScreen from '../screens/Profesional/IntervencionScreen';
+import MarcasTemporalesScreen from '../screens/Profesional/MarcasTemporalesScreen';
 
 // ◄ CU59: Pantalla del Administrador ►
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
@@ -86,6 +88,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Anamnesis" component={AnamnesisScreen} options={{ title: 'Evaluación Inicial' }} />
             <Stack.Screen name="Inalterabilidad" component={InalterabilidadScreen} options={{ title: 'Inalterabilidad Clínica' }} />
             <Stack.Screen name="EvolucionClinica" component={EvolucionClinicaScreen} options={{ title: 'Evolución Clínica' }} />
+            <Stack.Screen name="Intervencion" component={IntervencionScreen} options={{ title: 'Intervención Clínica' }} />
+            <Stack.Screen name="MarcasTemporales" component={MarcasTemporalesScreen} options={{ title: 'Marcas Temporales' }} />
           </>
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──

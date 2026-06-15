@@ -4,6 +4,20 @@ const router  = express.Router();
 const { verifyToken }    = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const citaController     = require('../controllers/CitaController');
+const marcasTemporalesController = require('../controllers/marcasTemporalesController');
+
+// CU38 - Marcas temporales de la prestacion
+router.get('/marcas-temporales',
+  verifyToken, authorizeRoles(['Profesional']),
+  marcasTemporalesController.listarCitasProfesional);
+
+router.post('/marcas-temporales/:cita_id/iniciar',
+  verifyToken, authorizeRoles(['Profesional']),
+  marcasTemporalesController.iniciarAtencion);
+
+router.post('/marcas-temporales/:cita_id/finalizar',
+  verifyToken, authorizeRoles(['Profesional']),
+  marcasTemporalesController.finalizarAtencion);
 
 // ── CU14 — Buscar disponibilidad ─────────────────────────────────────────────
 router.get('/especialidades',

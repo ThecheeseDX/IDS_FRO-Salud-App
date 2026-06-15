@@ -46,6 +46,47 @@ export default function DashboardProfesional({ navigation }) {
         </Text>
       </TouchableOpacity>
 
+      {/* CU38 */}
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('MarcasTemporales')}
+      >
+        <View style={styles.timeIcon}>
+          <View style={styles.clockFace}>
+            <View style={styles.clockHour} />
+            <View style={styles.clockMinute} />
+            <View style={styles.clockCenter} />
+          </View>
+        </View>
+        <Text style={styles.cardTitle}>Marcas Temporales</Text>
+        <Text style={styles.cardText}>
+          Registrar inicio, termino y duracion de cada atencion.
+        </Text>
+      </TouchableOpacity>
+
+      {/* CU40 */}
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('Intervencion')}
+      >
+        <View style={styles.interventionIcon}>
+          <View style={styles.interventionClip} />
+          <View style={styles.interventionSheet}>
+            <View style={styles.interventionLineLong} />
+            <View style={styles.interventionLineShort} />
+            <View style={styles.pulseRow}>
+              <View style={styles.pulseLine} />
+              <View style={styles.pulsePeak} />
+              <View style={styles.pulseLine} />
+            </View>
+          </View>
+        </View>
+        <Text style={styles.cardTitle}>Intervención Clínica</Text>
+        <Text style={styles.cardText}>
+          Documentar técnicas aplicadas y respuesta fisiológica.
+        </Text>
+      </TouchableOpacity>
+
       {/* CU11 */}
       <TouchableOpacity
         style={styles.patientCard}
@@ -122,6 +163,123 @@ const styles = StyleSheet.create({
   cardIcon: {
     fontSize: 36,
     marginBottom: 8,
+  },
+
+  timeIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#e8f5e9',
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+
+  clockFace: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 3,
+    borderColor: '#2e7d32',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  clockHour: {
+    position: 'absolute',
+    width: 3,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: '#2e7d32',
+    top: 7,
+  },
+
+  clockMinute: {
+    position: 'absolute',
+    width: 10,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#2e7d32',
+    left: 15,
+    top: 15,
+  },
+
+  clockCenter: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#ef5350',
+  },
+
+  interventionIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#e8f5e9',
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+
+  interventionClip: {
+    position: 'absolute',
+    top: 7,
+    width: 18,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#2e7d32',
+    zIndex: 2,
+  },
+
+  interventionSheet: {
+    width: 32,
+    height: 38,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#2e7d32',
+    paddingHorizontal: 5,
+    paddingTop: 9,
+  },
+
+  interventionLineLong: {
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#81c784',
+    marginBottom: 4,
+  },
+
+  interventionLineShort: {
+    width: 13,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#81c784',
+    marginBottom: 6,
+  },
+
+  pulseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  pulseLine: {
+    width: 6,
+    height: 2,
+    backgroundColor: '#ef5350',
+  },
+
+  pulsePeak: {
+    width: 8,
+    height: 8,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: '#ef5350',
+    transform: [{ rotate: '135deg' }],
   },
 
   cardTitle: {

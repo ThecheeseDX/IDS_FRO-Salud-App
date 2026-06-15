@@ -9,6 +9,7 @@ const fichaClinicaController = require('../controllers/fichaClinicaController');
 // ◄ CU32: Objetivos terapéuticos y avance ►
 const objetivoController = require('../controllers/objetivoController');
 const evolucionController = require('../controllers/evolucionController');
+const intervencionController = require('../controllers/intervencionController');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CU29 — Anamnesis / Ficha Clínica
@@ -51,6 +52,20 @@ router.post('/episodio/:episodio_id/objetivos',
 router.put('/episodio/:episodio_id/avance',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']),
     evolucionController.actualizarAvance
+);
+
+// CU40 - Documentar intervención y respuesta fisiológica
+router.get('/intervenciones/sesiones',
+    verifyToken, authorizeRoles(['Profesional']),
+    intervencionController.listarSesiones
+);
+router.get('/intervenciones/:episodio_id',
+    verifyToken, authorizeRoles(['Profesional']),
+    intervencionController.obtenerIntervencion
+);
+router.put('/intervenciones/:episodio_id',
+    verifyToken, authorizeRoles(['Profesional']),
+    intervencionController.guardarIntervencion
 );
 
 module.exports = router;
