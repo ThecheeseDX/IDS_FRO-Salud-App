@@ -1,6 +1,6 @@
-// Ruta: fro-vista/src/context/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { setUnauthorizedHandler } from '../api/client'; // ← NUEVA LÍNEA
 
 export const AuthContext = createContext();
 
@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Al abrir la app, revisamos si ya había una sesión guardada
   const checkToken = async () => {
     try {
       let token = await SecureStore.getItemAsync('userToken');
@@ -29,7 +28,6 @@ export const AuthProvider = ({ children }) => {
     checkToken();
   }, []);
 
-  // Función para guardar la sesión cuando el Login es exitoso
   const loginSession = async (token, usuario) => {
     setUserToken(token);
     setUserData(usuario);
@@ -37,13 +35,18 @@ export const AuthProvider = ({ children }) => {
     await SecureStore.setItemAsync('userData', JSON.stringify(usuario));
   };
 
-  // Función para cerrar sesión
   const logoutSession = async () => {
     setUserToken(null);
     setUserData(null);
     await SecureStore.deleteItemAsync('userToken');
     await SecureStore.deleteItemAsync('userData');
   };
+
+  // Registra logoutSession como handler del interceptor de Axios.
+  // Si el servidor devuelve 401, se limpia estado + SecureStore juntos.
+  useEffect(() => {
+    setUnauthorizedHandler(logoutSession); // ← NUEVA LÍNEA
+  }, []);
 
   return (
     <AuthContext.Provider value={{ loginSession, logoutSession, userToken, userData, isLoading }}>

@@ -1,0 +1,207 @@
+// Ruta: fro-vista/src/screens/Admin/ParametrosScreen.js
+import React, { useState, useEffect, useContext } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  ScrollView, 
+  Alert 
+} from 'react-native';
+
+import apiClient from '../../api/client'; 
+import ErrorRetry from '../../components/ErrorRetry'; 
+import { AuthContext } from '../../context/AuthContext'; // ◄ IMPORTAMOS EL CONTEXTO
+
+export default function ParametrosScreen() {
+  const { logoutSession } = useContext(AuthContext); // ◄ EXTRAEMOS LA FUNCIÓN DE SALIDA
+
+  const [parametros, setParametros] = useState([]);
+  const [erroresLocales, setErroresLocales] = useState({}); 
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorRed, setErrorRed] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorExcepcion, setErrorExcepcion] = useState(null); 
+
+  const cargarParametros = async () => {
+    setIsLoading(true);
+    setErrorRed(false);
+    setErrorExcepcion(null); 
+    try {
+      const response = await apiClient.get('/parametros');
+      setParametros(response.data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error al cargar parámetros:", error);
+      setErrorRed(true);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarParametros();
+  }, []);
+
+  const handleValorChange = (index, textoNuevo) => {
+    const nuevosParametros = [...parametros];
+    nuevosParametros[index].valor = textoNuevo;
+    setParametros(nuevosParametros);
+
+    if (!/^\d+$/.test(textoNuevo) && textoNuevo !== '') {
+      setErroresLocales({ ...erroresLocales, [index]: '⚠️ Formato inválido. Ingrese solo números enteros.' });
+    } else {
+      const nuevosErrores = { ...erroresLocales };
+      delete nuevosErrores[index];
+      setErroresLocales(nuevosErrores);
+    }
+  };
+
+  const guardarCambio = async (parametro) => {
+    setIsSaving(true);
+    setErrorExcepcion(null); 
+
+    try {
+      await apiClient.put('/parametros/update', {
+        clave: parametro.clave,
+        valor: parametro.valor,
+        ultima_modificacion: parametro.ultima_modificacion
+      });
+      
+      setIsSaving(false);
+      Alert.alert("✅ Cambio Aplicado", "La modificación arancelaria ya está activa en la red.");
+      cargarParametros();
+
+    } catch (error) {
+      setIsSaving(false);
+      
+      if (error.response) {
+        if (error.response.status === 409) {
+          setErrorExcepcion({
+            mensaje: "⚠️ Conflicto de Concurrencia\n\nOtro administrador ha modificado este arancel hace unos instantes. Por seguridad, la transacción fue bloqueada para no sobreescribir datos recientes.",
+            accionReintento: cargarParametros 
+          });
+        } else if (error.response.status === 500) {
+          setErrorExcepcion({
+            mensaje: "🚨 Fallo de Transacción\n\nEl sistema falló al intentar sincronizar con la réplica de base de datos. Se ha realizado un rollback automático por seguridad.",
+            accionReintento: () => guardarCambio(parametro) 
+          });
+        } else {
+          Alert.alert("Error", error.response.data.error || "Error desconocido al procesar.");
+        }
+      } else {
+        setErrorExcepcion({
+          mensaje: "🔌 Error de Red\n\nSe perdió la conexión con el servidor al intentar emitir la actualización.",
+          accionReintento: () => guardarCambio(parametro)
+        });
+      }
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Parámetros Globales</Text>
+        <Text style={styles.subtitle}>Panel de Control Administrativo</Text>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#0052cc" />
+          <Text style={styles.loadingText}>Sincronizando variables maestras...</Text>
+        </View>
+      ) : errorRed ? (
+        <ErrorRetry 
+          mensaje="No se pudo conectar con el motor de base de datos para leer los parámetros." 
+          onRetry={cargarParametros} 
+        />
+      ) : errorExcepcion ? (
+        <ErrorRetry 
+          mensaje={errorExcepcion.mensaje} 
+          onRetry={errorExcepcion.accionReintento} 
+        />
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.infoText}>
+            Modifique los valores arancelarios o matrices de negocio con precaución. Los cambios impactan inmediatamente en la red.
+          </Text>
+
+          {parametros.map((param, index) => {
+            const tieneError = erroresLocales[index] !== undefined;
+            const estaVacio = String(param.valor).trim() === '';
+
+            return (
+              <View key={param.parametro_id} style={styles.card}>
+                <Text style={styles.cardTitle}>{param.clave.replace(/_/g, ' ').toUpperCase()}</Text>
+                <Text style={styles.cardDesc}>{param.descripcion}</Text>
+                
+                <Text style={styles.label}>Valor Asignado:</Text>
+                
+                <TextInput
+                  style={[styles.input, tieneError ? styles.inputError : null]}
+                  value={String(param.valor)}
+                  onChangeText={(text) => handleValorChange(index, text)}
+                  keyboardType="numeric"
+                  editable={!isSaving}
+                />
+                
+                {tieneError && <Text style={styles.errorText}>{erroresLocales[index]}</Text>}
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.saveButton, 
+                    (isSaving || tieneError || estaVacio) && styles.saveButtonDisabled
+                  ]} 
+                  onPress={() => guardarCambio(param)}
+                  disabled={isSaving || tieneError || estaVacio}
+                >
+                  <Text style={[
+                    styles.saveButtonText, 
+                    (isSaving || tieneError || estaVacio) && styles.saveButtonTextDisabled
+                  ]}>
+                    {isSaving ? "PROCESANDO..." : "APLICAR CAMBIO"}
+                  </Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.timestampText}>
+                  Última versión: {new Date(param.ultima_modificacion).toLocaleString()}
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* ◄ BOTÓN DE CIERRE DE SESIÓN FIJO AL FONDO ► */}
+      <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
+        <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f4f6f8' },
+  header: { backgroundColor: '#0052cc', padding: 20, paddingTop: 40, borderBottomLeftRadius: 15, borderBottomRightRadius: 15, elevation: 4 },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
+  subtitle: { fontSize: 14, color: '#e0e0e0', marginTop: 5 },
+  centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 15, color: '#666', fontSize: 14 },
+  scrollContent: { padding: 15, paddingBottom: 40 },
+  infoText: { backgroundColor: '#e3f2fd', color: '#0277bd', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 20, borderWidth: 1, borderColor: '#bbdefb' },
+  card: { backgroundColor: '#ffffff', borderRadius: 10, padding: 18, marginBottom: 15, borderWidth: 1, borderColor: '#e0e0e0', elevation: 2 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
+  cardDesc: { fontSize: 13, color: '#777', marginBottom: 15, fontStyle: 'italic' },
+  label: { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 8 },
+  input: { backgroundColor: '#fafafa', color: '#000', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, marginBottom: 15, borderWidth: 1, borderColor: '#ccc', fontWeight: 'bold' },
+  inputError: { borderColor: '#d32f2f', backgroundColor: '#fff0f0', marginBottom: 5 },
+  errorText: { color: '#d32f2f', fontSize: 11, marginBottom: 15, fontWeight: '500' },
+  saveButton: { backgroundColor: '#0052cc', paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
+  saveButtonDisabled: { backgroundColor: '#e0e0e0' },
+  saveButtonText: { color: '#ffffff', fontWeight: 'bold', fontSize: 13, letterSpacing: 1 },
+  saveButtonTextDisabled: { color: '#999999' },
+  timestampText: { fontSize: 10, color: '#999', marginTop: 10, textAlign: 'center' },
+  logoutButton: { backgroundColor: '#d32f2f', margin: 20, padding: 15, borderRadius: 8, alignItems: 'center', elevation: 3 },
+  logoutButtonText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 }
+});

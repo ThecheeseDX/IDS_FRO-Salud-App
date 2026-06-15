@@ -58,16 +58,6 @@ export default function LoginScreen({ navigation }) {
       await loginSession(token, usuario);
       console.log("✅ Sesión guardada globalmente para el rol:", usuario.rol);
       
-      // Mantenemos tus redirecciones por ahora (luego el AppNavigator lo hará solo)
-      if (usuario.rol === 'Paciente') {
-        navigation.replace('DashboardPaciente');
-      } else if (usuario.rol === 'Profesional') {
-        navigation.replace('DashboardProfesional');
-      } else if (usuario.rol === 'Administrador') {
-        navigation.replace('DashboardAdmin');
-      } else {
-        Alert.alert("Acceso Autorizado", "Bienvenido, pero tu rol no tiene una vista asignada.");
-      }
     } catch (error) {
       // 3. BLOQUE DE CAPTURA DE ERRORES
       setIsLoading(false);

@@ -5,6 +5,7 @@ const authRoutes = require('./routes/authRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const clinicaRoutes = require('./routes/clinicaRoutes');
 const citaRoutes = require('./routes/citaRoutes');
+const parametroRoutes = require('./routes/parametroRoutes');
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.use('/api/citas', citaRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profesionales', profesionalRoutes);
 app.use('/api/clinica', clinicaRoutes);
+app.use('/api/parametros', parametroRoutes);
 
 module.exports = app;
