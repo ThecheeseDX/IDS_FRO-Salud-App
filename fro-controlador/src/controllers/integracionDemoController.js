@@ -1,17 +1,16 @@
 const { ejecutarTransaccion } = require('../services/external/providerAdapter');
 
-// ⚠️ ─────────────────────────────────────────────────────────────────────────
-// CU68/CU70 - ENDPOINT DE REFERENCIA / DEMO  ·  ⚠️ DEUDA TÉCNICA (SE DEBE REEMPLAZAR) ⚠️
+//  ─────────────────────────────────────────────────────────────────────────
+// CU68/CU70 - ENDPOINT DE REFERENCIA
 //
 // Este controlador NO es una funcionalidad de negocio. Existe ÚNICAMENTE para
 // DEMOSTRAR y dejar EVIDENCIA de que la capa adaptadora funciona de punta a punta
 // y mapea las excepciones estandarizadas a códigos HTTP coherentes.
 //
 // SE DEBE: reemplazar por la integración real cuando exista un proveedor concreto.
-// NO DEJAR EN PRODUCCIÓN: acepta `urlOverride`, lo que habilita SSRF si se expone.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Mapea el err.code estandarizado del adaptador → código HTTP.
+// Map del err.code estandarizado del adaptador → código HTTP.
 function estadoHttpDeError(code) {
   switch (code) {
     case 'FALLO_SINTAXIS':         return 422; // CU68 Exc 1: payload de salida inválido

@@ -1,4 +1,3 @@
-// Ruta: fro-vista/src/screens/Profesional/EpisodioScreen.js
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
@@ -12,15 +11,15 @@ import apiClient from '../../api/client';
 // Cada petición dispara auditarAccesoClinico en el backend
 // ─────────────────────────────────────────────────────────────────────────────
 export default function EpisodioScreen() {
-  // ── Estado para BUSCAR episodio ──────────────────────────────────────────
+  // ─ Estado para BUSCAR episodio ──────────────────────────────────────────
   const [episodioId, setEpisodioId] = useState('');
   const [episodio, setEpisodio] = useState(null);
   const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
 
-  // NUEVO: Estado para el botón de iniciar atención
+  // ─ Estado para el botón de iniciar atención
   const [cargandoEvolucion, setCargandoEvolucion] = useState(false);
 
-  // ── Estado para CREAR episodio ───────────────────────────────────────────
+  // ─ Estado para CREAR episodio ───────────────────────────────────────────
   const [nuevoEpisodio, setNuevoEpisodio] = useState({
     motivo_consulta: '',
     paciente_id: '',
@@ -28,8 +27,8 @@ export default function EpisodioScreen() {
   });
   const [cargandoCreacion, setCargandoCreacion] = useState(false);
 
-  // ── LECTURA: GET /api/clinica/episodio/:id ────────────────────────────────
-  // Dispara: LECTURA_EPISODIO_CLINICO en Bitacora_Auditoria
+  // ─ LECTURA: GET /api/clinica/episodio/:id ────────────────────────────────
+  // ─ LECTURA_EPISODIO_CLINICO en Bitacora_Auditoria
   const buscarEpisodio = async () => {
     if (!episodioId) {
       Alert.alert('Error', 'Ingresa el ID del episodio.');
@@ -56,7 +55,7 @@ export default function EpisodioScreen() {
     }
   };
 
-  // ── INICIAR ATENCIÓN (CREAR EVOLUCIÓN EN BLANCO) ──────────────────────────
+  // ─ INICIAR ATENCIÓN (CREAR EVOLUCIÓN EN BLANCO) ──────────────────────────
   const iniciarAtencion = async () => {
     setCargandoEvolucion(true);
     try {
@@ -73,7 +72,7 @@ export default function EpisodioScreen() {
     }
   };
 
-  // ── CREACIÓN: POST /api/clinica/episodio ──────────────────────────────────
+  // ─ CREACIÓN: POST /api/clinica/episodio ──────────────────────────────────
   // Dispara: CREACION_EPISODIO_CLINICO en Bitacora_Auditoria
   const crearEpisodio = async () => {
     const { motivo_consulta, paciente_id, profesional_id } = nuevoEpisodio;

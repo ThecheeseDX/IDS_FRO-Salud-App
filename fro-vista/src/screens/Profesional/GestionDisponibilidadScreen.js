@@ -52,7 +52,7 @@ export default function GestionDisponibilidadScreen() {
         // Identificar el ID correcto dinámicamente
         const idAEnviar = userData?.role === 'Admin' ? profId : (userData?.usuario_id || profId);
         
-        console.log("✈️ Enviando bloqueo para el ID:", idAEnviar); // ◄ Para monitorear en tu consola
+        console.log("Enviando bloqueo para el ID:", idAEnviar); // ◄ Para monitorear en tu consola
 
         try {
             await apiClient.post('/clinica/disponibilidad/restringir', {

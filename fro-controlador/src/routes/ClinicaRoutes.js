@@ -6,7 +6,7 @@ const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const { auditarAccesoClinico } = require('../middlewares/auditarAcceso');
 const episodioController = require('../controllers/episodioController');
 const fichaClinicaController = require('../controllers/fichaClinicaController');
-// ◄ CU32: Objetivos terapéuticos y avance ►
+//  CU32: Objetivos terapéuticos y avance 
 const objetivoController = require('../controllers/objetivoController');
 const evolucionController = require('../controllers/evolucionController');
 const intervencionController = require('../controllers/intervencionController');
@@ -50,8 +50,8 @@ router.post('/episodio/:episodio_id/objetivos',
     objetivoController.crearObjetivo
 );
 
-// El avance: el controlador YA audita internamente (valor anterior/nuevo),
-// por eso NO se le añade auditarAccesoClinico (evita auditoría duplicada).
+// El avance: el controlador ya audita internamente (valor anterior/nuevo),
+// por eso no se le añade auditarAccesoClinico (evita auditoría duplicada).
 router.put('/episodio/:episodio_id/avance',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']),
     evolucionController.actualizarAvance

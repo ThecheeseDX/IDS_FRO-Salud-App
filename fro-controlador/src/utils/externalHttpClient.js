@@ -74,7 +74,7 @@ async function enviarPeticion({
         const textoCrudo = await res.text();
         const data = parsearCuerpo(textoCrudo);
 
-        // ── Excepción 1: HTTP 400 = formato incompatible → abortar + auditar (sin reintentar) ──
+        // ─ Excepción 1: HTTP 400 = formato incompatible → abortar + auditar (sin reintentar) 
         if (res.status === 400) {
           await audit.registrarRechazoFormato(ctx, { codigoRespuesta: res.status, payloadRecibido: textoCrudo });
           const err = new Error(`El proveedor ${proveedor} rechazó la petición por formato incompatible (HTTP 400).`);
@@ -83,7 +83,7 @@ async function enviarPeticion({
           throw err;
         }
 
-        // ── 5xx → reintentable; al agotar el máximo = evento crítico (Exc 3) ──
+        // ─ 5xx → reintentable; al agotar el máximo = evento crítico (Exc 3) 
         if (res.status >= 500) {
           if (intentos >= maxIntentos) {
             await audit.registrarEventoCritico(ctx, { error: new Error(`HTTP ${res.status}`), codigoRespuesta: res.status, intentos });
@@ -96,10 +96,10 @@ async function enviarPeticion({
           continue;
         }
 
-        // ── Éxito (2xx y otros 4xx ≠ 400) → auditar éxito ──
+        // ─ Éxito (2xx y otros 4xx ≠ 400) → auditar éxito 
         const { estado, latencia } = await audit.registrarExito(ctx, { codigoRespuesta: res.status, payloadRecibido: textoCrudo });
 
-        // ── Paso 5: consolidación del ciclo (resetear el contador). ──
+        // ─ Paso 5: consolidación del ciclo (resetear el contador). 
         let consolidacion = 'ok';
         try {
           retryState.reiniciar(idPeticion);
@@ -117,7 +117,7 @@ async function enviarPeticion({
 
         if (error.code === 'LIMITE_REINTENTOS' || error.code === 'RECHAZO_FORMATO') throw error;
 
-        // ── Timeout → LATENCIA_CRITICA, sin reintentar (decisión #8) ──
+        // ─ Timeout → LATENCIA_CRITICA, sin reintentar (decisión #8) 
         if (error.name === 'AbortError') {
           await audit.registrarLatenciaCritica(ctx, {});
           const err = new Error(`Tiempo de espera agotado (${timeoutMs} ms) con el proveedor ${proveedor}.`);
@@ -125,7 +125,7 @@ async function enviarPeticion({
           throw err;
         }
 
-        // ── Error de red → reintentable; al agotar el máximo = evento crítico (Exc 3) ──
+        // ─ Error de red → reintentable; al agotar el máximo = evento crítico (Exc 3) 
         if (intentos >= maxIntentos) {
           await audit.registrarEventoCritico(ctx, { error, intentos });
           const err = new Error(`No se pudo conectar con el proveedor ${proveedor} tras ${intentos} intentos.`);

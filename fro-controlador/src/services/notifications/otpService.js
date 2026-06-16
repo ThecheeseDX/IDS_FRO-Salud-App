@@ -7,7 +7,7 @@ function generarCodigo() {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-// ── Crear OTP y guardarlo en columnas de Usuario ───────────────────────────
+// ─ Crear OTP y guardarlo en columnas de Usuario 
 async function crearOTP(usuarioId) {
   const codigo = generarCodigo();
   const expiracion = new Date(Date.now() + OTP_EXPIRACION_MINUTOS * 60 * 1000);
@@ -23,7 +23,7 @@ async function crearOTP(usuarioId) {
   return { codigo, expiracion };
 }
 
-// ── Validar OTP ingresado ──────────────────────────────────────────────────
+// ─ Validar OTP ingresado 
 async function validarOTP(usuarioId, codigoIngresado) {
   const [rows] = await db.query(
     `SELECT otp_codigo, otp_expiracion, cuenta_activo
@@ -67,7 +67,7 @@ async function validarOTP(usuarioId, codigoIngresado) {
   return { valido: true };
 }
 
-// ── Enviar OTP por Email ───────────────────────────────────────────────────
+// ─ Enviar OTP por Email 
 async function enviarPorEmail(destinatario, codigo) {
   const nodemailer = require("nodemailer");
 

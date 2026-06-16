@@ -1,4 +1,3 @@
-// Ruta: fro-vista/src/screens/Paciente/AgendamientoScreen.js
 import React, { useState, useEffect, useContext } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -19,7 +18,7 @@ function proximaFecha(diaSemana) {
 }
 
 // ─────────────────────────────────────────────
-//  CU20 — Máquina de estados (espejo del backend)
+//  CU20 — Máquina de estados
 // ─────────────────────────────────────────────
 const COLOR_ESTADO = {
   AGENDADA:     '#F59E0B',
@@ -121,7 +120,7 @@ export default function AgendamientoScreen({ navigation }) {
   const [refreshingCitas,         setRefreshingCitas]         = useState(false);
   const [errorRed,                setErrorRed]                = useState(false);
 
-  // ── CU15: Cargar profesionales ───────────────────────────────────────────
+  // ─ CU15: Cargar profesionales 
   const cargarProfesionales = async () => {
     setCargandoProfesionales(true);
     setErrorRed(false);
@@ -135,7 +134,7 @@ export default function AgendamientoScreen({ navigation }) {
     }
   };
 
-  // ── CU20: Cargar citas del usuario para gestionar estados ────────────────
+  // ─ CU20: Cargar citas del usuario para gestionar estados 
  const cargarCitasActivas = async (esPull = false) => {
   esPull ? setRefreshingCitas(true) : setCargandoCitas(true);
   try {
@@ -152,7 +151,7 @@ export default function AgendamientoScreen({ navigation }) {
       
     setCitasActivas(listaCitas);
   } catch (error) {
-    // 3. ¡Ya no más secretos! Si hay error de token o ruta, saltará aquí:
+    // 3. Si hay error de token o ruta, saltará aquí:
     console.error(`[ERROR] Falló cargarCitasActivas (${rol}):`, error.response?.data || error.message);
     Alert.alert('Error', 'No se pudieron sincronizar tus citas activas.');
   } finally {
@@ -165,7 +164,7 @@ export default function AgendamientoScreen({ navigation }) {
     cargarCitasActivas();
   }, []);
 
-  // ── CU15: Seleccionar profesional ────────────────────────────────────────
+  // ── CU15: Seleccionar profesional 
   const seleccionarProfesional = async (profesional) => {
     setProfesionalSeleccionado(profesional);
     setBloqueSeleccionado(null);
@@ -181,7 +180,7 @@ export default function AgendamientoScreen({ navigation }) {
     }
   };
 
-  // ── CU15: Bloquear horario ───────────────────────────────────────────────
+  // ── CU15: Bloquear horario 
   const confirmarBloqueo = () => {
     if (!bloqueSeleccionado) {
       Alert.alert('Error', 'Selecciona un bloque horario primero.');
@@ -237,7 +236,7 @@ export default function AgendamientoScreen({ navigation }) {
     }
   };
 
-  // ── CU20: Transicionar estado de una cita ────────────────────────────────
+  // ─ CU20: Transicionar estado de una cita 
   const handleTransicion = async (cita_id, evento) => {
     try {
       const { data } = await apiClient.post(`/citas/${cita_id}/transicionar`, { evento });
@@ -246,7 +245,7 @@ export default function AgendamientoScreen({ navigation }) {
       setCitasActivas(prev =>
         prev.map(c => c.cita_id === cita_id ? { ...c, estado: data.nuevo_estado } : c)
       );
-      Alert.alert('✅ Actualizado', `Estado cambiado a: ${data.nuevo_estado}`);
+      Alert.alert('Actualizado', `Estado cambiado a: ${data.nuevo_estado}`);
 
     } catch (error) {
       const code    = error.response?.data?.code;
@@ -254,25 +253,25 @@ export default function AgendamientoScreen({ navigation }) {
 
       // Excepción 1 — estado terminal
       if (code === 'ESTADO_TERMINAL') {
-        Alert.alert('⛔ Acción no permitida', mensaje);
+        Alert.alert('Acción no permitida', mensaje);
         return;
       }
       // Excepción 2 — transición inválida
       if (code === 'TRANSICION_INVALIDA') {
-        Alert.alert('⚠️ Transición no válida', mensaje);
+        Alert.alert('Transición no válida', mensaje);
         return;
       }
       // Excepción 3 — sin conexión: ofrecer re-sincronizar
       if (!error.response) {
         Alert.alert(
-          '🌐 Sin conexión',
+          'Sin conexión',
           'El cambio puede haberse guardado en el servidor. Desliza hacia abajo para sincronizar.',
           [{ text: 'Sincronizar ahora', onPress: () => sincronizarCita(cita_id) }]
         );
         return;
       }
       // Excepción 4 — fallo crítico de persistencia
-      Alert.alert('🚨 Error crítico', 'No se pudo guardar el estado. Contacta a soporte técnico.');
+      Alert.alert('Error crítico', 'No se pudo guardar el estado. Contacta a soporte técnico.');
     }
   };
 
@@ -288,7 +287,7 @@ export default function AgendamientoScreen({ navigation }) {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ─ Render 
   if (cargandoProfesionales) {
     return (
       <View style={styles.centrado}>

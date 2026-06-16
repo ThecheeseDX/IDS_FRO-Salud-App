@@ -2,7 +2,6 @@ const pool = require('../config/database');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MIDDLEWARE CU13: interceptar_y_auditar_acceso()
-// Usa req.user (puesto por authMiddleware.js de tu compañero, no req.usuario)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function detectarAccion(req) {
@@ -31,7 +30,6 @@ function obtenerIP(req) {
 }
 
 async function auditarAccesoClinico(req, res, next) {
-    // req.user lo pone authMiddleware.js de tu compañero (verifyToken)
     const usuario_id = req.user?.usuario_id || null;
     const ip_origen = obtenerIP(req);
     const accion = detectarAccion(req);

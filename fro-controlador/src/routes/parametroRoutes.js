@@ -4,7 +4,7 @@ const router = express.Router();
 // Importe del controlador
 const parametroController = require('../controllers/parametroController');
 
-// Importamos a los "guardias" (Middlewares) que creamos en el CU12
+// Importamos a los "guardias" (Middlewares)
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 

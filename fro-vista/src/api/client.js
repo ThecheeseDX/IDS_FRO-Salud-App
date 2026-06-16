@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const COMPUTADORA_IP = '192.168.100.16';
+const COMPUTADORA_IP = '192.168.1.4';
 
 const apiClient = axios.create({
   baseURL: `http://${COMPUTADORA_IP}:3000/api`,
@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
 );
 
 // =========================================================================
-// 🔐 AUTH
+// AUTH
 // =========================================================================
 
 export const login = async (rut, contrasena) => {
@@ -69,7 +69,7 @@ export const login = async (rut, contrasena) => {
 };
 
 // =========================================================================
-// 👨‍⚕️ CU11 - PACIENTES ASIGNADOS
+// CU11 - PACIENTES ASIGNADOS
 // =========================================================================
 
 export const getPacientesProfesional = async (profesionalId, buscar = '') => {
@@ -84,7 +84,7 @@ export const getPacientesProfesional = async (profesionalId, buscar = '') => {
 };
 
 // =========================================================================
-// 📋 HISTORIAL PACIENTE
+// HISTORIAL PACIENTE
 // =========================================================================
 
 export const getHistorialPaciente = async (pacienteId, usuarioId) => {

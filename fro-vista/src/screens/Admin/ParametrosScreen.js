@@ -16,10 +16,10 @@ import {
 
 import apiClient from '../../api/client'; 
 import ErrorRetry from '../../components/ErrorRetry'; 
-import { AuthContext } from '../../context/AuthContext'; // ◄ IMPORTAMOS EL CONTEXTO
+import { AuthContext } from '../../context/AuthContext'; //  IMPORTAMOS EL CONTEXTO
 
 export default function ParametrosScreen() {
-  const { logoutSession } = useContext(AuthContext); // ◄ EXTRAEMOS LA FUNCIÓN DE SALIDA
+  const { logoutSession } = useContext(AuthContext); //  EXTRAEMOS LA FUNCIÓN DE SALIDA
 
   const [parametros, setParametros] = useState([]);
   const [erroresLocales, setErroresLocales] = useState({}); 
@@ -95,7 +95,7 @@ export default function ParametrosScreen() {
       });
       
       setIsSaving(false);
-      Alert.alert("✅ Cambio Aplicado", "La modificación arancelaria ya está activa en la red.");
+      Alert.alert("Cambio Aplicado", "La modificación arancelaria ya está activa en la red.");
       cargarParametros();
 
     } catch (error) {
@@ -104,12 +104,12 @@ export default function ParametrosScreen() {
       if (error.response) {
         if (error.response.status === 409) {
           setErrorExcepcion({
-            mensaje: "⚠️ Conflicto de Concurrencia\n\nOtro administrador ha modificado este arancel hace unos instantes. Por seguridad, la transacción fue bloqueada para no sobreescribir datos recientes.",
+            mensaje: "Conflicto de Concurrencia\n\nOtro administrador ha modificado este arancel hace unos instantes. Por seguridad, la transacción fue bloqueada para no sobreescribir datos recientes.",
             accionReintento: cargarParametros 
           });
         } else if (error.response.status === 500) {
           setErrorExcepcion({
-            mensaje: "🚨 Fallo de Transacción\n\nEl sistema falló al intentar sincronizar con la réplica de base de datos. Se ha realizado un rollback automático por seguridad.",
+            mensaje: "Fallo de Transacción\n\nEl sistema falló al intentar sincronizar con la réplica de base de datos. Se ha realizado un rollback automático por seguridad.",
             accionReintento: () => guardarCambio(parametro) 
           });
         } else {
@@ -117,7 +117,7 @@ export default function ParametrosScreen() {
         }
       } else {
         setErrorExcepcion({
-          mensaje: "🔌 Error de Red\n\nSe perdió la conexión con el servidor al intentar emitir la actualización.",
+          mensaje: "Error de Red\n\nSe perdió la conexión con el servidor al intentar emitir la actualización.",
           accionReintento: () => guardarCambio(parametro)
         });
       }
@@ -130,7 +130,7 @@ const aplicarRestriccion = async () => {
     try {
         // El backend recibe el ID del profesional
         await apiClient.post('/clinica/disponibilidad/restringir', {
-            profesional_id: profesionalId || 1, // Si no es admin, usa el tuyo por defecto
+            profesional_id: profesionalId || 1, 
             fecha_inicio: inicio, 
             fecha_fin: fin, 
             motivo: 'Inactividad administrativa'
@@ -248,7 +248,7 @@ const aplicarRestriccion = async () => {
         </ScrollView>
       )}
 
-      {/* ◄ BOTÓN DE CIERRE DE SESIÓN FIJO AL FONDO ► */}
+      {/* BOTÓN DE CIERRE DE SESIÓN FIJO AL FONDO */}
       <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>

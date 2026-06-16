@@ -42,7 +42,7 @@ const authorizeRoles = (allowedRoles) => {
             next();
 
         } catch (error) {
-            console.error("❌ Error en el motor de políticas (RBAC):", error);
+            console.error(" Error en el motor de políticas (RBAC):", error);
             // EXCEPCIÓN 3: Falla en el servicio de autorización
             res.status(500).json({ 
                 error: 'El servicio de validación de políticas no está disponible momentáneamente. Intente recargar.' 

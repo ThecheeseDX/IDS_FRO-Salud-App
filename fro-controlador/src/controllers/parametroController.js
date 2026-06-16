@@ -18,20 +18,20 @@ const registrarAuditoria = (mensaje) => {
 };
 
 
-// 📖 BLOQUE DE LECTURA (Flujo Normal)
+//  BLOQUE DE LECTURA (Flujo Normal)
 exports.obtenerParametros = async (req, res) => {
     try {
         // Utilizamos el modelo creado en el Paso 2 para lectura masiva
         const parametros = await ParametroModel.getAll();
         res.status(200).json(parametros);
     } catch (error) {
-        console.error("❌ Error al obtener parámetros:", error);
+        console.error(" Error al obtener parámetros:", error);
         res.status(500).json({ error: 'Fallo al intentar sincronizar con la base de datos de lectura.' });
     }
 };
 
 
-// ✍️ BLOQUE DE MUTACIÓN (Control de Concurrencia y Transacciones)
+//  BLOQUE DE MUTACIÓN (Control de Concurrencia y Transacciones)
 exports.actualizarParametro = async (req, res) => {
     const { clave, valor, ultima_modificacion } = req.body;
     
@@ -78,8 +78,8 @@ exports.actualizarParametro = async (req, res) => {
         // EXCEPCIÓN 4: FALLO DE RÉPLICA / PERSISTENCIA
         await connection.rollback(); 
         
-        console.error("❌ Error grave en la transacción de parámetros:", error);
-        registrarAuditoria(`🚨 FALLO DE PERSISTENCIA | Admin ID: ${administradorId} | Clave: ${clave} | Error: ${error.message}`);
+        console.error(" Error grave en la transacción de parámetros:", error);
+        registrarAuditoria(` FALLO DE PERSISTENCIA | Admin ID: ${administradorId} | Clave: ${clave} | Error: ${error.message}`);
         
         res.status(500).json({ 
             error: 'Ocurrió un error en el servidor al intentar guardar los cambios. La transacción ha sido deshecha.' 

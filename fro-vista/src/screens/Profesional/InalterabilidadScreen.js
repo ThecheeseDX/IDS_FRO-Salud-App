@@ -62,7 +62,7 @@ export default function InalterabilidadScreen() {
       setEvolucionId('');
     } catch (error) {
       // Aquí se atrapan la Excepción 2 (Falta de acreditación 403) 
-      // y la Excepción 4 (Error de sincronización 500) enviadas por el backend
+      // y la Excepción 4 (Error de sincronización 500)
       Alert.alert(
         'Operación Rechazada',
         error.response?.data?.mensaje ||
@@ -91,7 +91,7 @@ export default function InalterabilidadScreen() {
         keyboardType="numeric"
       />
 
-      {/* Se eliminó el TextInput de la "Firma Digital Simple" porque ahora la hace el Backend */}
+      {/* eliminacion el TextInput de la "Firma Digital Simple" porque ahora la hace el Backend */}
 
       <TouchableOpacity
         style={styles.button}

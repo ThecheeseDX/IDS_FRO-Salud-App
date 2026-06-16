@@ -1,4 +1,3 @@
-// Ruta: fro-vista/src/screens/Profesional/AnamnesisScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
@@ -23,10 +22,10 @@ export default function AnamnesisScreen({ route, navigation }) {
   const [quirurgicosTexto, setQuirurgicosTexto] = useState('');
   const [patologicosTexto, setPatologicosTexto] = useState('');
 
-  // ── Excepción 2: campos obligatorios resaltados ──────────────────────────
+  // ─ Excepción 2: campos obligatorios resaltados 
   const [errores, setErrores] = useState({});
 
-  // ── Excepción 1: aviso de truncado ───────────────────────────────────────
+  // ─ Excepción 1: aviso de truncado 
   const [avisoTruncado, setAvisoTruncado] = useState('');
 
   const cargarFicha = async () => {
@@ -50,7 +49,7 @@ export default function AnamnesisScreen({ route, navigation }) {
     cargarFicha();
   }, []);
 
-  // ── Excepción 1: truncado en tiempo real ─────────────────────────────────
+  // ─ Excepción 1: truncado en tiempo real 
   const manejarCambioAnamnesis = (texto) => {
     if (texto.length > LIMITE_ANAMNESIS) {
       setAnamnesis(texto.slice(0, LIMITE_ANAMNESIS));
@@ -65,7 +64,7 @@ export default function AnamnesisScreen({ route, navigation }) {
   const parsearLista = (texto) =>
     texto.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
 
-  // ── Excepción 2: validación de campos obligatorios ───────────────────────
+  // ─ Excepción 2: validación de campos obligatorios 
   const validar = () => {
     const nuevosErrores = {};
     if (!anamnesis.trim()) nuevosErrores.anamnesis = true;
@@ -83,7 +82,7 @@ export default function AnamnesisScreen({ route, navigation }) {
     return true;
   };
 
-  // ── Guardar (CU29 flujo principal) ───────────────────────────────────────
+  // ─ Guardar (CU29 flujo principal) 
   const guardar = async () => {
     if (!validar()) return;
 
@@ -112,7 +111,7 @@ export default function AnamnesisScreen({ route, navigation }) {
     } catch (error) {
       const err = error.response?.data;
 
-      // ── Excepción 3: colisión de escritura ─────────────────────────────
+      // ─ Excepción 3: colisión de escritura 
       if (error.response?.status === 409 && err?.error === 'COLISION_ESCRITURA') {
         Alert.alert(
           'Conflicto de edición',
@@ -122,7 +121,7 @@ export default function AnamnesisScreen({ route, navigation }) {
         return;
       }
 
-      // ── Excepción 2: backend detectó campos faltantes ───────────────────
+      // ─ Excepción 2: backend detectó campos faltantes 
       if (error.response?.status === 400 && err?.error === 'CAMPOS_OBLIGATORIOS_FALTANTES') {
         const nuevosErrores = {};
         if (err.campos.includes('anamnesis')) nuevosErrores.anamnesis = true;
@@ -171,7 +170,7 @@ export default function AnamnesisScreen({ route, navigation }) {
         <Text style={styles.title}>Evaluación Inicial — Anamnesis</Text>
         <Text style={styles.subtitulo}>Paciente: {nombrePaciente}</Text>
 
-        {/* ── Plantilla / especialidad ─────────────────────────────────── */}
+        {/* ─ Plantilla / especialidad */}
         <Text style={styles.label}>Plantilla de especialidad *</Text>
         <TextInput
           style={[styles.input, errores.plantillaEspecialidad && styles.inputError]}
@@ -186,7 +185,7 @@ export default function AnamnesisScreen({ route, navigation }) {
           <Text style={styles.errorTexto}>Este campo es obligatorio.</Text>
         )}
 
-        {/* ── Anamnesis ─────────────────────────────────────────────────── */}
+        {/* ─ Anamnesis */}
         <Text style={styles.label}>Anamnesis *</Text>
         <TextInput
           style={[
@@ -210,7 +209,7 @@ export default function AnamnesisScreen({ route, navigation }) {
           <Text style={styles.avisoTruncado}>{avisoTruncado}</Text>
         )}
 
-        {/* ── Alergias ──────────────────────────────────────────────────── */}
+        {/* ─ Alergias  */}
         <Text style={styles.label}>Antecedentes alérgicos</Text>
         <TextInput
           style={[styles.input, styles.textAreaPeque]}
@@ -220,7 +219,7 @@ export default function AnamnesisScreen({ route, navigation }) {
           onChangeText={setAlergiasTexto}
         />
 
-        {/* ── Antecedentes quirúrgicos ──────────────────────────────────── */}
+        {/* ─ Antecedentes quirúrgicos  */}
         <Text style={styles.label}>Antecedentes quirúrgicos</Text>
         <TextInput
           style={[styles.input, styles.textAreaPeque]}
@@ -230,7 +229,7 @@ export default function AnamnesisScreen({ route, navigation }) {
           onChangeText={setQuirurgicosTexto}
         />
 
-        {/* ── Antecedentes patológicos ─────────────────────────────────── */}
+        {/* ─ Antecedentes patológicos */}
         <Text style={styles.label}>Antecedentes patológicos</Text>
         <TextInput
           style={[styles.input, styles.textAreaPeque]}
@@ -240,7 +239,7 @@ export default function AnamnesisScreen({ route, navigation }) {
           onChangeText={setPatologicosTexto}
         />
 
-        {/* ── Guardar ───────────────────────────────────────────────────── */}
+        {/* ─ Guardar */}
         <TouchableOpacity
           style={[styles.boton, guardando && styles.botonDeshabilitado]}
           onPress={guardar}

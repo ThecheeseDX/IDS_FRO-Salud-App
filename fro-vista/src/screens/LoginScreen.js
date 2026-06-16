@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext'; // ◄ NUEVO
+import { AuthContext } from '../context/AuthContext';
 import { 
   StyleSheet, 
   Text, 
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { validateRut } from '../utils/validators'; 
 
-// ◄ NUEVO: Importamos el cliente centralizado de Axios
+// Importamos el cliente centralizado de Axios
 import apiClient from '../api/client'; 
 
 export default function LoginScreen({ navigation }) {
@@ -23,7 +23,7 @@ export default function LoginScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const { loginSession } = useContext(AuthContext);
 
-  // --- PASO 6: VALIDACIÓN SINTÁCTICA EN TIEMPO REAL (Excepción 1) ---
+  // --- VALIDACIÓN SINTÁCTICA EN TIEMPO REAL (Excepción 1) ---
   useEffect(() => {
     const rutLimpio = rut.replace(/[^0-9kK]/g, '');
     
@@ -40,7 +40,7 @@ export default function LoginScreen({ navigation }) {
 
   const isFormValid = password.length > 0 && validateRut(rut);
 
-  // --- PASO 7: DESPACHO DE PETICIÓN HTTP ---
+  // --- DESPACHO DE PETICIÓN HTTP ---
   const handleLogin = async () => {
     setLoginError('');
     setIsLoading(true);
@@ -54,7 +54,7 @@ export default function LoginScreen({ navigation }) {
       setIsLoading(false);
       const { token, usuario, mensaje } = response.data;
 
-      // ◄ NUEVO: Usamos la función del contexto para guardar el token en el teléfono
+      // Usamos la función del contexto para guardar el token en el teléfono
       await loginSession(token, usuario);
       console.log("✅ Sesión guardada globalmente para el rol:", usuario.rol);
       
@@ -66,17 +66,17 @@ export default function LoginScreen({ navigation }) {
         // El servidor respondió con un error conocido (Excepciones 2 y 4)
         if (error.response.status === 401) {
           // EXCEPCIÓN 4: Credenciales inválidas (Denegación de acceso)
-          setLoginError('❌ Credenciales inválidas. Verifique su RUT y contraseña.');
+          setLoginError('Credenciales inválidas. Verifique su RUT y contraseña.');
         } else if (error.response.status === 500) {
           // EXCEPCIÓN 2: Fallo criptográfico o de base de datos en el servidor
-          setLoginError('⚠️ Servicio no disponible temporalmente. Intente nuevamente en unos segundos.');
+          setLoginError('Servicio no disponible temporalmente. Intente nuevamente en unos segundos.');
         } else {
           // Cualquier otro error del backend no mapeado
           setLoginError(error.response.data.error || 'Ocurrió un error en la autenticación.');
         }
       } else {
         // EXCEPCIÓN 3: El servidor nunca respondió (Caída de red o servidor apagado)
-        setLoginError('🔌 Error de conexión con el servidor. Revise su internet o verifique que el backend esté encendido.');
+        setLoginError('Error de conexión con el servidor. Revise su internet o verifique que el backend esté encendido.');
       }
     }
   };

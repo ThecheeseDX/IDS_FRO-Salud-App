@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { setUnauthorizedHandler } from '../api/client'; // ← NUEVA LÍNEA
+import { setUnauthorizedHandler } from '../api/client';
 
 export const AuthContext = createContext();
 
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   // Registra logoutSession como handler del interceptor de Axios.
   // Si el servidor devuelve 401, se limpia estado + SecureStore juntos.
   useEffect(() => {
-    setUnauthorizedHandler(logoutSession); // ← NUEVA LÍNEA
+    setUnauthorizedHandler(logoutSession);
   }, []);
 
   return (

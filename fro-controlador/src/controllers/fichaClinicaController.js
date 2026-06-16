@@ -78,7 +78,7 @@ exports.guardarAnamnesis = async (req, res) => {
     version // timestamp recibido por el cliente (control de concurrencia)
   } = req.body;
 
-  // ── Excepción 2: validar obligatoriedad e integridad sintáctica ──────────
+  // ─ Excepción 2: validar obligatoriedad e integridad sintáctica 
   const camposFaltantes = [];
   if (!paciente_id) camposFaltantes.push('paciente_id');
   if (!anamnesis || !anamnesis.trim()) camposFaltantes.push('anamnesis');
@@ -92,7 +92,7 @@ exports.guardarAnamnesis = async (req, res) => {
     });
   }
 
-  // ── Excepción 1: truncar campos que exceden el límite ────────────────────
+  // ─ Excepción 1: truncar campos que exceden el límite 
   let anamnesisFinal = anamnesis;
   let truncado = false;
   if (anamnesisFinal.length > LIMITES.anamnesis) {
@@ -128,7 +128,7 @@ exports.guardarAnamnesis = async (req, res) => {
     if (existentes.length > 0) {
       ficha_clinica_id = existentes[0].ficha_clinica_id;
 
-      // ── Excepción 3: colisión de escritura ─────────────────────────────
+      // ─ Excepción 3: colisión de escritura 
       const versionActual = new Date(existentes[0].ultima_actualizacion).getTime();
       if (version && versionActual > version) {
         await connection.rollback();

@@ -19,12 +19,12 @@ import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScr
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
 import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
 import InalterabilidadScreen from '../screens/Profesional/InalterabilidadScreen';
-// ◄ CU32: Pantalla de Evolución Clínica ►
+//  CU32: Pantalla de Evolución Clínica 
 import EvolucionClinicaScreen from '../screens/Profesional/EvolucionClinicaScreen';
 import IntervencionScreen from '../screens/Profesional/IntervencionScreen';
 import MarcasTemporalesScreen from '../screens/Profesional/MarcasTemporalesScreen';
 
-// ◄ CU59: Pantalla del Administrador ►
+//  CU59: Pantalla del Administrador 
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 
 // CU16

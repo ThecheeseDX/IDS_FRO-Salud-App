@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CU68 - Paso 5: Transformadores (Data Mappers).
+// CU68: Transformadores (Data Mappers).
 // Funciones PURAS: traducen entre el estándar interno de FRO Salud y el formato
 // de cada proveedor. Sin efectos secundarios.
 // ─────────────────────────────────────────────────────────────────────────────

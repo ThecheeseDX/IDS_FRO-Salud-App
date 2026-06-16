@@ -2,8 +2,6 @@ const pool = require('../config/database');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTROLADOR: Episodio Clínico
-// procesar_accion_clinica(datos_episodio) — según diagrama de secuencia CU13
-// Solo se ejecuta DESPUÉS de que auditarAccesoClinico registró exitosamente.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // GET /api/clinica/episodio/:episodio_id
@@ -46,7 +44,7 @@ exports.crearEpisodio = async (req, res) => {
     }
 
     try {
-        // ejecutar_actualizacion(query_episodio) → UPDATE Episodio SET..
+        // ejecutar_actualizacion(query_episodio)
         const [result] = await pool.query(
             `INSERT INTO Episodio_Clinico (motivo_consulta, paciente_id, profesional_id)
              VALUES (?, ?, ?)`,

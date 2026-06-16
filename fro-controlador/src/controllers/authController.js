@@ -349,7 +349,7 @@ exports.login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Error crítico en Login:", error);
+        console.error(" Error crítico en Login:", error);
         res.status(500).json({
             error: 'Servicio de autenticación no disponible temporalmente. Intente nuevamente en unos segundos.'
         });

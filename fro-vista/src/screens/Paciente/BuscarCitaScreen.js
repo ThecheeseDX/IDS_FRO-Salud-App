@@ -185,7 +185,7 @@ export default function BuscarCitaScreen({ navigation }) {
     }
   };
 
-  // ── CU14 — Excepción 1: mostrar pantalla de reintento ───────────────────
+  // ─ CU14 — Excepción 1: mostrar pantalla de reintento 
   if (errorEspecialidades) {
     return (
       <ErrorRetry
@@ -199,7 +199,7 @@ export default function BuscarCitaScreen({ navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <Text style={styles.title}>Buscar cita médica</Text>
 
-      {/* ── Filtros CU14 ───────────────────────────────────────────────── */}
+      {/* ─ Filtros CU14  */}
       <Text style={styles.label}>Especialidad</Text>
       <View style={styles.pickerContainer}>
         <Picker
@@ -271,7 +271,7 @@ export default function BuscarCitaScreen({ navigation }) {
         )}
       </TouchableOpacity>
 
-      {/* ── CU14 — Excepción 2: sin resultados ────────────────────────── */}
+      {/* ─ CU14 — Excepción 2: sin resultados  */}
       {!cargandoBusqueda && disponibilidad.length === 0 && fechaSeleccionada !== '' && (
         <View style={styles.sinResultados}>
           <Text style={styles.sinResultadosTexto}>
@@ -283,7 +283,7 @@ export default function BuscarCitaScreen({ navigation }) {
         </View>
       )}
 
-      {/* ── Lista de bloques disponibles ────────────────────────────────── */}
+      {/* ─ Lista de bloques disponibles  */}
       {disponibilidad.length > 0 && (
         <>
           <Text style={styles.subtitulo}>Selecciona un bloque horario</Text>
@@ -319,7 +319,7 @@ export default function BuscarCitaScreen({ navigation }) {
         </>
       )}
 
-      {/* ── CU15: botón de confirmación de reserva ───────────────────────── */}
+      {/* ─ CU15: botón de confirmación de reserva */}
       {bloqueSeleccionado && (
         <TouchableOpacity
           style={[styles.btnConfirmar, cargandoBloqueo && styles.btnDeshabilitado]}

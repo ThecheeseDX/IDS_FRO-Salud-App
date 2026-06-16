@@ -43,7 +43,7 @@ exports.crearObjetivo = async (req, res) => {
   const episodio_clinico_id = req.params.episodio_id || req.body.episodio_clinico_id;
   const { descripcion, meta_valor, unidad } = req.body;
 
-  // ── Validación de obligatoriedad estructural ─────────────────────────────
+  // ─ Validación de obligatoriedad estructural 
   const camposFaltantes = [];
   if (!episodio_clinico_id) camposFaltantes.push('episodio_clinico_id');
   if (!descripcion || !descripcion.trim()) camposFaltantes.push('descripcion');
@@ -56,7 +56,7 @@ exports.crearObjetivo = async (req, res) => {
     });
   }
 
-  // ── Excepción 1: la meta carece de métrica cuantitativa ──────────────────
+  // ─ Excepción 1: la meta carece de métrica cuantitativa 
   // (Cambia 422 por 400 aquí si prefieres tu acuerdo previo)
   const metaNumerica = Number(meta_valor);
   const unidadValida = typeof unidad === 'string' && unidad.trim().length > 0;

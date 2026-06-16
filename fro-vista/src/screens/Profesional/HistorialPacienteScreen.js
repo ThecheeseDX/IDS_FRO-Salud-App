@@ -201,7 +201,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   <Text>Especialidad: {item.especialidad}</Text>
                   <Text>Modalidad: {item.tipo_sede}</Text>
 
-                  {/* 🌟 PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
+                  {/* PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
                   <View style={styles.containerAcciones}>
                     
                     {/* ACCIONES SI LA CITA ESTÁ AGENDADA */}

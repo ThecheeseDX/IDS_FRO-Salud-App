@@ -16,7 +16,7 @@ function atributosFaltantes({ proveedor, operacion }) {
   return faltantes;
 }
 
-// Escribe UNA fila de evento en Bitacora_Auditoria (detalle en datos_adicionales).
+// Escribe UNA fila de evento en Bitacora_Auditoria.
 async function escribirEvento({ proveedor, operacion, usuarioId, estado, datos }) {
   try {
     await TransactionAuditModel.registrar({
@@ -30,7 +30,7 @@ async function escribirEvento({ proveedor, operacion, usuarioId, estado, datos }
   }
 }
 
-// ── Excepción 1 (standalone): payload sin atributos obligatorios. ──
+// ─ Excepción 1 (standalone): payload sin atributos obligatorios. 
 async function registrarFalloSintaxis({ proveedor, operacion, usuarioId = null, faltantes = [], payloadEnviado = null, error = null }) {
   await escribirEvento({
     proveedor, operacion, usuarioId,
@@ -43,7 +43,7 @@ async function registrarFalloSintaxis({ proveedor, operacion, usuarioId = null, 
   });
 }
 
-// ── Excepción 4 (standalone): respuesta con esquema divergente; aísla el paquete crudo. ──
+// ─ Excepción 4 (standalone): respuesta con esquema divergente; aísla el paquete crudo.
 async function registrarEsquemaDivergente({ proveedor, operacion, usuarioId = null, payloadRecibido = null, error = null }) {
   await escribirEvento({
     proveedor, operacion, usuarioId,
@@ -55,7 +55,7 @@ async function registrarEsquemaDivergente({ proveedor, operacion, usuarioId = nu
   });
 }
 
-// ── CU70 Excepción 1: rechazo del proveedor por formato incompatible (HTTP 400). ──
+// ─ CU70 Excepción 1: rechazo del proveedor por formato incompatible (HTTP 400). 
 async function registrarRechazoFormato(ctx, { codigoRespuesta = 400, payloadRecibido = null, error = null } = {}) {
   const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
   await escribirEvento({
@@ -70,7 +70,7 @@ async function registrarRechazoFormato(ctx, { codigoRespuesta = 400, payloadReci
   });
 }
 
-// ── CU70 Excepción 3: el proveedor persiste en error tras el límite máximo de intentos. ──
+// ─ CU70 Excepción 3: el proveedor persiste en error tras el límite máximo de intentos. 
 async function registrarEventoCritico(ctx, { error = null, codigoRespuesta = null, intentos = null } = {}) {
   const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
   await escribirEvento({
@@ -86,7 +86,7 @@ async function registrarEventoCritico(ctx, { error = null, codigoRespuesta = nul
   });
 }
 
-// ── CU70 Excepción 4: la consolidación post-éxito falló (limpieza de recursos). ──
+// ─ CU70 Excepción 4: la consolidación post-éxito falló (limpieza de recursos). 
 async function registrarInconsistenciaConsolidacion(ctx, { error = null, intentos = null } = {}) {
   await escribirEvento({
     ...ctx, estado: 'INCONSISTENCIA_CONSOLIDACION',
@@ -99,7 +99,7 @@ async function registrarInconsistenciaConsolidacion(ctx, { error = null, intento
   });
 }
 
-// ── Inicia la transacción (lifecycle de red). Valida proveedor/operacion (Excepción 1). ──
+// ─ Inicia la transacción (lifecycle de red). Valida proveedor/operacion (Excepción 1).
 async function iniciarTransaccion({ proveedor, operacion, payloadEnviado = null, usuarioId = null }) {
   const faltantes = atributosFaltantes({ proveedor, operacion });
   if (faltantes.length > 0) {
@@ -111,7 +111,7 @@ async function iniciarTransaccion({ proveedor, operacion, payloadEnviado = null,
   return { proveedor, operacion, usuarioId, payloadEnviado, inicio: Date.now() };
 }
 
-// ── Éxito: mide latencia y la marca crítica si excede el umbral. ──
+// ─ Éxito: mide latencia y la marca crítica si excede el umbral. 
 async function registrarExito(ctx, { codigoRespuesta = 200, payloadRecibido = null } = {}) {
   const latencia = Date.now() - ctx.inicio;
   const estado = latencia > UMBRAL_LATENCIA_MS ? 'LATENCIA_CRITICA' : 'EXITOSA';
@@ -127,7 +127,7 @@ async function registrarExito(ctx, { codigoRespuesta = 200, payloadRecibido = nu
   return { estado, latencia };
 }
 
-// ── Excepción 3 (timeout): latencia crítica explícita. ──
+// ─ Excepción 3 (timeout): latencia crítica explícita. 
 async function registrarLatenciaCritica(ctx, { codigoRespuesta = null } = {}) {
   const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
   await escribirEvento({

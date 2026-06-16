@@ -2,8 +2,6 @@ const pool = require('../config/database');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CU68 - Paso 1: acceso a datos sobre la bitácora EXISTENTE Bitacora_Auditoria.
-// No requiere cambios de esquema: el detalle de la transacción externa viaja en
-// la columna JSON datos_adicionales.
 // ─────────────────────────────────────────────────────────────────────────────
 class TransactionAuditModel {
   // Inserta una entrada de auditoría. `datos` se serializa en datos_adicionales.

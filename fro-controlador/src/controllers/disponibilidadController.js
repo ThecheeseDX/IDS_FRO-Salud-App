@@ -29,7 +29,7 @@ exports.restringirDisponibilidad = async (req, res) => {
         const inicioSQL = convertirFecha(fecha_inicio);
         const finSQL = convertirFecha(fecha_fin);
 
-        // 2. SOLUCIÓN A LA TABLA CITA: Usamos las columnas exactas de tu schema.sql
+        // 2. SOLUCIÓN A LA TABLA CITA: Usamos las columnas exactas del schema.sql
         const [citas] = await connection.execute(
             `SELECT cita_id FROM Cita 
              WHERE profesional_id = ? 
@@ -55,7 +55,7 @@ exports.restringirDisponibilidad = async (req, res) => {
 
     } catch (error) {
         await connection.rollback();
-        console.error("🚨 ERROR SQL RECHAZADO:", error);
+        console.error(" ERROR SQL RECHAZADO:", error);
         res.status(500).json({ mensaje: 'Error al persistir datos en la base de datos.' });
     } finally {
         connection.release();

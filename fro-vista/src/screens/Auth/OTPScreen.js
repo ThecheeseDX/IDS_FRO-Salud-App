@@ -214,7 +214,7 @@ export default function OTPScreen({ route, navigation }) {
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────────────────────
+// ─ Estilos 
 const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,

@@ -18,7 +18,7 @@ const hashPassword = async (password) => {
 };
 
 /**
- * Compara una contraseña en texto plano con un hash de la base de datos (Útil para el futuro CU02 - Login).
+ * Compara una contraseña en texto plano con un hash de la base de datos.
  * @param {string} password - Contraseña ingresada al intentar loguearse.
  * @param {string} hashedPassword - El hash guardado en la base de datos.
  * @returns {Promise<boolean>} - Devuelve true si coinciden, false si no.

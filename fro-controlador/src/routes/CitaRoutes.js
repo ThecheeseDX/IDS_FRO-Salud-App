@@ -19,7 +19,7 @@ router.post('/marcas-temporales/:cita_id/finalizar',
   verifyToken, authorizeRoles(['Profesional']),
   marcasTemporalesController.finalizarAtencion);
 
-// ── CU14 — Buscar disponibilidad ─────────────────────────────────────────────
+// ─ CU14 — Buscar disponibilidad 
 router.get('/especialidades',
   verifyToken, authorizeRoles(['Paciente']),
   citaController.obtenerEspecialidades);
@@ -32,7 +32,7 @@ router.post('/validar-bloque',
   verifyToken, authorizeRoles(['Paciente']),
   citaController.validarBloque);
 
-// ── CU15 — Bloquear horario ──────────────────────────────────────────────────
+// ─ CU15 — Bloquear horario 
 router.get('/profesionales',
   verifyToken, authorizeRoles(['Paciente']),
   citaController.obtenerProfesionales);
@@ -45,7 +45,7 @@ router.post('/bloquear',
   verifyToken, authorizeRoles(['Paciente']),
   citaController.bloquearHorario);
 
-// ── CU20 — Máquina de estados de cita ───────────────────────────────────────
+// ── CU20 — Máquina de estados de cita 
 // Roles permitidos: Paciente puede cancelar; Profesional gestiona el flujo clínico; Admin tiene acceso total
 router.post('/:id/transicionar',
   verifyToken, authorizeRoles(['Paciente', 'Profesional', 'Administrador']),

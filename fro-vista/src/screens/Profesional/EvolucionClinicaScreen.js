@@ -1,4 +1,3 @@
-// Ruta: fro-vista/src/screens/Profesional/EvolucionClinicaScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
@@ -8,7 +7,7 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 
-// ◄ CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
+// CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
 const PALABRAS_SUBJETIVAS = /\b(mejorar|mejor[íi]a|sentirse?\s+bien|bienestar|aliviar|alivio|fortalecer|avanzar|progresar|recuperar|estar\s+mejor|c[óo]modo|tranquil|m[áa]s\s+[áa]gil)/i;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,20 +18,20 @@ export default function EvolucionClinicaScreen({ route }) {
 
   const [episodioId, setEpisodioId] = useState(episodioIdParam ? String(episodioIdParam) : '');
 
-  // ── Listado de metas (Paso 2.2) ───────────────────────────────────────────
+  // ── Listado de metas  ───────────────────────────────────────────
   const [metas, setMetas] = useState([]);
   const [isLoadingMetas, setIsLoadingMetas] = useState(false);
   const [errorRed, setErrorRed] = useState(false);
 
-  // ── Crear objetivo (Paso 2.3) ─────────────────────────────────────────────
+  // ── Crear objetivo ─────────────────────────────────────────────
   const [nuevoObjetivo, setNuevoObjetivo] = useState({ descripcion: '', meta_valor: '', unidad: '' });
   const [enviandoMeta, setEnviandoMeta] = useState(false);
 
-  // ── Registrar avance (Paso 2.4 / 2.5) ─────────────────────────────────────
+  // ── Registrar avance ─────────────────────────────────────
   const [avance, setAvance] = useState({ objetivo_terapeutico_id: '', valor_actual: '' });
-  const [avanceError, setAvanceError] = useState('');      // ◄ Excepción 3
+  const [avanceError, setAvanceError] = useState('');      //  Excepción 3
   const [enviandoAvance, setEnviandoAvance] = useState(false);
-  const [avisoAsincrono, setAvisoAsincrono] = useState(false); // ◄ Excepción 4
+  const [avisoAsincrono, setAvisoAsincrono] = useState(false); //  Excepción 4
 
   // ── 2.2: GET metas + carga (Excepción 2) ──────────────────────────────────
   const cargarMetas = async () => {
@@ -64,7 +63,7 @@ export default function EvolucionClinicaScreen({ route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── 2.3: Crear meta con sugerencia de cuantificación (Excepción 1) ────────
+  // ─ 2.3: Crear meta con sugerencia de cuantificación (Excepción 1) ────────
   const handleCrearObjetivo = async () => {
     const descripcion = nuevoObjetivo.descripcion.trim();
     const metaValorTxt = nuevoObjetivo.meta_valor.trim();
