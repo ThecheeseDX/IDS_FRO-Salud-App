@@ -11,6 +11,9 @@ const objetivoController = require('../controllers/objetivoController');
 const evolucionController = require('../controllers/evolucionController');
 const intervencionController = require('../controllers/intervencionController');
 
+// CU16
+const disponibilidadController = require('../controllers/disponibilidadController');
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CU29 — Anamnesis / Ficha Clínica
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +78,12 @@ router.get('/intervenciones/:episodio_id',
 router.put('/intervenciones/:episodio_id',
     verifyToken, authorizeRoles(['Profesional']),
     intervencionController.guardarIntervencion
+);
+
+// CU16
+router.post('/disponibilidad/restringir', 
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']), 
+    disponibilidadController.restringirDisponibilidad
 );
 
 module.exports = router;

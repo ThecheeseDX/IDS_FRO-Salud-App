@@ -1,4 +1,7 @@
 // Ruta: fro-vista/src/screens/Admin/ParametrosScreen.js
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
+
 import React, { useState, useEffect, useContext } from 'react';
 import { 
   View, 
@@ -24,6 +27,28 @@ export default function ParametrosScreen() {
   const [errorRed, setErrorRed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorExcepcion, setErrorExcepcion] = useState(null); 
+
+  const [inicio, setInicio] = useState(''); // Formato YYYY-MM-DD
+  const [fin, setFin] = useState('');       // Formato YYYY-MM-DD
+  const [profesionalId, setProfesionalId] = useState(''); // Solo si es admin
+
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
+  const [modo, setModo] = useState('inicio'); // Para saber si elegimos inicio o fin
+
+  const onChange = (event, selectedDate) => {
+      setShow(false);
+      if (selectedDate) {
+          // Convertir a formato DD/MM/AAAA
+          const day = String(selectedDate.getDate()).padStart(2, '0');
+          const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+          const year = selectedDate.getFullYear();
+          const fechaFormateada = `${day}/${month}/${year}`;
+          
+          if (modo === 'inicio') setInicio(fechaFormateada);
+          else setFin(fechaFormateada);
+      }
+  };
 
   const cargarParametros = async () => {
     setIsLoading(true);
@@ -99,6 +124,24 @@ export default function ParametrosScreen() {
     }
   };
 
+const aplicarRestriccion = async () => {
+    if (!inicio || !fin) return Alert.alert("Error", "Complete fechas (DD/MM/AAAA)");
+
+    try {
+        // El backend recibe el ID del profesional
+        await apiClient.post('/clinica/disponibilidad/restringir', {
+            profesional_id: profesionalId || 1, // Si no es admin, usa el tuyo por defecto
+            fecha_inicio: inicio, 
+            fecha_fin: fin, 
+            motivo: 'Inactividad administrativa'
+        });
+        Alert.alert("Éxito", "Bloqueo aplicado exitosamente.");
+    } catch (error) {
+        // El backend devuelve el mensaje de error si hay citas confirmadas
+        Alert.alert("Error", error.response?.data?.mensaje || "Error al procesar el bloqueo");
+    }
+};
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -170,6 +213,38 @@ export default function ParametrosScreen() {
               </View>
             );
           })}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Gestión de Disponibilidad</Text>
+
+            {/* Solo se muestra si el usuario es administrador */}
+            <TextInput 
+              style={styles.input} 
+              placeholder="ID Profesional (Admin)" 
+              value={profesionalId} 
+              onChangeText={setProfesionalId} 
+            />
+
+            <TouchableOpacity style={styles.input} onPress={() => { setModo('inicio'); setShow(true); }}>
+                <Text>{inicio || "Seleccionar Fecha Inicio (DD/MM/AAAA)"}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.input} onPress={() => { setModo('fin'); setShow(true); }}>
+                <Text>{fin || "Seleccionar Fecha Fin (DD/MM/AAAA)"}</Text>
+              </TouchableOpacity>
+
+              {show && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={onChange}
+                />
+              )}
+
+            <TouchableOpacity style={styles.saveButton} onPress={aplicarRestriccion}>
+              <Text style={styles.saveButtonText}>CONFIRMAR BLOQUEO DE AGENDA</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       )}
 

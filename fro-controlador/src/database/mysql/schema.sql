@@ -384,6 +384,15 @@ CREATE TABLE Parametro_Global(
     FOREIGN KEY (administrador_id) References Usuario(usuario_id)
 );
 
+CREATE TABLE Bloqueo_Agenda (
+    bloqueo_id INT PRIMARY KEY AUTO_INCREMENT,
+    fecha_inicio DATETIME NOT NULL,
+    fecha_fin DATETIME NOT NULL,
+    motivo TEXT NOT NULL,
+    profesional_id INT NOT NULL,
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
+);
+
 INSERT INTO Comuna (nombre) VALUES 
 ('Las Condes'),
 ('Providencia'),
@@ -423,3 +432,10 @@ ALTER TABLE Usuario
 
 --comando solo para crear la sede en la tabla
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
+
+-- IMPORTANTE: Cambiar el '4' al final de cada línea por el usuario_id de la cuenta de Administrador.
+INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 8),
+('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 8),
+('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 8),
+('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 8);

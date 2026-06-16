@@ -114,6 +114,21 @@ export default function DashboardProfesional({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity
+        style={styles.securityBtn}
+        onPress={() => navigation.navigate('GestionDisponibilidad')}
+      >
+        <Text style={styles.securityIcon}>📅</Text>
+        <Text style={styles.securityTitle}>
+          Gestionar Disponibilidad
+        </Text>
+        <Text style={styles.securityText}>
+          Bloquear rangos horarios por vacaciones, licencias o eventos administrativos.
+        </Text>
+      </TouchableOpacity>
+
+      
+
+      <TouchableOpacity
         style={styles.logoutBtn}
         onPress={handleLogout}
       >

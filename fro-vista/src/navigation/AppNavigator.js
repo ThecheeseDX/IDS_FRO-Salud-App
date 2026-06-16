@@ -27,6 +27,9 @@ import MarcasTemporalesScreen from '../screens/Profesional/MarcasTemporalesScree
 // ◄ CU59: Pantalla del Administrador ►
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 
+// CU16
+import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
+
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -106,6 +109,13 @@ export default function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Rol no autorizado' }} />
           </>
         )}
+
+        <Stack.Screen 
+        name="GestionDisponibilidad" 
+        component={GestionDisponibilidadScreen} 
+        options={{ title: 'Gestión de Agenda' }} 
+        />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
