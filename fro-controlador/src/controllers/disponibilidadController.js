@@ -13,8 +13,7 @@ exports.restringirDisponibilidad = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // 1. SOLUCIÓN AL ID: Buscamos el profesional_id real usando el ID que envió el Frontend
-        // (Sirve tanto si el Admin ingresa el profesional_id directo, como si el Profesional envía su usuario_id)
+        // 1. Buscamos el profesional_id real
         const [profesionales] = await connection.execute(
             'SELECT profesional_id FROM Profesional WHERE usuario_id = ? OR profesional_id = ? LIMIT 1',
             [profesional_id, profesional_id]
@@ -29,7 +28,7 @@ exports.restringirDisponibilidad = async (req, res) => {
         const inicioSQL = convertirFecha(fecha_inicio);
         const finSQL = convertirFecha(fecha_fin);
 
-        // 2. SOLUCIÓN A LA TABLA CITA: Usamos las columnas exactas del schema.sql
+        // 2. VALIDACIÓN 1: Verificar superposición con CITAS
         const [citas] = await connection.execute(
             `SELECT cita_id FROM Cita 
              WHERE profesional_id = ? 
@@ -44,7 +43,21 @@ exports.restringirDisponibilidad = async (req, res) => {
             return res.status(409).json({ mensaje: 'Existen citas agendadas en este rango. Reprográmelas primero.' });
         }
 
-        // 3. INSERCIÓN FINAL: Guardamos en Bloqueo_Agenda con el ID correcto
+        // 3. VALIDACIÓN 2 (LA SOLUCIÓN): Verificar superposición con OTROS BLOQUEOS
+        const [bloqueosExistentes] = await connection.execute(
+            `SELECT bloqueo_id FROM Bloqueo_Agenda 
+             WHERE profesional_id = ? 
+             AND fecha_inicio <= ? 
+             AND fecha_fin >= ?`,
+            [idRealProfesional, finSQL, inicioSQL]
+        );
+
+        if (bloqueosExistentes.length > 0) {
+            await connection.rollback();
+            return res.status(409).json({ mensaje: 'Ya existe un bloqueo de agenda registrado que coincide con este rango de fechas.' });
+        }
+
+        // 4. INSERCIÓN FINAL
         await connection.execute(
             'INSERT INTO Bloqueo_Agenda (profesional_id, fecha_inicio, fecha_fin, motivo) VALUES (?, ?, ?, ?)',
             [idRealProfesional, inicioSQL, finSQL, motivo]
@@ -55,7 +68,7 @@ exports.restringirDisponibilidad = async (req, res) => {
 
     } catch (error) {
         await connection.rollback();
-        console.error(" ERROR SQL RECHAZADO:", error);
+        console.error("🚨 ERROR SQL RECHAZADO:", error);
         res.status(500).json({ mensaje: 'Error al persistir datos en la base de datos.' });
     } finally {
         connection.release();
