@@ -55,6 +55,50 @@ async function registrarEsquemaDivergente({ proveedor, operacion, usuarioId = nu
   });
 }
 
+// ── CU70 Excepción 1: rechazo del proveedor por formato incompatible (HTTP 400). ──
+async function registrarRechazoFormato(ctx, { codigoRespuesta = 400, payloadRecibido = null, error = null } = {}) {
+  const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
+  await escribirEvento({
+    ...ctx, estado: 'RECHAZO_FORMATO',
+    datos: {
+      codigo_respuesta: codigoRespuesta,
+      latencia_ms: latencia,
+      payload_recibido: serializar(payloadRecibido),
+      error_detalle: error?.message || 'El proveedor rechazó la petición por formato incompatible.',
+      payload_enviado: serializar(ctx?.payloadEnviado)
+    }
+  });
+}
+
+// ── CU70 Excepción 3: el proveedor persiste en error tras el límite máximo de intentos. ──
+async function registrarEventoCritico(ctx, { error = null, codigoRespuesta = null, intentos = null } = {}) {
+  const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
+  await escribirEvento({
+    ...ctx, estado: 'LIMITE_REINTENTOS',
+    datos: {
+      critico: true,
+      codigo_respuesta: codigoRespuesta,
+      latencia_ms: latencia,
+      intentos,
+      error_detalle: error?.message || `Proveedor inalcanzable tras ${intentos} intentos (caída persistente).`,
+      payload_enviado: serializar(ctx?.payloadEnviado)
+    }
+  });
+}
+
+// ── CU70 Excepción 4: la consolidación post-éxito falló (limpieza de recursos). ──
+async function registrarInconsistenciaConsolidacion(ctx, { error = null, intentos = null } = {}) {
+  await escribirEvento({
+    ...ctx, estado: 'INCONSISTENCIA_CONSOLIDACION',
+    datos: {
+      nivel: 'warning',
+      alerta_admin: true,
+      intentos,
+      error_detalle: error?.message || 'Fallo al consolidar/limpiar el ciclo tras una transacción exitosa.'
+    }
+  });
+}
+
 // ── Inicia la transacción (lifecycle de red). Valida proveedor/operacion (Excepción 1). ──
 async function iniciarTransaccion({ proveedor, operacion, payloadEnviado = null, usuarioId = null }) {
   const faltantes = atributosFaltantes({ proveedor, operacion });
@@ -67,7 +111,7 @@ async function iniciarTransaccion({ proveedor, operacion, payloadEnviado = null,
   return { proveedor, operacion, usuarioId, payloadEnviado, inicio: Date.now() };
 }
 
-// ── Éxito: mide latencia y la marca crítica si excede el umbral (Excepción 3). ──
+// ── Éxito: mide latencia y la marca crítica si excede el umbral. ──
 async function registrarExito(ctx, { codigoRespuesta = 200, payloadRecibido = null } = {}) {
   const latencia = Date.now() - ctx.inicio;
   const estado = latencia > UMBRAL_LATENCIA_MS ? 'LATENCIA_CRITICA' : 'EXITOSA';
@@ -83,7 +127,7 @@ async function registrarExito(ctx, { codigoRespuesta = 200, payloadRecibido = nu
   return { estado, latencia };
 }
 
-// ── Excepción 3: latencia crítica explícita. ──
+// ── Excepción 3 (timeout): latencia crítica explícita. ──
 async function registrarLatenciaCritica(ctx, { codigoRespuesta = null } = {}) {
   const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
   await escribirEvento({
@@ -98,27 +142,14 @@ async function registrarLatenciaCritica(ctx, { codigoRespuesta = null } = {}) {
   return { latencia };
 }
 
-// ── Excepción 2: caída de red / servicio. ──
-async function registrarFalloRed(ctx, { error, codigoRespuesta = null, intento = 1 } = {}) {
-  const latencia = ctx?.inicio ? Date.now() - ctx.inicio : null;
-  await escribirEvento({
-    ...ctx, estado: 'FALLO_RED',
-    datos: {
-      codigo_respuesta: codigoRespuesta,
-      latencia_ms: latencia,
-      intento,
-      error_detalle: error?.message || String(error),
-      payload_enviado: serializar(ctx?.payloadEnviado)
-    }
-  });
-}
-
 module.exports = {
   iniciarTransaccion,
   registrarExito,
   registrarLatenciaCritica,
-  registrarFalloRed,
   registrarFalloSintaxis,
   registrarEsquemaDivergente,
+  registrarRechazoFormato,
+  registrarEventoCritico,
+  registrarInconsistenciaConsolidacion,
   UMBRAL_LATENCIA_MS
 };

@@ -92,7 +92,12 @@ async function ejecutarTransaccion({
   // 5. Transformar al modelo interno y retornar el éxito al núcleo
   return {
     datos: mapper.entrada(respuesta.data),
-    meta: { status: respuesta.status, latencia_ms: respuesta.latencia, intentos: respuesta.intentos }
+    meta: {
+      status: respuesta.status,
+      latencia_ms: respuesta.latencia,
+      intentos: respuesta.intentos,
+      consolidacion: respuesta.consolidacion // 'ok' | 'inconsistente' (Exc 4, Paso 5)
+    }
   };
 }
 

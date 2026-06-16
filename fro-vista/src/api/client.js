@@ -12,7 +12,6 @@ const apiClient = axios.create({
 });
 
 // Canal para que AuthContext inyecte su logoutSession.
-// Se llama una sola vez al montar el contexto.
 let _onUnauthorized = null;
 export const setUnauthorizedHandler = (handler) => {
   _onUnauthorized = handler;
@@ -34,14 +33,24 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor de respuestas: si el servidor devuelve 401 (token expirado
-// o inválido), dispara el logout completo a través del AuthContext.
+// Interceptor de respuestas.
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && _onUnauthorized) {
+    const status = error.response?.status;
+
+    // 401: token expirado/inválido → logout global (vía AuthContext).
+    if (status === 401 && _onUnauthorized) {
       _onUnauthorized();
     }
+
+    // ── CU70 Exc 3: el backend agotó los reintentos contra el proveedor externo (HTTP 503). ──
+    // Enriquecemos el error para que la pantalla que hizo la llamada muestre <ErrorRetry/>.
+    if (status === 503) {
+      error.proveedorNoDisponible = true;
+      error.mensajeUsuario = 'El proveedor externo no respondió tras varios intentos. Inténtalo nuevamente en unos minutos.';
+    }
+
     return Promise.reject(error);
   }
 );
