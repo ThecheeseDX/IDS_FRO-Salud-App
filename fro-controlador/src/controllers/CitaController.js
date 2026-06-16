@@ -1,7 +1,7 @@
 const pool = require('../config/database');
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CU14 — Buscar disponibilidad
+//   CU14 — Buscar disponibilidad
 // ─────────────────────────────────────────────────────────────────────────────
 
 exports.obtenerEspecialidades = async (req, res) => {
@@ -129,7 +129,7 @@ exports.validarBloque = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CU15 — Bloquear horario
+//   CU15 — Bloquear horario
 // ─────────────────────────────────────────────────────────────────────────────
 
 exports.obtenerProfesionales = async (req, res) => {
@@ -246,10 +246,9 @@ exports.bloquearHorario = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CU20 — Transicionando máquina de estados de cita
+//   CU20 — Transicionando máquina de estados de cita
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Tabla de transiciones válidas { estadoActual: { evento: estadoSiguiente } }
 const TRANSICIONES = {
   AGENDADA:   { CONFIRMAR: 'CONFIRMADA', CANCELAR: 'CANCELADA' },
   CONFIRMADA: { INICIAR: 'EN_CURSO',    CANCELAR: 'CANCELADA', REGISTRAR_INASISTENCIA: 'INASISTENCIA' },
@@ -259,7 +258,6 @@ const TRANSICIONES = {
 const ESTADOS_TERMINALES = new Set(['REALIZADA', 'CANCELADA', 'INASISTENCIA']);
 
 function evaluarMaquinaEstados(estadoActual, evento) {
-  // Excepción 1 — estado terminal: no permite ninguna acción
   if (ESTADOS_TERMINALES.has(estadoActual)) {
     const err = new Error(
       `Acción no permitida: la cita ya se encuentra en estado terminal "${estadoActual}".`
@@ -268,7 +266,6 @@ function evaluarMaquinaEstados(estadoActual, evento) {
     throw err;
   }
 
-  // Excepción 2 — transición inválida según reglas de negocio
   const siguiente = TRANSICIONES[estadoActual]?.[evento];
   if (!siguiente) {
     const err = new Error(
@@ -283,12 +280,11 @@ function evaluarMaquinaEstados(estadoActual, evento) {
 
 /**
  * POST /citas/:id/transicionar
- * Body: { evento: 'CONFIRMAR' | 'INICIAR' | 'FINALIZAR' | 'CANCELAR' | 'REGISTRAR_INASISTENCIA' }
  */
 exports.transicionarEstadoCita = async (req, res) => {
   const { id }    = req.params;
   const { evento } = req.body;
-  const usuario_id = req.user?.usuario_id;
+  const usuario_id = req.user?.usuario_id || null; 
 
   if (!evento) {
     return res.status(400).json({ error: 'El campo "evento" es requerido.' });
@@ -312,14 +308,12 @@ exports.transicionarEstadoCita = async (req, res) => {
 
     const estado_anterior = rows[0].estado;
 
-    // 2. Evaluar máquina de estados (lanza en Excepción 1 y 2)
+    // 2. Evaluar máquina de estados
     const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento);
 
-    // 3. Persistir nuevo estado — Excepción 4: fallo de BD
+    // 3. Persistir nuevo estado
     const [updateResult] = await connection.execute(
-      `UPDATE Cita
-          SET estado = ?, fecha_actualizacion = NOW()
-        WHERE cita_id = ?`,
+      `UPDATE Cita SET estado = ? WHERE cita_id = ?`,
       [nuevo_estado, id]
     );
 
@@ -330,21 +324,33 @@ exports.transicionarEstadoCita = async (req, res) => {
       throw err;
     }
 
-    // 4a. Auditoría
-    await connection.execute(
-      `INSERT INTO Bitacora_Auditoria
-         (cita_id, estado_anterior, nuevo_estado, evento, usuario_id, fecha)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [id, estado_anterior, nuevo_estado, evento, usuario_id]
-    );
+    // 4a. Auditoría (Protegida en bloque independiente)
+    try {
+      await connection.execute(
+        `INSERT INTO Bitacora_Auditoria
+            (cita_id, estado_anterior, nuevo_estado, evento, usuario_id, fecha)
+         VALUES (?, ?, ?, ?, ?, NOW())`,
+        [id, estado_anterior, nuevo_estado, evento, usuario_id]
+      );
+    } catch (auditErr) {
+      console.log("\n⚠️ [ADVERTENCIA SCHEMA] No se pudo escribir la Bitácora de Auditoría:");
+      console.error(auditErr.message);
+      console.log("-> Revisa si en la tabla 'Bitacora_Auditoria' se llama 'id_cita' o similar.\n");
+    }
 
-    // 4b. Notificación
-    await connection.execute(
-      `INSERT INTO Notificacion
-         (cita_id, mensaje, usuario_id, leida, fecha)
-       VALUES (?, ?, ?, 0, NOW())`,
-      [id, `El estado de su cita ha cambiado a: ${nuevo_estado}`, usuario_id]
-    );
+    // 4b. Notificación (Protegida en bloque independiente)
+    try {
+      await connection.execute(
+        `INSERT INTO Notificacion
+            (cita_id, mensaje, usuario_id, leida, fecha)
+         VALUES (?, ?, ?, 0, NOW())`,
+        [id, `El estado de su cita ha cambiado a: ${nuevo_estado}`, usuario_id]
+      );
+    } catch (notifErr) {
+      console.log("\n⚠️ [ADVERTENCIA SCHEMA] No se pudo escribir la Notificación:");
+      console.error(notifErr.message);
+      console.log("-> Revisa si en la tabla 'Notificacion' se llama 'id_cita' o similar.\n");
+    }
 
     await connection.commit();
 
@@ -357,20 +363,24 @@ exports.transicionarEstadoCita = async (req, res) => {
 
   } catch (err) {
     await connection.rollback();
+    
+    console.log("\n========================================================");
+    console.log("🚨 [DEBUG CRÍTICO] EL ERROR REAL DETECTADO EN MYSQL ES:");
+    console.error(err);
+    console.log("========================================================\n");
 
-    // Excepción 1 — estado terminal
     if (err.code === 'ESTADO_TERMINAL') {
       return res.status(409).json({ error: err.message, code: err.code });
     }
-    // Excepción 2 — transición inválida
     if (err.code === 'TRANSICION_INVALIDA') {
       return res.status(422).json({ error: err.message, code: err.code });
     }
-    // Excepción 4 — fallo crítico de persistencia
-    console.error('[transicionarEstadoCita] Error crítico:', err);
+
     return res.status(500).json({
-      error: 'Error crítico al guardar el estado. Contacte a soporte técnico.',
-      code:  'PERSIST_FAIL',
+      error: 'Error crítico detectado en la base de datos.',
+      mensaje_mysql: err.message,
+      codigo_mysql: err.code || err.errno,
+      code: 'PERSIST_FAIL',
     });
 
   } finally {
@@ -380,13 +390,12 @@ exports.transicionarEstadoCita = async (req, res) => {
 
 /**
  * GET /citas/:id/estado
- * Permite al cliente re-sincronizar la vista tras latencia de red (Excepción 3).
  */
 exports.obtenerEstadoCita = async (req, res) => {
   const { id } = req.params;
   try {
     const [rows] = await pool.query(
-      `SELECT cita_id, estado, fecha_actualizacion FROM Cita WHERE cita_id = ? LIMIT 1`,
+      `SELECT cita_id, estado FROM Cita WHERE cita_id = ? LIMIT 1`,
       [id]
     );
     if (rows.length === 0) {
@@ -398,12 +407,13 @@ exports.obtenerEstadoCita = async (req, res) => {
     return res.status(500).json({ error: 'Error interno al consultar el estado.' });
   }
 };
+
 // ─────────────────────────────────────────────────────────────────────────────
-//  CU20 — Listar citas por Rol (Paciente / Profesional)
+//   CU20 — Listar citas por Rol (Paciente / Profesional)
 // ─────────────────────────────────────────────────────────────────────────────
 
 exports.obtenerCitasPaciente = async (req, res) => {
-  const usuario_id = req.user?.usuario_id; // Viene del token decodificado
+  const usuario_id = req.user?.usuario_id;
 
   try {
     const [citas] = await pool.query(
@@ -432,7 +442,7 @@ exports.obtenerCitasPaciente = async (req, res) => {
 };
 
 exports.obtenerCitasProfesional = async (req, res) => {
-  const usuario_id = req.user?.usuario_id; // Viene del token decodificado
+  const usuario_id = req.user?.usuario_id;
 
   try {
     const [citas] = await pool.query(

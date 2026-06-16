@@ -8,11 +8,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,          // 1. Agregamos Alert para las excepciones
-  RefreshControl, // 1. Agregamos RefreshControl para latencia de red
+  Alert,
+  RefreshControl,
 } from 'react-native';
 
-// Importamos tanto el cliente base (apiClient) para los POST como el lector de historial
 import apiClient, { getHistorialPaciente } from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -26,10 +25,9 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [paciente, setPaciente] = useState(null);
   const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false); // 2. Estado para el pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  // Modificamos para aceptar la bandera de actualización por red
   const cargarHistorial = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -61,7 +59,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       );
     } finally {
       setLoading(false);
-      setRefreshing(false); // Apagamos el indicador de refresco
+      setRefreshing(false);
     }
   };
 
@@ -69,53 +67,51 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     cargarHistorial();
   }, []);
 
-  // ⚡ FUNCIÓN MÁGICA: Controla y dispara las 4 Excepciones solicitadas
   const modificarEstadoCita = async (citaId, estadoActual, evento) => {
+    // Exclusión local preventiva para estados terminales
+    const deEstado = (estadoActual || '').toUpperCase();
+    const estadosTerminales = ['REALIZADA', 'CANCELADA', 'INASISTENCIA'];
     
-    // ❌ EXCEPCIÓN 1: Bloqueo de interacción sobre estados terminales
-    // Validamos localmente si ya está cerrada antes de ir al servidor
-    const estadosTerminales = ['Realizada', 'Cancelada', 'Inasistencia'];
-    if (estadosTerminales.includes(estadoActual)) {
+    if (estadosTerminales.includes(deEstado)) {
       Alert.alert(
         "Acción no permitida",
-        "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal. Por favor, selecciona una cita activa para operar sobre ella."
+        "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal."
       );
       return; 
     }
 
     try {
-      // Intentamos persistir la transición en el endpoint correspondiente
       const response = await apiClient.post(`/citas/${citaId}/transicionar`, { evento });
       
       if (response.data.ok || response.status === 200) {
-        Alert.alert("Éxito", "Estado de la cita actualizado con éxito.");
-        cargarHistorial(false); // Sincroniza la vista al tiro
+        Alert.alert("Éxito", `Cita actualizada exitosamente a: ${response.data.nuevo_estado || 'nuevo estado'}`);
+        cargarHistorial(false); // Recargar la lista para reflejar los cambios inmediatos
       }
     } catch (err) {
       if (err.response) {
         const { status, data } = err.response;
 
-        // ❌ EXCEPCIÓN 2: Reglas de negocio inválidas (Transición incorrecta de flujo)
+        // EXCEPCIÓN 2: Muestra el error exacto que envía el backend para saber qué falló
         if (status === 422 || data.code === 'TRANSICION_INVALIDA') {
           Alert.alert(
             "Error de validación de flujo lógico",
-            "El evento de entrada no cumple con las reglas de negocio necesarias para la transición solicitada. El Sistema detiene el cambio de fase.\n\nPor favor, verifica los requisitos previos necesarios para habilitar dicho estado."
+            `${data.error || 'La transición no está permitida por las reglas de negocio.'}\n\nPor favor, sigue el orden del flujo clínico.`
           );
         } 
-        // ❌ EXCEPCIÓN 4: Fallo crítico de persistencia en la Base de Datos (Timeout o Crash)
-        else if (status === 500 || data.code === 'FALLO_PERSISTENCIA' || data.code === 'PERSIST_FAIL') {
+        // EXCEPCIÓN 4: Fallo de persistencia en BD
+        else if (status === 500 || data.code === 'PERSIST_FAIL') {
           Alert.alert(
             "Alerta de Error Crítica",
-            "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia o tiempo de espera agotado. El Sistema generó un reporte técnico automático.\n\nPor favor, contacta al soporte técnico para informar sobre la falla en el registro del estado."
+            "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia. Intente nuevamente o contacte a soporte."
           );
         } else {
-          Alert.alert("Error", data.message || "No se pudo cambiar el estado.");
+          Alert.alert("Error", data.error || "No se pudo cambiar el estado.");
         }
       } else {
-        // ❌ EXCEPCIÓN 3: Latencia crítica de red o desconexión temporal
+        // EXCEPCIÓN 3: Latencia o pérdida de red
         Alert.alert(
           "Sincronización en curso",
-          "La latencia de red impide visualizar el cambio de estado en la interfaz de manera inmediata.\n\nEl Sistema procesará la transacción exitosamente en el servidor. Por favor, refresca la aplicación para sincronizar la vista con los datos del controlador.",
+          "La latencia de red impide visualizar el cambio de estado de manera inmediata. Arrastre hacia abajo para refrescar.",
           [{ text: "Refrescar Ahora", onPress: () => cargarHistorial(true) }]
         );
       }
@@ -137,7 +133,6 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   return (
     <ScrollView 
       style={styles.container}
-      // Implementamos el control de arrastrar para actualizar (Excepción 3)
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => cargarHistorial(true)} colors={['#2563eb']} />
       }
@@ -190,41 +185,88 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           {historial.length === 0 ? (
             <Text style={styles.sinResultados}>Sin atenciones registradas</Text>
           ) : (
-            historial.map((item) => (
-              <View key={item.cita_id} style={styles.card}>
-                <Text style={styles.fecha}>
-                  {formatearFecha(item.fecha_hora_inicio)}
-                </Text>
-                <Text style={{ fontWeight: '500' }}>Estado: {item.estado}</Text>
-                <Text>Profesional: {item.profesional}</Text>
-                <Text>Especialidad: {item.especialidad}</Text>
-                <Text>Modalidad: {item.tipo_sede}</Text>
+            historial.map((item) => {
+              // Normalizamos el estado actual a mayúsculas para las comparaciones visuales
+              const estadoCita = (item.estado || '').toUpperCase();
 
-                {/* 🌟 NUEVO: PANEL DE ACCIONES DIRECTAS EN LA CITA */}
-                <View style={styles.containerAcciones}>
-                  <TouchableOpacity 
-                    style={[styles.botonAccion, { backgroundColor: '#2563eb' }]}
-                    onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
-                  >
-                    <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
-                  </TouchableOpacity>
+              return (
+                <View key={item.cita_id} style={styles.card}>
+                  <Text style={styles.fecha}>
+                    {formatearFecha(item.fecha_hora_inicio)}
+                  </Text>
+                  <Text style={{ fontWeight: 'bold', color: '#374151' }}>
+                    Estado: <Text style={styles.estadoTexto}>{item.estado}</Text>
+                  </Text>
+                  <Text>Profesional: {item.profesional}</Text>
+                  <Text>Especialidad: {item.especialidad}</Text>
+                  <Text>Modalidad: {item.tipo_sede}</Text>
 
-                  <TouchableOpacity 
-                    style={[styles.botonAccion, { backgroundColor: '#16a34a' }]}
-                    onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
-                  >
-                    <Text style={styles.textoBotonAccion}>✅ Finalizar</Text>
-                  </TouchableOpacity>
+                  {/* 🌟 PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
+                  <View style={styles.containerAcciones}>
+                    
+                    {/* ACCIONES SI LA CITA ESTÁ AGENDADA */}
+                    {estadoCita === 'AGENDADA' && (
+                      <>
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: '#eab308' }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CONFIRMAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>👍 Confirmar</Text>
+                        </TouchableOpacity>
 
-                  <TouchableOpacity 
-                    style={[styles.botonAccion, { backgroundColor: '#dc2626' }]}
-                    onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
-                  >
-                    <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
-                  </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: '#dc2626' }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {/* ACCIONES SI LA CITA ESTÁ CONFIRMADA */}
+                    {estadoCita === 'CONFIRMADA' && (
+                      <>
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: '#2563eb' }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: '#d97706' }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'REGISTRAR_INASISTENCIA')}
+                        >
+                          <Text style={styles.textoBotonAccion}>🤷‍♂️ Ausente</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: '#dc2626' }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {/* ACCIONES SI LA CITA ESTÁ EN CURSO */}
+                    {estadoCita === 'EN_CURSO' && (
+                      <TouchableOpacity 
+                        style={[styles.botonAccion, { backgroundColor: '#16a34a', marginHorizontal: 0 }]}
+                        onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
+                      >
+                        <Text style={styles.textoBotonAccion}>✅ Finalizar Atención</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* MENSAJE SI LA CITA ESTÁ EN UN ESTADO FINAL O TERMINAL */}
+                    {['REALIZADA', 'CANCELADA', 'INASISTENCIA'].includes(estadoCita) && (
+                      <Text style={styles.textoTerminal}>🔒 Flujo concluido (Registro histórico cerrado)</Text>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
 
           <Text style={styles.seccionTitulo}>Episodios Clínicos</Text>
@@ -386,25 +428,41 @@ const styles = StyleSheet.create({
   warningText: { color: '#7c2d12' },
   sinResultados: { color: '#666', marginBottom: 12 },
   
-  // Estilos añadidos para el panel de acciones
   containerAcciones: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 10,
+    borderTopColor: '#e5e7eb',
+    paddingTop: 12,
   },
   botonAccion: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 9,
     marginHorizontal: 4,
     borderRadius: 6,
     alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   textoBotonAccion: {
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
   },
+  estadoTexto: {
+    fontWeight: '600',
+    color: '#2563eb'
+  },
+  textoTerminal: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontStyle: 'italic',
+    paddingVertical: 4,
+    textAlign: 'center',
+    flex: 1,
+  }
 });
