@@ -14,7 +14,7 @@ let _forzarFalloCache = process.env.RETRY_CACHE_FORZAR_FALLO === 'true';
 function simularFalloCache(activo) { _forzarFalloCache = !!activo; }
 
 // Simula fallo SOLO en la limpieza post-éxito → Exc 4 AISLADA, sin afectar el conteo.
-let _forzarFalloLimpieza = false;
+let _forzarFalloLimpieza = process.env.RETRY_FORZAR_FALLO_LIMPIEZA === 'true';
 function simularFalloLimpieza(activo) { _forzarFalloLimpieza = !!activo; }
 
 const cache = {
