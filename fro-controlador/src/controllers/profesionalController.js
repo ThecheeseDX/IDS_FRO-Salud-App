@@ -1,5 +1,8 @@
 const db = require('../config/database');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LISTAR PACIENTES ASIGNADOS (Por Profesional ID)
+// ─────────────────────────────────────────────────────────────────────────────
 exports.listarPacientesAsignados = async (req, res) => {
   try {
     const { profesionalId } = req.params;
@@ -18,12 +21,15 @@ exports.listarPacientesAsignados = async (req, res) => {
         p.numero_calle,
         p.departamento,
         p.comuna_id,
-        COUNT(ec.episodio_clinico_id) AS total_atenciones,
+        COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion
       FROM paciente p
       LEFT JOIN usuario u ON u.usuario_id = p.usuario_id
-      INNER JOIN episodio_clinico ec ON ec.paciente_id = p.paciente_id
-      WHERE ec.profesional_id = ?
+      LEFT JOIN episodio_clinico ec ON ec.paciente_id = p.paciente_id AND ec.profesional_id = ?
+      WHERE (
+          ec.paciente_id IS NOT NULL 
+          OR p.paciente_id IN (SELECT paciente_id FROM cita WHERE profesional_id = ? AND estado NOT IN ('CANCELADA'))
+        )
         AND (
           u.nombres LIKE ?
           OR u.apellido_paterno LIKE ?
@@ -46,7 +52,7 @@ exports.listarPacientesAsignados = async (req, res) => {
         p.comuna_id
       ORDER BY ultima_atencion DESC
       `,
-      [profesionalId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
+      [profesionalId, profesionalId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
     );
 
     res.json({ ok: true, pacientes });
@@ -59,21 +65,32 @@ exports.listarPacientesAsignados = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OBTENER HISTORIAL CONSOLIDADO
+// ─────────────────────────────────────────────────────────────────────────────
 exports.obtenerHistorialPaciente = async (req, res) => {
   try {
     const { pacienteId } = req.params;
     const usuarioId = req.query.usuarioId || req.user?.usuario_id;
 
+    // Modificado para validar asignación tanto por episodio como por cita vigente
     const [[asignacion]] = await db.query(
       `
       SELECT 1 AS asignado
-      FROM episodio_clinico ec
-      INNER JOIN profesional pr ON pr.profesional_id = ec.profesional_id
-      WHERE ec.paciente_id = ?
-        AND pr.usuario_id = ?
+      FROM paciente p
+      WHERE p.paciente_id = ? AND (
+        p.paciente_id IN (
+          SELECT ec.paciente_id FROM episodio_clinico ec 
+          INNER JOIN profesional pr ON pr.profesional_id = ec.profesional_id WHERE pr.usuario_id = ?
+        )
+        OR p.paciente_id IN (
+          SELECT c.paciente_id FROM cita c 
+          INNER JOIN profesional pr ON pr.profesional_id = c.profesional_id WHERE pr.usuario_id = ? AND c.estado NOT IN ('CANCELADA')
+        )
+      )
       LIMIT 1
       `,
-      [pacienteId, usuarioId]
+      [pacienteId, usuarioId, usuarioId]
     );
 
     if (!asignacion) {
@@ -181,6 +198,9 @@ exports.obtenerHistorialPaciente = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LISTAR PACIENTES POR USUARIO PROFESIONAL (Basado en la Cuenta de Usuario)
+// ─────────────────────────────────────────────────────────────────────────────
 exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
   try {
     const { usuarioId } = req.params;
@@ -199,13 +219,21 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         p.numero_calle,
         p.departamento,
         p.comuna_id,
-        COUNT(ec.episodio_clinico_id) AS total_atenciones,
+        COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion
       FROM paciente p
       LEFT JOIN usuario u ON u.usuario_id = p.usuario_id
-      INNER JOIN episodio_clinico ec ON ec.paciente_id = p.paciente_id
-      INNER JOIN profesional pr ON pr.profesional_id = ec.profesional_id
-      WHERE pr.usuario_id = ?
+      LEFT JOIN episodio_clinico ec ON ec.paciente_id = p.paciente_id
+        AND ec.profesional_id IN (SELECT profesional_id FROM profesional WHERE usuario_id = ?)
+      WHERE (
+          ec.paciente_id IS NOT NULL
+          OR p.paciente_id IN (
+            SELECT c.paciente_id 
+            FROM cita c 
+            JOIN profesional pr ON c.profesional_id = pr.profesional_id 
+            WHERE pr.usuario_id = ? AND c.estado NOT IN ('CANCELADA')
+          )
+        )
         AND (
           u.nombres LIKE ?
           OR u.apellido_paterno LIKE ?
@@ -228,7 +256,7 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         p.comuna_id
       ORDER BY ultima_atencion DESC
       `,
-      [usuarioId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
+      [usuarioId, usuarioId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
     );
 
     res.json({ ok: true, pacientes });

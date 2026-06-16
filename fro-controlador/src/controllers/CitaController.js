@@ -398,3 +398,64 @@ exports.obtenerEstadoCita = async (req, res) => {
     return res.status(500).json({ error: 'Error interno al consultar el estado.' });
   }
 };
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU20 — Listar citas por Rol (Paciente / Profesional)
+// ─────────────────────────────────────────────────────────────────────────────
+
+exports.obtenerCitasPaciente = async (req, res) => {
+  const usuario_id = req.user?.usuario_id; // Viene del token decodificado
+
+  try {
+    const [citas] = await pool.query(
+      `SELECT 
+          c.cita_id, 
+          c.fecha_hora_inicio, 
+          c.fecha_hora_fin, 
+          c.estado,
+          CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
+          CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
+       FROM Cita c
+       JOIN Paciente pac      ON c.paciente_id = pac.paciente_id
+       JOIN Usuario u_pac     ON pac.usuario_id = u_pac.usuario_id
+       JOIN Profesional prof  ON c.profesional_id = prof.profesional_id
+       JOIN Usuario u_prof    ON prof.usuario_id = u_prof.usuario_id
+       WHERE pac.usuario_id = ?
+       ORDER BY c.fecha_hora_inicio ASC`,
+      [usuario_id]
+    );
+
+    return res.status(200).json(citas);
+  } catch (error) {
+    console.error('[obtenerCitasPaciente]', error);
+    return res.status(500).json({ error: 'Error interno al obtener las citas del paciente.' });
+  }
+};
+
+exports.obtenerCitasProfesional = async (req, res) => {
+  const usuario_id = req.user?.usuario_id; // Viene del token decodificado
+
+  try {
+    const [citas] = await pool.query(
+      `SELECT 
+          c.cita_id, 
+          c.fecha_hora_inicio, 
+          c.fecha_hora_fin, 
+          c.estado,
+          CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
+          CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
+       FROM Cita c
+       JOIN Paciente pac      ON c.paciente_id = pac.paciente_id
+       JOIN Usuario u_pac     ON pac.usuario_id = u_pac.usuario_id
+       JOIN Profesional prof  ON c.profesional_id = prof.profesional_id
+       JOIN Usuario u_prof    ON prof.usuario_id = u_prof.usuario_id
+       WHERE prof.usuario_id = ?
+       ORDER BY c.fecha_hora_inicio ASC`,
+      [usuario_id]
+    );
+
+    return res.status(200).json(citas);
+  } catch (error) {
+    console.error('[obtenerCitasProfesional]', error);
+    return res.status(500).json({ error: 'Error interno al obtener las citas asignadas al profesional.' });
+  }
+};

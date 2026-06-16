@@ -136,18 +136,29 @@ export default function AgendamientoScreen({ navigation }) {
   };
 
   // ── CU20: Cargar citas del usuario para gestionar estados ────────────────
-  const cargarCitasActivas = async (esPull = false) => {
-    esPull ? setRefreshingCitas(true) : setCargandoCitas(true);
-    try {
-      const endpoint = rol === 'Paciente' ? '/citas/mis-citas' : '/citas/asignadas';
-      const { data } = await apiClient.get(endpoint);
-      setCitasActivas(data);
-    } catch {
-      // Silencioso: la sección simplemente no muestra citas
-    } finally {
-      esPull ? setRefreshingCitas(false) : setCargandoCitas(false);
-    }
-  };
+ const cargarCitasActivas = async (esPull = false) => {
+  esPull ? setRefreshingCitas(true) : setCargandoCitas(true);
+  try {
+    const endpoint = rol === 'Paciente' ? '/citas/mis-citas' : '/citas/asignadas';
+    const response = await apiClient.get(endpoint);
+    
+    // 1. Espiamos qué formato real está enviando el backend
+    console.log(`[DEBUG] Respuesta de ${endpoint}:`, response.data);
+    
+    // 2. Protegemos la app por si el backend envuelve las citas en un objeto { data: [...] }
+    const listaCitas = Array.isArray(response.data) 
+      ? response.data 
+      : (response.data?.data || []);
+      
+    setCitasActivas(listaCitas);
+  } catch (error) {
+    // 3. ¡Ya no más secretos! Si hay error de token o ruta, saltará aquí:
+    console.error(`[ERROR] Falló cargarCitasActivas (${rol}):`, error.response?.data || error.message);
+    Alert.alert('Error', 'No se pudieron sincronizar tus citas activas.');
+  } finally {
+    esPull ? setRefreshingCitas(false) : setCargandoCitas(false);
+  }
+};
 
   useEffect(() => {
     cargarProfesionales();

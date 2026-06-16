@@ -1,3 +1,5 @@
+// Ruta: fro-vista/src/screens/Profesional/HistorialPacienteScreen.js
+
 import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
@@ -6,9 +8,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,          // 1. Agregamos Alert para las excepciones
+  RefreshControl, // 1. Agregamos RefreshControl para latencia de red
 } from 'react-native';
 
-import { getHistorialPaciente } from '../../api/client';
+// Importamos tanto el cliente base (apiClient) para los POST como el lector de historial
+import apiClient, { getHistorialPaciente } from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 
 export default function HistorialPacienteScreen({ route, navigation }) {
@@ -21,11 +26,17 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [paciente, setPaciente] = useState(null);
   const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // 2. Estado para el pull-to-refresh
   const [error, setError] = useState('');
 
-  const cargarHistorial = async () => {
+  // Modificamos para aceptar la bandera de actualización por red
+  const cargarHistorial = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError('');
 
       const data = await getHistorialPaciente(
@@ -50,12 +61,66 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       );
     } finally {
       setLoading(false);
+      setRefreshing(false); // Apagamos el indicador de refresco
     }
   };
 
   useEffect(() => {
     cargarHistorial();
   }, []);
+
+  // ⚡ FUNCIÓN MÁGICA: Controla y dispara las 4 Excepciones solicitadas
+  const modificarEstadoCita = async (citaId, estadoActual, evento) => {
+    
+    // ❌ EXCEPCIÓN 1: Bloqueo de interacción sobre estados terminales
+    // Validamos localmente si ya está cerrada antes de ir al servidor
+    const estadosTerminales = ['Realizada', 'Cancelada', 'Inasistencia'];
+    if (estadosTerminales.includes(estadoActual)) {
+      Alert.alert(
+        "Acción no permitida",
+        "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal. Por favor, selecciona una cita activa para operar sobre ella."
+      );
+      return; 
+    }
+
+    try {
+      // Intentamos persistir la transición en el endpoint correspondiente
+      const response = await apiClient.post(`/citas/${citaId}/transicionar`, { evento });
+      
+      if (response.data.ok || response.status === 200) {
+        Alert.alert("Éxito", "Estado de la cita actualizado con éxito.");
+        cargarHistorial(false); // Sincroniza la vista al tiro
+      }
+    } catch (err) {
+      if (err.response) {
+        const { status, data } = err.response;
+
+        // ❌ EXCEPCIÓN 2: Reglas de negocio inválidas (Transición incorrecta de flujo)
+        if (status === 422 || data.code === 'TRANSICION_INVALIDA') {
+          Alert.alert(
+            "Error de validación de flujo lógico",
+            "El evento de entrada no cumple con las reglas de negocio necesarias para la transición solicitada. El Sistema detiene el cambio de fase.\n\nPor favor, verifica los requisitos previos necesarios para habilitar dicho estado."
+          );
+        } 
+        // ❌ EXCEPCIÓN 4: Fallo crítico de persistencia en la Base de Datos (Timeout o Crash)
+        else if (status === 500 || data.code === 'FALLO_PERSISTENCIA' || data.code === 'PERSIST_FAIL') {
+          Alert.alert(
+            "Alerta de Error Crítica",
+            "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia o tiempo de espera agotado. El Sistema generó un reporte técnico automático.\n\nPor favor, contacta al soporte técnico para informar sobre la falla en el registro del estado."
+          );
+        } else {
+          Alert.alert("Error", data.message || "No se pudo cambiar el estado.");
+        }
+      } else {
+        // ❌ EXCEPCIÓN 3: Latencia crítica de red o desconexión temporal
+        Alert.alert(
+          "Sincronización en curso",
+          "La latencia de red impide visualizar el cambio de estado en la interfaz de manera inmediata.\n\nEl Sistema procesará la transacción exitosamente en el servidor. Por favor, refresca la aplicación para sincronizar la vista con los datos del controlador.",
+          [{ text: "Refrescar Ahora", onPress: () => cargarHistorial(true) }]
+        );
+      }
+    }
+  };
 
   const formatearFecha = (fecha) => {
     if (!fecha) return 'No informado';
@@ -70,7 +135,13 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      // Implementamos el control de arrastrar para actualizar (Excepción 3)
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={() => cargarHistorial(true)} colors={['#2563eb']} />
+      }
+    >
       <Text style={styles.titulo}>Ficha Clínica Electrónica</Text>
       <Text style={styles.subtitulo}>Historial consolidado del paciente</Text>
 
@@ -94,12 +165,12 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         <Text style={styles.botonAnamnesisTexto}>📋 Registrar Anamnesis</Text>
       </TouchableOpacity>
 
-      {loading && <ActivityIndicator size="large" style={styles.loading} />}
+      {loading && <ActivityIndicator size="large" style={styles.loading} color="#2563eb" />}
 
       {error !== '' && (
         <View style={styles.errorContainer}>
           <Text style={styles.error}>{error}</Text>
-          <TouchableOpacity style={styles.boton} onPress={cargarHistorial}>
+          <TouchableOpacity style={styles.boton} onPress={() => cargarHistorial(false)}>
             <Text style={styles.botonTexto}>Reintentar</Text>
           </TouchableOpacity>
         </View>
@@ -124,10 +195,34 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                 <Text style={styles.fecha}>
                   {formatearFecha(item.fecha_hora_inicio)}
                 </Text>
-                <Text>Estado: {item.estado}</Text>
+                <Text style={{ fontWeight: '500' }}>Estado: {item.estado}</Text>
                 <Text>Profesional: {item.profesional}</Text>
                 <Text>Especialidad: {item.especialidad}</Text>
                 <Text>Modalidad: {item.tipo_sede}</Text>
+
+                {/* 🌟 NUEVO: PANEL DE ACCIONES DIRECTAS EN LA CITA */}
+                <View style={styles.containerAcciones}>
+                  <TouchableOpacity 
+                    style={[styles.botonAccion, { backgroundColor: '#2563eb' }]}
+                    onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
+                  >
+                    <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[styles.botonAccion, { backgroundColor: '#16a34a' }]}
+                    onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
+                  >
+                    <Text style={styles.textoBotonAccion}>✅ Finalizar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[styles.botonAccion, { backgroundColor: '#dc2626' }]}
+                    onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
+                  >
+                    <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           )}
@@ -290,4 +385,26 @@ const styles = StyleSheet.create({
   },
   warningText: { color: '#7c2d12' },
   sinResultados: { color: '#666', marginBottom: 12 },
+  
+  // Estilos añadidos para el panel de acciones
+  containerAcciones: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+  },
+  botonAccion: {
+    flex: 1,
+    paddingVertical: 8,
+    marginHorizontal: 4,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  textoBotonAccion: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });

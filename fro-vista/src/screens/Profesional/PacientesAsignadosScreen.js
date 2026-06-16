@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  RefreshControl, // 1. Agregamos el control de refresco nativo
 } from 'react-native';
 
 import { AuthContext } from '../../context/AuthContext';
@@ -20,15 +21,19 @@ export default function PacientesAsignadosScreen({ navigation }) {
   const [pacientes, setPacientes] = useState([]);
   const [buscar, setBuscar] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // 2. Estado para el pull-to-refresh
   const [error, setError] = useState('');
 
-  const cargarPacientes = async () => {
+  const cargarPacientes = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError('');
 
       const usuarioId = userData?.usuario_id;
-
       if (!usuarioId) {
         setError('No se encontró la sesión del profesional');
         return;
@@ -36,13 +41,10 @@ export default function PacientesAsignadosScreen({ navigation }) {
 
       const response = await apiClient.get(
         `/profesionales/usuario/${usuarioId}/pacientes`,
-        {
-          params: { buscar },
-        }
+        { params: { buscar } }
       );
 
       const data = response.data;
-
       if (data.ok) {
         setPacientes(data.pacientes);
       } else {
@@ -53,12 +55,18 @@ export default function PacientesAsignadosScreen({ navigation }) {
       setError('Error al recuperar registros clínicos');
     } finally {
       setLoading(false);
+      setRefreshing(false); // 3. Apagamos el indicador de refresco
     }
   };
 
   useEffect(() => {
     cargarPacientes();
   }, []);
+
+  // Función específica para el gesto de arrastrar hacia abajo (Excepción 3)
+  const alRefrescar = () => {
+    cargarPacientes(true);
+  };
 
   const renderPaciente = ({ item }) => (
     <View style={styles.card}>
@@ -78,7 +86,7 @@ export default function PacientesAsignadosScreen({ navigation }) {
           })
         }
       >
-        <Text style={styles.botonTexto}>Ver historial</Text>
+        <Text style={styles.botonTexto}>Ver historial / Gestionar Citas</Text>
       </TouchableOpacity>
     </View>
   );
@@ -94,16 +102,16 @@ export default function PacientesAsignadosScreen({ navigation }) {
         onChangeText={setBuscar}
       />
 
-      <TouchableOpacity style={styles.botonBuscar} onPress={cargarPacientes}>
+      <TouchableOpacity style={styles.botonBuscar} onPress={() => cargarPacientes(false)}>
         <Text style={styles.botonTexto}>Buscar</Text>
       </TouchableOpacity>
 
-      {loading && <ActivityIndicator size="large" />}
+      {loading && <ActivityIndicator size="large" color="#2563eb" />}
 
       {error !== '' && (
         <View>
           <Text style={styles.error}>{error}</Text>
-          <TouchableOpacity style={styles.botonBuscar} onPress={cargarPacientes}>
+          <TouchableOpacity style={styles.botonBuscar} onPress={() => cargarPacientes(false)}>
             <Text style={styles.botonTexto}>Reintentar</Text>
           </TouchableOpacity>
         </View>
@@ -117,6 +125,10 @@ export default function PacientesAsignadosScreen({ navigation }) {
         data={pacientes}
         keyExtractor={(item) => item.paciente_id.toString()}
         renderItem={renderPaciente}
+        // 4. Añadimos el refresco a la lista para cumplir la Excepción 3
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={alRefrescar} colors={['#2563eb']} />
+        }
       />
     </View>
   );
