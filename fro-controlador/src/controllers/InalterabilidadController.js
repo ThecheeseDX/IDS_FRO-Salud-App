@@ -14,20 +14,38 @@ const registrarAuditoria = async (connection, req, accion, entidad, datos) => {
 
 exports.finalizarEvolucion = async (req, res) => {
   const { evolucionId } = req.params;
-  const { firma_digital } = req.body;
-
-  if (!firma_digital || firma_digital.trim().length < 4) {
-    return res.status(400).json({
-      error: 'FIRMA_INVALIDA',
-      mensaje: 'La firma digital ingresada no es válida.'
-    });
-  }
+  const usuarioId = req.user?.usuario_id || null;
 
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
+    // 1. CU36 - Flujo Principal: Capturar datos del autor desde su perfil
+    const [profData] = await connection.execute(
+      `SELECT u.nombres, u.apellido_paterno, u.apellido_materno, u.rut, p.num_registro_salud 
+       FROM usuario u
+       INNER JOIN profesional p ON p.usuario_id = u.usuario_id
+       WHERE u.usuario_id = ?`,
+      [usuarioId]
+    );
+
+    const prof = profData[0];
+
+    // 2. CU36 - Excepción 2: Detección de falta de acreditación en la Superintendencia
+    if (!prof || !prof.num_registro_salud) {
+      await connection.rollback();
+      return res.status(403).json({
+        error: 'FALTA_ACREDITACION',
+        mensaje: 'El sistema impide la firma. Por favor, actualice su perfil con su Registro Profesional de la Superintendencia.'
+      });
+    }
+
+    // 3. Generar la Firma Digital Simple automáticamente
+    const nombreCompleto = `${prof.nombres} ${prof.apellido_paterno} ${prof.apellido_materno}`;
+    const firmaDigitalGenerada = `Firmado digitalmente por: ${nombreCompleto} | RUT: ${prof.rut} | Reg. SIS: ${prof.num_registro_salud}`;
+
+    // 4. Verificar el estado de la evolución
     const [rows] = await connection.execute(
       `SELECT evolucion_clinica_id, inalterable
        FROM evolucion_clinica
@@ -48,41 +66,44 @@ exports.finalizarEvolucion = async (req, res) => {
       await registrarAuditoria(connection, req, 'INTENTO_FINALIZAR_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId
       });
-
       await connection.rollback();
-
       return res.status(409).json({
         error: 'REGISTRO_YA_INALTERABLE',
         mensaje: 'La evolución clínica ya se encuentra finalizada e inalterable.'
       });
     }
 
+    // 5. CU36 - Generar Timestamp automático (CURRENT_TIMESTAMP) y vincular firma
     await connection.execute(
       `UPDATE evolucion_clinica
        SET inalterable = 1,
            firma_digital = ?,
            hora_firma_digital = CURRENT_TIMESTAMP
        WHERE evolucion_clinica_id = ?`,
-      [firma_digital, evolucionId]
+      [firmaDigitalGenerada, evolucionId]
     );
 
     await registrarAuditoria(connection, req, 'FINALIZAR_EVOLUCION_CLINICA', 'evolucion_clinica', {
       evolucion_clinica_id: evolucionId,
-      resultado: 'Registro clínico finalizado e inalterable'
+      resultado: 'Registro clínico finalizado e inalterable',
+      firma_aplicada: firmaDigitalGenerada
     });
 
     await connection.commit();
 
     return res.status(200).json({
-      mensaje: 'Registro clínico finalizado correctamente. Ahora es inalterable.'
+      mensaje: 'Registro clínico finalizado y firmado correctamente. Ahora es inalterable.',
+      firma_digital: firmaDigitalGenerada
     });
+
   } catch (error) {
     await connection.rollback();
     console.error('[finalizarEvolucion]', error);
 
+    // CU36 - Excepción 4: Pérdida de sincronización con servidor
     return res.status(500).json({
       error: 'ERROR_FINALIZAR_EVOLUCION',
-      mensaje: 'Error interno al finalizar la evolución clínica.'
+      mensaje: 'Se perdió sincronización con el servidor. Se suspendió el guardado, reintente la operación.'
     });
   } finally {
     connection.release();

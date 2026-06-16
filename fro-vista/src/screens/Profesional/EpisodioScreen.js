@@ -17,6 +17,9 @@ export default function EpisodioScreen() {
   const [episodio, setEpisodio] = useState(null);
   const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
 
+  // NUEVO: Estado para el botón de iniciar atención
+  const [cargandoEvolucion, setCargandoEvolucion] = useState(false);
+
   // ── Estado para CREAR episodio ───────────────────────────────────────────
   const [nuevoEpisodio, setNuevoEpisodio] = useState({
     motivo_consulta: '',
@@ -50,6 +53,23 @@ export default function EpisodioScreen() {
       }
     } finally {
       setCargandoBusqueda(false);
+    }
+  };
+
+  // ── INICIAR ATENCIÓN (CREAR EVOLUCIÓN EN BLANCO) ──────────────────────────
+  const iniciarAtencion = async () => {
+    setCargandoEvolucion(true);
+    try {
+      const { data } = await apiClient.post(`/clinica/episodio/${episodio.episodio_clinico_id}/evolucion`);
+      Alert.alert(
+        'Atención Iniciada',
+        `${data.mensaje}\n\nEl ID de tu nueva Evolución es: ${data.evolucion_clinica_id}\n(Anótalo para registrar avances o firmarlo)`
+      );
+    } catch (error) {
+      const err = error.response?.data;
+      Alert.alert('Error', err?.error || 'No se pudo iniciar la sesión clínica.');
+    } finally {
+      setCargandoEvolucion(false);
     }
   };
 
@@ -110,13 +130,25 @@ export default function EpisodioScreen() {
               ? <ActivityIndicator color="#fff" />
               : <Text style={styles.botonTexto}>Buscar</Text>}
           </TouchableOpacity>
-
+          
           {episodio && (
             <View style={styles.resultado}>
               <Text style={styles.resultadoTitulo}>Episodio #{episodio.episodio_clinico_id}</Text>
               <Text style={styles.resultadoCampo}>Motivo: {episodio.motivo_consulta}</Text>
               <Text style={styles.resultadoCampo}>Estado: {episodio.estado ?? 'Sin estado'}</Text>
               <Text style={styles.resultadoCampo}>Inicio: {new Date(episodio.fecha_inicio).toLocaleDateString()}</Text>
+              
+              {/* NUEVO BOTÓN PARA CREAR LA EVOLUCIÓN */}
+              <TouchableOpacity 
+                style={[styles.boton, { backgroundColor: '#f57c00', marginTop: 15 }]} 
+                onPress={iniciarAtencion} 
+                disabled={cargandoEvolucion}
+              >
+                {cargandoEvolucion
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.botonTexto}>+ Iniciar Nueva Atención</Text>}
+              </TouchableOpacity>
+
             </View>
           )}
         </View>
