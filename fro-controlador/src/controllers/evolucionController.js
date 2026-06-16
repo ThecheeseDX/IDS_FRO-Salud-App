@@ -114,3 +114,46 @@ exports.actualizarAvance = async (req, res) => {
     connection.release();
   }
 };
+
+// POST /api/clinica/episodio/:episodio_id/evolucion
+exports.crearEvolucionEnBlanco = async (req, res) => {
+  const { episodio_id } = req.params;
+  const usuario_id = req.user?.usuario_id;
+
+  const connection = await pool.getConnection();
+
+  try {
+    // 1. Obtener el ID del Profesional real a partir del ID del Usuario logueado
+    const [profesionales] = await connection.query(
+      'SELECT profesional_id FROM Profesional WHERE usuario_id = ?',
+      [usuario_id]
+    );
+
+    if (profesionales.length === 0) {
+      return res.status(403).json({ error: 'Usuario no es un profesional acreditado.' });
+    }
+
+    const profesional_id = profesionales[0].profesional_id;
+
+    // 2. Insertar la evolución clínica en blanco, ligada al episodio
+    const [result] = await connection.query(`
+      INSERT INTO Evolucion_Clinica (
+        inalterable, 
+        episodio_clinico_id, 
+        profesional_id,
+        porcentaje_objetivo
+      ) VALUES (0, ?, ?, 0)
+    `, [episodio_id, profesional_id]);
+
+    return res.status(201).json({
+      mensaje: 'Sesión clínica iniciada exitosamente.',
+      evolucion_clinica_id: result.insertId
+    });
+
+  } catch (error) {
+    console.error('[crearEvolucionEnBlanco]', error);
+    return res.status(500).json({ error: 'Error al iniciar la sesión clínica.' });
+  } finally {
+    connection.release();
+  }
+};

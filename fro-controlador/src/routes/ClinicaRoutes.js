@@ -54,6 +54,15 @@ router.put('/episodio/:episodio_id/avance',
     evolucionController.actualizarAvance
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CU36, CU32 — Inalterabilidad de la Ficha Clínica
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.post('/episodio/:episodio_id/evolucion',
+    verifyToken, authorizeRoles(['Profesional']),
+    evolucionController.crearEvolucionEnBlanco
+);
+
 // CU40 - Documentar intervención y respuesta fisiológica
 router.get('/intervenciones/sesiones',
     verifyToken, authorizeRoles(['Profesional']),
