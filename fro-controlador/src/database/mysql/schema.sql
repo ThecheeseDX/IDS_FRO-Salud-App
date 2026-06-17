@@ -421,6 +421,9 @@ VALUES ('ADMIN-1', 'Sistema', 'Admin', 'Admin', 'admin@sistema.cl', 'hash_falso'
 INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
 VALUES ('123456789', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));
 
+INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
+VALUES ('123334442', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));
+
 ALTER TABLE Usuario
     MODIFY COLUMN cuenta_activo BOOLEAN DEFAULT FALSE,
     ADD COLUMN otp_codigo      VARCHAR(6)   NULL,
@@ -429,7 +432,7 @@ ALTER TABLE Usuario
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
 
 INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
-('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 8),
-('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 8),
-('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 8),
-('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 8);
+('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 2),
+('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 2),
+('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 2),
+('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 2);

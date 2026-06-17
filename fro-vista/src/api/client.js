@@ -1,11 +1,11 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const COMPUTADORA_IP = '192.168.100.52';
+const COMPUTADORA_IP = '192.168.1.130';
 
 const apiClient = axios.create({
   baseURL: `http://${COMPUTADORA_IP}:3000/api`,
-  timeout: 10000,
+  timeout: 100000,
   headers: {
     'Content-Type': 'application/json',
   },
