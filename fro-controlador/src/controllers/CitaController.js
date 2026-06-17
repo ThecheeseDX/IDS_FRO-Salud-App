@@ -66,6 +66,7 @@ exports.buscarDisponibilidad = async (req, res) => {
         const fechaHoraInicio = `${fecha} ${bloqueInicio}`;
         const fechaHoraFin    = `${fecha} ${bloqueFin}`;
 
+        // 1. Validar choque con citas existentes
         const [ocupadas] = await pool.query(
           `SELECT cita_id FROM Cita
            WHERE profesional_id = ?
@@ -75,7 +76,17 @@ exports.buscarDisponibilidad = async (req, res) => {
           [fila.profesional_id, fechaHoraFin, fechaHoraInicio]
         );
 
-        if (ocupadas.length === 0) {
+        // 2. NUEVA VALIDACIÓN: Choque con bloqueos de agenda (CU16)
+        const [bloqueos] = await pool.query(
+          `SELECT bloqueo_id FROM Bloqueo_Agenda
+           WHERE profesional_id = ?
+             AND fecha_inicio <= ?
+             AND fecha_fin >= ?`,
+          [fila.profesional_id, fechaHoraFin, fechaHoraInicio]
+        );
+
+        // 3. Solo agregar si NO hay citas NI bloqueos en ese horario
+        if (ocupadas.length === 0 && bloqueos.length === 0) {
           disponibilidad.push({
             profesional_id:  fila.profesional_id,
             sede_id:         fila.sede_id,
