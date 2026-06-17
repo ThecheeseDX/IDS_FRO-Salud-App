@@ -415,25 +415,19 @@ INSERT INTO Especialidad (nombre, descripcion) VALUES
 ('Kinesiología', 'Rehabilitación física y motora'),
 ('Kinesiología Respiratoria', 'Terapia y rehabilitación respiratoria');
 
--- 2. Creamos un usuario Administrador "fantasma" (Requisito por tu llave foránea en Profesional_Autorizado)
 INSERT INTO Usuario (rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id) 
 VALUES ('ADMIN-1', 'Sistema', 'Admin', 'Admin', 'admin@sistema.cl', 'hash_falso', 3);
 
--- 3. Insertamos un RUT de prueba en la nómina de autorizados (Ej: 123456789)
--- Cambia '123456789' por el RUT que usarás para probar el registro de profesional.
 INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
 VALUES ('123456789', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));
 
--- Migración CU04 sin columna otp_intentos
 ALTER TABLE Usuario
     MODIFY COLUMN cuenta_activo BOOLEAN DEFAULT FALSE,
     ADD COLUMN otp_codigo      VARCHAR(6)   NULL,
     ADD COLUMN otp_expiracion  TIMESTAMP    NULL;
 
---comando solo para crear la sede en la tabla
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
 
--- IMPORTANTE: Cambiar el '4' al final de cada línea por el usuario_id de la cuenta de Administrador.
 INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
 ('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 8),
 ('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 8),

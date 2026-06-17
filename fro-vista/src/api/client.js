@@ -45,7 +45,6 @@ apiClient.interceptors.response.use(
     }
 
     // ── CU70 Exc 3: el backend agotó los reintentos contra el proveedor externo (HTTP 503). ──
-    // Enriquecemos el error para que la pantalla que hizo la llamada muestre <ErrorRetry/>.
     if (status === 503) {
       error.proveedorNoDisponible = true;
       error.mensajeUsuario = 'El proveedor externo no respondió tras varios intentos. Inténtalo nuevamente en unos minutos.';

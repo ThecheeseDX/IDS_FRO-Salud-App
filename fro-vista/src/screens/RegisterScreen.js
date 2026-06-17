@@ -103,7 +103,6 @@ const RegisterScreen = ({ navigation }) => {
 
         setErrores(nuevosErrores);
         
-        // SOLUCIÓN: Verificamos dinámicamente si hay algún error rojo en el formulario
         const tieneErroresRojos = Object.keys(nuevosErrores).some(key => key !== 'contrasena' && key !== 'confirmar_contrasena');
         
         if (tieneErroresRojos) {
@@ -167,7 +166,6 @@ const RegisterScreen = ({ navigation }) => {
             if (response.status === 201) {
                 const { usuario_id, email } = response.data;
 
-                // Enmascarar email para mostrarlo en OTPScreen (ej: j***@gmail.com)
                 const partes = email.split('@');
                 const emailMascarado = partes[0][0] + '***@' + partes[1];
 

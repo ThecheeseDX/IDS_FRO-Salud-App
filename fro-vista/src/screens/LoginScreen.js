@@ -54,7 +54,6 @@ export default function LoginScreen({ navigation }) {
       setIsLoading(false);
       const { token, usuario, mensaje } = response.data;
 
-      // Usamos la función del contexto para guardar el token en el teléfono
       await loginSession(token, usuario);
       console.log("✅ Sesión guardada globalmente para el rol:", usuario.rol);
       
@@ -114,7 +113,6 @@ export default function LoginScreen({ navigation }) {
           editable={!isLoading}
         />
 
-        {/* Aquí se muestran los mensajes de las Excepciones 2, 3 y 4 */}
         {loginError ? <Text style={styles.errorTextGeneral}>{loginError}</Text> : null}
 
         <View style={styles.buttonContainer}>

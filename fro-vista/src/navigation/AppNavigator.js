@@ -6,28 +6,22 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AuthContext } from '../context/AuthContext';
 
-// Importamos las pantallas reales
+// Pantallas
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
-
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
 import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
 import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
 import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
 import InalterabilidadScreen from '../screens/Profesional/InalterabilidadScreen';
-//  CU32: Pantalla de Evolución Clínica 
 import EvolucionClinicaScreen from '../screens/Profesional/EvolucionClinicaScreen';
 import IntervencionScreen from '../screens/Profesional/IntervencionScreen';
 import MarcasTemporalesScreen from '../screens/Profesional/MarcasTemporalesScreen';
-
-//  CU59: Pantalla del Administrador 
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
-
-// CU16
 import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
 
 const Stack = createNativeStackNavigator();
