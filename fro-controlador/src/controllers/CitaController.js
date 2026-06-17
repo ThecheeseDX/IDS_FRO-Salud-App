@@ -238,8 +238,18 @@ exports.bloquearHorario = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
+
+    // Excepción 3 CP15-03: pérdida de conexión durante la transacción
+    if (error.code === 'ECONNRESET' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      return res.status(503).json({
+        error: 'CONEXION_PERDIDA',
+        mensaje: 'Se perdió la conexión durante el proceso. La operación fue abortada y revertida.'
+      });
+    }
+
     console.error('[bloquearHorario]', error);
     return res.status(500).json({ error: 'Error interno al bloquear el horario.' });
+
   } finally {
     connection.release();
   }
@@ -333,7 +343,7 @@ exports.transicionarEstadoCita = async (req, res) => {
         [id, estado_anterior, nuevo_estado, evento, usuario_id]
       );
     } catch (auditErr) {
-      console.log("\n⚠️ [ADVERTENCIA SCHEMA] No se pudo escribir la Bitácora de Auditoría:");
+      console.log("\n[ADVERTENCIA SCHEMA] No se pudo escribir la Bitácora de Auditoría:");
       console.error(auditErr.message);
       console.log("-> Revisa si en la tabla 'Bitacora_Auditoria' se llama 'id_cita' o similar.\n");
     }
@@ -347,7 +357,7 @@ exports.transicionarEstadoCita = async (req, res) => {
         [id, `El estado de su cita ha cambiado a: ${nuevo_estado}`, usuario_id]
       );
     } catch (notifErr) {
-      console.log("\n⚠️ [ADVERTENCIA SCHEMA] No se pudo escribir la Notificación:");
+      console.log("\n[ADVERTENCIA SCHEMA] No se pudo escribir la Notificación:");
       console.error(notifErr.message);
       console.log("-> Revisa si en la tabla 'Notificacion' se llama 'id_cita' o similar.\n");
     }
@@ -365,7 +375,7 @@ exports.transicionarEstadoCita = async (req, res) => {
     await connection.rollback();
     
     console.log("\n========================================================");
-    console.log("🚨 [DEBUG CRÍTICO] EL ERROR REAL DETECTADO EN MYSQL ES:");
+    console.log("[DEBUG CRÍTICO] EL ERROR REAL DETECTADO EN MYSQL ES:");
     console.error(err);
     console.log("========================================================\n");
 
