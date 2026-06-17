@@ -14,11 +14,13 @@ Thumbs.db
 *.log
 .web/
 
-#De los CU
+# De los CU
 logs/
 auditoria/
 
 # Archivos de entorno
 .env
 .env.local
+
+# Client.js
 fro-vista/src/api/client.js
