@@ -73,7 +73,7 @@ exports.finalizarEvolucion = async (req, res) => {
       });
     }
 
-    // 5. CU36 - Generar Timestamp automático (CURRENT_TIMESTAMP) y vincular firma
+    // 5. CU36 - Generar Timestamp automático y vincular firma
     await connection.execute(
       `UPDATE evolucion_clinica
        SET inalterable = 1,

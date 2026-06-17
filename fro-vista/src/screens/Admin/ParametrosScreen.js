@@ -1,4 +1,3 @@
-// Ruta: fro-vista/src/screens/Admin/ParametrosScreen.js
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
@@ -16,10 +15,10 @@ import {
 
 import apiClient from '../../api/client'; 
 import ErrorRetry from '../../components/ErrorRetry'; 
-import { AuthContext } from '../../context/AuthContext'; //  IMPORTAMOS EL CONTEXTO
+import { AuthContext } from '../../context/AuthContext'
 
 export default function ParametrosScreen() {
-  const { logoutSession } = useContext(AuthContext); //  EXTRAEMOS LA FUNCIÓN DE SALIDA
+  const { logoutSession } = useContext(AuthContext);
 
   const [parametros, setParametros] = useState([]);
   const [erroresLocales, setErroresLocales] = useState({}); 
@@ -28,13 +27,13 @@ export default function ParametrosScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorExcepcion, setErrorExcepcion] = useState(null); 
 
-  const [inicio, setInicio] = useState(''); // Formato YYYY-MM-DD
-  const [fin, setFin] = useState('');       // Formato YYYY-MM-DD
-  const [profesionalId, setProfesionalId] = useState(''); // Solo si es admin
+  const [inicio, setInicio] = useState(''); 
+  const [fin, setFin] = useState('');      
+  const [profesionalId, setProfesionalId] = useState('');
 
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
-  const [modo, setModo] = useState('inicio'); // Para saber si elegimos inicio o fin
+  const [modo, setModo] = useState('inicio');
 
   const onChange = (event, selectedDate) => {
       setShow(false);
@@ -216,7 +215,6 @@ const aplicarRestriccion = async () => {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Gestión de Disponibilidad</Text>
 
-            {/* Solo se muestra si el usuario es administrador */}
             <TextInput 
               style={styles.input} 
               placeholder="ID Profesional (Admin)" 
@@ -248,7 +246,6 @@ const aplicarRestriccion = async () => {
         </ScrollView>
       )}
 
-      {/* BOTÓN DE CIERRE DE SESIÓN FIJO AL FONDO */}
       <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>

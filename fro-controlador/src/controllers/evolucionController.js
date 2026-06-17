@@ -1,10 +1,6 @@
 const pool = require('../config/database');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CU32 - Paso 1.2: Registro del avance de un objetivo terapéutico
-// Modelo elegido: actualizar el valor medido (valor_actual) en Objetivo_Terapeutico,
-// dentro de una transacción con auditoría.
-// ─────────────────────────────────────────────────────────────────────────────
+// CU32
 
 function obtenerIP(req) {
   return (
@@ -19,7 +15,7 @@ exports.actualizarAvance = async (req, res) => {
   const { objetivo_terapeutico_id, valor_actual } = req.body;
   const usuario_id = req.user?.usuario_id || null;
 
-  // ─ Validación de obligatoriedad ─────────────────────────────────────────
+  // ─ Validación de obligatoriedad
   if (!objetivo_terapeutico_id || valor_actual === undefined || valor_actual === null || valor_actual === '') {
     return res.status(400).json({
       error: 'CAMPOS_OBLIGATORIOS_FALTANTES',

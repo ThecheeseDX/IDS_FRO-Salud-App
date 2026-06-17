@@ -8,7 +8,7 @@ import apiClient from '../../api/client';
 export default function InalterabilidadScreen() {
   const [evolucionId, setEvolucionId] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [firmaExitosa, setFirmaExitosa] = useState(null); // Para mostrar la firma generada
+  const [firmaExitosa, setFirmaExitosa] = useState(null);
 
   // CU36 - Flujo previo a la petición
   const intentarFirmar = () => {
@@ -34,7 +34,7 @@ export default function InalterabilidadScreen() {
         },
         {
           text: 'Aceptar y Firmar',
-          onPress: ejecutarPeticionFirma, // Flujo Principal
+          onPress: ejecutarPeticionFirma,
         },
       ]
     );
@@ -61,8 +61,6 @@ export default function InalterabilidadScreen() {
 
       setEvolucionId('');
     } catch (error) {
-      // Aquí se atrapan la Excepción 2 (Falta de acreditación 403) 
-      // y la Excepción 4 (Error de sincronización 500)
       Alert.alert(
         'Operación Rechazada',
         error.response?.data?.mensaje ||
@@ -91,8 +89,6 @@ export default function InalterabilidadScreen() {
         keyboardType="numeric"
       />
 
-      {/* eliminacion el TextInput de la "Firma Digital Simple" porque ahora la hace el Backend */}
-
       <TouchableOpacity
         style={styles.button}
         onPress={intentarFirmar}
@@ -105,7 +101,6 @@ export default function InalterabilidadScreen() {
         )}
       </TouchableOpacity>
 
-      {/* Muestra la firma como evidencia visual si el proceso fue exitoso */}
       {firmaExitosa && (
         <View style={styles.successBox}>
           <Text style={styles.successTitle}>✓ Documento Sellado</Text>

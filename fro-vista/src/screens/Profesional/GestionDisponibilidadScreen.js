@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native'; // ◄ Se agregó ActivityIndicator
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -7,7 +7,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 export default function GestionDisponibilidadScreen() {
   const { userData, isLoading } = useContext(AuthContext);
 
-  // Estados del formulario
   const [profId, setProfId] = useState(userData?.role === 'Admin' ? '' : String(userData?.usuario_id || ''));
   const [inicio, setInicio] = useState('');
   const [fin, setFin] = useState('');
@@ -49,11 +48,9 @@ export default function GestionDisponibilidadScreen() {
             return Alert.alert("Campos Incompletos", "Como Administrador, debe especificar el ID del profesional.");
         }
 
-        // Identificar el ID correcto dinámicamente
         const idAEnviar = userData?.role === 'Admin' ? profId : (userData?.usuario_id || profId);
         
-        console.log("Enviando bloqueo para el ID:", idAEnviar); // ◄ Para monitorear en tu consola
-
+        console.log("Enviando bloqueo para el ID:", idAEnviar);
         try {
             await apiClient.post('/clinica/disponibilidad/restringir', {
                 profesional_id: parseInt(idAEnviar, 10), 
@@ -79,7 +76,6 @@ export default function GestionDisponibilidadScreen() {
         <Text style={styles.cardTitle}>Gestión de Agenda</Text>
         <Text style={styles.cardSubtitle}>Configure los periodos de inactividad</Text>
 
-        {/* Si es admin, mostramos el campo de ID */}
         {userData?.role === 'Admin' && (
           <View style={styles.inputContainer}>
             <Text style={styles.label}>ID Profesional</Text>
@@ -93,7 +89,6 @@ export default function GestionDisponibilidadScreen() {
           </View>
         )}
 
-        {/* Campo para el Motivo */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Motivo del Bloqueo</Text>
           <TextInput 
