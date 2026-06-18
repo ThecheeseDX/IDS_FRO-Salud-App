@@ -1,0 +1,117 @@
+# Guía de Instalación y Despliegue - FRO Salud (Incremento 1)
+Esta guía detalla los pasos necesarios para instalar, configurar y ejecutar el entorno de desarrollo local de la aplicación FRO Salud (Backend y Frontend).
+
+## 1. Requisitos Previos (Herramientas necesarias)
+Antes de comenzar, asegúrese de tener instalados los siguientes programas en su computador:
+
+- Node.js (Versión 18 o superior).
+
+- MySQL Server (Versión 8.0 o superior) y un cliente de gestión como MySQL Workbench o la extensión database client de visual studio.
+
+- Git (Para clonar el repositorio).
+
+- Expo Go. [Expo.apk Drive Download](https://drive.google.com/file/d/1TRcHjcN04z99trjF9duqZB4O9h5sxXJX/view?usp=sharing)
+
+## 2. Configuración del Servidor (Backend)
+El backend está construido con Node.js y Express, y es el encargado de gestionar la lógica de negocio y la conexión con la base de datos.
+
+### Paso 2.1: Instalación de Dependencias
+1. Abra una terminal y navegue hasta la carpeta del controlador:
+
+```
+cd fro-controlador
+```
+2. Instale los módulos necesarios ejecutando:
+```
+npm install
+```
+### Paso 2.2: Configuración de Variables de Entorno (.env)
+1. Dentro de la carpeta fro-controlador, busque el archivo llamado **.env.example**.
+
+2. Haga una copia de ese archivo y renómbrela a **.env**.
+
+### Configuración del Servicio de Correo (OTP por Gmail)
+Para el funcionamiento del Caso de Uso 04 (Verificación OTP), el backend requiere enviar correos electrónicos reales utilizando el servicio SMTP de Gmail. Por políticas de seguridad, Google no permite utilizar la contraseña estándar de la cuenta, sino que exige generar una Contraseña de Aplicación.
+
+Para configurar este servicio localmente, siga estos pasos:
+
+1. Ingrese a la cuenta de Google (Gmail) que actuará como remitente del sistema.
+
+2. Vaya a Gestionar tu cuenta de Google > Seguridad.
+
+3. Asegúrese de tener activada la Verificación en 2 pasos.
+
+4. En el buscador de la cuenta de Google, escriba "Contraseñas de aplicación" y seleccione la opción.
+
+5. Cree una nueva aplicación ingresando un nombre (ej. FRO Salud Backend) y presione Crear.
+
+6. Google le entregará una clave segura de 16 caracteres (ej: abcd efgh ijkl mnop). Cópiela.
+
+Para probar correctamente el flujo de registro completo en la aplicación móvil, asegúrese de ingresar un correo electrónico real y accesible en el formulario de Registro (Paciente o Profesional). De lo contrario, el código OTP de 6 dígitos será enviado a un buzón inexistente y no podrá finalizar la activación de la cuenta.
+
+Abra el nuevo archivo **.env** y configure sus credenciales locales de MySQL y SMTP. Debería quedar algo similar a esto:
+```
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=tu_clave # Su contraseña de MySQL local
+DB_NAME=fro_salud_db
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tucorreo@gmail.com
+SMTP_PASS=passwordapp
+
+JWT_SECRET=tu_clave # puede ser otra contraseña sin necesidad que sea la misma de mYSQL
+```
+### Paso 2.3: Inicialización de la Base de Datos
+1. Abra su gestor de bases de datos y conéctese a su servidor local (localhost).
+
+2. Abra el archivo ubicado en ```fro-controlador/src/database/mysql/schema.sql```.
+
+3. Ejecute todo el script. Esto creará automáticamente la base de datos fro_salud_db, todas sus tablas ordenadas y los usuarios/semillas iniciales necesarios.
+
+### Paso 2.4: Levantar el Backend
+1. En la misma terminal que abrió en la carpeta fro-controlador, inicie el servidor:
+
+```
+npm start
+```
+(Debería ver un mensaje indicando "Servidor corriendo en el puerto 3000" y "Conectado a la base de datos MySQL").
+
+## 3. Configuración de la Aplicación Móvil (Frontend)
+El frontend está construido con React Native y Expo. Para que la aplicación en el celular pueda hablar con el servidor en su computador, necesitamos sincronizar sus direcciones IP.
+
+### Paso 3.1: Descubrir su Dirección IP local
+1. Abra una nueva terminal (deje el backend corriendo en la otra).
+
+2. En cmd o powershell, ejecute el comando ipconfig.
+
+3. Busque la línea que dice "Dirección IPv4" (ej. 192.168.1.80) y anótela.
+
+### Paso 3.2: Configurar la conexión (client.js)
+1. Navegue a la ruta: ```fro-vista/src/api/client.js```.
+
+2. Abra el archivo client.js en su editor de código.
+
+3. Modifique la variable const COMPUTADORA IP para que use la IP que acaba de anotar.
+
+4. Ejemplo correcto: ```const COMPUTADORA_IP = '192.168.1.130';```
+
+### Paso 3.3: Instalación de Dependencias
+1. En su terminal, navegue a la carpeta de la vista:
+
+```
+cd fro-vista
+```
+2. Instale los módulos ejecutando:
+
+```
+npm install
+```
+### Paso 3.4: Levantar la Vista (Modo Desarrollo)
+1. Ejecute el siguiente comando para iniciar el empaquetador de Expo:
+
+```
+npx expo start
+```
+2. Aparecerá un código QR en la terminal. Escanéelo con la aplicación Expo Go en su celular (asegúrese de que el celular y el PC estén conectados a la misma red Wi-Fi).
