@@ -14,8 +14,10 @@ CREATE TABLE Usuario (
     apellido_materno VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     contrasena_hash VARCHAR(255) NOT NULL,
-    cuenta_activo BOOLEAN DEFAULT TRUE,
+    cuenta_activo BOOLEAN DEFAULT FALSE,
     hora_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    otp_codigo VARCHAR(6) NULL,
+    otp_expiracion TIMESTAMP NULL,
     rol_id INT NOT NULL,
     FOREIGN KEY (rol_id) REFERENCES Rol(rol_id)
 );
@@ -415,24 +417,16 @@ INSERT INTO Especialidad (nombre, descripcion) VALUES
 ('Kinesiología', 'Rehabilitación física y motora'),
 ('Kinesiología Respiratoria', 'Terapia y rehabilitación respiratoria');
 
-INSERT INTO Usuario (rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id) 
-VALUES ('ADMIN-1', 'Sistema', 'Admin', 'Admin', 'admin@sistema.cl', 'hash_falso', 3);
-
-INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
-VALUES ('123456789', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));
-
-INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) 
-VALUES ('123334442', TRUE, (SELECT usuario_id FROM Usuario WHERE rut = 'ADMIN-1'));
-
-ALTER TABLE Usuario
-    MODIFY COLUMN cuenta_activo BOOLEAN DEFAULT FALSE,
-    ADD COLUMN otp_codigo      VARCHAR(6)   NULL,
-    ADD COLUMN otp_expiracion  TIMESTAMP    NULL;
+INSERT INTO Usuario (usuario_id, rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id) 
+VALUES (1, 'ADMIN-1', 'Sistema', 'Admin', 'Principal', 'admin@frosalud.cl', 'hash_password', 3);
+INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) VALUES 
+('123456789', TRUE, 1),
+('123334442', TRUE, 1),
 
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
 
 INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
-('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 2),
-('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 2),
-('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 2),
-('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 2);
+('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 1),
+('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 1),
+('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 1),
+('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 1);
