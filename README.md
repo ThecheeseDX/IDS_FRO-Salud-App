@@ -1,6 +1,8 @@
 # Guía de Instalación y Despliegue - FRO Salud (Incremento 1)
 Esta guía detalla los pasos necesarios para instalar, configurar y ejecutar el entorno de desarrollo local de la aplicación FRO Salud (Vista y Controlador).
 
+[Video guía de instalación del Sistema](https://drive.google.com/file/d/1eLFtI8UtEgKLBEWcWh41RKkWUYzGCzV2/view?usp=sharing)
+
 ## 1. Requisitos Previos (Herramientas necesarias)
 Antes de comenzar, asegúrese de tener instalados los siguientes programas en su computador:
 
