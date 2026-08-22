@@ -12,8 +12,8 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import apiClient, { getHistorialPaciente } from '../../api/client';
-import { AuthContext } from '../../context/AuthContext';
+import apiClient, { getHistorialPaciente } from '../../../api/client';
+import { AuthContext } from '../../../context/AuthContext';
 
 export default function HistorialPacienteScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route.params;

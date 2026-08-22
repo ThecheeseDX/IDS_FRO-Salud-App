@@ -6,23 +6,28 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AuthContext } from '../context/AuthContext';
 
-// Pantallas
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
+// Pantallas — Autenticación
+import LoginScreen from '../screens/Auth/LoginScreen';
+import RegisterScreen from '../screens/Auth/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
+// Pantallas — Paciente
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
+// Pantallas — Profesional
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
-import HistorialPacienteScreen from '../screens/Profesional/HistorialPacienteScreen';
-import EpisodioScreen from '../screens/Profesional/EpisodioScreen';
-import AnamnesisScreen from '../screens/Profesional/AnamnesisScreen';
-import InalterabilidadScreen from '../screens/Profesional/InalterabilidadScreen';
-import EvolucionClinicaScreen from '../screens/Profesional/EvolucionClinicaScreen';
-import IntervencionScreen from '../screens/Profesional/IntervencionScreen';
-import MarcasTemporalesScreen from '../screens/Profesional/MarcasTemporalesScreen';
-import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
+// Pantallas — Profesional / Ficha Clínica
+import HistorialPacienteScreen from '../screens/Profesional/FichaClinica/HistorialPacienteScreen';
+import EpisodioScreen from '../screens/Profesional/FichaClinica/EpisodioScreen';
+import AnamnesisScreen from '../screens/Profesional/FichaClinica/AnamnesisScreen';
+import EvolucionClinicaScreen from '../screens/Profesional/FichaClinica/EvolucionClinicaScreen';
+import IntervencionScreen from '../screens/Profesional/FichaClinica/IntervencionScreen';
+// Pantallas — Profesional / Trazabilidad del Documento
+import InalterabilidadScreen from '../screens/Profesional/Trazabilidad/InalterabilidadScreen';
+import MarcasTemporalesScreen from '../screens/Profesional/Trazabilidad/MarcasTemporalesScreen';
+// Pantallas — Administrador
+import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 
 const Stack = createNativeStackNavigator();
 

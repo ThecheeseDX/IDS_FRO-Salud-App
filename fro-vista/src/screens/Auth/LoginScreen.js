@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext';
 import { 
   StyleSheet, 
   Text, 
@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   Alert 
 } from 'react-native';
-import { validateRut } from '../utils/validators'; 
+import { validateRut } from '../../utils/validators'; 
 
 // Importamos el cliente centralizado de Axios
-import apiClient from '../api/client'; 
+import apiClient from '../../api/client'; 
 
 export default function LoginScreen({ navigation }) {
   // --- ESTADOS LOCALES ---

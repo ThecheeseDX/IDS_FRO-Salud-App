@@ -1,4 +1,4 @@
-const pool = require('../config/database');
+const pool = require('../../config/database');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CU32 - Paso 1.1: Objetivos Terapéuticos

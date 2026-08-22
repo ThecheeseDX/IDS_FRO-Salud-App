@@ -4,12 +4,12 @@ const router = express.Router();
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const { auditarAccesoClinico } = require('../middlewares/auditarAcceso');
-const episodioController = require('../controllers/episodioController');
-const fichaClinicaController = require('../controllers/fichaClinicaController');
+const episodioController = require('../controllers/clinico/episodioController');
+const fichaClinicaController = require('../controllers/clinico/fichaClinicaController');
 //  CU32: Objetivos terapéuticos y avance 
-const objetivoController = require('../controllers/objetivoController');
-const evolucionController = require('../controllers/evolucionController');
-const intervencionController = require('../controllers/intervencionController');
+const objetivoController = require('../controllers/clinico/objetivoController');
+const evolucionController = require('../controllers/clinico/evolucionController');
+const intervencionController = require('../controllers/clinico/intervencionController');
 
 // CU16
 const disponibilidadController = require('../controllers/disponibilidadController');

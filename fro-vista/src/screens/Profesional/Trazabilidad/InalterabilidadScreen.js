@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   Alert, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import apiClient from '../../api/client';
+import apiClient from '../../../api/client';
 
 export default function InalterabilidadScreen() {
   const [evolucionId, setEvolucionId] = useState('');

@@ -3,7 +3,7 @@ const router  = express.Router();
 
 const { verifyToken }    = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
-const citaController     = require('../controllers/CitaController');
+const citaController     = require('../controllers/citaController');
 const marcasTemporalesController = require('../controllers/marcasTemporalesController');
 
 // CU38 - Marcas temporales de la prestacion

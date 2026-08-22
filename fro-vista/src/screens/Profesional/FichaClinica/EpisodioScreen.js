@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
 } from 'react-native';
-import apiClient from '../../api/client';
+import apiClient from '../../../api/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13

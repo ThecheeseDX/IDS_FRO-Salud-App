@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
 } from 'react-native';
-import { getFichaClinica, guardarAnamnesis } from '../../api/client';
+import { getFichaClinica, guardarAnamnesis } from '../../../api/client';
 
 const LIMITE_ANAMNESIS = 2000;
 

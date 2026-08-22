@@ -16,8 +16,8 @@ import {
   finalizarAtencion,
   getCitasMarcasTemporales,
   iniciarAtencion,
-} from '../../api/client';
-import ErrorRetry from '../../components/ErrorRetry';
+} from '../../../api/client';
+import ErrorRetry from '../../../components/ErrorRetry';
 
 function formatearFecha(fecha) {
   if (!fecha) return 'No registrada';

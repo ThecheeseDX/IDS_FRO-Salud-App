@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, ScrollView, Alert, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import apiClient from '../api/client';
-import { validateRut } from '../utils/validators';
+import apiClient from '../../api/client';
+import { validateRut } from '../../utils/validators';
 
 const RegisterScreen = ({ navigation }) => {
     const [esProfesional, setEsProfesional] = useState(false);

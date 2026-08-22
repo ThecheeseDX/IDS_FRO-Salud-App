@@ -5,7 +5,7 @@ const authRoutes = require('./routes/authRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const clinicaRoutes = require('./routes/clinicaRoutes');
 const citaRoutes = require('./routes/citaRoutes');
-const inalterabilidadRoutes = require('./routes/InalterabilidadRoutes');
+const inalterabilidadRoutes = require('./routes/inalterabilidadRoutes');
 const parametroRoutes = require('./routes/parametroRoutes');
 
 const integracionDemoRoutes = require('./routes/integracionDemoRoutes');

@@ -4,8 +4,8 @@ import {
   Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import apiClient from '../../api/client';
-import ErrorRetry from '../../components/ErrorRetry';
+import apiClient from '../../../api/client';
+import ErrorRetry from '../../../components/ErrorRetry';
 
 // CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
 const PALABRAS_SUBJETIVAS = /\b(mejorar|mejor[íi]a|sentirse?\s+bien|bienestar|aliviar|alivio|fortalecer|avanzar|progresar|recuperar|estar\s+mejor|c[óo]modo|tranquil|m[áa]s\s+[áa]gil)/i;

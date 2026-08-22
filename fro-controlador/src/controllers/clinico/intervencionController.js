@@ -1,4 +1,4 @@
-const pool = require('../config/database');
+const pool = require('../../config/database');
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;

@@ -16,8 +16,8 @@ import {
   getIntervencion,
   getSesionesIntervencion,
   guardarIntervencion,
-} from '../../api/client';
-import ErrorRetry from '../../components/ErrorRetry';
+} from '../../../api/client';
+import ErrorRetry from '../../../components/ErrorRetry';
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;
