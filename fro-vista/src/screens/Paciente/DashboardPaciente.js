@@ -56,15 +56,15 @@ export default function DashboardPaciente({ navigation }) {
               <Text style={styles.dataText}>{datosSensibles}</Text>
             </View>
 
-            {/* CU14 + CU15: Motor de búsqueda y agendamiento integrado */}
+            {/* CU14 + CU15: gestión de citas unificada (ver, agendar y cancelar) */}
             <TouchableOpacity
               style={styles.menuBtn}
-              onPress={() => navigation.navigate('BuscarCita')}
+              onPress={() => navigation.navigate('MisCitas')}
             >
-              <Text style={styles.menuIcon}>🔎</Text>
-              <Text style={styles.menuTitle}>Buscar y agendar cita</Text>
+              <Text style={styles.menuIcon}>📅</Text>
+              <Text style={styles.menuTitle}>Mis Citas</Text>
               <Text style={styles.menuSubtitle}>
-                Filtra por especialidad, modalidad y fecha, y reserva tu hora directamente.
+                Revisa tus horas agendadas y reserva nuevas desde un mismo lugar.
               </Text>
             </TouchableOpacity>
           </>

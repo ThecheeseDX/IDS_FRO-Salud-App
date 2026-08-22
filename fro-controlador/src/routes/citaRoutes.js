@@ -45,7 +45,16 @@ router.post('/bloquear',
   verifyToken, authorizeRoles(['Paciente']),
   citaController.bloquearHorario);
 
-// ── CU20 — Máquina de estados de cita 
+// ── CU20 — Listado de citas por rol
+router.get('/mis-citas',
+  verifyToken, authorizeRoles(['Paciente']),
+  citaController.obtenerCitasPaciente);
+
+router.get('/mis-citas-profesional',
+  verifyToken, authorizeRoles(['Profesional']),
+  citaController.obtenerCitasProfesional);
+
+// ── CU20 — Máquina de estados de cita
 // Roles permitidos: Paciente puede cancelar; Profesional gestiona el flujo clínico; Admin tiene acceso total
 router.post('/:id/transicionar',
   verifyToken, authorizeRoles(['Paciente', 'Profesional', 'Administrador']),

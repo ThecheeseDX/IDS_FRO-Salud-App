@@ -12,20 +12,13 @@ import RegisterScreen from '../screens/Auth/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 // Pantallas — Paciente
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
+import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 // Pantallas — Profesional
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
-import PacientesAsignadosScreen from '../screens/Profesional/PacientesAsignadosScreen';
 import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
-// Pantallas — Profesional / Ficha Clínica
-import HistorialPacienteScreen from '../screens/Profesional/FichaClinica/HistorialPacienteScreen';
-import EpisodioScreen from '../screens/Profesional/FichaClinica/EpisodioScreen';
-import AnamnesisScreen from '../screens/Profesional/FichaClinica/AnamnesisScreen';
-import EvolucionClinicaScreen from '../screens/Profesional/FichaClinica/EvolucionClinicaScreen';
-import IntervencionScreen from '../screens/Profesional/FichaClinica/IntervencionScreen';
-// Pantallas — Profesional / Trazabilidad del Documento
-import InalterabilidadScreen from '../screens/Profesional/Trazabilidad/InalterabilidadScreen';
-import MarcasTemporalesScreen from '../screens/Profesional/Trazabilidad/MarcasTemporalesScreen';
+import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
+import TrazabilidadScreen from '../screens/Profesional/Trazabilidad/TrazabilidadScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 
@@ -70,6 +63,8 @@ export default function AppNavigator() {
               component={DashboardPaciente}
               options={{ title: 'Mi Salud', headerBackVisible: false, gestureEnabled: false }}
             />
+            {/* Gestión de citas unificada: listado + reserva desde el botón flotante */}
+            <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
             <Stack.Screen
               name="BuscarCita"
               component={BuscarCitaScreen}
@@ -79,19 +74,25 @@ export default function AppNavigator() {
         ) : userData?.rol === 'Profesional' ? (
           // ── ESCENARIO C: Profesional Autenticado ──
           <>
+            {/* El dashboard es la lista de pacientes asignados */}
             <Stack.Screen
               name="DashboardProfesional"
               component={DashboardProfesional}
-              options={{ title: 'Mi Agenda', headerBackVisible: false, gestureEnabled: false }}
+              options={{ title: 'Mis Pacientes', headerBackVisible: false, gestureEnabled: false }}
             />
-            <Stack.Screen name="PacientesAsignados" component={PacientesAsignadosScreen} options={{ title: 'Pacientes Asignados' }} />
-            <Stack.Screen name="HistorialPaciente" component={HistorialPacienteScreen} options={{ title: 'Historial Paciente' }} />
-            <Stack.Screen name="Episodio" component={EpisodioScreen} options={{ title: 'Episodios Clínicos' }} />
-            <Stack.Screen name="Anamnesis" component={AnamnesisScreen} options={{ title: 'Evaluación Inicial' }} />
-            <Stack.Screen name="Inalterabilidad" component={InalterabilidadScreen} options={{ title: 'Inalterabilidad Clínica' }} />
-            <Stack.Screen name="EvolucionClinica" component={EvolucionClinicaScreen} options={{ title: 'Evolución Clínica' }} />
-            <Stack.Screen name="Intervencion" component={IntervencionScreen} options={{ title: 'Intervención Clínica' }} />
-            <Stack.Screen name="MarcasTemporales" component={MarcasTemporalesScreen} options={{ title: 'Marcas Temporales' }} />
+            {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
+            <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
+            {/* Auditoría y seguridad del documento clínico */}
+            <Stack.Screen
+              name="Trazabilidad"
+              component={TrazabilidadScreen}
+              options={{ title: 'Trazabilidad del Documento' }}
+            />
+            <Stack.Screen
+              name="GestionDisponibilidad"
+              component={GestionDisponibilidadScreen}
+              options={{ title: 'Gestión de Agenda' }}
+            />
           </>
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──
@@ -108,13 +109,6 @@ export default function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Rol no autorizado' }} />
           </>
         )}
-
-        <Stack.Screen 
-        name="GestionDisponibilidad" 
-        component={GestionDisponibilidadScreen} 
-        options={{ title: 'Gestión de Agenda' }} 
-        />
-        
       </Stack.Navigator>
     </NavigationContainer>
   );

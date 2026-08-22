@@ -1,359 +1,249 @@
 // Ruta: fro-vista/src/screens/Profesional/DashboardProfesional.js
+//
+// Panel principal del profesional. La lista de pacientes asignados es el núcleo
+// de la vista: al entrar se ve de inmediato, y desde cada paciente se abre su
+// ficha clínica completa. Las herramientas transversales (trazabilidad del
+// documento y disponibilidad) quedan como accesos secundarios.
 
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native';
+
 import { AuthContext } from '../../context/AuthContext';
+import apiClient from '../../api/client';
 
 export default function DashboardProfesional({ navigation }) {
   const { userData, logoutSession } = useContext(AuthContext);
 
-  const handleLogout = async () => {
-    await logoutSession();
-    navigation.replace('Login');
+  const [pacientes, setPacientes] = useState([]);
+  const [buscar, setBuscar] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+
+  const cargarPacientes = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError('');
+
+      const usuarioId = userData?.usuario_id;
+      if (!usuarioId) {
+        setError('No se encontró la sesión del profesional');
+        return;
+      }
+
+      const response = await apiClient.get(
+        `/profesionales/usuario/${usuarioId}/pacientes`,
+        { params: { buscar } }
+      );
+
+      const data = response.data;
+      if (data.ok) {
+        setPacientes(data.pacientes);
+      } else {
+        setError(data.message || 'Error al recuperar registros clínicos');
+      }
+    } catch (err) {
+      console.error('ERROR PACIENTES:', err?.response?.data || err.message);
+      setError('Error al recuperar registros clínicos');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>
-        Dr(a). {userData?.apellido_paterno}
-      </Text>
+  useEffect(() => {
+    cargarPacientes();
+  }, []);
 
-      <Text style={styles.subtitle}>
-        Panel Interno de Gestión
-      </Text>
+  const abrirFicha = (paciente) => {
+    navigation.navigate('FichaClinica', {
+      pacienteId: paciente.paciente_id,
+      nombrePaciente: paciente.nombre_completo,
+    });
+  };
 
-      {/* CU13 */}
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('Episodio')}
-      >
-        <Text style={styles.cardIcon}>📁</Text>
-        <Text style={styles.cardTitle}>Episodios Clínicos</Text>
-        <Text style={styles.cardText}>
-          Consultar y registrar episodios de pacientes.
-        </Text>
+  const renderPaciente = ({ item }) => (
+    <TouchableOpacity style={styles.card} onPress={() => abrirFicha(item)}>
+      <Text style={styles.nombre}>{item.nombre_completo}</Text>
+      <Text style={styles.dato}>RUT: {item.rut}</Text>
+      <Text style={styles.dato}>Sexo clínico: {item.sexo_clinico || 'No informado'}</Text>
+      <Text style={styles.dato}>Total atenciones: {item.total_atenciones}</Text>
+      <Text style={styles.dato}>Última atención: {item.ultima_atencion || 'Sin registros'}</Text>
+
+      <View style={styles.boton}>
+        <Text style={styles.botonTexto}>Abrir ficha clínica</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const Encabezado = (
+    <View>
+      <Text style={styles.title}>Dr(a). {userData?.apellido_paterno}</Text>
+      <Text style={styles.subtitle}>Pacientes asignados</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Buscar por nombre o RUT"
+        value={buscar}
+        onChangeText={setBuscar}
+        onSubmitEditing={() => cargarPacientes(false)}
+        returnKeyType="search"
+      />
+
+      <TouchableOpacity style={styles.botonBuscar} onPress={() => cargarPacientes(false)}>
+        <Text style={styles.botonTexto}>Buscar</Text>
       </TouchableOpacity>
 
-      {/* CU32 */}
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('EvolucionClinica')}
-      >
-        <Text style={styles.cardIcon}>📈</Text>
-        <Text style={styles.cardTitle}>Evolución Clínica</Text>
-        <Text style={styles.cardText}>
-          Definir metas terapéuticas y registrar el avance del paciente.
-        </Text>
-      </TouchableOpacity>
+      {loading && <ActivityIndicator size="large" color="#2e7d32" style={styles.cargando} />}
 
-      {/* CU38 */}
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('MarcasTemporales')}
-      >
-        <View style={styles.timeIcon}>
-          <View style={styles.clockFace}>
-            <View style={styles.clockHour} />
-            <View style={styles.clockMinute} />
-            <View style={styles.clockCenter} />
-          </View>
+      {error !== '' && (
+        <View style={styles.errorCaja}>
+          <Text style={styles.error}>{error}</Text>
+          <TouchableOpacity style={styles.botonBuscar} onPress={() => cargarPacientes(false)}>
+            <Text style={styles.botonTexto}>Reintentar</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.cardTitle}>Marcas Temporales</Text>
-        <Text style={styles.cardText}>
-          Registrar inicio, termino y duracion de cada atencion.
-        </Text>
-      </TouchableOpacity>
+      )}
 
-      {/* CU40 */}
+      {!loading && !error && pacientes.length === 0 && (
+        <Text style={styles.sinResultados}>Sin resultados encontrados</Text>
+      )}
+    </View>
+  );
+
+  const PieDeLista = (
+    <View style={styles.pie}>
+      <Text style={styles.seccion}>Herramientas</Text>
+
       <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('Intervencion')}
+        style={styles.herramienta}
+        onPress={() => navigation.navigate('Trazabilidad')}
       >
-        <View style={styles.interventionIcon}>
-          <View style={styles.interventionClip} />
-          <View style={styles.interventionSheet}>
-            <View style={styles.interventionLineLong} />
-            <View style={styles.interventionLineShort} />
-            <View style={styles.pulseRow}>
-              <View style={styles.pulseLine} />
-              <View style={styles.pulsePeak} />
-              <View style={styles.pulseLine} />
-            </View>
-          </View>
+        <Text style={styles.herramientaIcono}>🔒</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Trazabilidad del Documento</Text>
+          <Text style={styles.herramientaSub}>Inalterabilidad y marcas temporales.</Text>
         </View>
-        <Text style={styles.cardTitle}>Intervención Clínica</Text>
-        <Text style={styles.cardText}>
-          Documentar técnicas aplicadas y respuesta fisiológica.
-        </Text>
-      </TouchableOpacity>
-
-      {/* CU11 */}
-      <TouchableOpacity
-        style={styles.patientCard}
-        onPress={() => navigation.navigate('PacientesAsignados')}
-      >
-        <Text style={styles.cardIcon}>👥</Text>
-        <Text style={styles.patientTitle}>Pacientes Asignados</Text>
-        <Text style={styles.cardText}>
-          Consultar la lista de pacientes asignados al profesional.
-        </Text>
-      </TouchableOpacity>
-
-      {/* CU30 */}
-      <TouchableOpacity
-        style={styles.securityBtn}
-        onPress={() => navigation.navigate('Inalterabilidad')}
-      >
-        <Text style={styles.securityIcon}>🔒</Text>
-        <Text style={styles.securityTitle}>
-          Asegurar Inalterabilidad
-        </Text>
-        <Text style={styles.securityText}>
-          Finalizar registros clínicos y protegerlos contra modificaciones.
-        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.securityBtn}
+        style={styles.herramienta}
         onPress={() => navigation.navigate('GestionDisponibilidad')}
       >
-        <Text style={styles.securityIcon}>📅</Text>
-        <Text style={styles.securityTitle}>
-          Gestionar Disponibilidad
-        </Text>
-        <Text style={styles.securityText}>
-          Bloquear rangos horarios por vacaciones, licencias o eventos administrativos.
-        </Text>
+        <Text style={styles.herramientaIcono}>📅</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Gestionar Disponibilidad</Text>
+          <Text style={styles.herramientaSub}>Bloquear horarios por vacaciones o licencias.</Text>
+        </View>
       </TouchableOpacity>
 
-      
-
-      <TouchableOpacity
-        style={styles.logoutBtn}
-        onPress={handleLogout}
-      >
-        <Text style={styles.logoutText}>
-          Cerrar Sesión
-        </Text>
+      <TouchableOpacity style={styles.logoutBtn} onPress={logoutSession}>
+        <Text style={styles.logoutText}>Cerrar Sesión</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </View>
+  );
+
+  return (
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      data={pacientes}
+      keyExtractor={(item) => item.paciente_id.toString()}
+      renderItem={renderPaciente}
+      ListHeaderComponent={Encabezado}
+      ListFooterComponent={PieDeLista}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => cargarPacientes(true)}
+          colors={['#2e7d32']}
+        />
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#e8f5e9',
-  },
+  container: { flex: 1, backgroundColor: '#e8f5e9' },
+  content: { padding: 16, paddingBottom: 32 },
 
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-    flexGrow: 1,
-  },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#2e7d32' },
+  subtitle: { fontSize: 16, color: '#555', marginBottom: 16 },
 
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2e7d32',
-    marginBottom: 5,
-  },
-
-  subtitle: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 30,
-  },
-
-  card: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
+  input: {
     borderWidth: 1,
     borderColor: '#c8e6c9',
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-
-  cardIcon: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
-
-  timeIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: '#e8f5e9',
-    borderWidth: 1,
-    borderColor: '#a5d6a7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-
-  clockFace: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 3,
-    borderColor: '#2e7d32',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  clockHour: {
-    position: 'absolute',
-    width: 3,
-    height: 9,
-    borderRadius: 2,
-    backgroundColor: '#2e7d32',
-    top: 7,
-  },
-
-  clockMinute: {
-    position: 'absolute',
-    width: 10,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#2e7d32',
-    left: 15,
-    top: 15,
-  },
-
-  clockCenter: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#ef5350',
-  },
-
-  interventionIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: '#e8f5e9',
-    borderWidth: 1,
-    borderColor: '#a5d6a7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-
-  interventionClip: {
-    position: 'absolute',
-    top: 7,
-    width: 18,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#2e7d32',
-    zIndex: 2,
-  },
-
-  interventionSheet: {
-    width: 32,
-    height: 38,
-    borderRadius: 5,
     backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#2e7d32',
-    paddingHorizontal: 5,
-    paddingTop: 9,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
   },
-
-  interventionLineLong: {
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: '#81c784',
-    marginBottom: 4,
-  },
-
-  interventionLineShort: {
-    width: 13,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: '#81c784',
-    marginBottom: 6,
-  },
-
-  pulseRow: {
-    flexDirection: 'row',
+  botonBuscar: {
+    backgroundColor: '#2e7d32',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 16,
   },
+  cargando: { marginBottom: 16 },
+  errorCaja: { marginBottom: 8 },
+  error: { color: '#d32f2f', marginBottom: 10 },
+  sinResultados: { textAlign: 'center', marginVertical: 20, color: '#666' },
 
-  pulseLine: {
-    width: 6,
-    height: 2,
-    backgroundColor: '#ef5350',
+  card: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#fff',
   },
-
-  pulsePeak: {
-    width: 8,
-    height: 8,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: '#ef5350',
-    transform: [{ rotate: '135deg' }],
+  nombre: { fontSize: 18, fontWeight: 'bold', marginBottom: 6, color: '#1b5e20' },
+  dato: { color: '#555' },
+  boton: {
+    backgroundColor: '#16a34a',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
   },
+  botonTexto: { color: '#fff', fontWeight: 'bold' },
 
-  cardTitle: {
-    fontSize: 18,
+  pie: { marginTop: 8 },
+  seccion: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#2e7d32',
-    marginBottom: 4,
+    marginBottom: 10,
+    marginTop: 8,
   },
-
-  cardText: {
-    color: '#666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-
-  patientCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#90caf9',
-    marginBottom: 16,
+  herramienta: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-
-  patientTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2563eb',
-    marginBottom: 4,
-  },
-
-  securityBtn: {
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 16,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ff9800',
-    marginBottom: 16,
-    alignItems: 'center',
+    marginBottom: 12,
   },
-
-  securityIcon: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
-
-  securityTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ef6c00',
-    marginBottom: 4,
-  },
-
-  securityText: {
-    color: '#666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
+  herramientaIcono: { fontSize: 26, marginRight: 12 },
+  herramientaTexto: { flex: 1 },
+  herramientaTitulo: { fontSize: 16, fontWeight: 'bold', color: '#ef6c00' },
+  herramientaSub: { color: '#666', fontSize: 13 },
 
   logoutBtn: {
     backgroundColor: '#d32f2f',
@@ -362,10 +252,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-
-  logoutText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  logoutText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });
