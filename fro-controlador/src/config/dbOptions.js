@@ -38,9 +38,19 @@ function limpiarUrlConexion(url) {
 function opcionesSSL() {
   if (String(process.env.DB_SSL || '').toLowerCase() !== 'true') return {};
 
-  const certificadoCA = process.env.DB_SSL_CA;
+  // Se ignora un CA vacío o con solo espacios: es lo que queda cuando la
+  // variable se declara en el panel pero no se le pega ningún valor.
+  const certificadoCA = (process.env.DB_SSL_CA || '').trim();
+
   if (certificadoCA) {
-    return { ssl: { ca: certificadoCA.replace(/\\n/g, '\n'), rejectUnauthorized: true } };
+    if (!certificadoCA.includes('BEGIN CERTIFICATE')) {
+      console.warn(
+        '⚠️  DB_SSL_CA tiene un valor que no parece un certificado ' +
+          '(debe incluir la línea -----BEGIN CERTIFICATE-----). Se ignora.'
+      );
+    } else {
+      return { ssl: { ca: certificadoCA.replace(/\\n/g, '\n'), rejectUnauthorized: true } };
+    }
   }
 
   const verificacionEstricta =

@@ -39,6 +39,26 @@ async function checkConnection(intentosRestantes = Number(process.env.DB_RETRIES
 
     console.error('Error crítico: No se pudo conectar a la base de datos.');
     console.error(`Detalle del error: ${error.message || error.code}`);
+
+    // Pistas concretas según el tipo de fallo, para no tener que adivinar.
+    const detalle = `${error.code || ''} ${error.message || ''}`;
+
+    if (/self.?signed|SELF_SIGNED|unable to verify|certificate/i.test(detalle)) {
+      console.error(
+        '\n   → Es el certificado de la base de datos, no la contraseña.\n' +
+          '     Proveedores como Aiven firman con su propia autoridad, que no\n' +
+          '     viene incluida en el sistema. Agrega esta variable de entorno:\n\n' +
+          '        DB_SSL_REJECT_UNAUTHORIZED=false\n\n' +
+          '     Y si definiste DB_SSL_CA sin pegarle un certificado, bórrala.'
+      );
+    } else if (/ACCESS_DENIED/i.test(detalle)) {
+      console.error('\n   → Usuario o contraseña incorrectos en DATABASE_URL.');
+    } else if (/ENOTFOUND|EAI_AGAIN/i.test(detalle)) {
+      console.error('\n   → No se encontró el servidor. Revisa la dirección en DATABASE_URL.');
+    } else if (/ETIMEDOUT|ECONNREFUSED/i.test(detalle)) {
+      console.error('\n   → La base no responde. ¿Está encendida? ¿El puerto es el correcto?');
+    }
+
     process.exit(1); // Detiene el servidor para evitar comportamientos erráticos
   }
 }

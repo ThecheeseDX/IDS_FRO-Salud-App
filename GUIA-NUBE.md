@@ -227,7 +227,9 @@ cambiarlas de inmediato desde sus paneles.
 | La app queda cargando y no responde | El servidor está despertando. Espera un minuto y reintenta. |
 | "Network Error" en la app | Revisa que el `.env` de `fro-vista` tenga la dirección correcta y que hayas reiniciado con `npx expo start -c`. |
 | Cambié el `.env` y sigue igual | Expo guardó la dirección en caché. Cierra Expo y levanta con `-c`. |
-| El backend en Render muestra error de base de datos | Revisa que `DATABASE_URL` esté bien pegada y que `DB_SSL=true`. Si menciona el certificado, agrega `DB_SSL_REJECT_UNAUTHORIZED=false`. |
+| El backend en Render muestra error de base de datos | Revisa que `DATABASE_URL` esté bien pegada y que `DB_SSL=true`. |
+| `self-signed certificate in certificate chain` | **No es la contraseña.** Aiven firma con su propia autoridad certificadora, que no viene en el sistema. En Render → Environment, agrega `DB_SSL_REJECT_UNAUTHORIZED=false`. Si además creaste `DB_SSL_CA` sin pegarle un certificado, bórrala. |
+| Error 502 en la dirección de Render | El servidor no llegó a arrancar. Mira los **Logs** del servicio: casi siempre es la conexión a la base. Si acabas de guardar una variable, espera dos minutos: el redespliegue da 502 mientras ocurre. |
 | "Las tablas ya existen" al importar | No es error: alguien ya cargó el esquema. Puedes continuar. |
 | "Failed to open the referenced table" | La importación quedó a medias y dejó tablas sueltas. Repite el comando agregando `--reiniciar`: `npm run db:importar -- --sin-crear-base --reiniciar`. Borra lo que haya y carga todo de nuevo. |
 | "You have an error in your SQL syntax" | Hay una sentencia mal escrita en `schema.sql`. Ejecuta `npm run db:validar` (no necesita conexión) y te dirá en qué línea está. |
