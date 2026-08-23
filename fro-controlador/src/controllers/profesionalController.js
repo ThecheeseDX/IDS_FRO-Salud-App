@@ -23,12 +23,12 @@ exports.listarPacientesAsignados = async (req, res) => {
         p.comuna_id,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion
-      FROM paciente p
-      LEFT JOIN usuario u ON u.usuario_id = p.usuario_id
-      LEFT JOIN episodio_clinico ec ON ec.paciente_id = p.paciente_id AND ec.profesional_id = ?
+      FROM Paciente p
+      LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
+      LEFT JOIN Episodio_Clinico ec ON ec.paciente_id = p.paciente_id AND ec.profesional_id = ?
       WHERE (
           ec.paciente_id IS NOT NULL 
-          OR p.paciente_id IN (SELECT paciente_id FROM cita WHERE profesional_id = ? AND estado NOT IN ('CANCELADA'))
+          OR p.paciente_id IN (SELECT paciente_id FROM Cita WHERE profesional_id = ? AND estado NOT IN ('CANCELADA'))
         )
         AND (
           u.nombres LIKE ?
@@ -77,15 +77,15 @@ exports.obtenerHistorialPaciente = async (req, res) => {
     const [[asignacion]] = await db.query(
       `
       SELECT 1 AS asignado
-      FROM paciente p
+      FROM Paciente p
       WHERE p.paciente_id = ? AND (
         p.paciente_id IN (
-          SELECT ec.paciente_id FROM episodio_clinico ec 
-          INNER JOIN profesional pr ON pr.profesional_id = ec.profesional_id WHERE pr.usuario_id = ?
+          SELECT ec.paciente_id FROM Episodio_Clinico ec 
+          INNER JOIN Profesional pr ON pr.profesional_id = ec.profesional_id WHERE pr.usuario_id = ?
         )
         OR p.paciente_id IN (
-          SELECT c.paciente_id FROM cita c 
-          INNER JOIN profesional pr ON pr.profesional_id = c.profesional_id WHERE pr.usuario_id = ? AND c.estado NOT IN ('CANCELADA')
+          SELECT c.paciente_id FROM Cita c 
+          INNER JOIN Profesional pr ON pr.profesional_id = c.profesional_id WHERE pr.usuario_id = ? AND c.estado NOT IN ('CANCELADA')
         )
       )
       LIMIT 1
@@ -111,8 +111,8 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         p.numero_calle,
         p.departamento,
         p.comuna_id
-      FROM paciente p
-      LEFT JOIN usuario u ON u.usuario_id = p.usuario_id
+      FROM Paciente p
+      LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
       WHERE p.paciente_id = ?
       LIMIT 1
       `,
@@ -129,11 +129,11 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno), 'Profesional no registrado') AS profesional,
         COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad,
         COALESCE(s.nombre, 'No informado') AS tipo_sede
-      FROM cita c
-      LEFT JOIN profesional pr ON pr.profesional_id = c.profesional_id
-      LEFT JOIN usuario u ON u.usuario_id = pr.usuario_id
-      LEFT JOIN especialidad e ON e.especialidad_id = pr.especialidad_id
-      LEFT JOIN sede s ON s.sede_id = c.sede_id
+      FROM Cita c
+      LEFT JOIN Profesional pr ON pr.profesional_id = c.profesional_id
+      LEFT JOIN Usuario u ON u.usuario_id = pr.usuario_id
+      LEFT JOIN Especialidad e ON e.especialidad_id = pr.especialidad_id
+      LEFT JOIN Sede s ON s.sede_id = c.sede_id
       WHERE c.paciente_id = ?
       ORDER BY c.fecha_hora_inicio DESC
       `,
@@ -150,7 +150,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         estado,
         paciente_id,
         profesional_id
-      FROM episodio_clinico
+      FROM Episodio_Clinico
       WHERE paciente_id = ?
       ORDER BY fecha_inicio DESC
       `,
@@ -171,8 +171,8 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         ec.profesional_id,
         ep.motivo_consulta,
         ep.fecha_inicio AS fecha_episodio
-      FROM evolucion_clinica ec
-      INNER JOIN episodio_clinico ep ON ep.episodio_clinico_id = ec.episodio_clinico_id
+      FROM Evolucion_Clinica ec
+      INNER JOIN Episodio_Clinico ep ON ep.episodio_clinico_id = ec.episodio_clinico_id
       WHERE ep.paciente_id = ?
       ORDER BY ec.evolucion_clinica_id DESC
       `,
@@ -221,16 +221,16 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         p.comuna_id,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion
-      FROM paciente p
-      LEFT JOIN usuario u ON u.usuario_id = p.usuario_id
-      LEFT JOIN episodio_clinico ec ON ec.paciente_id = p.paciente_id
-        AND ec.profesional_id IN (SELECT profesional_id FROM profesional WHERE usuario_id = ?)
+      FROM Paciente p
+      LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
+      LEFT JOIN Episodio_Clinico ec ON ec.paciente_id = p.paciente_id
+        AND ec.profesional_id IN (SELECT profesional_id FROM Profesional WHERE usuario_id = ?)
       WHERE (
           ec.paciente_id IS NOT NULL
           OR p.paciente_id IN (
             SELECT c.paciente_id 
-            FROM cita c 
-            JOIN profesional pr ON c.profesional_id = pr.profesional_id 
+            FROM Cita c 
+            JOIN Profesional pr ON c.profesional_id = pr.profesional_id 
             WHERE pr.usuario_id = ? AND c.estado NOT IN ('CANCELADA')
           )
         )

@@ -229,4 +229,5 @@ cambiarlas de inmediato desde sus paneles.
 | Cambié el `.env` y sigue igual | Expo guardó la dirección en caché. Cierra Expo y levanta con `-c`. |
 | El backend en Render muestra error de base de datos | Revisa que `DATABASE_URL` esté bien pegada y que `DB_SSL=true`. Si menciona el certificado, agrega `DB_SSL_REJECT_UNAUTHORIZED=false`. |
 | "Las tablas ya existen" al importar | No es error: alguien ya cargó el esquema. Puedes continuar. |
+| "Failed to open the referenced table" | La importación quedó a medias y dejó tablas sueltas. Repite el comando agregando `--reiniciar`: `npm run db:importar -- --sin-crear-base --reiniciar`. Borra lo que haya y carga todo de nuevo. |
 | No llegan los correos con el código | Revisa `SMTP_USER` y `SMTP_PASS` en Render. La clave debe ser la de aplicación de 16 caracteres, no la contraseña normal de Gmail. |

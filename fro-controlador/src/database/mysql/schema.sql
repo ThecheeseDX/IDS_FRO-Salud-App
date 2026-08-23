@@ -119,7 +119,7 @@ CREATE TABLE Profesional (
     usuario_id INT NOT NULL,
     especialidad_id INT NOT NULL,
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
-    FOREIGN KEY (especialidad_id) REFERENCES especialidad(especialidad_id)
+    FOREIGN KEY (especialidad_id) REFERENCES Especialidad(especialidad_id)
 );
 
 CREATE TABLE Profesional_Autorizado (

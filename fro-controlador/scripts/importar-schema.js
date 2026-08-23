@@ -52,9 +52,28 @@ async function main() {
     });
   }
 
-  console.log('✅ Conexión establecida. Cargando el esquema…');
+  console.log('✅ Conexión establecida.');
 
   try {
+    // Con --reiniciar se borra todo lo que haya antes de cargar. Sirve cuando
+    // una importación anterior quedó a medias y dejó tablas sueltas.
+    if (process.argv.includes('--reiniciar')) {
+      const [tablasPrevias] = await conexion.query('SHOW TABLES');
+
+      if (tablasPrevias.length > 0) {
+        console.log(`⚠️  Borrando ${tablasPrevias.length} tablas existentes…`);
+        const nombres = tablasPrevias.map((fila) => Object.values(fila)[0]);
+
+        await conexion.query('SET FOREIGN_KEY_CHECKS = 0');
+        for (const nombre of nombres) {
+          await conexion.query(`DROP TABLE IF EXISTS \`${nombre}\``);
+        }
+        await conexion.query('SET FOREIGN_KEY_CHECKS = 1');
+        console.log('   Base de datos vaciada.');
+      }
+    }
+
+    console.log('Cargando el esquema…');
     await conexion.query(sql);
     console.log('✅ Esquema y datos iniciales cargados correctamente.');
 
@@ -64,8 +83,16 @@ async function main() {
     if (error.code === 'ER_TABLE_EXISTS_ERROR') {
       console.error(
         '\n⚠️  Las tablas ya existen en esta base de datos.\n' +
-          '   Si quieres partir de cero, borra la base y vuelve a ejecutar este comando.\n' +
-          '   Si solo querías conectarte, no hace falta hacer nada: ya está lista.'
+          '   Si solo querías conectarte, no hace falta hacer nada: ya está lista.\n' +
+          '   Si quieres partir de cero, agrega --reiniciar al comando:\n' +
+          '     npm run db:importar -- --sin-crear-base --reiniciar'
+      );
+    } else if (error.errno === 1824 || /referenced table/i.test(error.message || '')) {
+      console.error(
+        '\n⚠️  Una tabla referenciada no está disponible.\n' +
+          '   Suele pasar cuando una importación anterior quedó a medias y dejó\n' +
+          '   tablas sueltas. Vuelve a ejecutar el comando agregando --reiniciar:\n' +
+          '     npm run db:importar -- --sin-crear-base --reiniciar'
       );
     } else if (error.code === 'ER_DBACCESS_DENIED_ERROR' || error.code === 'ER_SPECIFIC_ACCESS_DENIED_ERROR') {
       console.error(
