@@ -1,10 +1,19 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
+// ── Dirección del backend ────────────────────────────────────────────────────
+// En la nube se define EXPO_PUBLIC_API_URL en el archivo .env de fro-vista
+// (ej. EXPO_PUBLIC_API_URL=https://fro-salud-api.onrender.com).
+// Si no está definida, se usa la IP local de respaldo para trabajar sin nube.
 const COMPUTADORA_IP = '192.168.1.130';
+const URL_LOCAL = `http://${COMPUTADORA_IP}:3000`;
+
+const servidor = (process.env.EXPO_PUBLIC_API_URL || URL_LOCAL).replace(/\/+$/, '');
+// Se acepta tanto la URL con /api al final como sin ella.
+const baseURL = servidor.endsWith('/api') ? servidor : `${servidor}/api`;
 
 const apiClient = axios.create({
-  baseURL: `http://${COMPUTADORA_IP}:3000/api`,
+  baseURL,
   timeout: 100000,
   headers: {
     'Content-Type': 'application/json',

@@ -12,7 +12,19 @@ const integracionDemoRoutes = require('./routes/integracionDemoRoutes');
 
 const app = express();
 
-app.use(cors());
+// En la nube conviene limitar quién puede llamar a la API. Si no se define
+// CORS_ORIGIN se permite cualquier origen, que es lo cómodo en desarrollo.
+// Se aceptan varios orígenes separados por coma.
+const origenesPermitidos = (process.env.CORS_ORIGIN || '*')
+  .split(',')
+  .map((origen) => origen.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: origenesPermitidos.includes('*') ? true : origenesPermitidos,
+  })
+);
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
