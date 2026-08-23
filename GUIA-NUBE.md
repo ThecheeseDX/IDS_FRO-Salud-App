@@ -230,4 +230,18 @@ cambiarlas de inmediato desde sus paneles.
 | El backend en Render muestra error de base de datos | Revisa que `DATABASE_URL` esté bien pegada y que `DB_SSL=true`. Si menciona el certificado, agrega `DB_SSL_REJECT_UNAUTHORIZED=false`. |
 | "Las tablas ya existen" al importar | No es error: alguien ya cargó el esquema. Puedes continuar. |
 | "Failed to open the referenced table" | La importación quedó a medias y dejó tablas sueltas. Repite el comando agregando `--reiniciar`: `npm run db:importar -- --sin-crear-base --reiniciar`. Borra lo que haya y carga todo de nuevo. |
+| "You have an error in your SQL syntax" | Hay una sentencia mal escrita en `schema.sql`. Ejecuta `npm run db:validar` (no necesita conexión) y te dirá en qué línea está. |
+
+### Antes de tocar el SQL, valida
+
+Si alguien modifica `schema.sql` o escribe consultas nuevas, conviene ejecutar:
+
+```bash
+npm run db:validar
+```
+
+No se conecta a nada y revisa dos cosas que **en Mac y Windows pasan
+desapercibidas pero rompen la app en la nube**: sentencias a las que les falta
+un punto y coma, y nombres de tabla escritos con mayúsculas distintas a las del
+esquema (Linux distingue `Paciente` de `paciente`; Mac y Windows no).
 | No llegan los correos con el código | Revisa `SMTP_USER` y `SMTP_PASS` en Render. La clave debe ser la de aplicación de 16 caracteres, no la contraseña normal de Gmail. |

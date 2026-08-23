@@ -419,9 +419,9 @@ INSERT INTO Especialidad (nombre, descripcion) VALUES
 
 INSERT INTO Usuario (usuario_id, rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id) 
 VALUES (1, 'ADMIN-1', 'Sistema', 'Admin', 'Principal', 'admin@frosalud.cl', 'hash_password', 3);
-INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) VALUES 
+INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) VALUES
 ('123456789', TRUE, 1),
-('123334442', TRUE, 1),
+('123334442', TRUE, 1);
 
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
 
