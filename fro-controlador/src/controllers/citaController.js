@@ -252,11 +252,17 @@ exports.bloquearHorario = async (req, res) => {
       });
     }
 
+    // CU39/CU43: la modalidad efectiva de la cita se persiste para saber qué
+    // evidencia corresponde (GPS domiciliario o metadatos de teleconsulta).
+    const modalidadCita = ['DOMICILIO', 'ONLINE'].includes(req.body?.modalidad)
+      ? req.body.modalidad
+      : null;
+
     const [result] = await connection.execute(
       `INSERT INTO Cita
-         (fecha_hora_inicio, fecha_hora_fin, estado, paciente_id, profesional_id, sede_id)
-       VALUES (?, ?, 'AGENDADA', ?, ?, ?)`,
-      [fecha_hora_inicio, fecha_hora_fin, paciente_id_real, profesional_id, sede_id]
+         (fecha_hora_inicio, fecha_hora_fin, estado, modalidad, paciente_id, profesional_id, sede_id)
+       VALUES (?, ?, 'AGENDADA', ?, ?, ?, ?)`,
+      [fecha_hora_inicio, fecha_hora_fin, modalidadCita, paciente_id_real, profesional_id, sede_id]
     );
 
     await connection.commit();
@@ -697,6 +703,7 @@ exports.obtenerCitasPaciente = async (req, res) => {
           c.fecha_hora_inicio, 
           c.fecha_hora_fin, 
           c.estado,
+          c.modalidad,
           CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
           CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
        FROM Cita c
@@ -726,6 +733,7 @@ exports.obtenerCitasProfesional = async (req, res) => {
           c.fecha_hora_inicio, 
           c.fecha_hora_fin, 
           c.estado,
+          c.modalidad,
           CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
           CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
        FROM Cita c

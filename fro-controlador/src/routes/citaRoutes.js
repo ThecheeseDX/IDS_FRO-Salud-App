@@ -4,6 +4,7 @@ const router  = express.Router();
 const { verifyToken }    = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const citaController     = require('../controllers/citaController');
+const evidenciaController = require('../controllers/evidenciaController');
 const marcasTemporalesController = require('../controllers/marcasTemporalesController');
 
 // CU38 - Marcas temporales de la prestacion
@@ -63,6 +64,34 @@ router.post('/:id/reprogramar',
 router.get('/:id/trazabilidad',
   verifyToken, authorizeRoles(['Profesional', 'Administrador']),
   citaController.trazabilidadCita);
+
+// ── CU39 — Check-in GPS de presencialidad
+router.post('/:id/checkin-gps',
+  verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+  evidenciaController.checkinGPS);
+
+// ── CU43 — Evidencia técnica de teleconsulta
+router.post('/:id/evidencia-teleconsulta',
+  verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+  evidenciaController.registrarEvidenciaTeleconsulta);
+
+// ── Resumen de evidencia de la sesión
+router.get('/:id/evidencia',
+  verifyToken, authorizeRoles(['Paciente', 'Profesional', 'Administrador']),
+  evidenciaController.resumenEvidencia);
+
+// ── CU41 — Certificación multi-factor de la sesión
+router.post('/:id/validar-sesion',
+  verifyToken, authorizeRoles(['Profesional']),
+  evidenciaController.validarSesion);
+
+// ── CU42 — Firma manuscrita de conformidad
+router.get('/:id/declaracion-conformidad',
+  verifyToken, authorizeRoles(['Profesional']),
+  evidenciaController.declaracionConformidad);
+router.post('/:id/firma',
+  verifyToken, authorizeRoles(['Profesional']),
+  evidenciaController.guardarFirma);
 
 // ── CU20 — Máquina de estados de cita
 // Roles permitidos: Paciente puede cancelar; Profesional gestiona el flujo clínico; Admin tiene acceso total

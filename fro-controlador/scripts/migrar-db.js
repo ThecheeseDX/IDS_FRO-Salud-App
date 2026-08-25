@@ -18,6 +18,44 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
   {
+    nombre: 'Evidencia de atencion en Cita (CU39/CU42/CU43)',
+    descripcion: 'Agrega modalidad, evidencia GPS y firma de conformidad a la cita',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Cita'
+            AND COLUMN_NAME = 'evidencia_presencial'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Cita
+           ADD COLUMN modalidad ENUM('DOMICILIO', 'ONLINE') NULL,
+           ADD COLUMN evidencia_presencial JSON NULL,
+           ADD COLUMN firma_conformidad_datos JSON NULL`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de evidencia de sesion (CU39/CU41)',
+    descripcion: 'Radio de presencialidad y tolerancia del protocolo multi-factor',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'RADIO_PRESENCIALIDAD_METROS'`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('RADIO_PRESENCIALIDAD_METROS', '200', 'Distancia máxima en metros entre los check-in GPS del paciente y del profesional.', 1),
+         ('TOLERANCIA_MULTIFACTOR_MINUTOS', '15', 'Diferencia máxima en minutos entre marcas de presencia para certificar una sesión.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Financiadores con convenio (CU66)',
     descripcion: 'Siembra los financiadores simulados si la tabla esta vacia',
     yaAplicada: async (conexion) => {

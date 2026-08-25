@@ -27,6 +27,8 @@ import TrazabilidadScreen from '../screens/Profesional/Trazabilidad/Trazabilidad
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 // Pantallas — Comunes a todos los roles
 import SeguridadScreen from '../screens/Comun/SeguridadScreen';
+import EvidenciaSesionScreen from '../screens/Comun/EvidenciaSesionScreen';
+import FirmaConformidadScreen from '../screens/Profesional/FirmaConformidadScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -79,6 +81,7 @@ export default function AppNavigator() {
             <Stack.Screen name="MisPautas" component={MisPautasScreen} options={{ title: 'Mis Ejercicios' }} />
             <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
+            <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen
               name="BuscarCita"
               component={BuscarCitaScreen}
@@ -109,6 +112,8 @@ export default function AppNavigator() {
               options={{ title: 'Gestión de Agenda' }}
             />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
+            <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
+            <Stack.Screen name="FirmaConformidad" component={FirmaConformidadScreen} options={{ title: 'Firma de Conformidad' }} />
           </>
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──

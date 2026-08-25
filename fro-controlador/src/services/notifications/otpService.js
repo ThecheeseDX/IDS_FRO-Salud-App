@@ -67,9 +67,36 @@ async function validarOTP(usuarioId, codigoIngresado) {
   return { valido: true };
 }
 
+// ─ Transporte SMTP compartido ─
+function crearTransporter() {
+  const nodemailer = require("nodemailer");
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT, 10),
+    secure: process.env.SMTP_PORT === "465",
+    auth: {
+      user: process.env.SMTP_USER || "",
+      pass: (process.env.SMTP_PASS || "").replace(/\s+/g, ""),
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
+  });
+}
+
+// Envío genérico reutilizable (CU42: conformidad por correo, entre otros).
+async function enviarCorreo(destinatario, asunto, html) {
+  const transporter = crearTransporter();
+  await transporter.sendMail({
+    from: `"Fro Salud" <${process.env.SMTP_USER}>`,
+    to: destinatario,
+    subject: asunto,
+    html,
+  });
+}
+
 // ─ Enviar OTP por Email 
 async function enviarPorEmail(destinatario, codigo) {
-  const nodemailer = require("nodemailer");
 
   // Diagnóstico sin exponer secretos: del usuario solo se muestra lo justo
   // para reconocerlo, y de la contraseña únicamente su largo. Si alguna vez
@@ -85,22 +112,7 @@ async function enviarPorEmail(destinatario, codigo) {
       `pass=${claveSMTP ? `definida, ${claveSMTP.length} caracteres` : "NO DEFINIDA"}`
   );
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT, 10),
-    secure: process.env.SMTP_PORT === "465",
-    auth: {
-      user: usuarioSMTP,
-      pass: claveSMTP, // Google la muestra con espacios; ya vienen quitados
-    },
-    // Sin límites de tiempo, un SMTP caído deja la petición colgada para
-    // siempre y la app queda esperando. Mejor fallar rápido y avisar.
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-  });
-
-  await transporter.sendMail({
+  await crearTransporter().sendMail({
     from: `"Fro Salud" <${process.env.SMTP_USER}>`,
     to: destinatario,
     subject: "Código de verificación - Fro Salud",
@@ -148,4 +160,4 @@ function explicarErrorSMTP(error) {
   return "El servidor de correo rechazó el envío.";
 }
 
-module.exports = { crearOTP, validarOTP, enviarPorEmail, explicarErrorSMTP };
+module.exports = { crearOTP, validarOTP, enviarPorEmail, enviarCorreo, explicarErrorSMTP };

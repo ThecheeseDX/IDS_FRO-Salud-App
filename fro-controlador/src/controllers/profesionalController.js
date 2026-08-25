@@ -133,6 +133,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         c.fecha_hora_inicio,
         c.fecha_hora_fin,
         c.estado,
+        c.modalidad,
         COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno), 'Profesional no registrado') AS profesional,
         COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad,
         COALESCE(s.nombre, 'No informado') AS tipo_sede

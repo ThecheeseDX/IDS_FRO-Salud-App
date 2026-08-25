@@ -136,7 +136,25 @@ export default function MisCitasScreen({ navigation }) {
           </Text>
         </View>
 
-        <Text style={styles.profesional}>Profesional: {item.nombre_profesional}</Text>
+        <Text style={styles.profesional}>
+          Profesional: {item.nombre_profesional}
+          {item.modalidad ? `  ·  ${item.modalidad === 'ONLINE' ? '📹 Online' : '🏠 Domicilio'}` : ''}
+        </Text>
+
+        {/* CU39/CU43: evidencia de la sesión (check-in GPS o teleconsulta) */}
+        {['CONFIRMADA', 'EN_CURSO'].includes(item.estado) && (
+          <TouchableOpacity
+            style={styles.botonEvidencia}
+            onPress={() =>
+              navigation.navigate('EvidenciaSesion', {
+                citaId: item.cita_id,
+                modalidad: item.modalidad,
+              })
+            }
+          >
+            <Text style={styles.botonEvidenciaTexto}>🛰️ Evidencia de sesión</Text>
+          </TouchableOpacity>
+        )}
 
         {puedeCancelar && (
           <View style={styles.filaAcciones}>
@@ -258,6 +276,15 @@ const styles = StyleSheet.create({
   profesional: { color: '#555' },
 
   filaAcciones: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  botonEvidencia: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#2e7d32',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  botonEvidenciaTexto: { color: '#2e7d32', fontWeight: 'bold' },
   botonReprogramar: {
     flex: 1,
     borderWidth: 1,

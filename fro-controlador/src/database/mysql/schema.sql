@@ -364,7 +364,13 @@ CREATE TABLE Cita(
     motivo_cancelacion VARCHAR(255),
     coordenadas_gps_paciente VARCHAR(100),
     coordenadas_gps_profesional VARCHAR(100),
+    -- CU39/CU43: modalidad efectiva de ESTA cita (NULL en citas antiguas)
+    modalidad ENUM('DOMICILIO', 'ONLINE'),
+    -- CU39: check-ins GPS de inicio/término de ambos actores, con timestamps
+    evidencia_presencial JSON,
     firma_conformidad_url VARCHAR(255),
+    -- CU42: trazos de la firma manuscrita, o el rechazo/envío por correo
+    firma_conformidad_datos JSON,
     metadatos_teleconsulta JSON,
     paciente_id INT NOT NULL,
     profesional_id INT NOT NULL,
@@ -499,4 +505,6 @@ INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUE
 ('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 1),
 ('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 1),
 ('ANTICIPACION_MINIMA_REPROGRAMACION_HORAS', '24', 'Horas mínimas de anticipación con que un paciente puede reprogramar su cita.', 1),
-('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1);
+('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1),
+('RADIO_PRESENCIALIDAD_METROS', '200', 'Distancia máxima en metros entre los check-in GPS del paciente y del profesional.', 1),
+('TOLERANCIA_MULTIFACTOR_MINUTOS', '15', 'Diferencia máxima en minutos entre marcas de presencia para certificar una sesión.', 1);

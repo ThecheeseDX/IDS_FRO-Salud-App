@@ -37,6 +37,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   // CU71: informe de cuadratura de coberturas (se descarta en memoria).
   const [cuadratura, setCuadratura] = useState(null);
   const [sincronizando, setSincronizando] = useState(false);
+  // CU41: cierre manual justificado cuando el paciente no marcó su término.
+  const [cierreManualCita, setCierreManualCita] = useState(null);
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -195,6 +197,60 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           [{ text: "Refrescar Ahora", onPress: () => cargarHistorial(true) }]
         );
       }
+    }
+  };
+
+  // CU41: certificación multi-factor de la sesión.
+  const textoFactores = (factores) =>
+    (factores || []).map((f) => `${f.ok ? '✅' : '❌'} ${f.factor}`).join('\n');
+
+  const validarSesion = async (citaId, extras = {}) => {
+    try {
+      const { data } = await apiClient.post(`/citas/${citaId}/validar-sesion`, extras);
+
+      if (data.certificada) {
+        Alert.alert('Sesión certificada', `${data.mensaje}\n\n${textoFactores(data.factores)}`);
+        return;
+      }
+
+      // Excepción 1: falta el término del paciente → cierre manual justificado.
+      if (data.requiere_cierre_manual) {
+        Alert.alert(
+          'Falta la marca del paciente',
+          `${data.mensaje}\n\n${textoFactores(data.factores)}`,
+          [
+            { text: 'Volver', style: 'cancel' },
+            { text: 'Cierre manual', onPress: () => setCierreManualCita(citaId) },
+          ]
+        );
+        return;
+      }
+
+      // Excepción 3: el resumen se muestra y nada se persiste sin confirmar.
+      if (data.resumen_pendiente) {
+        Alert.alert(
+          'Resumen de factores',
+          `${textoFactores(data.factores)}\n\n¿Confirmas la certificación de la sesión?`,
+          [
+            { text: 'Rechazar', style: 'cancel' },
+            { text: 'Confirmar', onPress: () => validarSesion(citaId, { confirmar: true }) },
+          ]
+        );
+      }
+    } catch (err) {
+      const respuesta = err.response?.data;
+      // Excepción 2: discrepancias críticas suspenden la validación.
+      if (respuesta?.error === 'VALIDACION_SUSPENDIDA') {
+        Alert.alert(
+          'Validación suspendida',
+          `${respuesta.mensaje}\n\n${textoFactores(respuesta.factores)}`
+        );
+        return;
+      }
+      Alert.alert(
+        'No se pudo validar',
+        respuesta?.mensaje || 'El cierre quedó encolado. Reintenta en unos minutos.'
+      );
     }
   };
 
@@ -434,6 +490,39 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     )}
                   </View>
 
+                  {/* CU39/CU43: evidencia de la sesión */}
+                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('EvidenciaSesion', {
+                          citaId: item.cita_id,
+                          modalidad: item.modalidad,
+                        })
+                      }
+                    >
+                      <Text style={styles.enlaceEvidencia}>🛰️ Evidencia de sesión</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* CU41 + CU42: cierre certificado de sesiones realizadas */}
+                  {estadoCita === 'REALIZADA' && (
+                    <View style={styles.filaCierre}>
+                      <TouchableOpacity onPress={() => validarSesion(item.cita_id)}>
+                        <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate('FirmaConformidad', {
+                            citaId: item.cita_id,
+                            nombrePaciente,
+                          })
+                        }
+                      >
+                        <Text style={styles.enlaceEvidencia}>✍️ Firma de conformidad</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
                   {/* CU22: historial de cambios de la cita para auditoría */}
                   <TouchableOpacity onPress={() => verTrazabilidad(item.cita_id)}>
                     <Text style={styles.enlaceTrazabilidad}>📜 Ver trazabilidad de la cita</Text>
@@ -500,6 +589,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       )}
 
       <View style={{ height: 30 }} />
+
+      {/* CU41: cierre manual auditado cuando falta la marca del paciente */}
+      <DialogoMotivo
+        visible={cierreManualCita !== null}
+        titulo="Cierre manual auditado"
+        descripcion="Justifica el cierre sin la marca de término del paciente:"
+        etiquetaConfirmar="Certificar sesión"
+        colorConfirmar="#2e7d32"
+        onConfirmar={(motivo) => {
+          const cita = cierreManualCita;
+          setCierreManualCita(null);
+          validarSesion(cita, { confirmar: true, cierre_manual: true, justificacion: motivo });
+        }}
+        onCancelar={() => setCierreManualCita(null)}
+      />
 
       {/* CU22: la cancelación del profesional también exige justificación */}
       <DialogoMotivo
@@ -666,6 +770,13 @@ const styles = StyleSheet.create({
   alertaCuadratura: { color: '#b71c1c', marginBottom: 6, fontWeight: '600' },
   okCuadratura: { color: '#2e7d32', marginBottom: 6, fontWeight: '600' },
   descartarCuadratura: { color: '#8d6e00', fontWeight: 'bold', textAlign: 'right', marginTop: 4 },
+  enlaceEvidencia: {
+    color: '#2e7d32',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginTop: 10,
+  },
+  filaCierre: { flexDirection: 'row', justifyContent: 'space-between' },
   enlaceTrazabilidad: {
     color: '#0052cc',
     fontWeight: 'bold',

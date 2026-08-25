@@ -183,6 +183,8 @@ export default function BuscarCitaScreen({ navigation, route }) {
         sede_id: bloqueSeleccionado.sede_id,
         fecha_hora_inicio,
         fecha_hora_fin,
+        // CU39/CU43: la modalidad de la cita define su evidencia.
+        modalidad: bloqueSeleccionado.tipo_sede === 'AMBOS' ? 'DOMICILIO' : bloqueSeleccionado.tipo_sede,
       });
 
       // Poscondición CU15: bloque reservado exclusivamente
