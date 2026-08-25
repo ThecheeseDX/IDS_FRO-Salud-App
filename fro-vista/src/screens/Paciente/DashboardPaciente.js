@@ -104,6 +104,18 @@ export default function DashboardPaciente({ navigation }) {
               </Text>
             </TouchableOpacity>
 
+            {/* CU35: repositorio de documentos clínicos con visor embebido */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('Documentos')}
+            >
+              <Text style={styles.menuIcon}>📁</Text>
+              <Text style={styles.menuTitle}>Mis Documentos</Text>
+              <Text style={styles.menuSubtitle}>
+                Consulta tus exámenes e informes clínicos sin descargarlos.
+              </Text>
+            </TouchableOpacity>
+
             {/* CU07/CU08/CU09: seguridad de la cuenta */}
             <TouchableOpacity
               style={styles.menuBtn}

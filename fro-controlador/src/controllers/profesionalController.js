@@ -178,12 +178,26 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         ec.episodio_clinico_id,
         ec.profesional_id,
         ep.motivo_consulta,
-        ep.fecha_inicio AS fecha_episodio
+        ep.fecha_inicio AS fecha_episodio,
+        (SELECT COUNT(*) FROM Evolucion_Version ev
+          WHERE ev.evolucion_clinica_id = ec.evolucion_clinica_id) AS total_versiones
       FROM Evolucion_Clinica ec
       INNER JOIN Episodio_Clinico ep ON ep.episodio_clinico_id = ec.episodio_clinico_id
       WHERE ep.paciente_id = ?
       ORDER BY ec.evolucion_clinica_id DESC
       `,
+      [pacienteId]
+    );
+
+    // CU33/CU35: el repositorio multimedia opera si Cloudinary está configurado.
+    const multimediaDisponible = Boolean(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    const [[conteoDocumentos]] = await db.query(
+      `SELECT COUNT(*) AS total FROM Documento_Clinico WHERE paciente_id = ?`,
       [pacienteId]
     );
 
@@ -193,9 +207,11 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       historial,
       episodios,
       evoluciones,
-      multimediaDisponible: false,
-      mensajeMultimedia:
-        'Archivos multimedia temporalmente no disponibles. Se muestran únicamente registros clínicos de texto.',
+      multimediaDisponible,
+      totalDocumentos: conteoDocumentos.total,
+      mensajeMultimedia: multimediaDisponible
+        ? ''
+        : 'Archivos multimedia temporalmente no disponibles. Se muestran únicamente registros clínicos de texto.',
     });
   } catch (error) {
     console.error('Error al obtener historial consolidado:', error);

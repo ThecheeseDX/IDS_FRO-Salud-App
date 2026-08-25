@@ -266,6 +266,39 @@ CREATE TABLE Evolucion_Clinica (
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );
 
+-- CU31: correcciones versionadas sobre evoluciones cerradas. El registro
+-- original nunca se modifica; cada aclaración es una versión indexada aparte.
+CREATE TABLE Evolucion_Version (
+    version_id INT PRIMARY KEY AUTO_INCREMENT,
+    numero_version INT NOT NULL,
+    texto_correccion TEXT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    evolucion_clinica_id INT NOT NULL,
+    profesional_id INT NOT NULL,
+    FOREIGN KEY (evolucion_clinica_id) REFERENCES Evolucion_Clinica(Evolucion_clinica_id),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
+);
+
+-- CU33/CU34/CU35: repositorio multimedia clínico. El archivo vive en
+-- Cloudinary (disco de Render es efímero); aquí solo la URL y los metadatos.
+CREATE TABLE Documento_Clinico (
+    documento_id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre_original VARCHAR(255) NOT NULL,
+    categoria VARCHAR(40) NOT NULL DEFAULT 'SIN_CLASIFICAR',
+    formato VARCHAR(10) NOT NULL,
+    tamano_bytes INT NOT NULL,
+    tipo_recurso VARCHAR(10) NOT NULL,
+    url_publica VARCHAR(500) NOT NULL,
+    public_id_cloud VARCHAR(255) NOT NULL,
+    fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paciente_id INT NOT NULL,
+    episodio_clinico_id INT,
+    profesional_id INT NOT NULL,
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
+);
+
 CREATE TABLE Derivacion_Interna (
     derivacion_interna_id INT PRIMARY KEY AUTO_INCREMENT,
     estado VARCHAR(20) NOT NULL,
@@ -507,4 +540,6 @@ INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUE
 ('ANTICIPACION_MINIMA_REPROGRAMACION_HORAS', '24', 'Horas mínimas de anticipación con que un paciente puede reprogramar su cita.', 1),
 ('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1),
 ('RADIO_PRESENCIALIDAD_METROS', '200', 'Distancia máxima en metros entre los check-in GPS del paciente y del profesional.', 1),
-('TOLERANCIA_MULTIFACTOR_MINUTOS', '15', 'Diferencia máxima en minutos entre marcas de presencia para certificar una sesión.', 1);
+('TOLERANCIA_MULTIFACTOR_MINUTOS', '15', 'Diferencia máxima en minutos entre marcas de presencia para certificar una sesión.', 1),
+('MAX_TAMANO_ARCHIVO_MB', '10', 'Tamaño máximo en megabytes aceptado al cargar archivos al repositorio multimedia.', 1),
+('MAX_VERSIONES_CORRECCION', '5', 'Cantidad máxima de correcciones versionadas permitidas sobre una evolución clínica cerrada.', 1);

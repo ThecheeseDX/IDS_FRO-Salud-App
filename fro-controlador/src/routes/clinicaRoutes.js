@@ -164,4 +164,72 @@ router.get('/plantilla-evaluacion',
     triajeController.plantillaEvaluacion
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CU33/CU34/CU35 — Repositorio multimedia de la ficha clínica
+// (auditan internamente en Bitacora_Auditoria, igual que objetivos/avance)
+// ─────────────────────────────────────────────────────────────────────────────
+const multer = require('multer');
+const documentoController = require('../controllers/clinico/documentoController');
+
+// El archivo viaja en memoria hacia Cloudinary; tope duro de 20 MB como red de
+// seguridad (el límite real es MAX_TAMANO_ARCHIVO_MB y se valida en el controlador).
+const cargaArchivo = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+// Traduce los errores propios de multer (ej. archivo sobre el tope duro) a JSON.
+function manejarErrorCarga(err, req, res, next) {
+    if (err) {
+        const esTamano = err.code === 'LIMIT_FILE_SIZE';
+        return res.status(esTamano ? 413 : 400).json({
+            error: esTamano ? 'ARCHIVO_MUY_GRANDE' : 'CARGA_INVALIDA',
+            mensaje: esTamano
+                ? 'El archivo supera el tope absoluto de 20 MB. Comprime el documento.'
+                : 'No fue posible recibir el archivo. Intenta nuevamente.',
+        });
+    }
+    next();
+}
+
+router.get('/documentos/categorias',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional', 'Administrador']),
+    documentoController.listarCategorias
+);
+router.post('/pacientes/:pacienteId/documentos',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+    cargaArchivo.single('archivo'), manejarErrorCarga,
+    documentoController.subirDocumento
+);
+router.get('/pacientes/:pacienteId/documentos',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+    documentoController.listarDocumentos
+);
+router.get('/mis-documentos',
+    verifyToken, authorizeRoles(['Paciente']),
+    documentoController.misDocumentos
+);
+router.put('/documentos/:id/categoria',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+    documentoController.cambiarCategoria
+);
+router.get('/documentos/:id/ver',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional', 'Administrador']),
+    documentoController.verDocumento
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU31 — Versionado de correcciones sobre evoluciones cerradas
+// ─────────────────────────────────────────────────────────────────────────────
+const versionController = require('../controllers/clinico/versionController');
+
+router.get('/evolucion/:evolucionId/versiones',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+    versionController.listarVersiones
+);
+router.post('/evolucion/:evolucionId/versiones',
+    verifyToken, authorizeRoles(['Profesional']),
+    versionController.crearVersion
+);
+
 module.exports = router;

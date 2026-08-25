@@ -39,6 +39,13 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [sincronizando, setSincronizando] = useState(false);
   // CU41: cierre manual justificado cuando el paciente no marcó su término.
   const [cierreManualCita, setCierreManualCita] = useState(null);
+  // CU33/CU35: disponibilidad del repositorio multimedia y conteo de archivos.
+  const [multimediaDisponible, setMultimediaDisponible] = useState(false);
+  const [totalDocumentos, setTotalDocumentos] = useState(0);
+  // CU31: evolución sobre la que se redacta una corrección versionada.
+  const [correccionEvolucion, setCorreccionEvolucion] = useState(null);
+  // CU31: versiones desplegadas por evolución { evolucionId: [versiones] }.
+  const [versionesPorEvolucion, setVersionesPorEvolucion] = useState({});
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -60,6 +67,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         setEpisodios(data.episodios || []);
         setEvoluciones(data.evoluciones || []);
         setMensajeMultimedia(data.mensajeMultimedia || '');
+        setMultimediaDisponible(Boolean(data.multimediaDisponible));
+        setTotalDocumentos(data.totalDocumentos || 0);
       } else {
         setError(data.message || 'Error al recuperar historial');
       }
@@ -78,6 +87,54 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   useEffect(() => {
     cargarHistorial();
   }, []);
+
+  // ── CU31: correcciones versionadas sobre evoluciones cerradas ──────────────
+  // El original nunca se toca: cada aclaración post-firma queda como una
+  // versión indexada aparte, y el servidor valida autoría y tope de versiones.
+  const alternarVersiones = async (evolucionId) => {
+    if (versionesPorEvolucion[evolucionId]) {
+      setVersionesPorEvolucion((previas) => {
+        const copia = { ...previas };
+        delete copia[evolucionId];
+        return copia;
+      });
+      return;
+    }
+    try {
+      const { data } = await apiClient.get(`/clinica/evolucion/${evolucionId}/versiones`);
+      setVersionesPorEvolucion((previas) => ({
+        ...previas,
+        [evolucionId]: data.versiones || [],
+      }));
+    } catch (err) {
+      Alert.alert('Error', 'No se pudieron cargar las versiones de este registro.');
+    }
+  };
+
+  const crearCorreccion = async (evolucionId, texto) => {
+    setCorreccionEvolucion(null);
+    try {
+      const { data } = await apiClient.post(`/clinica/evolucion/${evolucionId}/versiones`, {
+        texto,
+      });
+      Alert.alert('Corrección guardada', data?.mensaje || 'Versión creada.');
+      // Refrescar el desplegable si estaba abierto y el contador del historial.
+      setVersionesPorEvolucion((previas) => {
+        const copia = { ...previas };
+        delete copia[evolucionId];
+        return copia;
+      });
+      await cargarHistorial(true);
+    } catch (err) {
+      const respuesta = err.response?.data;
+      // Excepciones CU31: sin autoría (403), tope de versiones o registro
+      // abierto (409), corrección vacía (400) y fallo de vinculación (500).
+      Alert.alert(
+        'Corrección no guardada',
+        respuesta?.mensaje || respuesta?.error || 'Reintenta el guardado.'
+      );
+    }
+  };
 
   /**
    * Iniciar y finalizar una atención no son un simple cambio de estado: además
@@ -360,6 +417,23 @@ export default function HistorialPacienteScreen({ route, navigation }) {
             </View>
           )}
 
+          {/* CU33/CU34/CU35: repositorio multimedia del paciente */}
+          {multimediaDisponible && (
+            <TouchableOpacity
+              style={styles.botonDocumentos}
+              onPress={() =>
+                navigation.navigate('Documentos', {
+                  pacienteId,
+                  nombrePaciente: nombrePaciente || paciente?.nombre_completo,
+                })
+              }
+            >
+              <Text style={styles.botonDocumentosTexto}>
+                📁 Documentos del paciente{totalDocumentos > 0 ? ` (${totalDocumentos})` : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* ── CU71: cuadratura de sesiones bonificables ── */}
           <View style={styles.tarjetaCuadratura}>
             <Text style={styles.tituloCuadratura}>💳 Cuadratura de coberturas</Text>
@@ -582,6 +656,44 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   {item.firma_digital ? 'Registrada' : 'No registrada'}
                 </Text>
                 <Text>Hora firma: {formatearFecha(item.hora_firma_digital)}</Text>
+
+                {/* CU31: correcciones versionadas solo sobre registros cerrados */}
+                {item.inalterable === 1 && (
+                  <View style={styles.filaVersiones}>
+                    <TouchableOpacity
+                      onPress={() => alternarVersiones(item.evolucion_clinica_id)}
+                    >
+                      <Text style={styles.enlaceVersiones}>
+                        {versionesPorEvolucion[item.evolucion_clinica_id]
+                          ? '▲ Ocultar versiones'
+                          : `📑 Versiones (${item.total_versiones || 0})`}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setCorreccionEvolucion(item)}>
+                      <Text style={styles.enlaceCorreccion}>➕ Agregar corrección</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {versionesPorEvolucion[item.evolucion_clinica_id] && (
+                  <View style={styles.cajaVersiones}>
+                    {versionesPorEvolucion[item.evolucion_clinica_id].length === 0 ? (
+                      <Text style={styles.textoVersion}>
+                        Sin correcciones. El registro original está íntegro.
+                      </Text>
+                    ) : (
+                      versionesPorEvolucion[item.evolucion_clinica_id].map((v) => (
+                        <View key={v.version_id} style={styles.itemVersion}>
+                          <Text style={styles.tituloVersion}>
+                            Versión {v.numero_version} ·{' '}
+                            {formatearFecha(v.fecha_creacion)} · {v.autor?.trim() || 'Autor no informado'}
+                          </Text>
+                          <Text style={styles.textoVersion}>{v.texto_correccion}</Text>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                )}
               </View>
             ))
           )}
@@ -589,6 +701,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       )}
 
       <View style={{ height: 30 }} />
+
+      {/* CU31: la corrección exige texto descriptivo; el original no se toca */}
+      <DialogoMotivo
+        visible={correccionEvolucion !== null}
+        titulo="Corrección versionada"
+        descripcion={
+          correccionEvolucion
+            ? `Evolución #${correccionEvolucion.evolucion_clinica_id} (cerrada). Redacta la aclaración: se guardará como una nueva versión y el registro original quedará íntegro para auditoría.`
+            : ''
+        }
+        etiquetaConfirmar="Guardar versión"
+        colorConfirmar="#2e7d32"
+        onConfirmar={(texto) => crearCorreccion(correccionEvolucion.evolucion_clinica_id, texto)}
+        onCancelar={() => setCorreccionEvolucion(null)}
+      />
 
       {/* CU41: cierre manual auditado cuando falta la marca del paciente */}
       <DialogoMotivo
@@ -681,6 +808,34 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: '#f0fdf4',
   },
+  // CU33/CU35: acceso al repositorio multimedia
+  botonDocumentos: {
+    borderWidth: 1,
+    borderColor: '#0052cc',
+    backgroundColor: '#eef4ff',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  botonDocumentosTexto: { color: '#0052cc', fontWeight: 'bold' },
+  // CU31: correcciones versionadas
+  filaVersiones: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  enlaceVersiones: { color: '#0052cc', fontWeight: '600', fontSize: 13 },
+  enlaceCorreccion: { color: '#2e7d32', fontWeight: '600', fontSize: 13 },
+  cajaVersiones: {
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0052cc',
+    paddingLeft: 10,
+  },
+  itemVersion: { marginBottom: 8 },
+  tituloVersion: { fontWeight: 'bold', fontSize: 12, color: '#1c3d5a' },
+  textoVersion: { color: '#444', fontSize: 13 },
   fecha: { fontWeight: 'bold', marginBottom: 6 },
   errorContainer: { marginTop: 20 },
   error: { color: 'red', marginBottom: 10 },

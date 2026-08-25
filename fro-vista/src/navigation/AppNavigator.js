@@ -29,6 +29,8 @@ import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SeguridadScreen from '../screens/Comun/SeguridadScreen';
 import EvidenciaSesionScreen from '../screens/Comun/EvidenciaSesionScreen';
 import FirmaConformidadScreen from '../screens/Profesional/FirmaConformidadScreen';
+import DocumentosScreen from '../screens/Comun/DocumentosScreen';
+import VisorDocumentoScreen from '../screens/Comun/VisorDocumentoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -88,6 +90,9 @@ export default function AppNavigator() {
               options={{ title: 'Buscar y Agendar Cita' }}
             />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
+            {/* CU35: el paciente consulta su repositorio con el visor embebido */}
+            <Stack.Screen name="Documentos" component={DocumentosScreen} options={{ title: 'Mis Documentos' }} />
+            <Stack.Screen name="VisorDocumento" component={VisorDocumentoScreen} options={{ title: 'Visor de Documento' }} />
           </>
         ) : userData?.rol === 'Profesional' ? (
           // ── ESCENARIO C: Profesional Autenticado ──
@@ -114,6 +119,9 @@ export default function AppNavigator() {
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen name="FirmaConformidad" component={FirmaConformidadScreen} options={{ title: 'Firma de Conformidad' }} />
+            {/* CU33/CU34/CU35: repositorio multimedia del paciente en atención */}
+            <Stack.Screen name="Documentos" component={DocumentosScreen} options={{ title: 'Documentos del Paciente' }} />
+            <Stack.Screen name="VisorDocumento" component={VisorDocumentoScreen} options={{ title: 'Visor de Documento' }} />
           </>
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──

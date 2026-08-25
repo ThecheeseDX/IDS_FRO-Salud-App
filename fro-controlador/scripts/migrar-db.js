@@ -258,6 +258,69 @@ const MIGRACIONES = [
       );
     },
   },
+  {
+    nombre: 'Tablas de documentos y versiones (CU31/CU33)',
+    descripcion: 'Crea Evolucion_Version (correcciones auditadas) y Documento_Clinico (repositorio multimedia)',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT COUNT(*) AS total FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ('Evolucion_Version', 'Documento_Clinico')`,
+        [baseDatos]
+      );
+      return filas[0].total === 2;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE IF NOT EXISTS Evolucion_Version (
+            version_id INT PRIMARY KEY AUTO_INCREMENT,
+            numero_version INT NOT NULL,
+            texto_correccion TEXT NOT NULL,
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            evolucion_clinica_id INT NOT NULL,
+            profesional_id INT NOT NULL,
+            FOREIGN KEY (evolucion_clinica_id) REFERENCES Evolucion_Clinica(Evolucion_clinica_id),
+            FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
+        )`
+      );
+      await conexion.query(
+        `CREATE TABLE IF NOT EXISTS Documento_Clinico (
+            documento_id INT PRIMARY KEY AUTO_INCREMENT,
+            nombre_original VARCHAR(255) NOT NULL,
+            categoria VARCHAR(40) NOT NULL DEFAULT 'SIN_CLASIFICAR',
+            formato VARCHAR(10) NOT NULL,
+            tamano_bytes INT NOT NULL,
+            tipo_recurso VARCHAR(10) NOT NULL,
+            url_publica VARCHAR(500) NOT NULL,
+            public_id_cloud VARCHAR(255) NOT NULL,
+            fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            paciente_id INT NOT NULL,
+            episodio_clinico_id INT,
+            profesional_id INT NOT NULL,
+            FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+            FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
+            FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
+        )`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de multimedia y versionado (CU31/CU33)',
+    descripcion: 'Limite de tamaño de archivos y tope de versiones de corrección',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT COUNT(*) AS total FROM Parametro_Global
+          WHERE clave IN ('MAX_TAMANO_ARCHIVO_MB', 'MAX_VERSIONES_CORRECCION')`
+      );
+      return filas[0].total === 2;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT IGNORE INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+          ('MAX_TAMANO_ARCHIVO_MB', '10', 'Tamaño máximo en megabytes aceptado al cargar archivos al repositorio multimedia.', 1),
+          ('MAX_VERSIONES_CORRECCION', '5', 'Cantidad máxima de correcciones versionadas permitidas sobre una evolución clínica cerrada.', 1)`
+      );
+    },
+  },
 ];
 
 /**
