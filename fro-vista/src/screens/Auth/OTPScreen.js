@@ -123,20 +123,23 @@ export default function OTPScreen({ route, navigation }) {
         canal,
       });
 
-      if (data.ok) {
-        setSegundos(SEGUNDOS_REENVIO);
-        setDigitos(Array(LARGO_OTP).fill(""));
-        inputs.current[0]?.focus();
-        Alert.alert("Código reenviado", data.mensaje);
-      }
+      // El backend responde 200 con { mensaje }. Si llegamos aquí, se envió.
+      setSegundos(SEGUNDOS_REENVIO);
+      setDigitos(Array(LARGO_OTP).fill(""));
+      inputs.current[0]?.focus();
+      Alert.alert("Código reenviado", data?.mensaje || "Revisa tu correo.");
     } catch (err) {
-      const errorCodigo = err.response?.data?.error;
+      const respuesta = err.response?.data;
+      const errorCodigo = respuesta?.error;
 
       // Excepción 1: falla del servicio de comunicaciones externo
       if (errorCodigo === "ENVIO_FALLIDO") {
         Alert.alert(
-          "Error al enviar",
-          "No se pudo enviar el código. Verifica tu señal e intenta de nuevo.",
+          "No se pudo enviar el código",
+          // El detalle dice qué revisar en la configuración del servidor.
+          respuesta?.detalle
+            ? `${respuesta.mensaje}\n\n${respuesta.detalle}`
+            : respuesta?.mensaje || "El servicio de correo no está disponible.",
           [{ text: "Reintentar", onPress: reenviarCodigo }, { text: "Cancelar" }]
         );
       } else {

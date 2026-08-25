@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const UserModel = require('../models/userModel');
 const { comparePassword } = require('../utils/encriptar_bcrypt');
-const { crearOTP, validarOTP, enviarPorEmail } = require('../services/notifications/otpService');
+const { crearOTP, validarOTP, enviarPorEmail, explicarErrorSMTP } = require('../services/notifications/otpService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cuentas fantasma: un registro que nunca completó la verificación OTP deja
@@ -336,15 +336,28 @@ exports.solicitarOTP = async (req, res) => {
         try {
             await enviarPorEmail(usuarios[0].email, codigo);
         } catch (errorSMTP) {
-            console.error("Error SMTP detalle:", errorSMTP);
-            await pool.query(
-                `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, usuario_id, datos_adicionales)
-                 VALUES ('OTP_ENVIO_FALLIDO', 'Usuario', ?, ?)`,
-                [usuario_id, JSON.stringify({ error: errorSMTP.message })]
+            const explicacion = explicarErrorSMTP(errorSMTP);
+            console.error(
+                `[OTP] Envío fallido: ${explicacion} ` +
+                `(code=${errorSMTP.code || '-'} responseCode=${errorSMTP.responseCode || '-'})`
             );
+
+            try {
+                await pool.query(
+                    `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, usuario_id, datos_adicionales)
+                     VALUES ('OTP_ENVIO_FALLIDO', 'Usuario', ?, ?)`,
+                    [usuario_id, JSON.stringify({ error: errorSMTP.message })]
+                );
+            } catch (errorBitacora) {
+                console.error('[OTP] No se pudo registrar en bitácora:', errorBitacora.message);
+            }
+
             return res.status(502).json({
                 error: 'ENVIO_FALLIDO',
-                mensaje: 'No se pudo enviar el código. Verifica tu señal e intenta de nuevo.'
+                // El problema es del servidor de correo, no de la conexión de
+                // quien usa la app: se dice qué pasa realmente.
+                mensaje: 'No se pudo enviar el código: el servicio de correo del sistema no está disponible.',
+                detalle: explicacion
             });
         }
 

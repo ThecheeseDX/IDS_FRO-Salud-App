@@ -71,17 +71,27 @@ async function validarOTP(usuarioId, codigoIngresado) {
 async function enviarPorEmail(destinatario, codigo) {
   const nodemailer = require("nodemailer");
 
-  console.log("SMTP_HOST:", process.env.SMTP_HOST);
-  console.log("SMTP_PORT:", process.env.SMTP_PORT);
-  console.log("SMTP_USER:", process.env.SMTP_USER);
+  // Diagnóstico sin exponer secretos: del usuario solo se muestra lo justo
+  // para reconocerlo, y de la contraseña únicamente su largo. Si alguna vez
+  // se pegó la clave dentro de SMTP_USER, esto lo delata sin publicarla.
+  const usuarioSMTP = process.env.SMTP_USER || "";
+  const claveSMTP = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
+  const enmascarar = (texto) =>
+    texto.length <= 4 ? "****" : `${texto.slice(0, 2)}***${texto.slice(-2)}`;
+
+  console.log(
+    `[SMTP] host=${process.env.SMTP_HOST} port=${process.env.SMTP_PORT} ` +
+      `user=${enmascarar(usuarioSMTP)} (${usuarioSMTP.includes("@") ? "parece un correo" : "NO parece un correo"}) ` +
+      `pass=${claveSMTP ? `definida, ${claveSMTP.length} caracteres` : "NO DEFINIDA"}`
+  );
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT, 10),
     secure: process.env.SMTP_PORT === "465",
     auth: {
-      user: process.env.SMTP_USER,
-      pass: (process.env.SMTP_PASS || "").replace(/\s+/g, ""), // Google la muestra con espacios; se quitan por si se pegó así
+      user: usuarioSMTP,
+      pass: claveSMTP, // Google la muestra con espacios; ya vienen quitados
     },
     // Sin límites de tiempo, un SMTP caído deja la petición colgada para
     // siempre y la app queda esperando. Mejor fallar rápido y avisar.
@@ -109,4 +119,33 @@ async function enviarPorEmail(destinatario, codigo) {
   });
 }
 
-module.exports = { crearOTP, validarOTP, enviarPorEmail };
+/**
+ * Traduce un fallo de envío de correo a una explicación accionable.
+ * No incluye credenciales: es seguro mostrarla o registrarla.
+ */
+function explicarErrorSMTP(error) {
+  const texto = `${error?.code || ""} ${error?.responseCode || ""} ${error?.message || ""}`;
+  const usuario = process.env.SMTP_USER || "";
+  const clave = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
+
+  if (!usuario || !clave) {
+    return "Faltan credenciales de correo en el servidor (SMTP_USER y/o SMTP_PASS).";
+  }
+  if (!usuario.includes("@")) {
+    return "SMTP_USER no es una dirección de correo. Debe ser el correo completo del remitente.";
+  }
+  if (/Invalid login|535|BadCredentials|Username and Password not accepted/i.test(texto)) {
+    return clave.length !== 16
+      ? `Gmail rechazó las credenciales. La contraseña configurada tiene ${clave.length} caracteres; una contraseña de aplicación tiene 16.`
+      : "Gmail rechazó las credenciales. Verifica que la contraseña de aplicación siga vigente.";
+  }
+  if (/ETIMEDOUT|ECONNECTION|ECONNREFUSED|timeout/i.test(texto)) {
+    return "No se pudo contactar al servidor de correo. Revisa SMTP_HOST y SMTP_PORT.";
+  }
+  if (/EENVELOPE|no recipients|Invalid recipient/i.test(texto)) {
+    return "La dirección de destino fue rechazada por el servidor de correo.";
+  }
+  return "El servidor de correo rechazó el envío.";
+}
+
+module.exports = { crearOTP, validarOTP, enviarPorEmail, explicarErrorSMTP };
