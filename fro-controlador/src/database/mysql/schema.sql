@@ -62,6 +62,19 @@ CREATE TABLE Bitacora_Auditoria (
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id) 
 );
 
+-- CU08: registro de sesiones activas por dispositivo. El identificador (jti)
+-- viaja dentro del JWT; revocar la fila invalida el token de inmediato.
+CREATE TABLE Sesion_Usuario (
+    sesion_usuario_id INT PRIMARY KEY AUTO_INCREMENT,
+    jti CHAR(36) NOT NULL UNIQUE,
+    dispositivo VARCHAR(120),
+    ip_origen VARCHAR(45),
+    momento_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    activa BOOLEAN DEFAULT TRUE,
+    usuario_id INT NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
+
 CREATE TABLE Comuna (
     comuna_id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(50) NOT NULL UNIQUE
@@ -154,6 +167,9 @@ CREATE TABLE Paciente (
     calle VARCHAR(100) NOT NULL,
     numero_calle VARCHAR(10) NOT NULL,
     departamento VARCHAR(10),
+    -- CU09: qué datos de contacto ve el profesional. NULL = todo visible.
+    -- Formato: {"mostrar_direccion": true, "mostrar_telefono": true}
+    privacidad_contacto JSON,
     contacto_emergencia_id INT,
     usuario_id INT NOT NULL UNIQUE,
     comuna_id INT NOT NULL,

@@ -10,6 +10,7 @@ import { AuthContext } from '../context/AuthContext';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
+import RecuperarContrasenaScreen from '../screens/Auth/RecuperarContrasenaScreen';
 // Pantallas — Paciente
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
@@ -21,6 +22,8 @@ import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinica
 import TrazabilidadScreen from '../screens/Profesional/Trazabilidad/TrazabilidadScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
+// Pantallas — Comunes a todos los roles
+import SeguridadScreen from '../screens/Comun/SeguridadScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -50,6 +53,11 @@ export default function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Ingreso al Sistema' }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear Cuenta' }} />
             <Stack.Screen
+              name="RecuperarContrasena"
+              component={RecuperarContrasenaScreen}
+              options={{ title: 'Recuperar Contraseña' }}
+            />
+            <Stack.Screen
               name="OTP"
               component={OTPScreen}
               options={{ title: 'Verificar Cuenta', headerBackVisible: false, gestureEnabled: false }}
@@ -70,6 +78,7 @@ export default function AppNavigator() {
               component={BuscarCitaScreen}
               options={{ title: 'Buscar y Agendar Cita' }}
             />
+            <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
           </>
         ) : userData?.rol === 'Profesional' ? (
           // ── ESCENARIO C: Profesional Autenticado ──
@@ -93,6 +102,7 @@ export default function AppNavigator() {
               component={GestionDisponibilidadScreen}
               options={{ title: 'Gestión de Agenda' }}
             />
+            <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
           </>
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──
@@ -102,6 +112,7 @@ export default function AppNavigator() {
               component={ParametrosScreen}
               options={{ title: 'Configuración Maestra', headerBackVisible: false, gestureEnabled: false }}
             />
+            <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
           </>
         ) : (
           // ── ESCENARIO E: Rol Desconocido ──

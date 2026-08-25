@@ -17,9 +17,12 @@ exports.listarPacientesAsignados = async (req, res) => {
         u.rut,
         CONCAT(COALESCE(u.nombres, ''), ' ', COALESCE(u.apellido_paterno, ''), ' ', COALESCE(u.apellido_materno, '')) AS nombre_completo,
         p.sexo_clinico,
-        p.calle,
-        p.numero_calle,
-        p.departamento,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.calle END AS calle,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.numero_calle END AS numero_calle,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion
@@ -45,6 +48,7 @@ exports.listarPacientesAsignados = async (req, res) => {
         u.nombres,
         u.apellido_paterno,
         u.apellido_materno,
+        p.privacidad_contacto,
         p.sexo_clinico,
         p.calle,
         p.numero_calle,
@@ -107,9 +111,12 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         u.rut,
         CONCAT(COALESCE(u.nombres, ''), ' ', COALESCE(u.apellido_paterno, ''), ' ', COALESCE(u.apellido_materno, '')) AS nombre_completo,
         p.sexo_clinico,
-        p.calle,
-        p.numero_calle,
-        p.departamento,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.calle END AS calle,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.numero_calle END AS numero_calle,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id
       FROM Paciente p
       LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
@@ -215,9 +222,12 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         u.rut,
         CONCAT(COALESCE(u.nombres, ''), ' ', COALESCE(u.apellido_paterno, ''), ' ', COALESCE(u.apellido_materno, '')) AS nombre_completo,
         p.sexo_clinico,
-        p.calle,
-        p.numero_calle,
-        p.departamento,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.calle END AS calle,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.numero_calle END AS numero_calle,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion
@@ -249,6 +259,7 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         u.nombres,
         u.apellido_paterno,
         u.apellido_materno,
+        p.privacidad_contacto,
         p.sexo_clinico,
         p.calle,
         p.numero_calle,

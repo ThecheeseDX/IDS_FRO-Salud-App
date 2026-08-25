@@ -17,7 +17,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado'; 
 import { AuthContext } from '../../context/AuthContext'
 
-export default function ParametrosScreen() {
+export default function ParametrosScreen({ navigation }) {
   const { logoutSession } = useContext(AuthContext);
 
   const [parametros, setParametros] = useState([]);
@@ -246,6 +246,13 @@ const aplicarRestriccion = async () => {
         </VistaConTeclado>
       )}
 
+      <TouchableOpacity
+        style={styles.securityLink}
+        onPress={() => navigation.navigate('Seguridad')}
+      >
+        <Text style={styles.securityLinkText}>🔐 Seguridad de la cuenta</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>
@@ -254,6 +261,8 @@ const aplicarRestriccion = async () => {
 }
 
 const styles = StyleSheet.create({
+  securityLink: { alignItems: 'center', paddingVertical: 10 },
+  securityLinkText: { color: '#0052cc', fontWeight: 'bold' },
   container: { flex: 1, backgroundColor: '#f4f6f8' },
   header: { backgroundColor: '#0052cc', padding: 20, paddingTop: 40, borderBottomLeftRadius: 15, borderBottomRightRadius: 15, elevation: 4 },
   title: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },

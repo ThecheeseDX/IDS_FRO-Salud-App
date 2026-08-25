@@ -13,6 +13,7 @@ import { validateRut } from '../../utils/validators';
 
 // Importamos el cliente centralizado de Axios
 import apiClient from '../../api/client';
+import { Platform } from 'react-native';
 import VistaConTeclado from '../../components/VistaConTeclado'; 
 
 export default function LoginScreen({ navigation }) {
@@ -48,6 +49,8 @@ export default function LoginScreen({ navigation }) {
 
     try {
       const response = await apiClient.post('/auth/login', {
+        // CU08: el nombre del dispositivo aparece en "Sesiones activas".
+        dispositivo: Platform.OS === 'ios' ? 'iPhone (app móvil)' : 'Android (app móvil)',
         rut: rut,
         contrasena: password
       });
@@ -132,6 +135,16 @@ export default function LoginScreen({ navigation }) {
           )}
         </View>
       </View>
+
+      <TouchableOpacity
+        style={styles.registerLink}
+        onPress={() => navigation.navigate('RecuperarContrasena')}
+        disabled={isLoading}
+      >
+        <Text style={styles.registerLinkText}>
+          <Text style={styles.registerLinkHighlight}>¿Olvidaste tu contraseña?</Text>
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity 
         style={styles.registerLink} 

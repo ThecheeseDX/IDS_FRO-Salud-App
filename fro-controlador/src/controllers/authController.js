@@ -4,6 +4,11 @@ const jwt = require('jsonwebtoken');
 const UserModel = require('../models/userModel');
 const { comparePassword } = require('../utils/encriptar_bcrypt');
 const { crearOTP, validarOTP, enviarPorEmail, explicarErrorSMTP } = require('../services/notifications/otpService');
+const {
+    validarRobustezContrasena,
+    crearSesion,
+    revocarTodasLasSesiones,
+} = require('../services/auth/seguridadService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cuentas fantasma: un registro que nunca completó la verificación OTP deja
@@ -55,6 +60,7 @@ async function eliminarCuentasInactivas(connection, rut, email) {
         }
 
         // Resto de tablas que apuntan a Usuario
+        await connection.execute(`DELETE FROM Sesion_Usuario WHERE usuario_id = ?`, [id]);
         await connection.execute(`DELETE FROM Usuario_Telefono WHERE usuario_id = ?`, [id]);
         await connection.execute(`DELETE FROM Notificacion WHERE usuario_id = ?`, [id]);
         await connection.execute(`DELETE FROM Ticket_Soporte WHERE usuario_id = ?`, [id]);
@@ -442,9 +448,19 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
         }
 
+        // CU08: cada inicio de sesión queda registrado por dispositivo y su
+        // identificador viaja dentro del token, para poder revocarlo remoto.
+        const jti = await crearSesion(
+            pool,
+            usuario.usuario_id,
+            req.body?.dispositivo,
+            req.ip
+        );
+
         const payload = {
             usuario_id: usuario.usuario_id,
-            nombre_rol: usuario.nombre_rol
+            nombre_rol: usuario.nombre_rol,
+            jti
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
@@ -465,5 +481,329 @@ exports.login = async (req, res) => {
         res.status(500).json({
             error: 'Servicio de autenticación no disponible temporalmente. Intente nuevamente en unos segundos.'
         });
+    }
+};
+// ─────────────────────────────────────────────────────────────────────────────
+// CU06 — SOLICITAR RESTABLECIMIENTO DE CREDENCIALES
+// POST /api/auth/recuperar/solicitar   { email }
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Busca al usuario, genera el OTP y lo envía. Compartido por CU06 y CU07. */
+async function despacharOTPRecuperacion(usuario) {
+    const { codigo } = await crearOTP(usuario.usuario_id);
+    enviarPorEmail(usuario.email, codigo).catch((errorSMTP) => {
+        console.error('[recuperacion] Error SMTP:', explicarErrorSMTP(errorSMTP));
+    });
+}
+
+exports.solicitarRecuperacion = async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+
+    // Excepción 3 (CU06): formato de correo inválido se rechaza de entrada.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({
+            error: 'EMAIL_INVALIDO',
+            mensaje: 'Ingresa un correo electrónico válido.'
+        });
+    }
+
+    try {
+        const [usuarios] = await pool.query(
+            `SELECT usuario_id, email FROM Usuario WHERE email = ? LIMIT 1`,
+            [email]
+        );
+
+        if (usuarios.length > 0) {
+            await despacharOTPRecuperacion(usuarios[0]);
+        }
+
+        // Excepción 4 (CU06): la respuesta es idéntica exista o no la cuenta,
+        // para no revelar qué correos están registrados.
+        return res.status(200).json({
+            mensaje: 'Si el correo está registrado, recibirás un código de verificación en unos minutos.'
+        });
+    } catch (error) {
+        console.error('[solicitarRecuperacion]', error);
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU07 — EJECUTAR CAMBIO DE CONTRASEÑA
+// POST /api/auth/recuperar/confirmar   { email, codigo, nueva_contrasena }
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Valida OTP + robustez y aplica el cambio. Devuelve {status, cuerpo}.
+ * Se usa desde el flujo público (con email) y el autenticado (con usuario_id).
+ */
+async function ejecutarCambioContrasena(usuario, codigo, nuevaContrasena) {
+    // Excepción 2 (CU07): código incorrecto o expirado.
+    const codigoLimpio = String(codigo || '').trim();
+    const expirado = !usuario.otp_expiracion || new Date() > new Date(usuario.otp_expiracion);
+
+    if (!usuario.otp_codigo || usuario.otp_codigo !== codigoLimpio || expirado) {
+        return {
+            status: 400,
+            cuerpo: {
+                error: 'CODIGO_INVALIDO',
+                mensaje: expirado && usuario.otp_codigo
+                    ? 'El código expiró. Solicita uno nuevo.'
+                    : 'El código no es válido. Revisa e intenta de nuevo.'
+            }
+        };
+    }
+
+    // Excepción 3 (CU07): política de robustez, con requisitos detallados.
+    const robustez = validarRobustezContrasena(nuevaContrasena);
+    if (!robustez.valida) {
+        return {
+            status: 400,
+            cuerpo: {
+                error: 'CONTRASENA_DEBIL',
+                mensaje: 'La contraseña no cumple los requisitos de seguridad.',
+                requisitos: robustez.incumplidos
+            }
+        };
+    }
+
+    const contrasena_hash = await bcrypt.hash(nuevaContrasena, 10);
+
+    await pool.query(
+        `UPDATE Usuario
+            SET contrasena_hash = ?, otp_codigo = NULL, otp_expiracion = NULL
+          WHERE usuario_id = ?`,
+        [contrasena_hash, usuario.usuario_id]
+    );
+
+    // CU08: un cambio de contraseña cierra las sesiones de TODOS los
+    // dispositivos; quien tenga la clave nueva vuelve a entrar.
+    await revocarTodasLasSesiones(pool, usuario.usuario_id);
+
+    try {
+        await pool.query(
+            `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, usuario_id)
+             VALUES ('CAMBIO_CONTRASENA', 'Usuario', ?)`,
+            [usuario.usuario_id]
+        );
+    } catch (errorBitacora) {
+        console.error('[cambioContrasena] Sin registro en bitácora:', errorBitacora.message);
+    }
+
+    return {
+        status: 200,
+        cuerpo: {
+            mensaje: 'Contraseña actualizada. Por seguridad se cerraron todas tus sesiones: inicia sesión con la clave nueva.'
+        }
+    };
+}
+
+exports.confirmarRecuperacion = async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const { codigo, nueva_contrasena } = req.body || {};
+
+    try {
+        const [usuarios] = await pool.query(
+            `SELECT usuario_id, email, otp_codigo, otp_expiracion
+               FROM Usuario WHERE email = ? LIMIT 1`,
+            [email]
+        );
+
+        // Mismo mensaje genérico que un código inválido: no revela cuentas.
+        if (usuarios.length === 0) {
+            return res.status(400).json({
+                error: 'CODIGO_INVALIDO',
+                mensaje: 'El código no es válido. Revisa e intenta de nuevo.'
+            });
+        }
+
+        const resultado = await ejecutarCambioContrasena(usuarios[0], codigo, nueva_contrasena);
+        return res.status(resultado.status).json(resultado.cuerpo);
+    } catch (error) {
+        console.error('[confirmarRecuperacion]', error);
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
+// Variante autenticada: cambiar la contraseña desde adentro de la app.
+exports.solicitarCambioContrasena = async (req, res) => {
+    try {
+        const [usuarios] = await pool.query(
+            `SELECT usuario_id, email FROM Usuario WHERE usuario_id = ? LIMIT 1`,
+            [req.user.usuario_id]
+        );
+        if (usuarios.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
+        await despacharOTPRecuperacion(usuarios[0]);
+
+        const [nombre, dominio] = usuarios[0].email.split('@');
+        return res.status(200).json({
+            mensaje: 'Código enviado.',
+            destino: `${nombre[0]}***@${dominio}`
+        });
+    } catch (error) {
+        console.error('[solicitarCambioContrasena]', error);
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
+exports.confirmarCambioContrasena = async (req, res) => {
+    const { codigo, nueva_contrasena } = req.body || {};
+    try {
+        const [usuarios] = await pool.query(
+            `SELECT usuario_id, email, otp_codigo, otp_expiracion
+               FROM Usuario WHERE usuario_id = ? LIMIT 1`,
+            [req.user.usuario_id]
+        );
+        if (usuarios.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
+        const resultado = await ejecutarCambioContrasena(usuarios[0], codigo, nueva_contrasena);
+        return res.status(resultado.status).json(resultado.cuerpo);
+    } catch (error) {
+        console.error('[confirmarCambioContrasena]', error);
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU08 — GESTIÓN DE SESIONES ACTIVAS
+// ─────────────────────────────────────────────────────────────────────────────
+
+exports.listarSesiones = async (req, res) => {
+    try {
+        const [sesiones] = await pool.query(
+            `SELECT sesion_usuario_id, dispositivo, ip_origen, momento_inicio, jti
+               FROM Sesion_Usuario
+              WHERE usuario_id = ? AND activa = TRUE
+              ORDER BY momento_inicio DESC`,
+            [req.user.usuario_id]
+        );
+
+        return res.status(200).json({
+            sesiones: sesiones.map((sesion) => ({
+                sesion_usuario_id: sesion.sesion_usuario_id,
+                dispositivo: sesion.dispositivo,
+                ip_origen: sesion.ip_origen,
+                momento_inicio: sesion.momento_inicio,
+                // La app marca "este dispositivo" comparando contra su token.
+                actual: sesion.jti === req.user.jti,
+            })),
+        });
+    } catch (error) {
+        console.error('[listarSesiones]', error);
+        return res.status(500).json({ error: 'No se pudo obtener la lista de sesiones.' });
+    }
+};
+
+exports.cerrarSesion = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // El WHERE por usuario impide cerrar sesiones ajenas.
+        const [resultado] = await pool.query(
+            `UPDATE Sesion_Usuario SET activa = FALSE
+              WHERE sesion_usuario_id = ? AND usuario_id = ?`,
+            [id, req.user.usuario_id]
+        );
+
+        // Excepción 3 (CU08): la sesión ya no existía o había expirado.
+        if (resultado.affectedRows === 0) {
+            return res.status(404).json({
+                error: 'SESION_NO_ENCONTRADA',
+                mensaje: 'Esa sesión ya no está activa.'
+            });
+        }
+
+        return res.status(200).json({ mensaje: 'Sesión cerrada. Ese dispositivo perdió el acceso.' });
+    } catch (error) {
+        console.error('[cerrarSesion]', error);
+        return res.status(500).json({ error: 'No se pudo cerrar la sesión.' });
+    }
+};
+
+// Cierre de la propia sesión al salir de la app (mejor esfuerzo).
+exports.cerrarSesionActual = async (req, res) => {
+    try {
+        if (req.user.jti) {
+            await pool.query(
+                `UPDATE Sesion_Usuario SET activa = FALSE WHERE jti = ?`,
+                [req.user.jti]
+            );
+        }
+        return res.status(200).json({ mensaje: 'Sesión finalizada.' });
+    } catch (error) {
+        console.error('[cerrarSesionActual]', error);
+        return res.status(500).json({ error: 'No se pudo cerrar la sesión.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU09 — PRIVACIDAD DE DATOS DE CONTACTO (solo Paciente)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PRIVACIDAD_POR_DEFECTO = { mostrar_direccion: true, mostrar_telefono: true };
+
+exports.obtenerPrivacidad = async (req, res) => {
+    try {
+        const [filas] = await pool.query(
+            `SELECT privacidad_contacto FROM Paciente WHERE usuario_id = ? LIMIT 1`,
+            [req.user.usuario_id]
+        );
+        if (filas.length === 0) {
+            return res.status(404).json({ error: 'No se encontró el perfil de paciente.' });
+        }
+
+        let guardada = filas[0].privacidad_contacto;
+        if (typeof guardada === 'string') {
+            try { guardada = JSON.parse(guardada); } catch { guardada = null; }
+        }
+
+        return res.status(200).json({ ...PRIVACIDAD_POR_DEFECTO, ...(guardada || {}) });
+    } catch (error) {
+        console.error('[obtenerPrivacidad]', error);
+        return res.status(500).json({ error: 'No se pudo leer la configuración de privacidad.' });
+    }
+};
+
+exports.actualizarPrivacidad = async (req, res) => {
+    // Excepción 3 (CU09): solo se aceptan los campos de la matriz, booleanos.
+    const preferencias = {};
+    for (const campo of Object.keys(PRIVACIDAD_POR_DEFECTO)) {
+        const valor = req.body?.[campo];
+        if (typeof valor !== 'boolean') {
+            return res.status(400).json({
+                error: 'CONFIGURACION_INVALIDA',
+                mensaje: `El campo "${campo}" es obligatorio y debe ser verdadero o falso.`
+            });
+        }
+        preferencias[campo] = valor;
+    }
+
+    try {
+        const [resultado] = await pool.query(
+            `UPDATE Paciente SET privacidad_contacto = ? WHERE usuario_id = ?`,
+            [JSON.stringify(preferencias), req.user.usuario_id]
+        );
+        if (resultado.affectedRows === 0) {
+            return res.status(404).json({ error: 'No se encontró el perfil de paciente.' });
+        }
+
+        try {
+            await pool.query(
+                `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, datos_adicionales, usuario_id)
+                 VALUES ('CAMBIO_PRIVACIDAD', 'Paciente', ?, ?)`,
+                [JSON.stringify(preferencias), req.user.usuario_id]
+            );
+        } catch (errorBitacora) {
+            console.error('[actualizarPrivacidad] Sin registro en bitácora:', errorBitacora.message);
+        }
+
+        return res.status(200).json({ mensaje: 'Preferencias de privacidad guardadas.', ...preferencias });
+    } catch (error) {
+        console.error('[actualizarPrivacidad]', error);
+        return res.status(500).json({ error: 'No se pudieron guardar los cambios.' });
     }
 };

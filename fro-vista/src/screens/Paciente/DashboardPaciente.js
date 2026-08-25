@@ -67,6 +67,18 @@ export default function DashboardPaciente({ navigation }) {
                 Revisa tus horas agendadas y reserva nuevas desde un mismo lugar.
               </Text>
             </TouchableOpacity>
+
+            {/* CU07/CU08/CU09: seguridad de la cuenta */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('Seguridad')}
+            >
+              <Text style={styles.menuIcon}>🔐</Text>
+              <Text style={styles.menuTitle}>Seguridad y privacidad</Text>
+              <Text style={styles.menuSubtitle}>
+                Cambia tu contraseña, revisa tus sesiones y decide qué datos compartes.
+              </Text>
+            </TouchableOpacity>
           </>
         )}
       </View>

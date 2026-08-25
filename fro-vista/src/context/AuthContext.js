@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { setUnauthorizedHandler } from '../api/client';
+import apiClient, { setUnauthorizedHandler } from '../api/client';
 
 export const AuthContext = createContext();
 
@@ -36,6 +36,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logoutSession = async () => {
+    // CU08: se avisa al servidor para que la sesión deje de figurar como
+    // activa. Mejor esfuerzo: si falla, el cierre local ocurre igual.
+    apiClient.post('/auth/logout').catch(() => {});
+
     setUserToken(null);
     setUserData(null);
     await SecureStore.deleteItemAsync('userToken');

@@ -18,6 +18,50 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
   {
+    nombre: 'Tabla Sesion_Usuario (CU08)',
+    descripcion: 'Registro de sesiones activas por dispositivo, revocables',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Sesion_Usuario'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Sesion_Usuario (
+            sesion_usuario_id INT PRIMARY KEY AUTO_INCREMENT,
+            jti CHAR(36) NOT NULL UNIQUE,
+            dispositivo VARCHAR(120),
+            ip_origen VARCHAR(45),
+            momento_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            activa BOOLEAN DEFAULT TRUE,
+            usuario_id INT NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Paciente.privacidad_contacto (CU09)',
+    descripcion: 'Preferencias de visibilidad de los datos de contacto',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Paciente'
+            AND COLUMN_NAME = 'privacidad_contacto'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Paciente ADD COLUMN privacidad_contacto JSON NULL`
+      );
+    },
+  },
+  {
     nombre: 'Parametros de anticipacion de agenda (CU17/CU18)',
     descripcion: 'Agrega los plazos mínimos para reprogramar y cancelar citas',
     yaAplicada: async (conexion) => {

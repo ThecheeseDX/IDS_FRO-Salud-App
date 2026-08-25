@@ -150,6 +150,17 @@ export default function DashboardProfesional({ navigation }) {
         </View>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.herramienta}
+        onPress={() => navigation.navigate('Seguridad')}
+      >
+        <Text style={styles.herramientaIcono}>🔐</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Seguridad de la Cuenta</Text>
+          <Text style={styles.herramientaSub}>Contraseña y sesiones activas.</Text>
+        </View>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={logoutSession}>
         <Text style={styles.logoutText}>Cerrar Sesión</Text>
       </TouchableOpacity>
