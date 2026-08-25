@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -20,6 +18,7 @@ import {
   iniciarAtencion,
 } from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
+import VistaConTeclado from '../../../components/VistaConTeclado';
 
 function formatearFecha(fecha) {
   if (!fecha) return 'No registrada';
@@ -320,11 +319,11 @@ export default function MarcasTemporalesScreen() {
         animationType="fade"
         onRequestClose={cerrarMarcaManual}
       >
-        {/* Un Modal renderiza en su propia raíz nativa: el KeyboardAvoidingView
-            del ScrollView de afuera no lo alcanza, necesita el suyo propio. */}
-        <KeyboardAvoidingView
+        {/* Un Modal renderiza en su propia raíz nativa, así que necesita su
+            propio manejo del teclado, independiente del resto de la pantalla. */}
+        <VistaConTeclado
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          contentContainerStyle={styles.modalContenido}
         >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Marca manual justificada</Text>
@@ -365,7 +364,7 @@ export default function MarcasTemporalesScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </VistaConTeclado>
       </Modal>
     </ScrollView>
   );
@@ -453,6 +452,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  modalContenido: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,

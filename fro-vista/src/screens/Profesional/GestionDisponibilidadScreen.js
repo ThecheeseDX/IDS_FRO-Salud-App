@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import apiClient from '../../api/client';
+import VistaConTeclado from '../../components/VistaConTeclado';
 import { AuthContext } from '../../context/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -71,11 +72,7 @@ export default function GestionDisponibilidadScreen() {
     };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+    <VistaConTeclado style={styles.container} contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Gestión de Agenda</Text>
         <Text style={styles.cardSubtitle}>Configure los periodos de inactividad</Text>
@@ -126,13 +123,12 @@ export default function GestionDisponibilidadScreen() {
           <Text style={styles.saveButtonText}>CONFIRMAR BLOQUEO</Text>
         </TouchableOpacity>
       </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </VistaConTeclado>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f6f8', padding: 20 },
+  container: { flex: 1, backgroundColor: '#f4f6f8' },
   card: { backgroundColor: '#ffffff', borderRadius: 15, padding: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
   cardTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 5 },
   cardSubtitle: { fontSize: 13, color: '#777', marginBottom: 20 },

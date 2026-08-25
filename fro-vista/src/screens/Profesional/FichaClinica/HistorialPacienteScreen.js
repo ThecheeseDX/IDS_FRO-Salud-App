@@ -1,4 +1,4 @@
-// Ruta: fro-vista/src/screens/Profesional/HistorialPacienteScreen.js
+// Ruta: fro-vista/src/screens/Profesional/FichaClinica/HistorialPacienteScreen.js
 
 import React, { useEffect, useState, useContext } from 'react';
 import {
@@ -12,7 +12,11 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import apiClient, { getHistorialPaciente } from '../../../api/client';
+import apiClient, {
+  finalizarAtencion,
+  getHistorialPaciente,
+  iniciarAtencion,
+} from '../../../api/client';
 import { AuthContext } from '../../../context/AuthContext';
 
 export default function HistorialPacienteScreen({ route, navigation }) {
@@ -67,22 +71,80 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     cargarHistorial();
   }, []);
 
+  /**
+   * Iniciar y finalizar una atención no son un simple cambio de estado: además
+   * dejan la marca horaria auditable de la prestación (CU38). Por eso usan los
+   * mismos servicios que la pantalla de Marcas Temporales, en vez de la
+   * transición genérica, que dejaría la hora real sin registrar.
+   */
+  const registrarMarcaAtencion = async (citaId, evento) => {
+    try {
+      if (evento === 'INICIAR') {
+        const data = await iniciarAtencion(citaId, {});
+        Alert.alert('Atención iniciada', `Marca de inicio: ${formatearFecha(data.marca_inicio)}`);
+      } else {
+        const data = await finalizarAtencion(citaId, {});
+        Alert.alert('Atención finalizada', `Duración total: ${data.duracion_minutos} minutos.`);
+      }
+      cargarHistorial(false);
+    } catch (err) {
+      const detalle = err.response?.data;
+
+      // La atención comienza antes de su bloque horario: queda auditado.
+      if (detalle?.error === 'INICIO_ANTICIPADO') {
+        Alert.alert(
+          'Inicio anticipado',
+          'La cita aún no alcanza su bloque horario. El inicio quedará auditado.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Confirmar inicio',
+              onPress: async () => {
+                try {
+                  const data = await iniciarAtencion(citaId, { confirmar_inicio_anticipado: true });
+                  Alert.alert('Atención iniciada', `Marca de inicio: ${formatearFecha(data.marca_inicio)}`);
+                  cargarHistorial(false);
+                } catch (error) {
+                  Alert.alert(
+                    'No fue posible iniciar',
+                    error.response?.data?.mensaje || 'Intenta nuevamente.'
+                  );
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      Alert.alert(
+        evento === 'INICIAR' ? 'No fue posible iniciar' : 'No fue posible finalizar',
+        detalle?.mensaje || 'Revisa la conexión e intenta nuevamente.'
+      );
+    }
+  };
+
   const modificarEstadoCita = async (citaId, estadoActual, evento) => {
     // Exclusión local preventiva para estados terminales
     const deEstado = (estadoActual || '').toUpperCase();
     const estadosTerminales = ['REALIZADA', 'CANCELADA', 'INASISTENCIA'];
-    
+
     if (estadosTerminales.includes(deEstado)) {
       Alert.alert(
         "Acción no permitida",
         "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal."
       );
-      return; 
+      return;
+    }
+
+    // Estos dos eventos llevan marca horaria; el resto son cambios de estado.
+    if (evento === 'INICIAR' || evento === 'FINALIZAR') {
+      return registrarMarcaAtencion(citaId, evento);
     }
 
     try {
       const response = await apiClient.post(`/citas/${citaId}/transicionar`, { evento });
-      
+
       if (response.data.ok || response.status === 200) {
         Alert.alert("Éxito", `Cita actualizada exitosamente a: ${response.data.nuevo_estado || 'nuevo estado'}`);
         cargarHistorial(false); // Recargar la lista para reflejar los cambios inmediatos

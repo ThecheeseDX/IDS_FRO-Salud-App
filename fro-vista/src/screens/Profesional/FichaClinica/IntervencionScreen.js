@@ -2,9 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +17,7 @@ import {
   guardarIntervencion,
 } from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
+import VistaConTeclado from '../../../components/VistaConTeclado';
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;
@@ -174,11 +172,7 @@ export default function IntervencionScreen() {
   const etiquetaEspecialidad = contexto?.especialidad || 'General';
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <VistaConTeclado style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Intervención y respuesta fisiológica</Text>
       <Text style={styles.subtitle}>
         Registra las técnicas y ejercicios ejecutados durante la sesión.
@@ -284,8 +278,7 @@ export default function IntervencionScreen() {
           )}
         </>
       )}
-    </ScrollView>
-    </KeyboardAvoidingView>
+    </VistaConTeclado>
   );
 }
 

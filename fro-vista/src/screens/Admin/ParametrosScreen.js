@@ -9,13 +9,12 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
   Alert
 } from 'react-native';
 
 import apiClient from '../../api/client'; 
-import ErrorRetry from '../../components/ErrorRetry'; 
+import ErrorRetry from '../../components/ErrorRetry';
+import VistaConTeclado from '../../components/VistaConTeclado'; 
 import { AuthContext } from '../../context/AuthContext'
 
 export default function ParametrosScreen() {
@@ -143,10 +142,7 @@ const aplicarRestriccion = async () => {
 };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Parámetros Globales</Text>
         <Text style={styles.subtitle}>Panel de Control Administrativo</Text>
@@ -168,7 +164,7 @@ const aplicarRestriccion = async () => {
           onRetry={errorExcepcion.accionReintento} 
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <VistaConTeclado contentContainerStyle={styles.scrollContent}>
           <Text style={styles.infoText}>
             Modifique los valores arancelarios o matrices de negocio con precaución. Los cambios impactan inmediatamente en la red.
           </Text>
@@ -247,13 +243,13 @@ const aplicarRestriccion = async () => {
               <Text style={styles.saveButtonText}>CONFIRMAR BLOQUEO DE AGENDA</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </VistaConTeclado>
       )}
 
       <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

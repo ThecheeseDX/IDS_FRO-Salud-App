@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
+  Alert, ActivityIndicator
 } from 'react-native';
 import apiClient from '../../../api/client';
+import VistaConTeclado from '../../../components/VistaConTeclado';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13
@@ -106,11 +107,7 @@ export default function EpisodioScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <VistaConTeclado style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
         <Text style={styles.title}>Episodios Clínicos</Text>
         <Text style={styles.subtitulo}>Cada acción queda registrada en la bitácora de auditoría.</Text>
 
@@ -185,8 +182,7 @@ export default function EpisodioScreen() {
               : <Text style={styles.botonTexto}>Crear Episodio</Text>}
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </VistaConTeclado>
   );
 }
 

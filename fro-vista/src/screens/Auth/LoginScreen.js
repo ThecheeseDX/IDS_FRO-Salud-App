@@ -12,7 +12,8 @@ import {
 import { validateRut } from '../../utils/validators'; 
 
 // Importamos el cliente centralizado de Axios
-import apiClient from '../../api/client'; 
+import apiClient from '../../api/client';
+import VistaConTeclado from '../../components/VistaConTeclado'; 
 
 export default function LoginScreen({ navigation }) {
   // --- ESTADOS LOCALES ---
@@ -81,7 +82,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <VistaConTeclado style={styles.fondo} contentContainerStyle={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.title}>FRO Salud</Text>
         <Text style={styles.subtitle}>Portal de Acceso Seguro</Text>
@@ -141,12 +142,13 @@ export default function LoginScreen({ navigation }) {
           ¿No tienes cuenta? <Text style={styles.registerLinkHighlight}>Regístrate aquí</Text>
         </Text>
       </TouchableOpacity>
-    </View>
+    </VistaConTeclado>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f6f8', justifyContent: 'center', padding: 20 },
+  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   headerContainer: { alignItems: 'center', marginBottom: 40 },
   title: { fontSize: 36, fontWeight: 'bold', color: '#0052cc', marginBottom: 5 },
   subtitle: { fontSize: 15, color: '#555555' },

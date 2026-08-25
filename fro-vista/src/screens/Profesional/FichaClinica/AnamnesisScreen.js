@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
+  Alert, ActivityIndicator
 } from 'react-native';
 import { getFichaClinica, guardarAnamnesis } from '../../../api/client';
+import VistaConTeclado from '../../../components/VistaConTeclado';
 
 const LIMITE_ANAMNESIS = 2000;
 
@@ -162,11 +163,7 @@ export default function AnamnesisScreen({ route, navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <VistaConTeclado style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
         <Text style={styles.title}>Evaluación Inicial — Anamnesis</Text>
         <Text style={styles.subtitulo}>Paciente: {nombrePaciente}</Text>
 
@@ -249,8 +246,7 @@ export default function AnamnesisScreen({ route, navigation }) {
             ? <ActivityIndicator color="#fff" />
             : <Text style={styles.botonTexto}>Guardar Anamnesis</Text>}
         </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </VistaConTeclado>
   );
 }
 

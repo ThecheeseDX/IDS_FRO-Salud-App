@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
+  Alert, ActivityIndicator
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../../api/client';
+import VistaConTeclado from '../../../components/VistaConTeclado';
 import ErrorRetry from '../../../components/ErrorRetry';
 
 // CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
@@ -208,8 +209,7 @@ export default function EvolucionClinicaScreen({ route }) {
   const camposBloqueados = isLoadingMetas;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <VistaConTeclado style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* 2.5: aviso no intrusivo (Excepción 4) */}
         {avisoAsincrono && (
@@ -343,8 +343,7 @@ export default function EvolucionClinicaScreen({ route }) {
             {enviandoAvance ? <ActivityIndicator color="#fff" /> : <Text style={styles.botonTexto}>Registrar avance</Text>}
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </VistaConTeclado>
   );
 }
 

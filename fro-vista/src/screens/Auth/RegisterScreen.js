@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, ScrollView, Alert, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
+import VistaConTeclado from '../../components/VistaConTeclado';
 import { validateRut } from '../../utils/validators';
 
 const RegisterScreen = ({ navigation }) => {
@@ -193,11 +194,7 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: '#f5f5f5' }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
+        <VistaConTeclado style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
                 <Text style={styles.title}>{esProfesional ? "Alta de Profesional" : "Registro Único"}</Text>
 
                 <Text style={styles.sectionHeader}>Sección 1: Identidad y Credenciales</Text>
@@ -316,8 +313,7 @@ const RegisterScreen = ({ navigation }) => {
                 <View style={styles.buttonContainer}>
                     <Button title={esProfesional ? "FINALIZAR ALTA MÉDICA" : "FINALIZAR REGISTRO PACIENTE"} onPress={confirmarCreacionCuenta} color={esProfesional ? "#2a9d8f" : "#1c3d5a"} />
                 </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+        </VistaConTeclado>
     );
 };
 

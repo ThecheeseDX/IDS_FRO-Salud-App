@@ -7,10 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import client from "../../api/client";
+import VistaConTeclado from "../../components/VistaConTeclado";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OTPScreen
@@ -152,9 +151,9 @@ export default function OTPScreen({ route, navigation }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <KeyboardAvoidingView
-      style={estilos.contenedor}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <VistaConTeclado
+      style={estilos.fondo}
+      contentContainerStyle={estilos.contenedor}
     >
       <View style={estilos.tarjeta}>
         <Text style={estilos.titulo}>Verificación de identidad</Text>
@@ -213,17 +212,20 @@ export default function OTPScreen({ route, navigation }) {
           )}
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </VistaConTeclado>
   );
 }
 
 // ─ Estilos 
 const estilos = StyleSheet.create({
-  contenedor: {
+  fondo: {
     flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  contenedor: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
     padding: 24,
   },
   tarjeta: {
