@@ -81,8 +81,13 @@ async function enviarPorEmail(destinatario, codigo) {
     secure: process.env.SMTP_PORT === "465",
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      pass: (process.env.SMTP_PASS || "").replace(/\s+/g, ""), // Google la muestra con espacios; se quitan por si se pegó así
     },
+    // Sin límites de tiempo, un SMTP caído deja la petición colgada para
+    // siempre y la app queda esperando. Mejor fallar rápido y avisar.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
   });
 
   await transporter.sendMail({

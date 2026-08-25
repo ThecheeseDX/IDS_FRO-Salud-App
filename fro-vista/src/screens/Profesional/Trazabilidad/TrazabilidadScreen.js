@@ -84,8 +84,10 @@ const styles = StyleSheet.create({
   panel: {
     flex: 1,
   },
+  // Igual que en FichaClinicaScreen: la pestaña activa usa flex normal;
+  // el posicionamiento absoluto recortaba el contenido en Android.
   panelActivo: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
   },
   panelOculto: {
     display: 'none',

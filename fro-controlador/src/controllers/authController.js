@@ -55,15 +55,13 @@ exports.registrarPaciente = async (req, res) => {
 
         await connection.commit();
 
-        // CU04: Generar y enviar OTP inmediatamente tras el registro
+        // CU04: Generar OTP y responder de inmediato. El correo se envía en
+        // segundo plano: si el SMTP está lento o caído, el usuario no debe
+        // quedar esperando — puede reenviar el código desde OTPScreen.
         const { codigo } = await crearOTP(usuario_id);
-        try {
-            await enviarPorEmail(email, codigo);
-        } catch (errorSMTP) {
-            console.error("Error SMTP en registro paciente:", errorSMTP);
-            // No bloqueamos el registro si falla el correo,
-            // el usuario puede reenviar desde OTPScreen
-        }
+        enviarPorEmail(email, codigo).catch((errorSMTP) => {
+            console.error("Error SMTP en registro paciente:", errorSMTP.message);
+        });
 
         res.status(201).json({
             mensaje: 'Paciente registrado. Verifica tu cuenta con el código enviado a tu correo.',
@@ -152,23 +150,29 @@ exports.registrarProfesional = async (req, res) => {
         const profesional_id = profResult.insertId;
 
         if (disponibilidad && disponibilidad.length > 0) {
+            const MODALIDADES_VALIDAS = ['DOMICILIO', 'ONLINE', 'AMBOS'];
             for (let bloque of disponibilidad) {
+                // Cada bloque trae su propia modalidad; si no viene (app
+                // antigua), hereda la modalidad general del profesional.
+                const modalidadBloque = MODALIDADES_VALIDAS.includes(bloque.modalidad)
+                    ? bloque.modalidad
+                    : tipo_sede;
+
                 await connection.execute(
-                    `INSERT INTO Profesional_Disponibilidad (profesional_id, dia_semana, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)`,
-                    [profesional_id, bloque.dia_semana, bloque.hora_inicio, bloque.hora_fin]
+                    `INSERT INTO Profesional_Disponibilidad (profesional_id, dia_semana, hora_inicio, hora_fin, modalidad) VALUES (?, ?, ?, ?, ?)`,
+                    [profesional_id, bloque.dia_semana, bloque.hora_inicio, bloque.hora_fin, modalidadBloque]
                 );
             }
         }
 
         await connection.commit();
 
-        // CU04: Generar y enviar OTP inmediatamente tras el registro
+        // CU04: igual que en el registro de paciente, el correo no bloquea la
+        // respuesta; se envía en segundo plano.
         const { codigo } = await crearOTP(usuario_id);
-        try {
-            await enviarPorEmail(email, codigo);
-        } catch (errorSMTP) {
-            console.error("Error SMTP en registro profesional:", errorSMTP);
-        }
+        enviarPorEmail(email, codigo).catch((errorSMTP) => {
+            console.error("Error SMTP en registro profesional:", errorSMTP.message);
+        });
 
         res.status(201).json({
             mensaje: 'Profesional registrado. Verifica tu cuenta con el código enviado a tu correo.',

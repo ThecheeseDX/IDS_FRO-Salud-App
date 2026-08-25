@@ -30,12 +30,12 @@ exports.buscarDisponibilidad = async (req, res) => {
     const diaSemana = fechaObj.getDay() === 0 ? 7 : fechaObj.getDay();
 
     const [filas] = await pool.query(
-      `SELECT 
+      `SELECT
           p.profesional_id,
           u.nombres, u.apellido_paterno, u.apellido_materno,
           e.nombre AS especialidad,
           s.sede_id, s.nombre AS sede_nombre,
-          pd.hora_inicio, pd.hora_fin
+          pd.hora_inicio, pd.hora_fin, pd.modalidad
        FROM Profesional_Disponibilidad pd
        JOIN Profesional p  ON pd.profesional_id  = p.profesional_id
        JOIN Usuario     u  ON p.usuario_id        = u.usuario_id
@@ -50,10 +50,20 @@ exports.buscarDisponibilidad = async (req, res) => {
     const disponibilidad = [];
 
     for (const fila of filas) {
-      const sedeNombre = String(fila.sede_nombre || '').toLowerCase();
-      const modalidad  = sedeNombre.includes('online') ? 'ONLINE' : 'DOMICILIO';
+      // La modalidad la define cada bloque horario del profesional.
+      // Un bloque 'AMBOS' sirve tanto para búsquedas online como a domicilio.
+      const modalidadBloque = fila.modalidad || 'DOMICILIO';
 
-      if (tipo_sede !== 'AMBOS' && modalidad !== tipo_sede) continue;
+      if (
+        tipo_sede !== 'AMBOS' &&
+        modalidadBloque !== 'AMBOS' &&
+        modalidadBloque !== tipo_sede
+      ) continue;
+
+      // Lo que se informa al paciente: si el bloque acepta ambas modalidades
+      // y él buscó una específica, la cita queda en la que él pidió.
+      const modalidad =
+        modalidadBloque === 'AMBOS' && tipo_sede !== 'AMBOS' ? tipo_sede : modalidadBloque;
 
       const horaInicio  = String(fila.hora_inicio).slice(0, 5);
       const horaFin     = String(fila.hora_fin).slice(0, 5);

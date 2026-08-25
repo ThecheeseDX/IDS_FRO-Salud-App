@@ -128,8 +128,11 @@ const styles = StyleSheet.create({
   panel: {
     flex: 1,
   },
+  // La pestaña activa participa del layout normal (nada de posiciones
+  // absolutas: en Android recortaban el contenido). Las inactivas se
+  // mantienen montadas pero fuera del layout para no perder lo escrito.
   panelActivo: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
   },
   panelOculto: {
     display: 'none',

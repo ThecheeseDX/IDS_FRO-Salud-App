@@ -304,7 +304,11 @@ export default function BuscarCitaScreen({ navigation }) {
                 </Text>
                 <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
                 <Text style={styles.detalle}>
-                  📍  {item.tipo_sede === 'ONLINE' ? 'Teleconsulta Online' : 'Atención Domiciliaria'}
+                  📍  {item.tipo_sede === 'ONLINE'
+                    ? 'Teleconsulta Online'
+                    : item.tipo_sede === 'AMBOS'
+                      ? 'Online o a Domicilio (a elección)'
+                      : 'Atención Domiciliaria'}
                 </Text>
                 <Text style={styles.detalle}>📅  {item.fecha}</Text>
                 <Text style={styles.bloque}>

@@ -38,19 +38,24 @@ export default function TabSelector({ tabs, tabActiva, onCambiarTab, color = '#2
 
 const styles = StyleSheet.create({
   barra: {
+    // Altura fija: la barra jamás debe crecer y comerse el espacio del
+    // contenido (los ScrollView horizontales tienden a estirarse en Android).
+    height: 48,
     flexGrow: 0,
+    flexShrink: 0,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   contenido: {
     paddingHorizontal: 8,
+    alignItems: 'center',
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 48,
     paddingHorizontal: 14,
-    paddingVertical: 12,
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
   },

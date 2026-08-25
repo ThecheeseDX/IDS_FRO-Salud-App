@@ -134,6 +134,9 @@ CREATE TABLE Profesional_Disponibilidad (
     dia_semana TINYINT NOT NULL,
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
+    -- Modalidad de atención de ESTE bloque horario. Permite que un mismo
+    -- profesional atienda online ciertos horarios y a domicilio otros.
+    modalidad ENUM('DOMICILIO', 'ONLINE', 'AMBOS') NOT NULL DEFAULT 'DOMICILIO',
     PRIMARY KEY (profesional_id, dia_semana, hora_inicio),
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );

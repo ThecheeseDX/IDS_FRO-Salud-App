@@ -58,7 +58,10 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     const agregarBloqueHorario = () => {
-        setDisponibilidad([...disponibilidad, { dia_semana: '1', hora_inicio: '08:00', hora_fin: '12:00' }]);
+        // El bloque nuevo hereda la modalidad general elegida arriba, pero se
+        // puede cambiar por bloque (ej: lunes online, martes a domicilio).
+        const modalidadInicial = formData.tipo_sede || 'DOMICILIO';
+        setDisponibilidad([...disponibilidad, { dia_semana: '1', hora_inicio: '08:00', hora_fin: '12:00', modalidad: modalidadInicial }]);
     };
 
     const actualizarHorario = (index, campo, valor) => {
@@ -280,6 +283,13 @@ const RegisterScreen = ({ navigation }) => {
                                         <Picker.Item label="Viernes" value="5" />
                                         <Picker.Item label="Sábado" value="6" />
                                         <Picker.Item label="Domingo" value="7" />
+                                    </Picker>
+                                </View>
+                                <View style={styles.pickerContainerHorario}>
+                                    <Picker selectedValue={bloque.modalidad || 'DOMICILIO'} onValueChange={(v) => actualizarHorario(index, 'modalidad', v)} style={{ height: 55, justifyContent: 'center' }}>
+                                        <Picker.Item label="En este horario: A Domicilio" value="DOMICILIO" />
+                                        <Picker.Item label="En este horario: Online" value="ONLINE" />
+                                        <Picker.Item label="En este horario: Ambas" value="AMBOS" />
                                     </Picker>
                                 </View>
                                 <View style={styles.row}>
