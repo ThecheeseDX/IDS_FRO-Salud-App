@@ -17,9 +17,10 @@ import {
 } from 'react-native';
 
 import apiClient from '../../api/client';
+import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 
-// Estados desde los que el paciente todavía puede anular la hora (CU20).
+// Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
 
 const COLOR_ESTADO = {
@@ -83,31 +84,43 @@ export default function MisCitasScreen({ navigation }) {
     return quitarListener;
   }, [navigation, cargarCitas]);
 
-  const confirmarCancelacion = (cita) => {
-    Alert.alert(
-      'Cancelar cita',
-      `¿Deseas cancelar tu hora del ${formatearFecha(cita.fecha_hora_inicio)} con ${cita.nombre_profesional}?`,
-      [
-        { text: 'Volver', style: 'cancel' },
-        { text: 'Cancelar cita', style: 'destructive', onPress: () => cancelarCita(cita) },
-      ]
-    );
-  };
+  // CU22: cancelar exige un motivo, así que se pide en un diálogo propio.
+  const [citaPorCancelar, setCitaPorCancelar] = useState(null);
 
-  const cancelarCita = async (cita) => {
+  const cancelarCita = async (cita, motivo) => {
+    setCitaPorCancelar(null);
     setCancelandoId(cita.cita_id);
 
     try {
-      await apiClient.post(`/citas/${cita.cita_id}/transicionar`, { evento: 'CANCELAR' });
-      Alert.alert('Cita cancelada', 'Tu hora fue liberada correctamente.');
+      const { data } = await apiClient.post(`/citas/${cita.cita_id}/transicionar`, {
+        evento: 'CANCELAR',
+        motivo,
+      });
+      const aviso =
+        data?.cupos_notificados > 0
+          ? ` Se avisó a ${data.cupos_notificados} persona(s) en lista de espera.`
+          : '';
+      Alert.alert('Cita cancelada', `Tu hora fue liberada correctamente.${aviso}`);
       await cargarCitas(true);
     } catch (error) {
-      const mensaje =
-        error.response?.data?.error || 'No se pudo cancelar la cita. Intenta nuevamente.';
-      Alert.alert('No se pudo cancelar', mensaje);
+      const respuesta = error.response?.data;
+      Alert.alert(
+        'No se pudo cancelar',
+        respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.'
+      );
     } finally {
       setCancelandoId(null);
     }
+  };
+
+  // CU17: reprogramar = elegir un bloque nuevo en el buscador de horas.
+  const reprogramarCita = (cita) => {
+    navigation.navigate('BuscarCita', {
+      reprogramacion: {
+        cita_id: cita.cita_id,
+        fecha_original: cita.fecha_hora_inicio,
+      },
+    });
   };
 
   const renderCita = ({ item }) => {
@@ -126,15 +139,25 @@ export default function MisCitasScreen({ navigation }) {
         <Text style={styles.profesional}>Profesional: {item.nombre_profesional}</Text>
 
         {puedeCancelar && (
-          <TouchableOpacity
-            style={[styles.botonCancelar, cancelando && styles.botonDeshabilitado]}
-            onPress={() => confirmarCancelacion(item)}
-            disabled={cancelando}
-          >
-            <Text style={styles.botonCancelarTexto}>
-              {cancelando ? 'Cancelando…' : 'Cancelar cita'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.filaAcciones}>
+            <TouchableOpacity
+              style={styles.botonReprogramar}
+              onPress={() => reprogramarCita(item)}
+              disabled={cancelando}
+            >
+              <Text style={styles.botonReprogramarTexto}>Reprogramar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.botonCancelar, cancelando && styles.botonDeshabilitado]}
+              onPress={() => setCitaPorCancelar(item)}
+              disabled={cancelando}
+            >
+              <Text style={styles.botonCancelarTexto}>
+                {cancelando ? 'Cancelando…' : 'Cancelar'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     );
@@ -192,6 +215,20 @@ export default function MisCitasScreen({ navigation }) {
       >
         <Text style={styles.fabTexto}>＋  Buscar y agendar</Text>
       </TouchableOpacity>
+
+      {/* CU22: la cancelación requiere justificación */}
+      <DialogoMotivo
+        visible={citaPorCancelar !== null}
+        titulo="Cancelar cita"
+        descripcion={
+          citaPorCancelar
+            ? `Hora del ${formatearFecha(citaPorCancelar.fecha_hora_inicio)} con ${citaPorCancelar.nombre_profesional}. Indica el motivo de la cancelación:`
+            : ''
+        }
+        etiquetaConfirmar="Cancelar cita"
+        onConfirmar={(motivo) => cancelarCita(citaPorCancelar, motivo)}
+        onCancelar={() => setCitaPorCancelar(null)}
+      />
     </View>
   );
 }
@@ -220,8 +257,18 @@ const styles = StyleSheet.create({
   estado: { fontSize: 12, fontWeight: 'bold', marginLeft: 8 },
   profesional: { color: '#555' },
 
+  filaAcciones: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  botonReprogramar: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#0052cc',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  botonReprogramarTexto: { color: '#0052cc', fontWeight: 'bold' },
   botonCancelar: {
-    marginTop: 12,
+    flex: 1,
     borderWidth: 1,
     borderColor: '#d32f2f',
     borderRadius: 8,

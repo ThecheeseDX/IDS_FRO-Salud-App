@@ -432,4 +432,6 @@ INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUE
 ('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 1),
 ('ARANCEL_ESPECIALIDAD', '40000', 'Valor base en pesos chilenos para consultas de médicos especialistas.', 1),
 ('RECARGO_HORARIO_INHABIL', '15000', 'Monto extra sumado al arancel para atenciones de urgencia o fuera de horario.', 1),
-('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 1);
+('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 1),
+('ANTICIPACION_MINIMA_REPROGRAMACION_HORAS', '24', 'Horas mínimas de anticipación con que un paciente puede reprogramar su cita.', 1),
+('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1);

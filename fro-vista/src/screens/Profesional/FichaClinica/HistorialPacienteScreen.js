@@ -18,6 +18,7 @@ import apiClient, {
   iniciarAtencion,
 } from '../../../api/client';
 import { AuthContext } from '../../../context/AuthContext';
+import DialogoMotivo from '../../../components/DialogoMotivo';
 
 export default function HistorialPacienteScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route.params;
@@ -31,6 +32,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  // CU22: cancelar exige motivo; se pide en un diálogo propio.
+  const [citaPorCancelar, setCitaPorCancelar] = useState(null);
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -84,7 +87,13 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         Alert.alert('Atención iniciada', `Marca de inicio: ${formatearFecha(data.marca_inicio)}`);
       } else {
         const data = await finalizarAtencion(citaId, {});
-        Alert.alert('Atención finalizada', `Duración total: ${data.duracion_minutos} minutos.`);
+        const inv = data.inventario;
+        const detalleInventario = !inv
+          ? ''
+          : inv.sin_paquete
+            ? '\n\nEl paciente no tiene un paquete de sesiones activo: no se descontó ninguna sesión.'
+            : `\n\nSesiones restantes del paquete: ${inv.sesiones_restantes}${inv.paquete_agotado ? ' (paquete agotado)' : ''}`;
+        Alert.alert('Atención finalizada', `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}`);
       }
       cargarHistorial(false);
     } catch (err) {
@@ -124,7 +133,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
-  const modificarEstadoCita = async (citaId, estadoActual, evento) => {
+  const modificarEstadoCita = async (citaId, estadoActual, evento, motivo) => {
     // Exclusión local preventiva para estados terminales
     const deEstado = (estadoActual || '').toUpperCase();
     const estadosTerminales = ['REALIZADA', 'CANCELADA', 'INASISTENCIA'];
@@ -142,8 +151,14 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       return registrarMarcaAtencion(citaId, evento);
     }
 
+    // CU22: la cancelación necesita justificación; se pide y se retoma después.
+    if (evento === 'CANCELAR' && !motivo) {
+      setCitaPorCancelar({ citaId, estadoActual });
+      return;
+    }
+
     try {
-      const response = await apiClient.post(`/citas/${citaId}/transicionar`, { evento });
+      const response = await apiClient.post(`/citas/${citaId}/transicionar`, { evento, motivo });
 
       if (response.data.ok || response.status === 200) {
         Alert.alert("Éxito", `Cita actualizada exitosamente a: ${response.data.nuevo_estado || 'nuevo estado'}`);
@@ -177,6 +192,33 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           [{ text: "Refrescar Ahora", onPress: () => cargarHistorial(true) }]
         );
       }
+    }
+  };
+
+  // CU22: muestra el historial de cambios de una cita (responsable y motivo).
+  const verTrazabilidad = async (citaId) => {
+    try {
+      const { data } = await apiClient.get(`/citas/${citaId}/trazabilidad`);
+      const eventos = data?.eventos || [];
+
+      if (eventos.length === 0) {
+        Alert.alert('Trazabilidad', 'Esta cita aún no registra cambios auditados.');
+        return;
+      }
+
+      const lineas = eventos.map((e) => {
+        const momento = formatearFecha(e.momento);
+        const cambio = e.accion === 'REPROGRAMACION_CITA'
+          ? `Reprogramada al ${e.bloque_nuevo?.fecha_hora_inicio || '?'}`
+          : `${e.estado_anterior || '?'} → ${e.nuevo_estado || '?'}`;
+        const motivo = e.motivo ? `\n   Motivo: ${e.motivo}` : '';
+        const actor = e.rol_actor ? ` (${e.rol_actor})` : '';
+        return `• ${momento}${actor}\n   ${cambio}${motivo}`;
+      });
+
+      Alert.alert(`Trazabilidad cita #${citaId}`, lineas.join('\n\n'));
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo obtener la trazabilidad de la cita.');
     }
   };
 
@@ -326,6 +368,11 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                       <Text style={styles.textoTerminal}>🔒 Flujo concluido (Registro histórico cerrado)</Text>
                     )}
                   </View>
+
+                  {/* CU22: historial de cambios de la cita para auditoría */}
+                  <TouchableOpacity onPress={() => verTrazabilidad(item.cita_id)}>
+                    <Text style={styles.enlaceTrazabilidad}>📜 Ver trazabilidad de la cita</Text>
+                  </TouchableOpacity>
                 </View>
               );
             })
@@ -388,6 +435,20 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       )}
 
       <View style={{ height: 30 }} />
+
+      {/* CU22: la cancelación del profesional también exige justificación */}
+      <DialogoMotivo
+        visible={citaPorCancelar !== null}
+        titulo="Cancelar cita"
+        descripcion="Indica el motivo de la cancelación (queda en la auditoría):"
+        etiquetaConfirmar="Cancelar cita"
+        onConfirmar={(motivo) => {
+          const pendiente = citaPorCancelar;
+          setCitaPorCancelar(null);
+          modificarEstadoCita(pendiente.citaId, pendiente.estadoActual, 'CANCELAR', motivo);
+        }}
+        onCancelar={() => setCitaPorCancelar(null)}
+      />
     </ScrollView>
   );
 }
@@ -518,6 +579,12 @@ const styles = StyleSheet.create({
   estadoTexto: {
     fontWeight: '600',
     color: '#2563eb'
+  },
+  enlaceTrazabilidad: {
+    color: '#0052cc',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginTop: 10,
   },
   textoTerminal: {
     color: '#6b7280',

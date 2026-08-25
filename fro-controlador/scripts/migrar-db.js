@@ -18,6 +18,24 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
   {
+    nombre: 'Parametros de anticipacion de agenda (CU17/CU18)',
+    descripcion: 'Agrega los plazos mínimos para reprogramar y cancelar citas',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global
+          WHERE clave = 'ANTICIPACION_MINIMA_REPROGRAMACION_HORAS'`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('ANTICIPACION_MINIMA_REPROGRAMACION_HORAS', '24', 'Horas mínimas de anticipación con que un paciente puede reprogramar su cita.', 1),
+         ('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Profesional_Disponibilidad.modalidad',
     descripcion: 'Agrega la modalidad (DOMICILIO/ONLINE/AMBOS) a cada bloque horario',
     yaAplicada: async (conexion, baseDatos) => {

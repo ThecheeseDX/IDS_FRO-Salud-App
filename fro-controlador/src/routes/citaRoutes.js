@@ -54,6 +54,16 @@ router.get('/mis-citas-profesional',
   verifyToken, authorizeRoles(['Profesional']),
   citaController.obtenerCitasProfesional);
 
+// ── CU17 — Reprogramación de cita
+router.post('/:id/reprogramar',
+  verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+  citaController.reprogramarCita);
+
+// ── CU22 — Trazabilidad de transiciones de agenda
+router.get('/:id/trazabilidad',
+  verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+  citaController.trazabilidadCita);
+
 // ── CU20 — Máquina de estados de cita
 // Roles permitidos: Paciente puede cancelar; Profesional gestiona el flujo clínico; Admin tiene acceso total
 router.post('/:id/transicionar',

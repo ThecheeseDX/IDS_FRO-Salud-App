@@ -1,4 +1,13 @@
 const pool = require('../config/database');
+const {
+  leerParametroEntero,
+  registrarTrazabilidadAgenda,
+  obtenerTrazabilidadCita,
+  notificarUsuario,
+  obtenerContactosCita,
+  descontarSesionPaquete,
+  notificarListaEspera,
+} = require('../services/agenda/agendaService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //   CU14 — Buscar disponibilidad
@@ -311,14 +320,30 @@ function evaluarMaquinaEstados(estadoActual, evento) {
 
 /**
  * POST /citas/:id/transicionar
+ *
+ * CU20 (máquina de estados) ampliado por el Incremento 2:
+ * - CU22: toda transición queda en la bitácora con responsable y motivo;
+ *         cancelar exige motivo.
+ * - CU18: al cancelar, el bloque se libera y se avisa a la lista de espera.
+ * - CU76: al finalizar se descuenta una sesión del paquete del paciente;
+ *         la inasistencia aplica la misma penalización.
  */
 exports.transicionarEstadoCita = async (req, res) => {
-  const { id }    = req.params;
+  const { id } = req.params;
   const { evento } = req.body;
-  const usuario_id = req.user?.usuario_id || null; 
+  const motivo = String(req.body?.motivo || '').trim();
+  const rolActor = req.user?.nombre_rol || '';
 
   if (!evento) {
     return res.status(400).json({ error: 'El campo "evento" es requerido.' });
+  }
+
+  // CU22 — Excepción 3: una cancelación sin justificación no se guarda.
+  if (evento === 'CANCELAR' && !motivo) {
+    return res.status(400).json({
+      error: 'MOTIVO_REQUERIDO',
+      mensaje: 'Debes indicar el motivo de la cancelación.',
+    });
   }
 
   const connection = await pool.getConnection();
@@ -326,9 +351,10 @@ exports.transicionarEstadoCita = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Leer estado actual
+    // 1. Leer la cita completa (bloqueada para evitar carreras)
     const [rows] = await connection.execute(
-      `SELECT cita_id, estado FROM Cita WHERE cita_id = ? LIMIT 1`,
+      `SELECT cita_id, estado, fecha_hora_inicio, paciente_id, profesional_id
+         FROM Cita WHERE cita_id = ? LIMIT 1 FOR UPDATE`,
       [id]
     );
 
@@ -337,68 +363,101 @@ exports.transicionarEstadoCita = async (req, res) => {
       return res.status(404).json({ error: `Cita con id "${id}" no encontrada.` });
     }
 
-    const estado_anterior = rows[0].estado;
+    const cita = rows[0];
+    const estado_anterior = cita.estado;
 
     // 2. Evaluar máquina de estados
     const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento);
 
-    // 3. Persistir nuevo estado
+    // CU18 — Excepción 1: el paciente solo puede cancelar dentro del plazo
+    // reglamentario (parámetro editable por el administrador).
+    if (evento === 'CANCELAR' && rolActor === 'Paciente') {
+      const horasMinimas = await leerParametroEntero(
+        connection, 'ANTICIPACION_MINIMA_CANCELACION_HORAS', 2
+      );
+      const horasRestantes =
+        (new Date(cita.fecha_hora_inicio).getTime() - Date.now()) / 3600000;
+
+      if (horasRestantes < horasMinimas) {
+        await connection.rollback();
+        return res.status(409).json({
+          error: 'FUERA_DE_PLAZO',
+          mensaje: `Las citas solo pueden cancelarse con al menos ${horasMinimas} horas de anticipación. Contacta directamente al centro.`,
+        });
+      }
+    }
+
+    // 3. Persistir nuevo estado (y el motivo cuando corresponde)
     const [updateResult] = await connection.execute(
-      `UPDATE Cita SET estado = ? WHERE cita_id = ?`,
-      [nuevo_estado, id]
+      evento === 'CANCELAR'
+        ? `UPDATE Cita SET estado = ?, motivo_cancelacion = ? WHERE cita_id = ?`
+        : `UPDATE Cita SET estado = ? WHERE cita_id = ?`,
+      evento === 'CANCELAR' ? [nuevo_estado, motivo, id] : [nuevo_estado, id]
     );
 
     if (updateResult.affectedRows === 0) {
       await connection.rollback();
-      const err  = new Error('Fallo de persistencia: no se actualizaron filas.');
-      err.code   = 'PERSIST_FAIL';
+      const err = new Error('Fallo de persistencia: no se actualizaron filas.');
+      err.code = 'PERSIST_FAIL';
       throw err;
     }
 
-    // 4a. Auditoría (Protegida en bloque independiente)
-    try {
-      await connection.execute(
-        `INSERT INTO Bitacora_Auditoria
-            (cita_id, estado_anterior, nuevo_estado, evento, usuario_id, fecha)
-         VALUES (?, ?, ?, ?, ?, NOW())`,
-        [id, estado_anterior, nuevo_estado, evento, usuario_id]
+    // 4. CU76 — Descuento del inventario de sesiones. La inasistencia
+    //    consume la sesión igual (penalización, Excepción 3 del CU76).
+    let inventario = null;
+    if (nuevo_estado === 'REALIZADA' || nuevo_estado === 'INASISTENCIA') {
+      inventario = await descontarSesionPaquete(
+        connection,
+        cita.paciente_id,
+        nuevo_estado === 'INASISTENCIA' ? 'PENALIZACION_INASISTENCIA' : 'SESION_REALIZADA'
       );
-    } catch (auditErr) {
-      console.log("\n[ADVERTENCIA SCHEMA] No se pudo escribir la Bitácora de Auditoría:");
-      console.error(auditErr.message);
-      console.log("-> Revisa si en la tabla 'Bitacora_Auditoria' se llama 'id_cita' o similar.\n");
     }
 
-    // 4b. Notificación (Protegida en bloque independiente)
-    try {
-      await connection.execute(
-        `INSERT INTO Notificacion
-            (cita_id, mensaje, usuario_id, leida, fecha)
-         VALUES (?, ?, ?, 0, NOW())`,
-        [id, `El estado de su cita ha cambiado a: ${nuevo_estado}`, usuario_id]
-      );
-    } catch (notifErr) {
-      console.log("\n[ADVERTENCIA SCHEMA] No se pudo escribir la Notificación:");
-      console.error(notifErr.message);
-      console.log("-> Revisa si en la tabla 'Notificacion' se llama 'id_cita' o similar.\n");
+    // 5. CU22 — Trazabilidad con responsable y motivo (dentro de la
+    //    transacción: si el log no se puede guardar, la operación se anula,
+    //    porque la agenda de un sistema clínico no puede cambiar sin rastro).
+    await registrarTrazabilidadAgenda(connection, req, {
+      accion: 'TRANSICION_CITA',
+      cita_id: id,
+      estado_anterior,
+      nuevo_estado,
+      evento,
+      motivo: motivo || null,
+      rol_actor: rolActor || null,
+      inventario,
+    });
+
+    // 6. Avisos (tolerantes a fallo: no revierten la transición)
+    const contactos = await obtenerContactosCita(connection, id);
+    let cupos_notificados = 0;
+
+    if (contactos) {
+      const texto =
+        evento === 'CANCELAR'
+          ? `Tu cita fue cancelada. Motivo: ${motivo}`
+          : `El estado de tu cita cambió a: ${nuevo_estado}`;
+      await notificarUsuario(connection, contactos.usuario_paciente, 'CAMBIO_ESTADO_CITA', texto);
+      await notificarUsuario(connection, contactos.usuario_profesional, 'CAMBIO_ESTADO_CITA', texto);
+    }
+
+    // CU18 — al liberarse el bloque, avisar a la lista de espera.
+    if (nuevo_estado === 'CANCELADA') {
+      cupos_notificados = await notificarListaEspera(connection, id);
     }
 
     await connection.commit();
 
     return res.status(200).json({
-      mensaje:         'Estado de cita actualizado correctamente.',
-      cita_id:         id,
+      mensaje: 'Estado de cita actualizado correctamente.',
+      cita_id: id,
       estado_anterior,
       nuevo_estado,
+      inventario,
+      cupos_notificados,
     });
 
   } catch (err) {
     await connection.rollback();
-    
-    console.log("\n========================================================");
-    console.log("[DEBUG CRÍTICO] EL ERROR REAL DETECTADO EN MYSQL ES:");
-    console.error(err);
-    console.log("========================================================\n");
 
     if (err.code === 'ESTADO_TERMINAL') {
       return res.status(409).json({ error: err.message, code: err.code });
@@ -407,15 +466,200 @@ exports.transicionarEstadoCita = async (req, res) => {
       return res.status(422).json({ error: err.message, code: err.code });
     }
 
+    console.error('[transicionarEstadoCita]', err);
     return res.status(500).json({
       error: 'Error crítico detectado en la base de datos.',
-      mensaje_mysql: err.message,
-      codigo_mysql: err.code || err.errno,
       code: 'PERSIST_FAIL',
     });
 
   } finally {
     connection.release();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//   CU17 — Reprogramación de cita
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /citas/:id/reprogramar   { fecha_hora_inicio, fecha_hora_fin, motivo }
+ */
+exports.reprogramarCita = async (req, res) => {
+  const { id } = req.params;
+  const { fecha_hora_inicio, fecha_hora_fin } = req.body;
+  const motivo = String(req.body?.motivo || '').trim();
+  const rolActor = req.user?.nombre_rol || '';
+
+  if (!fecha_hora_inicio || !fecha_hora_fin) {
+    return res.status(400).json({ error: 'Debes indicar el nuevo bloque horario.' });
+  }
+  // CU22 — Excepción 3: sin justificación no hay cambio.
+  if (!motivo) {
+    return res.status(400).json({
+      error: 'MOTIVO_REQUERIDO',
+      mensaje: 'Debes indicar el motivo de la reprogramación.',
+    });
+  }
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [rows] = await connection.execute(
+      `SELECT c.cita_id, c.estado, c.fecha_hora_inicio, c.fecha_hora_fin,
+              c.paciente_id, c.profesional_id
+         FROM Cita c WHERE c.cita_id = ? LIMIT 1 FOR UPDATE`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: `Cita con id "${id}" no encontrada.` });
+    }
+
+    const cita = rows[0];
+
+    // Excepción 1 (CU17): una cita terminal no se puede modificar.
+    if (ESTADOS_TERMINALES.has(cita.estado)) {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'ESTADO_TERMINAL',
+        mensaje: `La cita ya está ${cita.estado.toLowerCase()} y no puede modificarse.`,
+      });
+    }
+    if (cita.estado === 'EN_CURSO') {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'CITA_EN_CURSO',
+        mensaje: 'Una atención en curso no puede reprogramarse.',
+      });
+    }
+
+    // Excepción 2 (CU17): plazo mínimo de anticipación, parametrizado.
+    // Aplica al paciente; el profesional gestiona su propia agenda.
+    if (rolActor === 'Paciente') {
+      const horasMinimas = await leerParametroEntero(
+        connection, 'ANTICIPACION_MINIMA_REPROGRAMACION_HORAS', 24
+      );
+      const horasRestantes =
+        (new Date(cita.fecha_hora_inicio).getTime() - Date.now()) / 3600000;
+
+      if (horasRestantes < horasMinimas) {
+        await connection.rollback();
+        return res.status(409).json({
+          error: 'FUERA_DE_PLAZO',
+          mensaje: `Las citas solo pueden reprogramarse con al menos ${horasMinimas} horas de anticipación. Contacta directamente al centro.`,
+        });
+      }
+    }
+
+    // Excepción 3 (CU17): el nuevo bloque puede haber sido tomado por otro
+    // proceso; se verifica dentro de la transacción para detectar la colisión.
+    const [ocupadas] = await connection.execute(
+      `SELECT cita_id FROM Cita
+        WHERE profesional_id = ?
+          AND cita_id <> ?
+          AND estado NOT IN ('CANCELADA')
+          AND fecha_hora_inicio < ?
+          AND fecha_hora_fin    > ?
+        FOR UPDATE`,
+      [cita.profesional_id, id, fecha_hora_fin, fecha_hora_inicio]
+    );
+
+    if (ocupadas.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'BLOQUE_OCUPADO',
+        mensaje: 'El horario elegido acaba de ser tomado por otra persona. Elige otro bloque.',
+      });
+    }
+
+    // El nuevo bloque tampoco puede caer en un periodo bloqueado (vacaciones).
+    const [bloqueos] = await connection.execute(
+      `SELECT bloqueo_id FROM Bloqueo_Agenda
+        WHERE profesional_id = ?
+          AND fecha_inicio <= ?
+          AND fecha_fin    >= ?`,
+      [cita.profesional_id, fecha_hora_fin, fecha_hora_inicio]
+    );
+
+    if (bloqueos.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'AGENDA_BLOQUEADA',
+        mensaje: 'El profesional no atiende en la fecha elegida. Elige otro bloque.',
+      });
+    }
+
+    const bloqueAnterior = {
+      fecha_hora_inicio: cita.fecha_hora_inicio,
+      fecha_hora_fin: cita.fecha_hora_fin,
+    };
+
+    // La cita reprogramada vuelve a AGENDADA: el nuevo horario
+    // debe confirmarse otra vez.
+    await connection.execute(
+      `UPDATE Cita
+          SET fecha_hora_inicio = ?, fecha_hora_fin = ?, estado = 'AGENDADA'
+        WHERE cita_id = ?`,
+      [fecha_hora_inicio, fecha_hora_fin, id]
+    );
+
+    // CU22 — la reprogramación queda trazada con ambos bloques y el motivo.
+    await registrarTrazabilidadAgenda(connection, req, {
+      accion: 'REPROGRAMACION_CITA',
+      cita_id: id,
+      estado_anterior: cita.estado,
+      nuevo_estado: 'AGENDADA',
+      motivo,
+      rol_actor: rolActor || null,
+      bloque_anterior: bloqueAnterior,
+      bloque_nuevo: { fecha_hora_inicio, fecha_hora_fin },
+    });
+
+    // Excepción 4 (CU17): si el aviso falla, el cambio se mantiene igual.
+    const contactos = await obtenerContactosCita(connection, id);
+    if (contactos) {
+      const texto = `Tu cita fue reprogramada para ${fecha_hora_inicio}. Motivo: ${motivo}`;
+      await notificarUsuario(connection, contactos.usuario_paciente, 'CITA_REPROGRAMADA', texto);
+      await notificarUsuario(connection, contactos.usuario_profesional, 'CITA_REPROGRAMADA', texto);
+    }
+
+    await connection.commit();
+
+    return res.status(200).json({
+      mensaje: 'Cita reprogramada correctamente. El nuevo horario queda pendiente de confirmación.',
+      cita_id: Number(id),
+      bloque_anterior: bloqueAnterior,
+      bloque_nuevo: { fecha_hora_inicio, fecha_hora_fin },
+      nuevo_estado: 'AGENDADA',
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('[reprogramarCita]', error);
+    return res.status(500).json({ error: 'Error interno al reprogramar la cita.' });
+  } finally {
+    connection.release();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//   CU22 — Consulta del historial de una cita
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /citas/:id/trazabilidad
+ */
+exports.trazabilidadCita = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const eventos = await obtenerTrazabilidadCita(pool, id);
+    return res.status(200).json({ cita_id: Number(id), eventos });
+  } catch (error) {
+    console.error('[trazabilidadCita]', error);
+    return res.status(500).json({ error: 'Error interno al consultar la trazabilidad.' });
   }
 };
 

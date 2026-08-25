@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { descontarSesionPaquete } = require('../services/agenda/agendaService');
 
 function obtenerIP(req) {
   return (
@@ -293,6 +294,14 @@ exports.finalizarAtencion = async (req, res) => {
       [marcaTermino, cita_id]
     );
 
+    // CU76 — Al concretarse la sesión, se descuenta del paquete del paciente
+    // (mismo efecto que finalizar por la máquina de estados).
+    const inventario = await descontarSesionPaquete(
+      connection,
+      cita.paciente_id,
+      'SESION_REALIZADA'
+    );
+
     await registrarAuditoria(connection, req, 'FINALIZAR_ATENCION_CU38', {
       cita_id: Number(cita_id),
       marca_inicio: marcaInicio.toISOString(),
@@ -302,7 +311,8 @@ exports.finalizarAtencion = async (req, res) => {
       origen_marca: marcaManual ? 'MANUAL_JUSTIFICADA' : 'SERVIDOR',
       justificacion_manual: marcaManual
         ? String(justificacion_manual).trim()
-        : null
+        : null,
+      inventario
     });
 
     await connection.commit();
@@ -313,7 +323,8 @@ exports.finalizarAtencion = async (req, res) => {
       estado: 'REALIZADA',
       marca_inicio: marcaInicio,
       marca_termino: marcaTermino,
-      duracion_minutos: duracionMinutos
+      duracion_minutos: duracionMinutos,
+      inventario
     });
   } catch (error) {
     await connection.rollback();

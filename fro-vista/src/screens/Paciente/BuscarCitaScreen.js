@@ -15,14 +15,21 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
+import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 
 const DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 // ─── CU14: Motor de búsqueda de citas
 // ─── CU15: Bloqueo síncrono del horario seleccionado
-export default function BuscarCitaScreen({ navigation }) {
+// ─── CU17: la misma pantalla sirve para reprogramar una cita existente
+//          cuando llega route.params.reprogramacion = { cita_id }
+export default function BuscarCitaScreen({ navigation, route }) {
   const { userData } = useContext(AuthContext);
+  const reprogramacion = route?.params?.reprogramacion || null;
+
+  // CU17: motivo pendiente mientras se muestra el diálogo
+  const [pedirMotivoReprogramacion, setPedirMotivoReprogramacion] = useState(false);
 
   // ── CU14: filtros de búsqueda ─────────────────────────────────────────────
   const [especialidades, setEspecialidades] = useState([]);
@@ -105,6 +112,20 @@ export default function BuscarCitaScreen({ navigation }) {
     const { nombres, apellido_paterno, apellido_materno, fecha, hora_inicio, hora_fin } =
       bloqueSeleccionado;
 
+    // CU17: en modo reprogramación, el bloque elegido pasa a ser el nuevo
+    // horario de la cita existente; se pide el motivo y se envía el cambio.
+    if (reprogramacion) {
+      Alert.alert(
+        'Confirmar nuevo horario',
+        `¿Mover tu cita al bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fecha}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Continuar', onPress: () => setPedirMotivoReprogramacion(true) },
+        ]
+      );
+      return;
+    }
+
     Alert.alert(
       'Confirmar reserva',
       `¿Deseas reservar el bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fecha}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
@@ -113,6 +134,41 @@ export default function BuscarCitaScreen({ navigation }) {
         { text: 'Confirmar', onPress: ejecutarBloqueo },
       ]
     );
+  };
+
+  // ── CU17: enviar la reprogramación con su motivo ──────────────────────────
+  const ejecutarReprogramacion = async (motivo) => {
+    setPedirMotivoReprogramacion(false);
+    setCargandoBloqueo(true);
+
+    const fecha_hora_inicio = `${bloqueSeleccionado.fecha} ${bloqueSeleccionado.hora_inicio}`;
+    const fecha_hora_fin = `${bloqueSeleccionado.fecha} ${bloqueSeleccionado.hora_fin}`;
+
+    try {
+      const { data } = await apiClient.post(
+        `/citas/${reprogramacion.cita_id}/reprogramar`,
+        { fecha_hora_inicio, fecha_hora_fin, motivo }
+      );
+
+      Alert.alert(
+        'Cita reprogramada',
+        data?.mensaje || 'Tu cita quedó en el nuevo horario.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (error) {
+      const respuesta = error.response?.data;
+      Alert.alert(
+        'No se pudo reprogramar',
+        respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.'
+      );
+      // Si el bloque fue tomado por otro (colisión), refrescar la búsqueda.
+      if (respuesta?.error === 'BLOQUE_OCUPADO') {
+        setBloqueSeleccionado(null);
+        buscarDisponibilidad();
+      }
+    } finally {
+      setCargandoBloqueo(false);
+    }
   };
 
   const ejecutarBloqueo = async () => {
@@ -197,7 +253,18 @@ export default function BuscarCitaScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      <Text style={styles.title}>Buscar cita médica</Text>
+      <Text style={styles.title}>
+        {reprogramacion ? 'Reprogramar cita' : 'Buscar cita médica'}
+      </Text>
+
+      {reprogramacion && (
+        <View style={styles.bannerReprogramacion}>
+          <Text style={styles.bannerTexto}>
+            Estás eligiendo un nuevo horario para tu cita. El bloque actual se
+            liberará al confirmar.
+          </Text>
+        </View>
+      )}
 
       {/* ─ Filtros CU14  */}
       <Text style={styles.label}>Especialidad</Text>
@@ -337,11 +404,30 @@ export default function BuscarCitaScreen({ navigation }) {
           )}
         </TouchableOpacity>
       )}
+      {/* CU17 + CU22: la reprogramación exige justificación */}
+      <DialogoMotivo
+        visible={pedirMotivoReprogramacion}
+        titulo="Motivo de la reprogramación"
+        descripcion="Indica brevemente por qué cambias el horario:"
+        etiquetaConfirmar="Reprogramar"
+        colorConfirmar="#0052cc"
+        onConfirmar={ejecutarReprogramacion}
+        onCancelar={() => setPedirMotivoReprogramacion(false)}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  bannerReprogramacion: {
+    backgroundColor: '#e3f2fd',
+    borderLeftWidth: 4,
+    borderLeftColor: '#0052cc',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  bannerTexto: { color: '#0d47a1' },
   container: {
     flex: 1,
     padding: 20,
