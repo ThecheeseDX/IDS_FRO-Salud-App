@@ -46,6 +46,35 @@ const MIGRACIONES = [
   },
 ];
 
+/**
+ * Ejecuta las migraciones pendientes sobre una conexión o pool ya abiertos.
+ * La usa tanto este script como el servidor al arrancar (server.js), así la
+ * base queda al día automáticamente en cada despliegue sin pasos manuales.
+ */
+async function ejecutarMigraciones(conexion) {
+  const [[{ baseDatos }]] = await conexion.query('SELECT DATABASE() AS baseDatos');
+  let aplicadas = 0;
+
+  for (const migracion of MIGRACIONES) {
+    if (await migracion.yaAplicada(conexion, baseDatos)) {
+      continue;
+    }
+
+    console.log(`• Migración "${migracion.nombre}" — aplicando… (${migracion.descripcion})`);
+    await migracion.aplicar(conexion);
+    aplicadas++;
+    console.log('  ✅ Lista.');
+  }
+
+  if (aplicadas > 0) {
+    console.log(`✅ ${aplicadas} migración(es) aplicada(s). Base de datos al día.`);
+  }
+  return aplicadas;
+}
+
+module.exports = { ejecutarMigraciones };
+
+// ── Uso directo por consola: npm run db:migrar ──────────────────────────────
 async function main() {
   const url = urlConexion();
   const base = { multipleStatements: false, ...opcionesSSL() };
@@ -54,36 +83,20 @@ async function main() {
     ? await mysql.createConnection({ uri: url, ...base })
     : await mysql.createConnection({ ...datosSueltos(), ...base });
 
-  const [[{ baseDatos }]] = await conexion.query('SELECT DATABASE() AS baseDatos');
-  console.log(`✅ Conectado a la base "${baseDatos}".\n`);
-
-  let aplicadas = 0;
-
   try {
-    for (const migracion of MIGRACIONES) {
-      if (await migracion.yaAplicada(conexion, baseDatos)) {
-        console.log(`• ${migracion.nombre} — ya estaba aplicada, se omite.`);
-        continue;
-      }
-
-      console.log(`• ${migracion.nombre} — aplicando… (${migracion.descripcion})`);
-      await migracion.aplicar(conexion);
-      aplicadas++;
-      console.log('  ✅ Lista.');
+    const aplicadas = await ejecutarMigraciones(conexion);
+    if (aplicadas === 0) {
+      console.log('La base de datos ya estaba al día.');
     }
-
-    console.log(
-      aplicadas === 0
-        ? '\nLa base de datos ya estaba al día.'
-        : `\n${aplicadas} migración(es) aplicada(s). Base de datos al día.`
-    );
   } finally {
     await conexion.end();
   }
 }
 
-main().catch((error) => {
-  console.error(`\n❌ No se pudo migrar: ${error.message}`);
-  console.error('   Revisa los datos de conexión en tu archivo .env');
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`\n❌ No se pudo migrar: ${error.message}`);
+    console.error('   Revisa los datos de conexión en tu archivo .env');
+    process.exit(1);
+  });
+}

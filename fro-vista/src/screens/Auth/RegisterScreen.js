@@ -125,9 +125,17 @@ const RegisterScreen = ({ navigation }) => {
             });
 
             if (response.status === 200) {
-                const mensajeDinamico = esProfesional
+                let mensajeDinamico = esProfesional
                     ? "¿Declara que los datos de contacto y la matriz horaria ingresada son precisos y veraces?"
                     : "¿Declara que sus datos personales y de contacto ingresados son precisos y veraces?";
+
+                // Había un registro anterior con este RUT/correo que nunca se
+                // verificó: se avisa que será reemplazado por este nuevo.
+                if (response.data?.reemplazo) {
+                    mensajeDinamico =
+                        "Existía un registro anterior sin verificar con estos datos; será reemplazado por este.\n\n" +
+                        mensajeDinamico;
+                }
 
                 Alert.alert(
                     "Confirmación de Datos",

@@ -6,6 +6,68 @@ const { comparePassword } = require('../utils/encriptar_bcrypt');
 const { crearOTP, validarOTP, enviarPorEmail } = require('../services/notifications/otpService');
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Cuentas fantasma: un registro que nunca completó la verificación OTP deja
+// un Usuario inactivo que bloquea el RUT y el correo para siempre (la app no
+// tiene función de borrado). Antes de registrar, se eliminan esas cuentas
+// a medio crear para que la persona pueda volver a intentarlo.
+// Las cuentas ACTIVAS jamás se tocan.
+// ─────────────────────────────────────────────────────────────────────────────
+async function eliminarCuentasInactivas(connection, rut, email) {
+    const [existentes] = await connection.execute(
+        `SELECT usuario_id, cuenta_activo FROM Usuario WHERE rut = ? OR email = ?`,
+        [rut, email]
+    );
+
+    for (const usuario of existentes) {
+        if (usuario.cuenta_activo) {
+            // Una cuenta verificada nunca se reemplaza.
+            return { bloqueadoPorCuentaActiva: true };
+        }
+    }
+
+    for (const usuario of existentes) {
+        const id = usuario.usuario_id;
+
+        // Rama profesional (la disponibilidad depende de Profesional)
+        const [profesionales] = await connection.execute(
+            `SELECT profesional_id FROM Profesional WHERE usuario_id = ?`, [id]
+        );
+        for (const profesional of profesionales) {
+            await connection.execute(
+                `DELETE FROM Profesional_Disponibilidad WHERE profesional_id = ?`,
+                [profesional.profesional_id]
+            );
+        }
+        await connection.execute(`DELETE FROM Profesional WHERE usuario_id = ?`, [id]);
+
+        // Rama paciente (el contacto de emergencia se borra después que Paciente)
+        const [pacientes] = await connection.execute(
+            `SELECT contacto_emergencia_id FROM Paciente WHERE usuario_id = ?`, [id]
+        );
+        await connection.execute(`DELETE FROM Paciente WHERE usuario_id = ?`, [id]);
+        for (const paciente of pacientes) {
+            if (paciente.contacto_emergencia_id) {
+                await connection.execute(
+                    `DELETE FROM Contacto_Emergencia WHERE contacto_emergencia_id = ?`,
+                    [paciente.contacto_emergencia_id]
+                );
+            }
+        }
+
+        // Resto de tablas que apuntan a Usuario
+        await connection.execute(`DELETE FROM Usuario_Telefono WHERE usuario_id = ?`, [id]);
+        await connection.execute(`DELETE FROM Notificacion WHERE usuario_id = ?`, [id]);
+        await connection.execute(`DELETE FROM Ticket_Soporte WHERE usuario_id = ?`, [id]);
+        await connection.execute(`DELETE FROM Bitacora_Auditoria WHERE usuario_id = ?`, [id]);
+
+        await connection.execute(`DELETE FROM Usuario WHERE usuario_id = ?`, [id]);
+        console.log(`[registro] Cuenta inactiva ${id} reemplazada (rut/email reutilizados).`);
+    }
+
+    return { eliminadas: existentes.length };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REGISTRO PACIENTE
 // ─────────────────────────────────────────────────────────────────────────────
 exports.registrarPaciente = async (req, res) => {
@@ -25,12 +87,22 @@ exports.registrarPaciente = async (req, res) => {
     try {
         await connection.beginTransaction();
 
+        // Si el RUT/correo quedó tomado por una cuenta que nunca se verificó,
+        // se limpia aquí; si pertenece a una cuenta activa, se rechaza.
+        const limpieza = await eliminarCuentasInactivas(connection, rut, email);
+        if (limpieza.bloqueadoPorCuentaActiva) {
+            await connection.rollback();
+            return res.status(409).json({
+                error: 'El RUT o correo ya pertenece a una cuenta verificada.'
+            });
+        }
+
         const saltRounds = 10;
         const contrasena_hash = await bcrypt.hash(contrasena, saltRounds);
         const rolPacienteId = 1;
 
         const [userResult] = await connection.execute(
-            `INSERT INTO Usuario (rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id) 
+            `INSERT INTO Usuario (rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rol_id)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, rolPacienteId]
         );
@@ -128,6 +200,15 @@ exports.registrarProfesional = async (req, res) => {
     try {
         await connection.beginTransaction();
 
+        // Misma limpieza de cuentas fantasma que en el registro de paciente.
+        const limpieza = await eliminarCuentasInactivas(connection, rut, email);
+        if (limpieza.bloqueadoPorCuentaActiva) {
+            await connection.rollback();
+            return res.status(409).json({
+                error: 'El RUT o correo ya pertenece a una cuenta verificada.'
+            });
+        }
+
         const saltRounds = 10;
         const contrasena_hash = await bcrypt.hash(contrasena, saltRounds);
         const rolProfesionalId = 2;
@@ -195,17 +276,31 @@ exports.registrarProfesional = async (req, res) => {
 exports.verificarUnicidad = async (req, res) => {
     const { rut, email } = req.body;
     try {
-        const [rutExistente] = await pool.query('SELECT usuario_id FROM Usuario WHERE rut = ?', [rut]);
-        if (rutExistente.length > 0) {
+        // Solo las cuentas VERIFICADAS bloquean el registro. Una cuenta que
+        // nunca completó su OTP es un registro a medias: se informa y el
+        // proceso de registro la reemplazará.
+        const [rutExistente] = await pool.query(
+            'SELECT usuario_id, cuenta_activo FROM Usuario WHERE rut = ?', [rut]
+        );
+        if (rutExistente.length > 0 && rutExistente[0].cuenta_activo) {
             return res.status(409).json({ error: 'El RUT ingresado ya se encuentra registrado en el sistema.', campo: 'rut' });
         }
 
-        const [emailExistente] = await pool.query('SELECT usuario_id FROM Usuario WHERE email = ?', [email]);
-        if (emailExistente.length > 0) {
+        const [emailExistente] = await pool.query(
+            'SELECT usuario_id, cuenta_activo FROM Usuario WHERE email = ?', [email]
+        );
+        if (emailExistente.length > 0 && emailExistente[0].cuenta_activo) {
             return res.status(409).json({ error: 'El correo electrónico ya está vinculado a otra cuenta.', campo: 'email' });
         }
 
-        res.status(200).json({ mensaje: 'Datos únicos, puede continuar.' });
+        const reemplazo = rutExistente.length > 0 || emailExistente.length > 0;
+
+        res.status(200).json({
+            mensaje: reemplazo
+                ? 'Existía un registro anterior sin verificar con estos datos; será reemplazado.'
+                : 'Datos únicos, puede continuar.',
+            reemplazo
+        });
     } catch (error) {
         res.status(500).json({ error: 'Error interno al consultar el modelo de datos.' });
     }
