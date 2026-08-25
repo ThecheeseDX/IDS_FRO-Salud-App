@@ -151,7 +151,7 @@ export default function OTPScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       style={estilos.contenedor}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={estilos.tarjeta}>
         <Text style={estilos.titulo}>Verificación de identidad</Text>

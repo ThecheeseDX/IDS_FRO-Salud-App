@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -172,6 +174,10 @@ export default function IntervencionScreen() {
   const etiquetaEspecialidad = contexto?.especialidad || 'General';
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Intervención y respuesta fisiológica</Text>
       <Text style={styles.subtitle}>
@@ -279,6 +285,7 @@ export default function IntervencionScreen() {
         </>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

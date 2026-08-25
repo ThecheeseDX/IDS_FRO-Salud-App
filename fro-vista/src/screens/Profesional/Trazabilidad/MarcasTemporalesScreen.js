@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -318,7 +320,12 @@ export default function MarcasTemporalesScreen() {
         animationType="fade"
         onRequestClose={cerrarMarcaManual}
       >
-        <View style={styles.modalOverlay}>
+        {/* Un Modal renderiza en su propia raíz nativa: el KeyboardAvoidingView
+            del ScrollView de afuera no lo alcanza, necesita el suyo propio. */}
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Marca manual justificada</Text>
             <Text style={styles.modalHelp}>
@@ -358,7 +365,7 @@ export default function MarcasTemporalesScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
   );

@@ -208,7 +208,7 @@ export default function EvolucionClinicaScreen({ route }) {
   const camposBloqueados = isLoadingMetas;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* 2.5: aviso no intrusivo (Excepción 4) */}

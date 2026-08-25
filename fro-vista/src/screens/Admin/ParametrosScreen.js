@@ -6,11 +6,12 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  ScrollView, 
-  Alert 
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Alert
 } from 'react-native';
 
 import apiClient from '../../api/client'; 
@@ -142,7 +143,10 @@ const aplicarRestriccion = async () => {
 };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Parámetros Globales</Text>
         <Text style={styles.subtitle}>Panel de Control Administrativo</Text>
@@ -249,7 +253,7 @@ const aplicarRestriccion = async () => {
       <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

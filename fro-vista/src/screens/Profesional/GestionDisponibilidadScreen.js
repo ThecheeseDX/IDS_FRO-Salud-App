@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -71,7 +71,11 @@ export default function GestionDisponibilidadScreen() {
     };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Gestión de Agenda</Text>
         <Text style={styles.cardSubtitle}>Configure los periodos de inactividad</Text>
@@ -122,7 +126,8 @@ export default function GestionDisponibilidadScreen() {
           <Text style={styles.saveButtonText}>CONFIRMAR BLOQUEO</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
