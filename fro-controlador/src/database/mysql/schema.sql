@@ -178,6 +178,19 @@ CREATE TABLE Paciente (
     FOREIGN KEY (comuna_id) REFERENCES Comuna(comuna_id)
 );
 
+-- CU23/CU24: entrevista de triaje. Las respuestas parciales permiten
+-- reanudar (Exc.3 del CU23); "integrado" indica si ya se volcó a la ficha.
+CREATE TABLE Triaje (
+    triaje_id INT PRIMARY KEY AUTO_INCREMENT,
+    estado ENUM('EN_PROGRESO', 'COMPLETADO') NOT NULL DEFAULT 'EN_PROGRESO',
+    respuestas JSON,
+    momento_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    momento_completado TIMESTAMP NULL,
+    integrado BOOLEAN NOT NULL DEFAULT FALSE,
+    paciente_id INT NOT NULL,
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id)
+);
+
 CREATE TABLE Disclaimer (
     disclaimer_id INT PRIMARY KEY AUTO_INCREMENT,
     momento_aceptacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

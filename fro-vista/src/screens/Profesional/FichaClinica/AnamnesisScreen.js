@@ -3,8 +3,28 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   Alert, ActivityIndicator
 } from 'react-native';
-import { getFichaClinica, guardarAnamnesis } from '../../../api/client';
+import * as SecureStore from 'expo-secure-store';
+import apiClient, { getFichaClinica, guardarAnamnesis } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
+
+// CU77: el bloque estructurado de la evaluación viaja dentro de la anamnesis
+// delimitado por estas marcas, para poder reconstruir los campos al cargar.
+const MARCA_INICIO = '═══ EVALUACIÓN ESTRUCTURADA ═══';
+const MARCA_FIN = '═══ FIN EVALUACIÓN ═══';
+
+const claveBorrador = (pacienteId) => `cu77_borrador_${pacienteId}`;
+
+/** Separa el bloque estructurado del texto libre de la anamnesis. */
+function separarBloque(texto) {
+  const inicio = texto.indexOf(MARCA_INICIO);
+  const fin = texto.indexOf(MARCA_FIN);
+  if (inicio === -1 || fin === -1 || fin < inicio) {
+    return { lineasBloque: [], libre: texto };
+  }
+  const dentro = texto.slice(inicio + MARCA_INICIO.length, fin).trim();
+  const libre = (texto.slice(0, inicio) + texto.slice(fin + MARCA_FIN.length)).trim();
+  return { lineasBloque: dentro.split('\n').filter(Boolean), libre };
+}
 
 const LIMITE_ANAMNESIS = 2000;
 
@@ -17,6 +37,12 @@ export default function AnamnesisScreen({ route, navigation }) {
 
   const [anamnesis, setAnamnesis] = useState('');
   const [plantillaEspecialidad, setPlantillaEspecialidad] = useState('');
+
+  // CU77: plantilla dinámica según la especialidad del profesional
+  const [plantilla, setPlantilla] = useState(null);
+  const [sinEspecialidad, setSinEspecialidad] = useState(false);
+  const [camposValores, setCamposValores] = useState({});
+  const [erroresCampos, setErroresCampos] = useState({});
 
   // Listas representadas como texto separado por comas para edición simple
   const [alergiasTexto, setAlergiasTexto] = useState('');
@@ -32,13 +58,65 @@ export default function AnamnesisScreen({ route, navigation }) {
   const cargarFicha = async () => {
     setCargando(true);
     try {
+      // CU77: la estructura del formulario depende de la especialidad
+      // acreditada del profesional (Excepción 2 si no la tiene).
+      let plantillaCargada = null;
+      try {
+        const respuesta = await apiClient.get('/clinica/plantilla-evaluacion');
+        plantillaCargada = respuesta.data;
+        setPlantilla(plantillaCargada);
+        setPlantillaEspecialidad(respuesta.data.especialidad);
+      } catch (errorPlantilla) {
+        if (errorPlantilla.response?.data?.error === 'SIN_ESPECIALIDAD') {
+          setSinEspecialidad(true);
+        }
+      }
+
       const data = await getFichaClinica(pacienteId);
-      setAnamnesis(data.anamnesis || '');
-      setPlantillaEspecialidad(data.plantilla_especialidad || '');
+
+      // Reconstruir los campos estructurados desde la anamnesis guardada.
+      const { lineasBloque, libre } = separarBloque(data.anamnesis || '');
+      const valores = {};
+      if (plantillaCargada) {
+        for (const linea of lineasBloque) {
+          const separador = linea.indexOf(':');
+          if (separador === -1) continue;
+          const etiqueta = linea.slice(0, separador).trim();
+          const campo = plantillaCargada.campos.find((c) => c.etiqueta === etiqueta);
+          if (campo) valores[campo.id] = linea.slice(separador + 1).trim();
+        }
+      }
+      setCamposValores(valores);
+      setAnamnesis(libre);
+      if (!plantillaCargada) setPlantillaEspecialidad(data.plantilla_especialidad || '');
       setAlergiasTexto((data.alergias || []).join(', '));
       setQuirurgicosTexto((data.antecedentes_quirurgicos || []).join(', '));
       setPatologicosTexto((data.antecedentes_patologicos || []).join(', '));
       setVersion(data.version);
+
+      // CU77 — Excepción 4: si quedó un borrador local de una caída de red,
+      // se ofrece recuperarlo.
+      const guardado = await SecureStore.getItemAsync(claveBorrador(pacienteId));
+      if (guardado) {
+        const borrador = JSON.parse(guardado);
+        Alert.alert(
+          'Borrador recuperado',
+          'Hay una evaluación sin sincronizar guardada en este dispositivo. ¿Quieres recuperarla?',
+          [
+            { text: 'Descartar', onPress: () => SecureStore.deleteItemAsync(claveBorrador(pacienteId)) },
+            {
+              text: 'Recuperar',
+              onPress: () => {
+                setCamposValores(borrador.camposValores || {});
+                setAnamnesis(borrador.anamnesis || '');
+                setAlergiasTexto(borrador.alergiasTexto || '');
+                setQuirurgicosTexto(borrador.quirurgicosTexto || '');
+                setPatologicosTexto(borrador.patologicosTexto || '');
+              },
+            },
+          ]
+        );
+      }
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar la ficha clínica del paciente.');
     } finally {
@@ -71,9 +149,19 @@ export default function AnamnesisScreen({ route, navigation }) {
     if (!anamnesis.trim()) nuevosErrores.anamnesis = true;
     if (!plantillaEspecialidad.trim()) nuevosErrores.plantillaEspecialidad = true;
 
+    // CU77 — Excepción 3: los campos obligatorios de la plantilla se
+    // resaltan en rojo si quedaron vacíos.
+    const nuevosErroresCampos = {};
+    for (const campo of plantilla?.campos || []) {
+      if (campo.obligatorio && !String(camposValores[campo.id] || '').trim()) {
+        nuevosErroresCampos[campo.id] = true;
+      }
+    }
+    setErroresCampos(nuevosErroresCampos);
+
     setErrores(nuevosErrores);
 
-    if (Object.keys(nuevosErrores).length > 0) {
+    if (Object.keys(nuevosErrores).length > 0 || Object.keys(nuevosErroresCampos).length > 0) {
       Alert.alert(
         'Campos incompletos',
         'Existen campos obligatorios sin completar. Revisa los bloques resaltados.'
@@ -88,10 +176,23 @@ export default function AnamnesisScreen({ route, navigation }) {
     if (!validar()) return;
 
     setGuardando(true);
+
+    // El bloque estructurado (CU77) viaja dentro de la anamnesis, delimitado
+    // para poder reconstruirlo al volver a cargar.
+    let anamnesisCompleta = anamnesis;
+    if (plantilla) {
+      const lineas = plantilla.campos
+        .filter((campo) => String(camposValores[campo.id] || '').trim())
+        .map((campo) => `${campo.etiqueta}: ${String(camposValores[campo.id]).trim()}`);
+      if (lineas.length > 0) {
+        anamnesisCompleta = `${MARCA_INICIO}\n${lineas.join('\n')}\n${MARCA_FIN}\n\n${anamnesis}`;
+      }
+    }
+
     try {
       const data = await guardarAnamnesis({
         paciente_id: pacienteId,
-        anamnesis,
+        anamnesis: anamnesisCompleta,
         plantilla_especialidad: plantillaEspecialidad,
         alergias: parsearLista(alergiasTexto),
         antecedentes_quirurgicos: parsearLista(quirurgicosTexto),
@@ -107,6 +208,7 @@ export default function AnamnesisScreen({ route, navigation }) {
       }
 
       setVersion(data.version);
+      await SecureStore.deleteItemAsync(claveBorrador(pacienteId)).catch?.(() => {});
       Alert.alert('Éxito', data.mensaje);
 
     } catch (error) {
@@ -147,6 +249,20 @@ export default function AnamnesisScreen({ route, navigation }) {
         return;
       }
 
+      if (!error.response) {
+        // CU77 — Excepción 4: sin conexión, la evaluación queda en caché
+        // local para sincronizarla cuando vuelva la red.
+        await SecureStore.setItemAsync(
+          claveBorrador(pacienteId),
+          JSON.stringify({ camposValores, anamnesis, alergiasTexto, quirurgicosTexto, patologicosTexto })
+        );
+        Alert.alert(
+          'Sin conexión',
+          'La evaluación quedó guardada en este dispositivo. Cuando vuelva la señal, guarda de nuevo para sincronizarla.'
+        );
+        return;
+      }
+
       Alert.alert('Error', err?.error || 'No se pudo guardar la anamnesis. Intenta nuevamente.');
     } finally {
       setGuardando(false);
@@ -167,19 +283,60 @@ export default function AnamnesisScreen({ route, navigation }) {
         <Text style={styles.title}>Evaluación Inicial — Anamnesis</Text>
         <Text style={styles.subtitulo}>Paciente: {nombrePaciente}</Text>
 
-        {/* ─ Plantilla / especialidad */}
-        <Text style={styles.label}>Plantilla de especialidad *</Text>
-        <TextInput
-          style={[styles.input, errores.plantillaEspecialidad && styles.inputError]}
-          placeholder="Ej: Kinesiología Respiratoria"
-          value={plantillaEspecialidad}
-          onChangeText={(v) => {
-            setPlantillaEspecialidad(v);
-            if (errores.plantillaEspecialidad) setErrores({ ...errores, plantillaEspecialidad: false });
-          }}
-        />
-        {errores.plantillaEspecialidad && (
-          <Text style={styles.errorTexto}>Este campo es obligatorio.</Text>
+        {/* ─ CU77: plantilla dinámica según la especialidad acreditada */}
+        {sinEspecialidad ? (
+          <View style={styles.avisoSinEspecialidad}>
+            <Text style={styles.avisoSinEspecialidadTexto}>
+              Tu cuenta no tiene una especialidad acreditada, así que no se puede
+              generar la plantilla de evaluación. Completa tu configuración
+              profesional o contacta al administrador.
+            </Text>
+          </View>
+        ) : plantilla ? (
+          <View style={styles.bloquePlantilla}>
+            <Text style={styles.chipEspecialidad}>
+              Plantilla: {plantilla.especialidad}
+            </Text>
+            {plantilla.campos.map((campo) => (
+              <View key={campo.id}>
+                <Text style={styles.label}>
+                  {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+                </Text>
+                <TextInput
+                  style={[styles.input, erroresCampos[campo.id] && styles.inputError]}
+                  placeholder={campo.tipo === 'numero' ? 'Solo números' : 'Escribe aquí…'}
+                  keyboardType={campo.tipo === 'numero' ? 'numeric' : 'default'}
+                  value={String(camposValores[campo.id] || '')}
+                  onChangeText={(v) => {
+                    const valor = campo.tipo === 'numero' ? v.replace(/[^0-9.,]/g, '') : v;
+                    setCamposValores({ ...camposValores, [campo.id]: valor });
+                    if (erroresCampos[campo.id]) {
+                      setErroresCampos({ ...erroresCampos, [campo.id]: false });
+                    }
+                  }}
+                />
+                {erroresCampos[campo.id] && (
+                  <Text style={styles.errorTexto}>Este campo es obligatorio para tu especialidad.</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <>
+            <Text style={styles.label}>Plantilla de especialidad *</Text>
+            <TextInput
+              style={[styles.input, errores.plantillaEspecialidad && styles.inputError]}
+              placeholder="Ej: Kinesiología Respiratoria"
+              value={plantillaEspecialidad}
+              onChangeText={(v) => {
+                setPlantillaEspecialidad(v);
+                if (errores.plantillaEspecialidad) setErrores({ ...errores, plantillaEspecialidad: false });
+              }}
+            />
+            {errores.plantillaEspecialidad && (
+              <Text style={styles.errorTexto}>Este campo es obligatorio.</Text>
+            )}
+          </>
         )}
 
         {/* ─ Anamnesis */}
@@ -251,6 +408,32 @@ export default function AnamnesisScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  bloquePlantilla: {
+    backgroundColor: '#eef4ff',
+    borderWidth: 1,
+    borderColor: '#c5d8f7',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+  },
+  chipEspecialidad: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#0052cc',
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  avisoSinEspecialidad: {
+    backgroundColor: '#fdecea',
+    borderRadius: 10,
+    padding: 14,
+    marginTop: 8,
+  },
+  avisoSinEspecialidadTexto: { color: '#b71c1c' },
   container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   cargandoTexto: { marginTop: 10, color: '#666' },

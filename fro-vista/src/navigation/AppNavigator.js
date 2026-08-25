@@ -15,6 +15,7 @@ import RecuperarContrasenaScreen from '../screens/Auth/RecuperarContrasenaScreen
 import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
 import MisPautasScreen from '../screens/Paciente/MisPautasScreen';
+import TriajeScreen from '../screens/Paciente/TriajeScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 // Pantallas — Profesional
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
@@ -75,6 +76,7 @@ export default function AppNavigator() {
             {/* Gestión de citas unificada: listado + reserva desde el botón flotante */}
             <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
             <Stack.Screen name="MisPautas" component={MisPautasScreen} options={{ title: 'Mis Ejercicios' }} />
+            <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
             <Stack.Screen
               name="BuscarCita"
               component={BuscarCitaScreen}

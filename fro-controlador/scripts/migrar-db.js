@@ -18,6 +18,32 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
   {
+    nombre: 'Tabla Triaje (CU23/CU24)',
+    descripcion: 'Entrevista clínica automatizada con reanudación e integración a ficha',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Triaje'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Triaje (
+            triaje_id INT PRIMARY KEY AUTO_INCREMENT,
+            estado ENUM('EN_PROGRESO', 'COMPLETADO') NOT NULL DEFAULT 'EN_PROGRESO',
+            respuestas JSON,
+            momento_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            momento_completado TIMESTAMP NULL,
+            integrado BOOLEAN NOT NULL DEFAULT FALSE,
+            paciente_id INT NOT NULL,
+            FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id)
+         )`
+      );
+    },
+  },
+  {
     nombre: 'Pauta_Ejercicio con parametros de carga (CU47)',
     descripcion: 'Agrega id propio, series, repeticiones, frecuencia y material a cada ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

@@ -1,6 +1,6 @@
 // Ruta: fro-vista/src/screens/Paciente/DashboardPaciente.js
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
@@ -41,7 +41,7 @@ export default function DashboardPaciente({ navigation }) {
         </Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {isLoading ? (
           <ActivityIndicator size="large" color="#0052cc" />
         ) : errorRed ? (
@@ -65,6 +65,18 @@ export default function DashboardPaciente({ navigation }) {
               <Text style={styles.menuTitle}>Mis Citas</Text>
               <Text style={styles.menuSubtitle}>
                 Revisa tus horas agendadas y reserva nuevas desde un mismo lugar.
+              </Text>
+            </TouchableOpacity>
+
+            {/* CU23/CU27: entrevista de triaje previa a la consulta */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('Triaje')}
+            >
+              <Text style={styles.menuIcon}>🩺</Text>
+              <Text style={styles.menuTitle}>Entrevista Previa</Text>
+              <Text style={styles.menuSubtitle}>
+                Responde unas preguntas antes de tu consulta para adelantar tu ficha.
               </Text>
             </TouchableOpacity>
 
@@ -93,7 +105,7 @@ export default function DashboardPaciente({ navigation }) {
             </TouchableOpacity>
           </>
         )}
-      </View>
+      </ScrollView>
 
       <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
         <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
@@ -124,8 +136,9 @@ const styles = StyleSheet.create({
     color: '#e0e0e0',
     marginTop: 5,
   },
+  scroll: { flex: 1 },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,

@@ -17,6 +17,9 @@ const disponibilidadController = require('../controllers/disponibilidadControlle
 // CU46-CU49: biblioteca y pautas de ejercicio
 const pautaController = require('../controllers/clinico/pautaController');
 
+// CU23/CU24/CU27/CU77: triaje automatizado y plantillas de evaluación
+const triajeController = require('../controllers/clinico/triajeController');
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CU29 — Anamnesis / Ficha Clínica
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,6 +126,42 @@ router.post('/pautas/ejercicios/:id/cumplimiento',
 router.delete('/pautas/ejercicios/:id/cumplimiento',
     verifyToken, authorizeRoles(['Paciente']),
     pautaController.desmarcarCumplimiento
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU27 — Disclaimer legal + CU23 — Triaje + CU24 — Integración a ficha
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/triaje/estado',
+    verifyToken, authorizeRoles(['Paciente']),
+    triajeController.estadoTriaje
+);
+router.get('/triaje/disclaimer',
+    verifyToken, authorizeRoles(['Paciente']),
+    triajeController.obtenerDisclaimer
+);
+router.post('/triaje/disclaimer/aceptar',
+    verifyToken, authorizeRoles(['Paciente']),
+    triajeController.aceptarDisclaimer
+);
+router.get('/triaje/arbol',
+    verifyToken, authorizeRoles(['Paciente']),
+    triajeController.obtenerArbol
+);
+router.put('/triaje/respuestas',
+    verifyToken, authorizeRoles(['Paciente']),
+    triajeController.guardarRespuestasParciales
+);
+router.post('/triaje/completar',
+    verifyToken, authorizeRoles(['Paciente']),
+    triajeController.completarTriaje
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU77 — Plantilla de evaluación según la especialidad del profesional
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/plantilla-evaluacion',
+    verifyToken, authorizeRoles(['Profesional']),
+    triajeController.plantillaEvaluacion
 );
 
 module.exports = router;
