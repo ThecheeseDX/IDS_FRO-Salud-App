@@ -285,6 +285,16 @@ CREATE TABLE Mensaje_Chat (
     FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)   
 );
 
+CREATE TABLE Material_Terapeutico(
+    material_terapeutico_id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    tipo VARCHAR(50) NOT NULL,
+    url_archivo VARCHAR(255),
+    categoria VARCHAR(50) NOT NULL,
+    formato VARCHAR(20) NOT NULL,
+    disponibilidad BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 CREATE TABLE Pauta_Tratamiento(
     pauta_tratamiento_id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,
@@ -296,20 +306,29 @@ CREATE TABLE Pauta_Tratamiento(
 );
 
 CREATE TABLE Pauta_Ejercicio(
-    pauta_tratamiento_id INT,
-    nombre_ejercicio VARCHAR(255),
-    PRIMARY KEY (pauta_tratamiento_id, nombre_ejercicio),
-    FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)
+    pauta_ejercicio_id INT PRIMARY KEY AUTO_INCREMENT,
+    pauta_tratamiento_id INT NOT NULL,
+    nombre_ejercicio VARCHAR(255) NOT NULL,
+    -- CU47: parámetros de carga física y temporalidad
+    series INT NOT NULL DEFAULT 1,
+    repeticiones INT NOT NULL DEFAULT 1,
+    frecuencia VARCHAR(20) NOT NULL DEFAULT 'DIARIA',
+    -- CU46: recurso de la biblioteca asociado al ejercicio (opcional)
+    material_terapeutico_id INT,
+    UNIQUE KEY uq_pauta_nombre (pauta_tratamiento_id, nombre_ejercicio),
+    FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id),
+    FOREIGN KEY (material_terapeutico_id) REFERENCES Material_Terapeutico(material_terapeutico_id)
 );
 
-CREATE TABLE Material_Terapeutico(
-    material_terapeutico_id INT PRIMARY KEY AUTO_INCREMENT,
-    nombre VARCHAR(100) NOT NULL UNIQUE,
-    tipo VARCHAR(50) NOT NULL,
-    url_archivo VARCHAR(255),
-    categoria VARCHAR(50) NOT NULL,
-    formato VARCHAR(20) NOT NULL,
-    disponibilidad BOOLEAN NOT NULL DEFAULT TRUE
+-- CU48: una marca por ejercicio y día. La clave única es el control
+-- anti-rebote: varias marcas repetidas quedan como un solo registro.
+CREATE TABLE Pauta_Cumplimiento(
+    pauta_cumplimiento_id INT PRIMARY KEY AUTO_INCREMENT,
+    pauta_ejercicio_id INT NOT NULL,
+    fecha DATE NOT NULL,
+    momento_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ejercicio_dia (pauta_ejercicio_id, fecha),
+    FOREIGN KEY (pauta_ejercicio_id) REFERENCES Pauta_Ejercicio(pauta_ejercicio_id)
 );
 
 CREATE TABLE Pauta_Material(
@@ -443,6 +462,18 @@ INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id
 ('123334442', TRUE, 1);
 
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
+
+-- CU46: catálogo inicial de la biblioteca de material terapéutico.
+-- El último recurso queda obsoleto a propósito, para probar la Excepción 4.
+INSERT INTO Material_Terapeutico (nombre, tipo, url_archivo, categoria, formato, disponibilidad) VALUES
+('Elongación de isquiotibiales', 'GUIA', 'https://biblioteca.frosalud.cl/isquiotibiales', 'Kinesiología', 'PDF', TRUE),
+('Fortalecimiento de cuádriceps', 'GUIA', 'https://biblioteca.frosalud.cl/cuadriceps', 'Kinesiología', 'PDF', TRUE),
+('Movilidad de hombro con banda', 'VIDEO', 'https://biblioteca.frosalud.cl/hombro-banda', 'Kinesiología', 'MP4', TRUE),
+('Respiración diafragmática guiada', 'VIDEO', 'https://biblioteca.frosalud.cl/respiracion', 'Kinesiología Respiratoria', 'MP4', TRUE),
+('Ejercicios de expansión torácica', 'GUIA', 'https://biblioteca.frosalud.cl/expansion-toracica', 'Kinesiología Respiratoria', 'PDF', TRUE),
+('Pauta de hidratación y colaciones', 'GUIA', 'https://biblioteca.frosalud.cl/hidratacion', 'Nutrición', 'PDF', TRUE),
+('Plan de comidas semanal base', 'PLANTILLA', 'https://biblioteca.frosalud.cl/plan-comidas', 'Nutrición', 'PDF', TRUE),
+('Rutina de marcha progresiva (versión 2019)', 'GUIA', 'https://biblioteca.frosalud.cl/marcha-2019', 'Kinesiología', 'PDF', FALSE);
 
 INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
 ('ARANCEL_CONSULTA_GENERAL', '25000', 'Valor base en pesos chilenos para atención de medicina general.', 1),

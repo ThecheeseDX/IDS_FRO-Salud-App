@@ -14,6 +14,9 @@ const intervencionController = require('../controllers/clinico/intervencionContr
 // CU16
 const disponibilidadController = require('../controllers/disponibilidadController');
 
+// CU46-CU49: biblioteca y pautas de ejercicio
+const pautaController = require('../controllers/clinico/pautaController');
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CU29 — Anamnesis / Ficha Clínica
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,9 +84,45 @@ router.put('/intervenciones/:episodio_id',
 );
 
 // CU16
-router.post('/disponibilidad/restringir', 
-    verifyToken, authorizeRoles(['Profesional', 'Administrador']), 
+router.post('/disponibilidad/restringir',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
     disponibilidadController.restringirDisponibilidad
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU46 — Biblioteca centralizada de material terapéutico
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/materiales',
+    verifyToken, authorizeRoles(['Profesional']),
+    pautaController.buscarMateriales
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU47 — Prescripción de pautas de ejercicio
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/pautas',
+    verifyToken, authorizeRoles(['Profesional']),
+    pautaController.crearPauta
+);
+router.get('/pautas/paciente/:paciente_id',
+    verifyToken, authorizeRoles(['Profesional']), auditarAccesoClinico,
+    pautaController.pautasDePaciente
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU48/CU49 — Cumplimiento diario y vigencia (lado paciente)
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/pautas/mis-pautas',
+    verifyToken, authorizeRoles(['Paciente']),
+    pautaController.misPautas
+);
+router.post('/pautas/ejercicios/:id/cumplimiento',
+    verifyToken, authorizeRoles(['Paciente']),
+    pautaController.marcarCumplimiento
+);
+router.delete('/pautas/ejercicios/:id/cumplimiento',
+    verifyToken, authorizeRoles(['Paciente']),
+    pautaController.desmarcarCumplimiento
 );
 
 module.exports = router;

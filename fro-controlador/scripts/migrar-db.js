@@ -18,6 +18,79 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
   {
+    nombre: 'Pauta_Ejercicio con parametros de carga (CU47)',
+    descripcion: 'Agrega id propio, series, repeticiones, frecuencia y material a cada ejercicio',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Pauta_Ejercicio'
+            AND COLUMN_NAME = 'pauta_ejercicio_id'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Pauta_Ejercicio
+           DROP PRIMARY KEY,
+           ADD COLUMN pauta_ejercicio_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST,
+           ADD COLUMN series INT NOT NULL DEFAULT 1,
+           ADD COLUMN repeticiones INT NOT NULL DEFAULT 1,
+           ADD COLUMN frecuencia VARCHAR(20) NOT NULL DEFAULT 'DIARIA',
+           ADD COLUMN material_terapeutico_id INT NULL,
+           ADD UNIQUE KEY uq_pauta_nombre (pauta_tratamiento_id, nombre_ejercicio),
+           ADD CONSTRAINT fk_pauta_ejercicio_material
+             FOREIGN KEY (material_terapeutico_id)
+             REFERENCES Material_Terapeutico(material_terapeutico_id)`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Pauta_Cumplimiento (CU48)',
+    descripcion: 'Registro diario de cumplimiento de ejercicios, con control anti-rebote',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Pauta_Cumplimiento'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Pauta_Cumplimiento(
+            pauta_cumplimiento_id INT PRIMARY KEY AUTO_INCREMENT,
+            pauta_ejercicio_id INT NOT NULL,
+            fecha DATE NOT NULL,
+            momento_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_ejercicio_dia (pauta_ejercicio_id, fecha),
+            FOREIGN KEY (pauta_ejercicio_id) REFERENCES Pauta_Ejercicio(pauta_ejercicio_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Catalogo inicial de Material_Terapeutico (CU46)',
+    descripcion: 'Siembra la biblioteca con recursos de ejemplo si esta vacia',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(`SELECT 1 FROM Material_Terapeutico LIMIT 1`);
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Material_Terapeutico (nombre, tipo, url_archivo, categoria, formato, disponibilidad) VALUES
+         ('Elongación de isquiotibiales', 'GUIA', 'https://biblioteca.frosalud.cl/isquiotibiales', 'Kinesiología', 'PDF', TRUE),
+         ('Fortalecimiento de cuádriceps', 'GUIA', 'https://biblioteca.frosalud.cl/cuadriceps', 'Kinesiología', 'PDF', TRUE),
+         ('Movilidad de hombro con banda', 'VIDEO', 'https://biblioteca.frosalud.cl/hombro-banda', 'Kinesiología', 'MP4', TRUE),
+         ('Respiración diafragmática guiada', 'VIDEO', 'https://biblioteca.frosalud.cl/respiracion', 'Kinesiología Respiratoria', 'MP4', TRUE),
+         ('Ejercicios de expansión torácica', 'GUIA', 'https://biblioteca.frosalud.cl/expansion-toracica', 'Kinesiología Respiratoria', 'PDF', TRUE),
+         ('Pauta de hidratación y colaciones', 'GUIA', 'https://biblioteca.frosalud.cl/hidratacion', 'Nutrición', 'PDF', TRUE),
+         ('Plan de comidas semanal base', 'PLANTILLA', 'https://biblioteca.frosalud.cl/plan-comidas', 'Nutrición', 'PDF', TRUE),
+         ('Rutina de marcha progresiva (versión 2019)', 'GUIA', 'https://biblioteca.frosalud.cl/marcha-2019', 'Kinesiología', 'PDF', FALSE)`
+      );
+    },
+  },
+  {
     nombre: 'Tabla Sesion_Usuario (CU08)',
     descripcion: 'Registro de sesiones activas por dispositivo, revocables',
     yaAplicada: async (conexion, baseDatos) => {

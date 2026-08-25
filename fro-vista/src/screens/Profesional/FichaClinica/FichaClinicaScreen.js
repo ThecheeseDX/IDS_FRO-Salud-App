@@ -14,6 +14,7 @@ import AnamnesisScreen from './AnamnesisScreen';
 import EpisodioScreen from './EpisodioScreen';
 import EvolucionClinicaScreen from './EvolucionClinicaScreen';
 import IntervencionScreen from './IntervencionScreen';
+import PautasScreen from './PautasScreen';
 
 const TABS = [
   { key: 'historial',    titulo: 'Historial',    icono: '📋', Componente: HistorialPacienteScreen, requierePaciente: true },
@@ -21,6 +22,7 @@ const TABS = [
   { key: 'episodios',    titulo: 'Episodios',    icono: '📁', Componente: EpisodioScreen,          requierePaciente: false },
   { key: 'evolucion',    titulo: 'Evolución',    icono: '📈', Componente: EvolucionClinicaScreen,  requierePaciente: false },
   { key: 'intervencion', titulo: 'Intervención', icono: '💪', Componente: IntervencionScreen,      requierePaciente: false },
+  { key: 'pautas',       titulo: 'Pautas',       icono: '🏋️', Componente: PautasScreen,            requierePaciente: true },
 ];
 
 // Las pantallas internas siguen llamando a navigation.navigate con los nombres

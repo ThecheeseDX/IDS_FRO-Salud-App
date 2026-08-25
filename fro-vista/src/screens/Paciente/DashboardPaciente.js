@@ -68,6 +68,18 @@ export default function DashboardPaciente({ navigation }) {
               </Text>
             </TouchableOpacity>
 
+            {/* CU48: rutinas de ejercicio del tratamiento */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('MisPautas')}
+            >
+              <Text style={styles.menuIcon}>🏋️</Text>
+              <Text style={styles.menuTitle}>Mis Ejercicios</Text>
+              <Text style={styles.menuSubtitle}>
+                Revisa tu rutina del día y marca los ejercicios que completes.
+              </Text>
+            </TouchableOpacity>
+
             {/* CU07/CU08/CU09: seguridad de la cuenta */}
             <TouchableOpacity
               style={styles.menuBtn}
