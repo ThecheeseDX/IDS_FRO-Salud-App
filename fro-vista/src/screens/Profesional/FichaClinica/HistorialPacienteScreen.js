@@ -34,6 +34,9 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [error, setError] = useState('');
   // CU22: cancelar exige motivo; se pide en un diálogo propio.
   const [citaPorCancelar, setCitaPorCancelar] = useState(null);
+  // CU71: informe de cuadratura de coberturas (se descarta en memoria).
+  const [cuadratura, setCuadratura] = useState(null);
+  const [sincronizando, setSincronizando] = useState(false);
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -195,6 +198,23 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
+  // CU71: contrasta sesiones ejecutadas contra coberturas autorizadas.
+  const sincronizarCoberturas = async () => {
+    setSincronizando(true);
+    try {
+      const { data } = await apiClient.get(`/pagos/cuadratura/${pacienteId}`);
+      setCuadratura(data);
+    } catch (err) {
+      // Excepción 4: la sincronización queda pendiente y se reintenta.
+      Alert.alert(
+        'Sincronización pendiente',
+        err.response?.data?.mensaje || 'No se pudo completar. Reintenta en unos minutos.'
+      );
+    } finally {
+      setSincronizando(false);
+    }
+  };
+
   // CU22: muestra el historial de cambios de una cita (responsable y motivo).
   const verTrazabilidad = async (citaId) => {
     try {
@@ -283,6 +303,51 @@ export default function HistorialPacienteScreen({ route, navigation }) {
               <Text style={styles.warningText}>{mensajeMultimedia}</Text>
             </View>
           )}
+
+          {/* ── CU71: cuadratura de sesiones bonificables ── */}
+          <View style={styles.tarjetaCuadratura}>
+            <Text style={styles.tituloCuadratura}>💳 Cuadratura de coberturas</Text>
+            {cuadratura === null ? (
+              <TouchableOpacity
+                style={styles.botonCuadratura}
+                onPress={sincronizarCoberturas}
+                disabled={sincronizando}
+              >
+                {sincronizando ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.botonCuadraturaTexto}>Sincronizar con coberturas</Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <>
+                <Text style={styles.lineaCuadratura}>
+                  Sesiones realizadas: {cuadratura.sesiones_realizadas} · Autorizadas por planes:{' '}
+                  {cuadratura.sesiones_autorizadas} (usadas {cuadratura.sesiones_usadas})
+                </Text>
+                {cuadratura.discrepancia_saldo && (
+                  <Text style={styles.alertaCuadratura}>
+                    ⚠️ Discrepancia de saldo: las sesiones ejecutadas superan las
+                    autorizadas. Regulariza la cobertura con el paciente.
+                  </Text>
+                )}
+                {cuadratura.realizadas_sin_bono.length > 0 && (
+                  <Text style={styles.alertaCuadratura}>
+                    ⚠️ {cuadratura.realizadas_sin_bono.length} atención(es) realizadas sin
+                    bono registrado (citas #{cuadratura.realizadas_sin_bono.join(', #')}).
+                  </Text>
+                )}
+                {!cuadratura.discrepancia_saldo && cuadratura.realizadas_sin_bono.length === 0 && (
+                  <Text style={styles.okCuadratura}>
+                    ✅ El registro contable está alineado con las autorizaciones.
+                  </Text>
+                )}
+                <TouchableOpacity onPress={() => setCuadratura(null)}>
+                  <Text style={styles.descartarCuadratura}>Descartar informe</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
 
           <Text style={styles.seccionTitulo}>Atenciones / Citas</Text>
 
@@ -580,6 +645,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2563eb'
   },
+  tarjetaCuadratura: {
+    backgroundColor: '#fff8e1',
+    borderWidth: 1,
+    borderColor: '#ffe082',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  tituloCuadratura: { fontWeight: 'bold', color: '#8d6e00', marginBottom: 8, fontSize: 15 },
+  botonCuadratura: {
+    backgroundColor: '#ef6c00',
+    borderRadius: 8,
+    padding: 11,
+    alignItems: 'center',
+  },
+  botonCuadraturaTexto: { color: '#fff', fontWeight: 'bold' },
+  lineaCuadratura: { color: '#5d4a00', marginBottom: 6 },
+  alertaCuadratura: { color: '#b71c1c', marginBottom: 6, fontWeight: '600' },
+  okCuadratura: { color: '#2e7d32', marginBottom: 6, fontWeight: '600' },
+  descartarCuadratura: { color: '#8d6e00', fontWeight: 'bold', textAlign: 'right', marginTop: 4 },
   enlaceTrazabilidad: {
     color: '#0052cc',
     fontWeight: 'bold',

@@ -92,6 +92,18 @@ export default function DashboardPaciente({ navigation }) {
               </Text>
             </TouchableOpacity>
 
+            {/* CU66/CU67: bonos, copagos y planes de sesiones */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('Pagos')}
+            >
+              <Text style={styles.menuIcon}>💳</Text>
+              <Text style={styles.menuTitle}>Pagos y Bonos</Text>
+              <Text style={styles.menuSubtitle}>
+                Valida tus bonos de cobertura, paga tus copagos y compra planes.
+              </Text>
+            </TouchableOpacity>
+
             {/* CU07/CU08/CU09: seguridad de la cuenta */}
             <TouchableOpacity
               style={styles.menuBtn}

@@ -18,6 +18,21 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
   {
+    nombre: 'Financiadores con convenio (CU66)',
+    descripcion: 'Siembra los financiadores simulados si la tabla esta vacia',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(`SELECT 1 FROM Financiador LIMIT 1`);
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Financiador (nombre_institucion, rut_institucion, convenio_activo) VALUES
+         ('FONASA (simulado)', '61.603.000-0', TRUE),
+         ('ISAPRE Salud Plena (simulada)', '96.856.780-2', TRUE)`
+      );
+    },
+  },
+  {
     nombre: 'Tabla Triaje (CU23/CU24)',
     descripcion: 'Entrevista clínica automatizada con reanudación e integración a ficha',
     yaAplicada: async (conexion, baseDatos) => {

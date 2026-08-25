@@ -9,6 +9,8 @@ const inalterabilidadRoutes = require('./routes/inalterabilidadRoutes');
 const parametroRoutes = require('./routes/parametroRoutes');
 
 const integracionDemoRoutes = require('./routes/integracionDemoRoutes');
+const pagoRoutes = require('./routes/pagoRoutes');
+const pagoController = require('./controllers/pagoController');
 
 const app = express();
 
@@ -42,5 +44,10 @@ app.use('/api/inalterabilidad', inalterabilidadRoutes);
 app.use('/api/parametros', parametroRoutes);
 
 app.use('/api/integracion-demo', integracionDemoRoutes);
+app.use('/api/pagos', pagoRoutes);
+
+// Simulador del financiador externo (CU66/CU69). Sin autenticación de la app:
+// representa al proveedor foráneo; exige su propia credencial X-Api-Key.
+app.post('/api/financiador-simulado/validar-bono', express.json(), pagoController.financiadorSimulado);
 
 module.exports = app;

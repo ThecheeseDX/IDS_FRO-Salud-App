@@ -476,6 +476,11 @@ INSERT INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id
 
 INSERT INTO Sede (nombre, estado_sede) VALUES ('Sede Principal', TRUE);
 
+-- CU66: financiadores con convenio para validación de bonos.
+INSERT INTO Financiador (nombre_institucion, rut_institucion, convenio_activo) VALUES
+('FONASA (simulado)', '61.603.000-0', TRUE),
+('ISAPRE Salud Plena (simulada)', '96.856.780-2', TRUE);
+
 -- CU46: catálogo inicial de la biblioteca de material terapéutico.
 -- El último recurso queda obsoleto a propósito, para probar la Excepción 4.
 INSERT INTO Material_Terapeutico (nombre, tipo, url_archivo, categoria, formato, disponibilidad) VALUES

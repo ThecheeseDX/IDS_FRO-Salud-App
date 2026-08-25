@@ -16,6 +16,7 @@ import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
 import MisPautasScreen from '../screens/Paciente/MisPautasScreen';
 import TriajeScreen from '../screens/Paciente/TriajeScreen';
+import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 // Pantallas — Profesional
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
@@ -77,6 +78,7 @@ export default function AppNavigator() {
             <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
             <Stack.Screen name="MisPautas" component={MisPautasScreen} options={{ title: 'Mis Ejercicios' }} />
             <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
+            <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
             <Stack.Screen
               name="BuscarCita"
               component={BuscarCitaScreen}
