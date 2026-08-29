@@ -67,7 +67,55 @@ async function validarOTP(usuarioId, codigoIngresado) {
   return { valido: true };
 }
 
-// ─ Transporte SMTP compartido ─
+// ─────────────────────────────────────────────────────────────────────────────
+//  ENTREGA DE CORREO — dos caminos según dónde corra el servidor
+// ─────────────────────────────────────────────────────────────────────────────
+// Render bloquea el tráfico saliente a los puertos SMTP (25, 465 y 587) en los
+// servicios gratuitos desde el 26/09/2025, así que Gmail directo NO funciona
+// en la nube: la conexión muere con ETIMEDOUT o ENETUNREACH. Por eso, cuando
+// hay BREVO_API_KEY el correo sale por HTTPS (puerto 443, nunca bloqueado) y
+// SMTP queda solo como respaldo para desarrollo local y planes de pago.
+
+function hayBrevo() {
+  return Boolean(process.env.BREVO_API_KEY);
+}
+
+// Remitente: el correo verificado en Brevo. Si no se define uno aparte, se
+// reutiliza SMTP_USER, que ya es el correo del proyecto.
+function remitente() {
+  return process.env.BREVO_SENDER || process.env.SMTP_USER || "";
+}
+
+// ─ Camino A: API HTTP de Brevo (funciona en Render gratuito) ─
+async function enviarPorBrevo({ destinatario, asunto, html }) {
+  const respuesta = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": process.env.BREVO_API_KEY,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "Fro Salud", email: remitente() },
+      to: [{ email: destinatario }],
+      subject: asunto,
+      htmlContent: html,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!respuesta.ok) {
+    // El cuerpo trae el motivo real (remitente no verificado, cuota agotada,
+    // clave inválida). Se propaga para que explicarErrorSMTP lo traduzca.
+    const detalle = await respuesta.text().catch(() => "");
+    const error = new Error(`Brevo respondió ${respuesta.status}: ${detalle}`);
+    error.responseCode = respuesta.status;
+    error.proveedor = "BREVO";
+    throw error;
+  }
+}
+
+// ─ Camino B: SMTP directo (desarrollo local o instancia de pago) ─
 function crearTransporter() {
   const nodemailer = require("nodemailer");
   return nodemailer.createTransport({
@@ -78,21 +126,35 @@ function crearTransporter() {
       user: process.env.SMTP_USER || "",
       pass: (process.env.SMTP_PASS || "").replace(/\s+/g, ""),
     },
+    // Forzar IPv4: varios hosts resuelven Gmail primero por IPv6 y, sin ruta
+    // IPv6, la conexión falla con ENETUNREACH antes de siquiera intentar.
+    family: 4,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 20000,
   });
 }
 
-// Envío genérico reutilizable (CU42: conformidad por correo, entre otros).
-async function enviarCorreo(destinatario, asunto, html) {
-  const transporter = crearTransporter();
-  await transporter.sendMail({
+async function enviarPorSMTP({ destinatario, asunto, html }) {
+  await crearTransporter().sendMail({
     from: `"Fro Salud" <${process.env.SMTP_USER}>`,
     to: destinatario,
     subject: asunto,
     html,
   });
+}
+
+// ─ Punto único de salida: elige el camino disponible ─
+async function entregarCorreo({ destinatario, asunto, html }) {
+  if (hayBrevo()) {
+    return enviarPorBrevo({ destinatario, asunto, html });
+  }
+  return enviarPorSMTP({ destinatario, asunto, html });
+}
+
+// Envío genérico reutilizable (CU42: conformidad por correo, entre otros).
+async function enviarCorreo(destinatario, asunto, html) {
+  await entregarCorreo({ destinatario, asunto, html });
 }
 
 // ─ Enviar OTP por Email 
@@ -106,16 +168,22 @@ async function enviarPorEmail(destinatario, codigo) {
   const enmascarar = (texto) =>
     texto.length <= 4 ? "****" : `${texto.slice(0, 2)}***${texto.slice(-2)}`;
 
-  console.log(
-    `[SMTP] host=${process.env.SMTP_HOST} port=${process.env.SMTP_PORT} ` +
-      `user=${enmascarar(usuarioSMTP)} (${usuarioSMTP.includes("@") ? "parece un correo" : "NO parece un correo"}) ` +
-      `pass=${claveSMTP ? `definida, ${claveSMTP.length} caracteres` : "NO DEFINIDA"}`
-  );
+  if (hayBrevo()) {
+    console.log(
+      `[CORREO] via Brevo (HTTPS) remitente=${enmascarar(remitente())} ` +
+        `(${remitente().includes("@") ? "parece un correo" : "NO parece un correo"})`
+    );
+  } else {
+    console.log(
+      `[CORREO] via SMTP directo host=${process.env.SMTP_HOST} port=${process.env.SMTP_PORT} ` +
+        `user=${enmascarar(usuarioSMTP)} (${usuarioSMTP.includes("@") ? "parece un correo" : "NO parece un correo"}) ` +
+        `pass=${claveSMTP ? `definida, ${claveSMTP.length} caracteres` : "NO DEFINIDA"}`
+    );
+  }
 
-  await crearTransporter().sendMail({
-    from: `"Fro Salud" <${process.env.SMTP_USER}>`,
-    to: destinatario,
-    subject: "Código de verificación - Fro Salud",
+  await entregarCorreo({
+    destinatario,
+    asunto: "Código de verificación - Fro Salud",
     html: `
       <div style="font-family:sans-serif;max-width:400px;margin:auto;padding:24px;
                   border:1px solid #e5e7eb;border-radius:8px;">
@@ -137,6 +205,25 @@ async function enviarPorEmail(destinatario, codigo) {
  */
 function explicarErrorSMTP(error) {
   const texto = `${error?.code || ""} ${error?.responseCode || ""} ${error?.message || ""}`;
+
+  // ── Camino Brevo (HTTPS) ──
+  if (hayBrevo()) {
+    if (/401|unauthorized|invalid.?api.?key/i.test(texto)) {
+      return "Brevo rechazó la clave de API. Revisa BREVO_API_KEY en el servidor.";
+    }
+    if (/sender|not valid|unrecognised|unrecognized/i.test(texto)) {
+      return `Brevo no reconoce el remitente ${remitente() || "(sin definir)"}. Verifica ese correo en Brevo → Senders.`;
+    }
+    if (/402|429|quota|limit|credits/i.test(texto)) {
+      return "Se agotó la cuota diaria de correos de Brevo (300 por día en el plan gratuito). Reintenta mañana.";
+    }
+    if (/aborted|timeout|fetch failed|ENOTFOUND/i.test(texto)) {
+      return "No se pudo contactar a Brevo. Puede ser un corte momentáneo de red del servidor.";
+    }
+    return "Brevo rechazó el envío del correo.";
+  }
+
+  // ── Camino SMTP directo ──
   const usuario = process.env.SMTP_USER || "";
   const clave = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
@@ -151,8 +238,10 @@ function explicarErrorSMTP(error) {
       ? `Gmail rechazó las credenciales. La contraseña configurada tiene ${clave.length} caracteres; una contraseña de aplicación tiene 16.`
       : "Gmail rechazó las credenciales. Verifica que la contraseña de aplicación siga vigente.";
   }
-  if (/ETIMEDOUT|ECONNECTION|ECONNREFUSED|timeout/i.test(texto)) {
-    return "No se pudo contactar al servidor de correo. Revisa SMTP_HOST y SMTP_PORT.";
+  // Render bloquea los puertos SMTP (25/465/587) en los servicios gratuitos:
+  // el síntoma es siempre este, y ninguna credencial lo arregla.
+  if (/ENETUNREACH|ETIMEDOUT|ECONNECTION|ECONNREFUSED|timeout/i.test(texto)) {
+    return "El servidor no puede abrir conexiones SMTP salientes (típico de Render en plan gratuito, que bloquea los puertos 25, 465 y 587). Configura BREVO_API_KEY para enviar por HTTPS, o usa una instancia de pago.";
   }
   if (/EENVELOPE|no recipients|Invalid recipient/i.test(texto)) {
     return "La dirección de destino fue rechazada por el servidor de correo.";
@@ -160,4 +249,4 @@ function explicarErrorSMTP(error) {
   return "El servidor de correo rechazó el envío.";
 }
 
-module.exports = { crearOTP, validarOTP, enviarPorEmail, enviarCorreo, explicarErrorSMTP };
+module.exports = { crearOTP, validarOTP, enviarPorEmail, enviarCorreo, entregarCorreo, explicarErrorSMTP };
