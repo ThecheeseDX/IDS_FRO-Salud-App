@@ -3,6 +3,12 @@ const dotenv = require('dotenv');
 // Cargar variables de entorno antes que cualquier módulo que las use
 dotenv.config();
 
+// Zona horaria del servidor. En la nube el contenedor arranca en UTC, y eso
+// desplazaba todas las horas de las citas (una cita de 08:00 se mostraba a las
+// 05:00). Las fechas de la base son hora de pared chilena, así que el proceso
+// debe razonar en ese mismo huso, incluido el cambio de horario de verano.
+process.env.TZ = process.env.TZ || 'America/Santiago';
+
 const app = require('./src/app');
 
 // Requerir la configuración de la base de datos para forzar la validación de conexión al arrancar

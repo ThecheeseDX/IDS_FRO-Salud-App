@@ -15,6 +15,7 @@ import { validateRut } from '../../utils/validators';
 import apiClient from '../../api/client';
 import { Platform } from 'react-native';
 import VistaConTeclado from '../../components/VistaConTeclado'; 
+import { obtenerDispositivoId, nombreDispositivo } from '../../utils/dispositivo';
 
 export default function LoginScreen({ navigation }) {
   // --- ESTADOS LOCALES ---
@@ -49,8 +50,11 @@ export default function LoginScreen({ navigation }) {
 
     try {
       const response = await apiClient.post('/auth/login', {
-        // CU08: el nombre del dispositivo aparece en "Sesiones activas".
-        dispositivo: Platform.OS === 'ios' ? 'iPhone (app móvil)' : 'Android (app móvil)',
+        // CU08: el nombre del dispositivo aparece en "Sesiones activas", y el
+        // identificador evita que reingresar desde este mismo teléfono sume
+        // una sesión nueva en vez de reemplazar la anterior.
+        dispositivo: nombreDispositivo(),
+        dispositivo_id: await obtenerDispositivoId(),
         rut: rut,
         contrasena: password
       });

@@ -157,8 +157,28 @@ async function enviarCorreo(destinatario, asunto, html) {
   await entregarCorreo({ destinatario, asunto, html });
 }
 
-// ─ Enviar OTP por Email 
-async function enviarPorEmail(destinatario, codigo) {
+// ─ Enviar OTP por Email ─
+// El mismo código sirve para dos propósitos muy distintos, y el correo debe
+// decir cuál: recibir "Verificación de cuenta" cuando pediste recuperar tu
+// contraseña es confuso y parece phishing.
+const PLANTILLAS_OTP = {
+  VERIFICACION: {
+    asunto: "Código de verificación - Fro Salud",
+    titulo: "Verificación de cuenta",
+    bajada: "Ingresa este código en la aplicación para activar tu cuenta:",
+    cierre: "Si no creaste esta cuenta, ignora este correo.",
+  },
+  RECUPERACION: {
+    asunto: "Recuperación de contraseña - Fro Salud",
+    titulo: "Recuperación de contraseña",
+    bajada: "Ingresa este código en la aplicación para crear una contraseña nueva:",
+    cierre:
+      "Si no pediste recuperar tu contraseña, ignora este correo: tu contraseña actual sigue siendo válida.",
+  },
+};
+
+async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") {
+  const plantilla = PLANTILLAS_OTP[proposito] || PLANTILLAS_OTP.VERIFICACION;
 
   // Diagnóstico sin exponer secretos: del usuario solo se muestra lo justo
   // para reconocerlo, y de la contraseña únicamente su largo. Si alguna vez
@@ -170,12 +190,12 @@ async function enviarPorEmail(destinatario, codigo) {
 
   if (hayBrevo()) {
     console.log(
-      `[CORREO] via Brevo (HTTPS) remitente=${enmascarar(remitente())} ` +
+      `[CORREO] ${proposito} via Brevo (HTTPS) remitente=${enmascarar(remitente())} ` +
         `(${remitente().includes("@") ? "parece un correo" : "NO parece un correo"})`
     );
   } else {
     console.log(
-      `[CORREO] via SMTP directo host=${process.env.SMTP_HOST} port=${process.env.SMTP_PORT} ` +
+      `[CORREO] ${proposito} via SMTP directo host=${process.env.SMTP_HOST} port=${process.env.SMTP_PORT} ` +
         `user=${enmascarar(usuarioSMTP)} (${usuarioSMTP.includes("@") ? "parece un correo" : "NO parece un correo"}) ` +
         `pass=${claveSMTP ? `definida, ${claveSMTP.length} caracteres` : "NO DEFINIDA"}`
     );
@@ -183,26 +203,22 @@ async function enviarPorEmail(destinatario, codigo) {
 
   await entregarCorreo({
     destinatario,
-    asunto: "Código de verificación - Fro Salud",
+    asunto: plantilla.asunto,
     html: `
       <div style="font-family:sans-serif;max-width:400px;margin:auto;padding:24px;
                   border:1px solid #e5e7eb;border-radius:8px;">
-        <h2 style="color:#0f172a">Verificación de cuenta</h2>
-        <p style="color:#475569">Ingresa este código en la aplicación:</p>
+        <h2 style="color:#0f172a">${plantilla.titulo}</h2>
+        <p style="color:#475569">${plantilla.bajada}</p>
         <div style="font-size:36px;font-weight:bold;letter-spacing:8px;
                     color:#2563eb;text-align:center;padding:16px 0;">${codigo}</div>
         <p style="color:#94a3b8;font-size:13px">
           Expira en ${OTP_EXPIRACION_MINUTOS} minutos.<br/>
-          Si no solicitaste esto, ignora este correo.
+          ${plantilla.cierre}
         </p>
       </div>`,
   });
 }
 
-/**
- * Traduce un fallo de envío de correo a una explicación accionable.
- * No incluye credenciales: es seguro mostrarla o registrarla.
- */
 function explicarErrorSMTP(error) {
   const texto = `${error?.code || ""} ${error?.responseCode || ""} ${error?.message || ""}`;
 

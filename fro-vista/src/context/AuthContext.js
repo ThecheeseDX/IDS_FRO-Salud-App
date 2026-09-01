@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { setUnauthorizedHandler } from '../api/client';
 
@@ -35,7 +36,12 @@ export const AuthProvider = ({ children }) => {
     await SecureStore.setItemAsync('userData', JSON.stringify(usuario));
   };
 
-  const logoutSession = async () => {
+  /**
+   * Cierra la sesión localmente. Cuando el cierre lo provoca el servidor
+   * (motivo presente), se explica por qué: CU08 exige avisar al usuario que su
+   * sesión fue cerrada desde otro dispositivo, y antes se cerraba en silencio.
+   */
+  const logoutSession = async (motivo) => {
     // CU08: se avisa al servidor para que la sesión deje de figurar como
     // activa. Mejor esfuerzo: si falla, el cierre local ocurre igual.
     apiClient.post('/auth/logout').catch(() => {});
@@ -44,12 +50,23 @@ export const AuthProvider = ({ children }) => {
     setUserData(null);
     await SecureStore.deleteItemAsync('userToken');
     await SecureStore.deleteItemAsync('userData');
+
+    if (motivo) {
+      const esRevocada = motivo.codigo === 'SESION_REVOCADA';
+      Alert.alert(
+        esRevocada ? 'Sesión cerrada' : 'Sesión finalizada',
+        motivo.mensaje ||
+          (esRevocada
+            ? 'La sesión fue cerrada desde otro dispositivo. Inicia sesión nuevamente.'
+            : 'Tu sesión expiró. Inicia sesión nuevamente.')
+      );
+    }
   };
 
   // Registra logoutSession como handler del interceptor de Axios.
   // Si el servidor devuelve 401, se limpia estado + SecureStore juntos.
   useEffect(() => {
-    setUnauthorizedHandler(logoutSession);
+    setUnauthorizedHandler((motivo) => logoutSession(motivo));
   }, []);
 
   return (

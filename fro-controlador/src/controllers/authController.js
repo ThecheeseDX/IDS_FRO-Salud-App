@@ -454,7 +454,8 @@ exports.login = async (req, res) => {
             pool,
             usuario.usuario_id,
             req.body?.dispositivo,
-            req.ip
+            req.ip,
+            req.body?.dispositivo_id
         );
 
         const payload = {
@@ -491,7 +492,7 @@ exports.login = async (req, res) => {
 /** Busca al usuario, genera el OTP y lo envía. Compartido por CU06 y CU07. */
 async function despacharOTPRecuperacion(usuario) {
     const { codigo } = await crearOTP(usuario.usuario_id);
-    enviarPorEmail(usuario.email, codigo).catch((errorSMTP) => {
+    enviarPorEmail(usuario.email, codigo, 'RECUPERACION').catch((errorSMTP) => {
         console.error('[recuperacion] Error SMTP:', explicarErrorSMTP(errorSMTP));
     });
 }

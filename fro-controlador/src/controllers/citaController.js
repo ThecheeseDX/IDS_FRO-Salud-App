@@ -27,6 +27,19 @@ exports.obtenerEspecialidades = async (req, res) => {
   }
 };
 
+/**
+ * Formatea una fecha como texto DATETIME de MySQL usando la hora local del
+ * proceso (hora de pared chilena). No usar toISOString(): convierte a UTC y
+ * desplaza la hora.
+ */
+function aTextoSQL(fecha) {
+  const p = (n) => String(n).padStart(2, '0');
+  return (
+    `${fecha.getFullYear()}-${p(fecha.getMonth() + 1)}-${p(fecha.getDate())} ` +
+    `${p(fecha.getHours())}:${p(fecha.getMinutes())}:${p(fecha.getSeconds())}`
+  );
+}
+
 exports.buscarDisponibilidad = async (req, res) => {
   const { especialidad_id, tipo_sede, fecha } = req.query;
 
@@ -140,7 +153,9 @@ exports.validarBloque = async (req, res) => {
   try {
     const inicio       = new Date(fecha_hora_inicio);
     const fin          = new Date(inicio.getTime() + 60 * 60 * 1000);
-    const fechaHoraFin = fin.toISOString().slice(0, 19).replace('T', ' ');
+    // Hora de pared, no UTC: toISOString() desplazaba el término de la cita
+    // según el huso del servidor y hacía fallar la comparación contra la base.
+    const fechaHoraFin = aTextoSQL(fin);
 
     const [ocupadas] = await pool.query(
       `SELECT cita_id FROM Cita

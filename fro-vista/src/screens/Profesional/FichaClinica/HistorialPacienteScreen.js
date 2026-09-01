@@ -19,6 +19,27 @@ import apiClient, {
 } from '../../../api/client';
 import { AuthContext } from '../../../context/AuthContext';
 import DialogoMotivo from '../../../components/DialogoMotivo';
+// Las horas de la base son hora de pared: se formatean sin convertir huso.
+import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
+
+/**
+ * Arma la dirección del paciente para mostrarla en pantalla. El servidor
+ * devuelve los campos en NULL cuando el paciente ocultó su dirección (CU09),
+ * y en ese caso hay que explicarlo en vez de dejar el dato en blanco.
+ */
+function textoDireccion(paciente) {
+  if (!paciente) return 'No informada';
+  if (paciente.direccion_oculta) return 'Oculta por el paciente';
+
+  const calle = [paciente.calle, paciente.numero_calle].filter(Boolean).join(' ');
+  const partes = [
+    calle,
+    paciente.departamento ? `depto. ${paciente.departamento}` : null,
+    paciente.comuna,
+  ].filter(Boolean);
+
+  return partes.length > 0 ? partes.join(', ') : 'No informada';
+}
 
 export default function HistorialPacienteScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route.params;
@@ -355,18 +376,6 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
-  const formatearFecha = (fecha) => {
-    if (!fecha) return 'No informado';
-
-    return new Date(fecha).toLocaleString('es-CL', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <ScrollView 
       style={styles.container}
@@ -383,6 +392,9 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         <Text>ID paciente: {pacienteId}</Text>
         <Text>RUT: {paciente?.rut || 'No informado'}</Text>
         <Text>Sexo clínico: {paciente?.sexo_clinico || 'No informado'}</Text>
+        {/* CU09: la dirección es clave para las atenciones a domicilio, pero
+            el paciente puede haberla ocultado desde su configuración. */}
+        <Text>Dirección: {textoDireccion(paciente)}</Text>
       </View>
 
       <TouchableOpacity

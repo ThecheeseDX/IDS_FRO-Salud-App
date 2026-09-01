@@ -19,6 +19,8 @@ import {
 import apiClient from '../../api/client';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
+// Las horas de la base son hora de pared: se formatean sin convertir huso.
+import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
@@ -31,21 +33,6 @@ const COLOR_ESTADO = {
   CANCELADA: '#d32f2f',
   INASISTENCIA: '#d32f2f',
 };
-
-function formatearFecha(valor) {
-  if (!valor) return 'Fecha no informada';
-
-  const fecha = new Date(valor);
-  if (Number.isNaN(fecha.getTime())) return String(valor);
-
-  return fecha.toLocaleString('es-CL', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export default function MisCitasScreen({ navigation }) {
   const [citas, setCitas] = useState([]);

@@ -8,6 +8,11 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('./dbOptions');
 const url = urlConexion();
 
 const opcionesComunes = {
+  // Las columnas DATETIME guardan hora de pared chilena, sin huso. Si mysql2
+  // las convierte a objetos Date, Express las serializa como UTC y la app las
+  // vuelve a desplazar al mostrarlas: una cita de 08:00 terminaba en 05:00.
+  // Devolviéndolas como texto, la hora viaja intacta de la base a la pantalla.
+  dateStrings: true,
   waitForConnections: true,
   connectionLimit: Number(process.env.DB_POOL_LIMIT || 10),
   queueLimit: 0,

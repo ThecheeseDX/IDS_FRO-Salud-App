@@ -315,6 +315,8 @@ export default function BuscarCitaScreen({ navigation, route }) {
       {mostrarCalendario && (
         <DateTimePicker
           value={fechaSeleccionada ? new Date(`${fechaSeleccionada}T00:00:00`) : new Date()}
+          // No tiene sentido agendar hacia atrás: el calendario parte hoy.
+          minimumDate={new Date()}
           mode="date"
           display="default"
           onChange={(event, selectedDate) => {

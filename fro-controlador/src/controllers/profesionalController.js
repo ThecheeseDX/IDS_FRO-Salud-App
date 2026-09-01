@@ -117,9 +117,15 @@ exports.obtenerHistorialPaciente = async (req, res) => {
              THEN NULL ELSE p.numero_calle END AS numero_calle,
         CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
              THEN NULL ELSE p.departamento END AS departamento,
+        CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
+             THEN NULL ELSE co.nombre END AS comuna,
+        -- CU09: el paciente puede ocultar su dirección. La app necesita saber
+        -- si está oculta para explicarlo, en vez de mostrar un espacio vacío.
+        COALESCE(JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false, FALSE) AS direccion_oculta,
         p.comuna_id
       FROM Paciente p
       LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
+      LEFT JOIN Comuna co ON co.comuna_id = p.comuna_id
       WHERE p.paciente_id = ?
       LIMIT 1
       `,

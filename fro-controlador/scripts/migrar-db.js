@@ -259,6 +259,24 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Sesion_Usuario.dispositivo_id (CU08)',
+    descripcion: 'Identifica cada instalacion para que reingresar no acumule sesiones duplicadas',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Sesion_Usuario'
+            AND COLUMN_NAME = 'dispositivo_id'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Sesion_Usuario ADD COLUMN dispositivo_id VARCHAR(64)`
+      );
+    },
+  },
+  {
     nombre: 'Tablas de documentos y versiones (CU31/CU33)',
     descripcion: 'Crea Evolucion_Version (correcciones auditadas) y Documento_Clinico (repositorio multimedia)',
     yaAplicada: async (conexion, baseDatos) => {

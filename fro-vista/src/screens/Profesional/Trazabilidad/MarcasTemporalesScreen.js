@@ -19,14 +19,8 @@ import {
 } from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
-
-function formatearFecha(fecha) {
-  if (!fecha) return 'No registrada';
-  return new Date(fecha).toLocaleString('es-CL', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
-}
+// Las horas de la base son hora de pared: se formatean sin convertir huso.
+import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 
 function estadoNormalizado(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_');

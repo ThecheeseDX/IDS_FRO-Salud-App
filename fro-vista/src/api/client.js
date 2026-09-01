@@ -49,8 +49,18 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
 
     // 401: token expirado/inválido → logout global (vía AuthContext).
-    if (status === 401 && _onUnauthorized) {
-      _onUnauthorized();
+    //
+    // Solo aplica a peticiones que iban autenticadas: un login con contraseña
+    // equivocada también responde 401, y ahí no corresponde avisar que "la
+    // sesión fue cerrada" — no había ninguna sesión que cerrar.
+    const ibaAutenticada = Boolean(error.config?.headers?.Authorization);
+
+    if (status === 401 && ibaAutenticada && _onUnauthorized) {
+      const datos = error.response?.data || {};
+      _onUnauthorized({
+        codigo: datos.code || null,
+        mensaje: datos.error || datos.mensaje || null,
+      });
     }
 
     // ── CU70 Exc 3: el backend agotó los reintentos contra el proveedor externo (HTTP 503). ──

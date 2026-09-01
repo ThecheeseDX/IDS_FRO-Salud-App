@@ -29,13 +29,37 @@ function validarRobustezContrasena(contrasena) {
 //  CU08 — Sesiones por dispositivo
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Crea el registro de sesión y devuelve su identificador para el JWT. */
-async function crearSesion(conexion, usuario_id, dispositivo, ip) {
+/**
+ * Crea el registro de sesión y devuelve su identificador para el JWT.
+ *
+ * Cada instalación de la app manda un dispositivo_id estable. Volver a entrar
+ * desde el mismo teléfono cierra la sesión anterior de ese dispositivo en vez
+ * de acumular una fila nueva, que era lo que llenaba la lista de "sesiones
+ * activas" con entradas repetidas de la misma IP. Sin dispositivo_id (app
+ * antigua) se mantiene el comportamiento previo.
+ */
+async function crearSesion(conexion, usuario_id, dispositivo, ip, dispositivo_id) {
+  const idDispositivo = dispositivo_id ? String(dispositivo_id).slice(0, 64) : null;
+
+  if (idDispositivo) {
+    await conexion.execute(
+      `UPDATE Sesion_Usuario SET activa = FALSE
+        WHERE usuario_id = ? AND dispositivo_id = ? AND activa = TRUE`,
+      [usuario_id, idDispositivo]
+    );
+  }
+
   const jti = crypto.randomUUID();
   await conexion.execute(
-    `INSERT INTO Sesion_Usuario (jti, dispositivo, ip_origen, usuario_id)
-     VALUES (?, ?, ?, ?)`,
-    [jti, String(dispositivo || 'Dispositivo desconocido').slice(0, 120), ip || null, usuario_id]
+    `INSERT INTO Sesion_Usuario (jti, dispositivo, dispositivo_id, ip_origen, usuario_id)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      jti,
+      String(dispositivo || 'Dispositivo desconocido').slice(0, 120),
+      idDispositivo,
+      ip || null,
+      usuario_id,
+    ]
   );
   return jti;
 }

@@ -68,6 +68,7 @@ CREATE TABLE Sesion_Usuario (
     sesion_usuario_id INT PRIMARY KEY AUTO_INCREMENT,
     jti CHAR(36) NOT NULL UNIQUE,
     dispositivo VARCHAR(120),
+    dispositivo_id VARCHAR(64),
     ip_origen VARCHAR(45),
     momento_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activa BOOLEAN DEFAULT TRUE,
