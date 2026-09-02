@@ -513,6 +513,17 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   <Text>Especialidad: {item.especialidad}</Text>
                   <Text>Modalidad: {iconoModalidad(item.modalidad)} {etiquetaModalidad(item.modalidad)}</Text>
 
+                  {Number(item.es_propia) !== 1 ? (
+                    // Cita con otro profesional: se ve para tener la agenda
+                    // completa del paciente, pero la gestiona ese profesional.
+                    <View style={styles.cajaAjena}>
+                      <Text style={styles.textoAjena}>
+                        🔒 Bloqueado: esta hora es con otro profesional ({item.especialidad}).
+                        Solo ese profesional puede confirmarla, iniciarla o cancelarla.
+                      </Text>
+                    </View>
+                  ) : (
+                  <>
                   {/* PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
                   <View style={styles.containerAcciones}>
                     
@@ -614,6 +625,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   <TouchableOpacity onPress={() => verTrazabilidad(item.cita_id)}>
                     <Text style={styles.enlaceTrazabilidad}>📜 Ver trazabilidad de la cita</Text>
                   </TouchableOpacity>
+                  </>
+                  )}
                 </View>
               );
             })
@@ -951,6 +964,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 10,
   },
+  cajaAjena: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+  },
+  textoAjena: { color: '#4b5563', fontSize: 13, lineHeight: 18 },
   textoTerminal: {
     color: '#6b7280',
     fontSize: 13,

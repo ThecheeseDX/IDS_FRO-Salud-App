@@ -143,19 +143,20 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         -- la modalidad heredan la del profesional (salvo AMBOS, que no dice nada).
         COALESCE(c.modalidad, NULLIF(pr.tipo_sede, 'AMBOS')) AS modalidad,
         COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno), 'Profesional no registrado') AS profesional,
-        COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad
+        COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad,
+        -- Las citas con OTROS profesionales se listan para que la agenda del
+        -- paciente se vea completa, pero solo las propias se pueden gestionar:
+        -- la app bloquea los botones de las ajenas y el servidor rechaza
+        -- cualquier transicion sobre ellas (403 CITA_AJENA).
+        (pr.usuario_id = ?) AS es_propia
       FROM Cita c
       LEFT JOIN Profesional pr ON pr.profesional_id = c.profesional_id
       LEFT JOIN Usuario u ON u.usuario_id = pr.usuario_id
       LEFT JOIN Especialidad e ON e.especialidad_id = pr.especialidad_id
       WHERE c.paciente_id = ?
-        -- Cada profesional ve y gestiona solo sus propias citas con el
-        -- paciente; las de otros profesionales (otra especialidad) no le
-        -- corresponden. El resto de la ficha clinica sigue siendo compartido.
-        AND pr.usuario_id = ?
       ORDER BY c.fecha_hora_inicio DESC
       `,
-      [pacienteId, usuarioId]
+      [usuarioId, pacienteId]
     );
 
     const [episodios] = await db.query(

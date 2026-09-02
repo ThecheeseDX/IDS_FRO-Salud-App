@@ -48,9 +48,22 @@ app.get('/api/health', (req, res) => {
 app.get('/api/diagnostico', (req, res) => {
     const definida = (clave) => Boolean(process.env[clave]);
 
+    const ahora = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    // Render expone el commit desplegado en RENDER_GIT_COMMIT: con esto se
+    // sabe de inmediato si un cambio ya está vivo o si el despliegue aún no
+    // termina (los free tier tardan varios minutos y arrancan en frío).
+    const { ARBOL_TRIAJE } = require('./services/clinico/triajeService');
+
     res.status(200).json({
+        version: {
+            commit: (process.env.RENDER_GIT_COMMIT || 'desconocido (fuera de Render)').slice(0, 8),
+            rama: process.env.RENDER_GIT_BRANCH || null,
+        },
         zona_horaria: process.env.TZ || '(no definida)',
-        hora_servidor: new Date().toLocaleString('es-CL'),
+        hora_servidor: `${p(ahora.getDate())}/${p(ahora.getMonth() + 1)}/${ahora.getFullYear()} ${p(ahora.getHours())}:${p(ahora.getMinutes())}`,
+        // Preguntas vivas de la entrevista previa (solo sus identificadores).
+        entrevista_previa: { preguntas: Object.keys(ARBOL_TRIAJE.nodos) },
         base_de_datos: {
             // Una u otra forma de configuración basta.
             configurada: definida('DATABASE_URL') || definida('DB_HOST'),
