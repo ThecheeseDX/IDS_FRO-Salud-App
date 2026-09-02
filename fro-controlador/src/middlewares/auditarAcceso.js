@@ -16,10 +16,10 @@ const pool = require('../config/database');
  * El orden importa: se evalúa de arriba abajo y gana la primera coincidencia.
  */
 const ENTIDADES_AUDITABLES = [
-    { fragmento: '/ficha',     sufijo: 'FICHA_CLINICA' },
-    { fragmento: '/episodio',  sufijo: 'EPISODIO_CLINICO' },
-    { fragmento: '/evolucion', sufijo: 'EVOLUCION_CLINICA' },
-    { fragmento: '/pautas',    sufijo: 'PAUTA_EJERCICIO' },
+    { fragmento: '/ficha',     sufijo: 'FICHA_CLINICA',     tabla: 'Ficha_Clinica' },
+    { fragmento: '/episodio',  sufijo: 'EPISODIO_CLINICO',  tabla: 'Episodio_Clinico' },
+    { fragmento: '/evolucion', sufijo: 'EVOLUCION_CLINICA', tabla: 'Evolucion_Clinica' },
+    { fragmento: '/pautas',    sufijo: 'PAUTA_EJERCICIO',   tabla: 'Pauta_Ejercicio' },
 ];
 
 const VERBOS = {
@@ -29,14 +29,24 @@ const VERBOS = {
     DELETE: 'ELIMINACION',
 };
 
-function detectarAccion(req) {
+/**
+ * Devuelve { accion, entidad } en una sola búsqueda, o null si la ruta no está
+ * registrada (Excepción 1).
+ *
+ * Antes esto se resolvía en DOS lugares: aquí se derivaba la acción y más
+ * abajo, en otra cadena de ifs, la entidad. Al agregar /pautas solo en el
+ * primero, la petición pasaba el filtro inicial y moría en el segundo con
+ * "Entidad no clasificable" y un HTTP 500. Con una sola tabla, las dos cosas
+ * no pueden volver a quedar desincronizadas.
+ */
+function clasificarEvento(req) {
     const verbo = VERBOS[req.method];
     if (!verbo) return null;
 
     const entidad = ENTIDADES_AUDITABLES.find((e) => req.path.includes(e.fragmento));
     if (!entidad) return null; // Excepción 1
 
-    return `${verbo}_${entidad.sufijo}`;
+    return { accion: `${verbo}_${entidad.sufijo}`, entidad: entidad.tabla };
 }
 
 function obtenerIP(req) {
@@ -50,7 +60,8 @@ function obtenerIP(req) {
 async function auditarAccesoClinico(req, res, next) {
     const usuario_id = req.user?.usuario_id || null;
     const ip_origen = obtenerIP(req);
-    const accion = detectarAccion(req);
+    const evento = clasificarEvento(req);
+    const accion = evento?.accion;
 
     // Excepción 1: acción no reconocida
     if (!accion) {
@@ -72,15 +83,15 @@ async function auditarAccesoClinico(req, res, next) {
         });
     }
 
-    // Excepción 2: falla al clasificar el evento
-    let entidad_afectada;
-    try {
-        if (accion.includes('FICHA')) entidad_afectada = 'Ficha_Clinica';
-        else if (accion.includes('EPISODIO')) entidad_afectada = 'Episodio_Clinico';
-        else if (accion.includes('EVOLUCION')) entidad_afectada = 'Evolucion_Clinica';
-        else throw new Error('Entidad no clasificable');
-    } catch (errorClasificacion) {
-        console.error('[CU13] Error clasificando evento:', errorClasificacion);
+    // Excepción 2: falla al clasificar el evento. La entidad ya viene resuelta
+    // desde ENTIDADES_AUDITABLES junto con la acción, así que llegar acá sin
+    // ella significaría una tabla mal formada, no una ruta desconocida.
+    const entidad_afectada = evento?.entidad;
+    if (!entidad_afectada) {
+        console.error(
+            `[CU13] Entidad sin definir para ${req.method} ${req.path}. ` +
+            'Revisa que su fila de ENTIDADES_AUDITABLES tenga "tabla".'
+        );
         return res.status(500).json({
             error: 'ERROR_CLASIFICACION_EVENTO',
             mensaje: 'El sistema no pudo clasificar el tipo de evento. Recarga el módulo e intenta nuevamente.'
