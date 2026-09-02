@@ -8,7 +8,7 @@
 // El binario del archivo vive en Cloudinary; la base guarda URL y metadatos.
 
 const pool = require('../../config/database');
-const { cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
+const { cloudinary, cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
 const { leerParametroEntero } = require('../../services/agenda/agendaService');
 
 // ── Taxonomía de categorías (CU34) ───────────────────────────────────────────
@@ -187,11 +187,12 @@ exports.subirDocumento = async (req, res) => {
     const [resultado] = await pool.query(
       `INSERT INTO Documento_Clinico
          (nombre_original, categoria, formato, tamano_bytes, tipo_recurso,
-          url_publica, public_id_cloud, paciente_id, episodio_clinico_id, profesional_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          url_publica, public_id_cloud, paginas, paciente_id, episodio_clinico_id, profesional_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         nombreOriginal, categoria, extension, req.file.size,
         subida.resource_type, subida.secure_url, subida.public_id,
+        subida.pages || null,
         pacienteId, episodioId, profesionales[0].profesional_id,
       ]
     );
@@ -328,7 +329,7 @@ exports.verDocumento = async (req, res) => {
 
     const [[documento]] = await pool.query(
       `SELECT documento_id, nombre_original, categoria, formato, tipo_recurso,
-              url_publica, tamano_bytes, fecha_carga, paciente_id
+              url_publica, public_id_cloud, paginas, tamano_bytes, fecha_carga, paciente_id
          FROM Documento_Clinico WHERE documento_id = ? LIMIT 1`,
       [id]
     );
@@ -346,14 +347,54 @@ exports.verDocumento = async (req, res) => {
     }
 
     // El tipo de visor le dice a la app cómo renderizar sin descargar:
-    // imagen → componente Image; pdf/video → visor web embebido.
+    // imagen → componente Image; video → visor web embebido; pdf → cada
+    // página convertida a imagen por Cloudinary. Esto último reemplaza al
+    // visor de Google, que mostraba "no hay vista previa": las cuentas nuevas
+    // de Cloudinary bloquean la entrega del PDF original, pero sí entregan sus
+    // páginas como JPG, así que la vista previa funciona igual.
     let visor = 'imagen';
     if (documento.formato === 'pdf') visor = 'pdf';
     else if (['mp4', 'mov'].includes(documento.formato)) visor = 'video';
 
+    let paginasUrls = [];
+    if (visor === 'pdf') {
+      let paginas = documento.paginas;
+      // Documentos cargados antes de guardar el número de páginas: se consulta
+      // una vez a Cloudinary y se persiste para no volver a preguntar.
+      if (!paginas) {
+        try {
+          const recurso = await cloudinary.api.resource(documento.public_id_cloud, {
+            resource_type: documento.tipo_recurso || 'image', pages: true,
+          });
+          paginas = recurso.pages || 1;
+          await pool.query(`UPDATE Documento_Clinico SET paginas = ? WHERE documento_id = ?`, [paginas, id]);
+        } catch (errorNube) {
+          console.error('[verDocumento] sin conteo de páginas:', errorNube.message);
+          paginas = 1;
+        }
+      }
+      for (let n = 1; n <= Math.min(paginas, 60); n++) {
+        paginasUrls.push(
+          cloudinary.url(documento.public_id_cloud, {
+            resource_type: 'image', page: n, format: 'jpg',
+            width: 1200, crop: 'limit', quality: 'auto', secure: true,
+          })
+        );
+      }
+      documento.paginas = paginas;
+    }
+
+    // Enlace para abrir/descargar el archivo original en el navegador del
+    // teléfono. Para PDF requiere habilitar en Cloudinary (Settings → Security)
+    // "Allow delivery of PDF and ZIP files"; imágenes y videos salen siempre.
+    const urlDescarga = cloudinary.url(documento.public_id_cloud, {
+      resource_type: documento.tipo_recurso || 'image', flags: 'attachment', secure: true,
+    });
+
     await auditar(req, 'VISUALIZACION_DOCUMENTO', { documento_id: id });
 
-    res.json({ ok: true, documento: { ...documento, visor } });
+    const { public_id_cloud, ...publico } = documento;
+    res.json({ ok: true, documento: { ...publico, visor, paginas_urls: paginasUrls, url_descarga: urlDescarga } });
   } catch (error) {
     console.error('[verDocumento]', error);
     res.status(500).json({ error: 'Error interno al preparar el visor.' });

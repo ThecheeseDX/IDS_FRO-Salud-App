@@ -13,6 +13,9 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
+  Linking,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -86,12 +89,19 @@ export default function VisorDocumentoScreen({ route }) {
     );
   }
 
-  // Android no renderiza PDF nativo en WebView: se incrusta el visor de
-  // documentos de Google apuntando a la URL pública del repositorio.
-  const urlVisor =
-    documento.visor === 'pdf'
-      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(documento.url_publica)}`
-      : documento.url_publica;
+  // Abrir/descargar el original con el navegador del teléfono. Para un PDF
+  // depende de que Cloudinary tenga habilitada la entrega de PDF; si no, el
+  // navegador mostrará un error de acceso.
+  const abrirOriginal = async () => {
+    const url = documento.url_descarga || documento.url_publica;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('No se pudo abrir', 'El teléfono no pudo abrir el enlace del archivo.');
+    }
+  };
+
+  const urlVisor = documento.url_publica;
 
   return (
     <View style={estilos.contenedor}>
@@ -101,12 +111,34 @@ export default function VisorDocumentoScreen({ route }) {
         </Text>
         <Text style={estilos.detalle}>
           {documento.formato?.toUpperCase()} ·{' '}
-          {formatearFecha(documento.fecha_carga)} · solo
-          visualización
+          {formatearFecha(documento.fecha_carga)}
+          {documento.visor === 'pdf' && documento.paginas ? ` · ${documento.paginas} página(s)` : ''}
+          {' '}· solo visualización
         </Text>
+        <TouchableOpacity style={estilos.botonOriginal} onPress={abrirOriginal}>
+          <Text style={estilos.botonOriginalTexto}>⬇️ Abrir / descargar original</Text>
+        </TouchableOpacity>
       </View>
 
-      {documento.visor === 'imagen' ? (
+      {documento.visor === 'pdf' ? (
+        // PDF: cada página llega como imagen desde el repositorio. No usa el
+        // visor de Google, que mostraba "no hay vista previa".
+        <ScrollView key={claveVisor} contentContainerStyle={estilos.paginas}>
+          {(documento.paginas_urls || []).map((url, i) => (
+            <View key={url} style={estilos.pagina}>
+              <Image
+                source={{ uri: url }}
+                style={estilos.imagenPagina}
+                resizeMode="contain"
+                onError={() => i === 0 && setErrorVisor(true)}
+              />
+              <Text style={estilos.numeroPagina}>
+                Página {i + 1}{documento.paginas ? ` de ${documento.paginas}` : ''}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      ) : documento.visor === 'imagen' ? (
         <Image
           key={claveVisor}
           source={{ uri: documento.url_publica }}
@@ -144,6 +176,22 @@ const estilos = StyleSheet.create({
 
   imagen: { flex: 1 },
   web: { flex: 1 },
+
+  botonOriginal: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#9aa4b2',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  botonOriginalTexto: { color: '#e5e7eb', fontSize: 12, fontWeight: '600' },
+
+  paginas: { padding: 8, paddingBottom: 30 },
+  pagina: { marginBottom: 12 },
+  imagenPagina: { width: '100%', aspectRatio: 0.7071, backgroundColor: '#fff', borderRadius: 4 },
+  numeroPagina: { color: '#9aa4b2', fontSize: 11, textAlign: 'center', marginTop: 4 },
 
   codigoError: { fontWeight: 'bold', color: '#d32f2f', fontSize: 16, marginBottom: 6 },
   textoError: { color: '#555', textAlign: 'center', marginBottom: 16 },

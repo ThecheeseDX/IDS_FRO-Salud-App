@@ -712,7 +712,15 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                 </Text>
                 <Text>Hora firma: {formatearFecha(item.hora_firma_digital)}</Text>
 
-                {/* CU31: correcciones versionadas solo sobre registros cerrados */}
+                {/* CU31: correcciones versionadas solo sobre registros cerrados.
+                    En un registro abierto se explica dónde cerrarlo: el botón
+                    "vivía" en otra pantalla y nadie lograba encontrarlo. */}
+                {item.inalterable !== 1 && (
+                  <Text style={styles.pistaCorreccion}>
+                    ✏️ Registro abierto: se edita directo. Las correcciones versionadas se
+                    habilitan al cerrarlo y firmarlo en Trazabilidad → Inalterabilidad.
+                  </Text>
+                )}
                 {item.inalterable === 1 && (
                   <View style={styles.filaVersiones}>
                     <TouchableOpacity
@@ -881,6 +889,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   enlaceVersiones: { color: '#0052cc', fontWeight: '600', fontSize: 13 },
+  pistaCorreccion: { color: '#6b7280', fontSize: 12, fontStyle: 'italic', marginTop: 8 },
   enlaceCorreccion: { color: '#2e7d32', fontWeight: '600', fontSize: 13 },
   cajaVersiones: {
     marginTop: 8,

@@ -415,6 +415,21 @@ const MIGRACIONES = [
       );
     },
   },
+  {
+    nombre: 'Documento_Clinico.paginas (CU35)',
+    descripcion: 'Cantidad de paginas de los PDF para el visor pagina a pagina',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Documento_Clinico' AND COLUMN_NAME = 'paginas'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Documento_Clinico ADD COLUMN paginas INT NULL`);
+    },
+  },
 ];
 
 /**

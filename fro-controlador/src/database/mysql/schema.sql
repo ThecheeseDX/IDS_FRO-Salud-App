@@ -291,6 +291,8 @@ CREATE TABLE Documento_Clinico (
     tipo_recurso VARCHAR(10) NOT NULL,
     url_publica VARCHAR(500) NOT NULL,
     public_id_cloud VARCHAR(255) NOT NULL,
+    -- CU35: páginas de un PDF, para mostrarlo página a página como imágenes.
+    paginas INT NULL,
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     paciente_id INT NOT NULL,
     episodio_clinico_id INT,
