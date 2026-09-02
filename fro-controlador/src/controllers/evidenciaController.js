@@ -286,6 +286,23 @@ exports.validarSesion = async (req, res) => {
       });
     }
 
+    // Una sesión se certifica una sola vez. Antes la certificación quedaba
+    // solo en la bitácora, así que ni la app ni este endpoint sabían que ya
+    // estaba hecha y el botón "Validar sesión" seguía apareciendo.
+    const [[yaCertificada]] = await pool.query(
+      `SELECT sesion_certificada_en, certificacion_tipo FROM Cita WHERE cita_id = ? LIMIT 1`,
+      [id]
+    );
+    if (yaCertificada?.sesion_certificada_en) {
+      return res.status(409).json({
+        error: 'SESION_YA_CERTIFICADA',
+        certificada: true,
+        sesion_certificada_en: yaCertificada.sesion_certificada_en,
+        certificacion_tipo: yaCertificada.certificacion_tipo,
+        mensaje: 'Esta sesión ya fue validada; no se puede certificar dos veces.',
+      });
+    }
+
     const evidencia = parsearJSON(cita.evidencia_presencial) || {};
     const tolerancia = await leerParametroEntero(pool, 'TOLERANCIA_MULTIFACTOR_MINUTOS', 15);
     const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 200);
@@ -373,6 +390,12 @@ exports.validarSesion = async (req, res) => {
         mensaje: 'Revisa el resumen de factores y confirma para certificar la sesión.',
       });
     }
+
+    // Persistir en la cita (la bitácora sigue guardando el detalle de factores).
+    await pool.query(
+      `UPDATE Cita SET sesion_certificada_en = NOW(), certificacion_tipo = ? WHERE cita_id = ?`,
+      [cierreManual ? 'MANUAL' : 'MULTIFACTOR', id]
+    );
 
     await auditar(req, cierreManual ? 'SESION_CERTIFICADA_MANUAL' : 'SESION_CERTIFICADA', {
       cita_id: Number(id),

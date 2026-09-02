@@ -395,6 +395,26 @@ const MIGRACIONES = [
       );
     },
   },
+  {
+    nombre: 'Cita.sesion_certificada_en (CU41)',
+    descripcion: 'Persiste en la cita cuando y como se certifico la sesion',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Cita'
+            AND COLUMN_NAME = 'sesion_certificada_en'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Cita
+           ADD COLUMN sesion_certificada_en DATETIME NULL,
+           ADD COLUMN certificacion_tipo VARCHAR(20) NULL`
+      );
+    },
+  },
 ];
 
 /**

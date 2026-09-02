@@ -289,6 +289,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
       if (data.certificada) {
         Alert.alert('Sesión certificada', `${data.mensaje}\n\n${textoFactores(data.factores)}`);
+        // Refresca la lista para que el botón dé paso a "Sesión validada".
+        cargarHistorial(true);
         return;
       }
 
@@ -605,9 +607,17 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   {/* CU41 + CU42: cierre certificado de sesiones realizadas */}
                   {estadoCita === 'REALIZADA' && (
                     <View style={styles.filaCierre}>
-                      <TouchableOpacity onPress={() => validarSesion(item.cita_id)}>
-                        <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
-                      </TouchableOpacity>
+                      {item.sesion_certificada_en ? (
+                        // Ya certificada: se informa y el botón desaparece.
+                        <Text style={styles.textoCertificada}>
+                          ✅ Sesión validada el {formatearFecha(item.sesion_certificada_en)}
+                          {item.certificacion_tipo === 'MANUAL' ? ' (cierre manual)' : ''}
+                        </Text>
+                      ) : (
+                        <TouchableOpacity onPress={() => validarSesion(item.cita_id)}>
+                          <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         onPress={() =>
                           navigation.navigate('FirmaConformidad', {
@@ -964,6 +974,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 10,
   },
+  textoCertificada: { color: '#2e7d32', fontWeight: '600', fontSize: 13 },
   cajaAjena: {
     backgroundColor: '#f3f4f6',
     borderWidth: 1,

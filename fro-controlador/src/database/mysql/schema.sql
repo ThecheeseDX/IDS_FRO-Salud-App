@@ -405,6 +405,11 @@ CREATE TABLE Cita(
     firma_conformidad_url VARCHAR(255),
     -- CU42: trazos de la firma manuscrita, o el rechazo/envío por correo
     firma_conformidad_datos JSON,
+    -- CU41: momento y tipo de certificación multi-factor (NULL = sin validar).
+    -- Antes solo quedaba en la bitácora y la app no podía saber que ya estaba
+    -- hecha: el botón "Validar sesión" seguía apareciendo.
+    sesion_certificada_en DATETIME NULL,
+    certificacion_tipo VARCHAR(20) NULL,
     metadatos_teleconsulta JSON,
     paciente_id INT NOT NULL,
     profesional_id INT NOT NULL,

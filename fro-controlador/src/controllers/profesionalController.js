@@ -142,6 +142,8 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         -- Modalidad real de la cita. Las citas anteriores a que se guardara
         -- la modalidad heredan la del profesional (salvo AMBOS, que no dice nada).
         COALESCE(c.modalidad, NULLIF(pr.tipo_sede, 'AMBOS')) AS modalidad,
+        c.sesion_certificada_en,
+        c.certificacion_tipo,
         COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno), 'Profesional no registrado') AS profesional,
         COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad,
         -- Las citas con OTROS profesionales se listan para que la agenda del
