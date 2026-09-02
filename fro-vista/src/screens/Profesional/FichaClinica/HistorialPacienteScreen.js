@@ -618,16 +618,35 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                           <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate('FirmaConformidad', {
-                            citaId: item.cita_id,
-                            nombrePaciente,
-                          })
-                        }
-                      >
-                        <Text style={styles.enlaceEvidencia}>✍️ Firma de conformidad</Text>
-                      </TouchableOpacity>
+                      {item.firma_tipo === 'FIRMA' ? (
+                        // Firmada: queda bloqueada, igual que la validación.
+                        <Text style={styles.textoCertificada}>
+                          ✅ Firma verificada el {formatearFecha(item.firma_momento)}
+                        </Text>
+                      ) : (
+                        <View>
+                          {item.firma_tipo === 'RECHAZO' && (
+                            <Text style={styles.textoPendienteFirma}>
+                              ⛔ Firma rechazada el {formatearFecha(item.firma_momento)}
+                            </Text>
+                          )}
+                          {item.firma_tipo === 'CONFORMIDAD_POR_CORREO' && (
+                            <Text style={styles.textoPendienteFirma}>
+                              📧 Enviada por correo el {formatearFecha(item.firma_momento)}
+                            </Text>
+                          )}
+                          <TouchableOpacity
+                            onPress={() =>
+                              navigation.navigate('FirmaConformidad', {
+                                citaId: item.cita_id,
+                                nombrePaciente,
+                              })
+                            }
+                          >
+                            <Text style={styles.enlaceEvidencia}>✍️ Firma de conformidad</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   )}
 
@@ -975,6 +994,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   textoCertificada: { color: '#2e7d32', fontWeight: '600', fontSize: 13 },
+  textoPendienteFirma: { color: '#b45309', fontSize: 12, marginBottom: 4 },
   cajaAjena: {
     backgroundColor: '#f3f4f6',
     borderWidth: 1,

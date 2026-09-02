@@ -144,6 +144,10 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         COALESCE(c.modalidad, NULLIF(pr.tipo_sede, 'AMBOS')) AS modalidad,
         c.sesion_certificada_en,
         c.certificacion_tipo,
+        -- CU42: estado de la conformidad para que la app bloquee el boton una
+        -- vez firmada (tipo FIRMA) y muestre rechazo o envio por correo.
+        JSON_UNQUOTE(JSON_EXTRACT(c.firma_conformidad_datos, '$.tipo')) AS firma_tipo,
+        JSON_UNQUOTE(JSON_EXTRACT(c.firma_conformidad_datos, '$.momento')) AS firma_momento,
         COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno), 'Profesional no registrado') AS profesional,
         COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad,
         -- Las citas con OTROS profesionales se listan para que la agenda del
