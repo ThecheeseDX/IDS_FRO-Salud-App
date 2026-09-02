@@ -99,29 +99,85 @@ const MIGRACIONES = [
   {
     nombre: 'Pauta_Ejercicio con parametros de carga (CU47)',
     descripcion: 'Agrega id propio, series, repeticiones, frecuencia y material a cada ejercicio',
+    // Antes esto era un unico ALTER TABLE gigante. Si cualquier parte fallaba
+    // (por ejemplo, no habia PRIMARY KEY que borrar) se perdia el ALTER
+    // completo, la tabla quedaba sin ninguna columna nueva y las consultas de
+    // pautas reventaban en produccion con un 500. Ahora cada columna se agrega
+    // por separado y un paso que falle no arrastra a los demas.
     yaAplicada: async (conexion, baseDatos) => {
       const [filas] = await conexion.query(
-        `SELECT 1 FROM information_schema.COLUMNS
+        `SELECT COUNT(*) AS total FROM information_schema.COLUMNS
           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Pauta_Ejercicio'
-            AND COLUMN_NAME = 'pauta_ejercicio_id'`,
+            AND COLUMN_NAME IN ('pauta_ejercicio_id', 'series', 'repeticiones',
+                                'frecuencia', 'material_terapeutico_id')`,
         [baseDatos]
       );
-      return filas.length > 0;
+      return filas[0].total === 5;
     },
-    aplicar: async (conexion) => {
-      await conexion.query(
-        `ALTER TABLE Pauta_Ejercicio
-           DROP PRIMARY KEY,
-           ADD COLUMN pauta_ejercicio_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST,
-           ADD COLUMN series INT NOT NULL DEFAULT 1,
-           ADD COLUMN repeticiones INT NOT NULL DEFAULT 1,
-           ADD COLUMN frecuencia VARCHAR(20) NOT NULL DEFAULT 'DIARIA',
-           ADD COLUMN material_terapeutico_id INT NULL,
-           ADD UNIQUE KEY uq_pauta_nombre (pauta_tratamiento_id, nombre_ejercicio),
-           ADD CONSTRAINT fk_pauta_ejercicio_material
-             FOREIGN KEY (material_terapeutico_id)
-             REFERENCES Material_Terapeutico(material_terapeutico_id)`
-      );
+    aplicar: async (conexion, baseDatos) => {
+      const existeColumna = async (columna) => {
+        const [filas] = await conexion.query(
+          `SELECT 1 FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Pauta_Ejercicio'
+              AND COLUMN_NAME = ?`,
+          [baseDatos, columna]
+        );
+        return filas.length > 0;
+      };
+
+      // 1. La clave primaria propia. Tiene que ir en una sola sentencia porque
+      //    MySQL exige que una columna AUTO_INCREMENT sea clave de inmediato.
+      if (!(await existeColumna('pauta_ejercicio_id'))) {
+        try {
+          await conexion.query(
+            `ALTER TABLE Pauta_Ejercicio
+               DROP PRIMARY KEY,
+               ADD COLUMN pauta_ejercicio_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST`
+          );
+        } catch (error) {
+          // La tabla puede no tener clave primaria previa que borrar.
+          await conexion.query(
+            `ALTER TABLE Pauta_Ejercicio
+               ADD COLUMN pauta_ejercicio_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST`
+          );
+        }
+      }
+
+      // 2. Parametros de carga, uno por uno.
+      const columnas = [
+        ['series', `INT NOT NULL DEFAULT 1`],
+        ['repeticiones', `INT NOT NULL DEFAULT 1`],
+        ['frecuencia', `VARCHAR(20) NOT NULL DEFAULT 'DIARIA'`],
+        ['material_terapeutico_id', `INT NULL`],
+      ];
+      for (const [columna, definicion] of columnas) {
+        if (!(await existeColumna(columna))) {
+          await conexion.query(
+            `ALTER TABLE Pauta_Ejercicio ADD COLUMN ${columna} ${definicion}`
+          );
+        }
+      }
+
+      // 3. Indice y llave foranea: son mejoras de integridad, no requisitos
+      //    para que la pantalla funcione, asi que un fallo aca no detiene nada.
+      try {
+        await conexion.query(
+          `ALTER TABLE Pauta_Ejercicio
+             ADD UNIQUE KEY uq_pauta_nombre (pauta_tratamiento_id, nombre_ejercicio)`
+        );
+      } catch (error) {
+        console.warn(`   (indice uq_pauta_nombre omitido: ${error.code || error.message})`);
+      }
+      try {
+        await conexion.query(
+          `ALTER TABLE Pauta_Ejercicio
+             ADD CONSTRAINT fk_pauta_ejercicio_material
+               FOREIGN KEY (material_terapeutico_id)
+               REFERENCES Material_Terapeutico(material_terapeutico_id)`
+        );
+      } catch (error) {
+        console.warn(`   (llave foranea de material omitida: ${error.code || error.message})`);
+      }
     },
   },
   {
@@ -356,9 +412,21 @@ async function ejecutarMigraciones(conexion) {
     }
 
     console.log(`• Migración "${migracion.nombre}" — aplicando… (${migracion.descripcion})`);
-    await migracion.aplicar(conexion);
-    aplicadas++;
-    console.log('  ✅ Lista.');
+    // El nombre de la base va como segundo argumento: algunas migraciones lo
+    // necesitan para consultar information_schema y decidir qué falta.
+    try {
+      await migracion.aplicar(conexion, baseDatos);
+      aplicadas++;
+      console.log('  ✅ Lista.');
+    } catch (error) {
+      // Una migración que falla NO puede dejar sin aplicar a las siguientes:
+      // antes, un error acá abortaba el resto y la base quedaba a medias sin
+      // que nada lo dijera. Se informa fuerte y se continúa con las demás.
+      console.error(
+        `  ❌ Falló "${migracion.nombre}": ${error.sqlMessage || error.message}\n` +
+        `     La base quedó incompleta para esa función. Revisa /api/diagnostico.`
+      );
+    }
   }
 
   if (aplicadas > 0) {
@@ -367,7 +435,7 @@ async function ejecutarMigraciones(conexion) {
   return aplicadas;
 }
 
-module.exports = { ejecutarMigraciones };
+module.exports = { ejecutarMigraciones, MIGRACIONES };
 
 // ── Uso directo por consola: npm run db:migrar ──────────────────────────────
 async function main() {

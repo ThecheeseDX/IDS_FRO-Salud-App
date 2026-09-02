@@ -32,7 +32,7 @@ export default function PautasScreen({ route }) {
   const { pacienteId } = route?.params || {};
 
   const [cargando, setCargando] = useState(true);
-  const [errorCarga, setErrorCarga] = useState(false);
+  const [errorCarga, setErrorCarga] = useState('');
   const [episodios, setEpisodios] = useState([]);
   const [pautas, setPautas] = useState([]);
 
@@ -51,25 +51,50 @@ export default function PautasScreen({ route }) {
   const [ejercicios, setEjercicios] = useState([]);
   const [guardando, setGuardando] = useState(false);
 
+  /**
+   * Carga pautas y biblioteca por separado. Antes iban en un Promise.all con
+   * un catch vacío: si cualquiera de las dos fallaba, la pantalla completa
+   * mostraba "Servicio no disponible" y el motivo real se perdía, lo que hacía
+   * imposible distinguir un problema de red de uno de permisos o de base de
+   * datos. Ahora cada llamada se evalúa aparte y el error se muestra tal cual
+   * lo explica el servidor.
+   */
   const cargarTodo = async () => {
     setCargando(true);
-    setErrorCarga(false);
-    try {
-      const [datos, biblioteca] = await Promise.all([
-        apiClient.get(`/clinica/pautas/paciente/${pacienteId}`),
-        apiClient.get('/clinica/materiales'),
-      ]);
-      setEpisodios(datos.data?.episodios || []);
-      setPautas(datos.data?.pautas || []);
-      setMateriales(biblioteca.data?.materiales || []);
-      if (datos.data?.episodios?.length > 0) {
-        setEpisodioId(String(datos.data.episodios[0].episodio_clinico_id));
+    setErrorCarga('');
+
+    const [resPautas, resBiblioteca] = await Promise.allSettled([
+      apiClient.get(`/clinica/pautas/paciente/${pacienteId}`),
+      apiClient.get('/clinica/materiales'),
+    ]);
+
+    if (resPautas.status === 'fulfilled') {
+      const datos = resPautas.value.data;
+      setEpisodios(datos?.episodios || []);
+      setPautas(datos?.pautas || []);
+      if (datos?.episodios?.length > 0) {
+        setEpisodioId(String(datos.episodios[0].episodio_clinico_id));
       }
-    } catch {
-      setErrorCarga(true);
-    } finally {
-      setCargando(false);
+    } else {
+      const error = resPautas.reason;
+      const respuesta = error?.response?.data;
+      console.error('ERROR PAUTAS:', error?.response?.status, respuesta || error?.message);
+      setErrorCarga(
+        respuesta?.mensaje ||
+          respuesta?.error ||
+          `No se pudieron cargar las pautas (${error?.response?.status || 'sin respuesta del servidor'}).`
+      );
     }
+
+    // La biblioteca es secundaria: si falla, las pautas igual se muestran.
+    if (resBiblioteca.status === 'fulfilled') {
+      setMateriales(resBiblioteca.value.data?.materiales || []);
+    } else {
+      console.error('ERROR BIBLIOTECA:', resBiblioteca.reason?.response?.data);
+      setMateriales([]);
+    }
+
+    setCargando(false);
   };
 
   useEffect(() => {
@@ -180,7 +205,7 @@ export default function PautasScreen({ route }) {
   if (errorCarga) {
     return (
       <View style={estilos.centrado}>
-        <ErrorRetry mensaje="No se pudieron cargar las pautas." onRetry={cargarTodo} />
+        <ErrorRetry mensaje={errorCarga} onRetry={cargarTodo} />
       </View>
     );
   }

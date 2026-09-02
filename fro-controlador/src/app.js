@@ -76,6 +76,87 @@ app.get('/api/diagnostico', (req, res) => {
     });
 });
 
+/**
+ * Estado real del ESQUEMA de la base desplegada. Las migraciones se aplican
+ * solas al arrancar, pero si alguna falla el servidor sigue funcionando y la
+ * pantalla afectada devuelve un 500 genérico ("servicio no disponible") sin
+ * decir por qué. Esto muestra, sin exponer datos, qué migraciones quedaron
+ * pendientes y si están las tablas y columnas que cada pantalla necesita.
+ *
+ *   https://<tu-servidor>/api/diagnostico/base-datos
+ */
+app.get('/api/diagnostico/base-datos', async (req, res) => {
+    const pool = require('./config/database');
+
+    try {
+        const [[{ baseDatos }]] = await pool.query('SELECT DATABASE() AS baseDatos');
+
+        // 1. Estado de cada migración automática.
+        const { MIGRACIONES } = require('../scripts/migrar-db');
+        const migraciones = [];
+        for (const migracion of MIGRACIONES) {
+            let aplicada;
+            try {
+                aplicada = await migracion.yaAplicada(pool, baseDatos);
+            } catch (error) {
+                aplicada = `error: ${error.sqlMessage || error.message}`;
+            }
+            migraciones.push({ nombre: migracion.nombre, aplicada });
+        }
+
+        // 2. Columnas concretas de las que dependen las pantallas que fallan.
+        const requisitos = {
+            'Pauta_Ejercicio': ['pauta_ejercicio_id', 'series', 'repeticiones',
+                                'frecuencia', 'material_terapeutico_id'],
+            'Pauta_Tratamiento': ['pauta_tratamiento_id'],
+            'Pauta_Cumplimiento': ['pauta_ejercicio_id', 'fecha'],
+            'Material_Terapeutico': ['material_terapeutico_id', 'disponibilidad'],
+            'Cita': ['modalidad', 'evidencia_presencial', 'firma_conformidad_datos'],
+            'Documento_Clinico': ['documento_id', 'categoria', 'url_publica'],
+            'Evolucion_Version': ['version_id', 'numero_version'],
+            'Sesion_Usuario': ['jti', 'dispositivo_id'],
+        };
+
+        const [columnas] = await pool.query(
+            `SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = ?`,
+            [baseDatos]
+        );
+        const porTabla = new Map();
+        for (const fila of columnas) {
+            if (!porTabla.has(fila.TABLE_NAME)) porTabla.set(fila.TABLE_NAME, new Set());
+            porTabla.get(fila.TABLE_NAME).add(fila.COLUMN_NAME);
+        }
+
+        const tablas = {};
+        const faltantes = [];
+        for (const [tabla, requeridas] of Object.entries(requisitos)) {
+            const presentes = porTabla.get(tabla);
+            if (!presentes) {
+                tablas[tabla] = 'FALTA LA TABLA COMPLETA';
+                faltantes.push(tabla);
+                continue;
+            }
+            const sinColumna = requeridas.filter((c) => !presentes.has(c));
+            tablas[tabla] = sinColumna.length === 0 ? 'OK' : `faltan columnas: ${sinColumna.join(', ')}`;
+            sinColumna.forEach((c) => faltantes.push(`${tabla}.${c}`));
+        }
+
+        res.status(200).json({
+            base: baseDatos,
+            todo_en_orden: faltantes.length === 0,
+            faltantes,
+            tablas,
+            migraciones,
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: 'No se pudo revisar el esquema.',
+            detalle: error.sqlMessage || error.message,
+        });
+    }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/profesionales', profesionalRoutes);
 app.use('/api/clinica', clinicaRoutes);
