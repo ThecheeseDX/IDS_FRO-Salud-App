@@ -19,6 +19,7 @@ import { WebView } from 'react-native-webview';
 
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
+import { formatearFecha } from '../../utils/fechas';
 
 export default function VisorDocumentoScreen({ route }) {
   const { documentoId, nombre } = route?.params || {};
@@ -100,7 +101,7 @@ export default function VisorDocumentoScreen({ route }) {
         </Text>
         <Text style={estilos.detalle}>
           {documento.formato?.toUpperCase()} ·{' '}
-          {new Date(documento.fecha_carga).toLocaleDateString('es-CL')} · solo
+          {formatearFecha(documento.fecha_carga)} · solo
           visualización
         </Text>
       </View>

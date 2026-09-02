@@ -102,7 +102,7 @@ const ARBOL_TRIAJE = {
       id: 'habitos_alimentarios',
       pregunta: 'Describe brevemente tu alimentación en un día normal.',
       tipo: 'texto',
-      siguiente: 'antecedentes_relevantes',
+      siguiente: 'antecedentes_patologicos',
     },
 
     // ── Rama libre ──
@@ -119,15 +119,25 @@ const ARBOL_TRIAJE = {
       pregunta: '¿Hace cuánto tiempo comenzó?',
       tipo: 'opciones',
       opciones: [
-        { valor: 'MENOS_1_SEMANA', etiqueta: 'Menos de una semana', siguiente: 'antecedentes_relevantes' },
-        { valor: '1_4_SEMANAS', etiqueta: 'Entre 1 y 4 semanas', siguiente: 'antecedentes_relevantes' },
-        { valor: '1_6_MESES', etiqueta: 'Entre 1 y 6 meses', siguiente: 'antecedentes_relevantes' },
-        { valor: 'MAS_6_MESES', etiqueta: 'Más de 6 meses', siguiente: 'antecedentes_relevantes' },
+        { valor: 'MENOS_1_SEMANA', etiqueta: 'Menos de una semana', siguiente: 'antecedentes_patologicos' },
+        { valor: '1_4_SEMANAS', etiqueta: 'Entre 1 y 4 semanas', siguiente: 'antecedentes_patologicos' },
+        { valor: '1_6_MESES', etiqueta: 'Entre 1 y 6 meses', siguiente: 'antecedentes_patologicos' },
+        { valor: 'MAS_6_MESES', etiqueta: 'Más de 6 meses', siguiente: 'antecedentes_patologicos' },
       ],
     },
-    antecedentes_relevantes: {
-      id: 'antecedentes_relevantes',
-      pregunta: '¿Tienes enfermedades, cirugías previas o tratamientos en curso? (escribe "no" si no aplica)',
+    // Antes una sola pregunta mezclaba enfermedades, cirugías y tratamientos, y
+    // todo se guardaba junto como UN antecedente patológico: en la ficha del
+    // profesional aparecía pegado y "antecedentes quirúrgicos" quedaba vacío.
+    // Ahora cada campo de la ficha tiene su propia pregunta.
+    antecedentes_patologicos: {
+      id: 'antecedentes_patologicos',
+      pregunta: '¿Tienes enfermedades diagnosticadas o tratamientos en curso? Sepáralos con comas (escribe "no" si no aplica).',
+      tipo: 'texto',
+      siguiente: 'antecedentes_quirurgicos',
+    },
+    antecedentes_quirurgicos: {
+      id: 'antecedentes_quirurgicos',
+      pregunta: '¿Te han operado alguna vez? Indica cada cirugía y el año, separadas con comas (escribe "no" si nunca).',
       tipo: 'texto',
       siguiente: 'alergias',
     },
@@ -180,6 +190,9 @@ function estructurarTriaje(respuestas) {
   const sinClasificar = [];
   const alergias = [];
   const antecedentes = [];
+  const quirurgicos = [];
+
+  const aLista = (v) => String(v).split(',').map((s) => s.trim()).filter(Boolean);
 
   const CATEGORIAS = {
     motivo: (v) => lineas.push(`Motivo de consulta: ${etiquetaDe('motivo', v)}.`),
@@ -190,10 +203,31 @@ function estructurarTriaje(respuestas) {
     habitos_alimentarios: (v) => lineas.push(`Hábitos alimentarios declarados: ${v}.`),
     descripcion_libre: (v) => lineas.push(`Relato del paciente: ${v}.`),
     tiempo_evolucion: (v) => lineas.push(`Tiempo de evolución: ${etiquetaDe('tiempo_evolucion', v)}.`),
+    antecedentes_patologicos: (v) => {
+      if (!esNegacion(v)) {
+        const lista = aLista(v);
+        lineas.push(`Antecedentes patológicos declarados: ${lista.join(', ')}.`);
+        antecedentes.push(...lista.map((a) => a.slice(0, 255)));
+      } else {
+        lineas.push('Sin antecedentes patológicos declarados.');
+      }
+    },
+    antecedentes_quirurgicos: (v) => {
+      if (!esNegacion(v)) {
+        const lista = aLista(v);
+        lineas.push(`Antecedentes quirúrgicos declarados: ${lista.join(', ')}.`);
+        quirurgicos.push(...lista.map((a) => a.slice(0, 255)));
+      } else {
+        lineas.push('Sin antecedentes quirúrgicos declarados.');
+      }
+    },
+    // Compatibilidad: entrevistas iniciadas antes del cambio traen la pregunta
+    // antigua mezclada; se conserva como antecedentes patológicos en lista.
     antecedentes_relevantes: (v) => {
       if (!esNegacion(v)) {
-        lineas.push(`Antecedentes declarados: ${v}.`);
-        antecedentes.push(String(v).trim().slice(0, 255));
+        const lista = aLista(v);
+        lineas.push(`Antecedentes declarados: ${lista.join(', ')}.`);
+        antecedentes.push(...lista.map((a) => a.slice(0, 255)));
       } else {
         lineas.push('Sin antecedentes relevantes declarados.');
       }
@@ -220,14 +254,16 @@ function estructurarTriaje(respuestas) {
     }
   }
 
-  const fecha = new Date().toLocaleDateString('es-CL');
+  const hoy = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  const fecha = `${p(hoy.getDate())}/${p(hoy.getMonth() + 1)}/${hoy.getFullYear()}`;
   let texto = `── TRIAJE AUTOMATIZADO (${fecha}) ──\n${lineas.join('\n')}`;
   if (sinClasificar.length > 0) {
     texto += `\nInformación adicional en revisión (sin clasificar):\n- ${sinClasificar.join('\n- ')}`;
   }
   texto += '\n── FIN TRIAJE ──';
 
-  return { texto, alergias, antecedentes, sinClasificar };
+  return { texto, alergias, antecedentes, quirurgicos, sinClasificar };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

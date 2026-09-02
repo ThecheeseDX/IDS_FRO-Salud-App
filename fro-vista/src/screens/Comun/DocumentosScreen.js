@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
+import { formatearFecha } from '../../utils/fechas';
 
 const ICONO_POR_VISOR = { imagen: '🖼️', pdf: '📄', video: '🎬' };
 
@@ -210,7 +211,7 @@ export default function DocumentosScreen({ route, navigation }) {
           {nombreCategoria(item.categoria)} · {pesoLegible(item.tamano_bytes)}
         </Text>
         <Text style={estilos.detalle}>
-          {new Date(item.fecha_carga).toLocaleDateString('es-CL')}
+          {formatearFecha(item.fecha_carga)}
           {item.cargado_por?.trim() ? ` · ${item.cargado_por}` : ''}
         </Text>
       </View>

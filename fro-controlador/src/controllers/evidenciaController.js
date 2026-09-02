@@ -20,6 +20,17 @@ const DECLARACION_CONFORMIDAD = {
 };
 
 /** Distancia en metros entre dos coordenadas (fórmula de Haversine). */
+// Formato exigido por los requerimientos: DD/MM/AAAA HH:MM en 24 horas. Las
+// fechas de la base ya son hora de pared chilena, asi que se imprimen tal cual.
+function formatearFechaHoraCL(valor) {
+  const m = String(valor || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+  const f = new Date(valor);
+  if (Number.isNaN(f.getTime())) return String(valor || '');
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(f.getDate())}/${p(f.getMonth() + 1)}/${f.getFullYear()} ${p(f.getHours())}:${p(f.getMinutes())}`;
+}
+
 function distanciaMetros(a, b) {
   const R = 6371000;
   const rad = (g) => (g * Math.PI) / 180;
@@ -440,7 +451,7 @@ exports.guardarFirma = async (req, res) => {
              <h2 style="color:#0f172a">Conformidad de atención</h2>
              <p style="color:#475569">${DECLARACION_CONFORMIDAD.texto}</p>
              <p style="color:#475569">Si NO estás de acuerdo con esta declaración sobre tu atención del
-             ${new Date(cita.fecha_hora_inicio).toLocaleString('es-CL')}, responde este correo indicándolo.</p>
+             ${formatearFechaHoraCL(cita.fecha_hora_inicio)}, responde este correo indicándolo.</p>
            </div>`
         );
       } catch (errorCorreo) {

@@ -16,9 +16,10 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado'; 
 import { AuthContext } from '../../context/AuthContext'
+import { formatearFechaHora } from '../../utils/fechas';
 
 export default function ParametrosScreen({ navigation }) {
-  const { logoutSession } = useContext(AuthContext);
+  const { confirmarCierreSesion } = useContext(AuthContext);
 
   const [parametros, setParametros] = useState([]);
   const [erroresLocales, setErroresLocales] = useState({}); 
@@ -207,7 +208,7 @@ const aplicarRestriccion = async () => {
                 </TouchableOpacity>
                 
                 <Text style={styles.timestampText}>
-                  Última versión: {new Date(param.ultima_modificacion).toLocaleString()}
+                  Última versión: {formatearFechaHora(param.ultima_modificacion)}
                 </Text>
               </View>
             );
@@ -253,7 +254,7 @@ const aplicarRestriccion = async () => {
         <Text style={styles.securityLinkText}>🔐 Seguridad de la cuenta</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
+      <TouchableOpacity style={styles.logoutButton} onPress={confirmarCierreSesion}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>
     </View>

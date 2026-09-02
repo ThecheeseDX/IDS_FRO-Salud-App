@@ -14,6 +14,48 @@ const MARCA_FIN = '═══ FIN EVALUACIÓN ═══';
 
 const claveBorrador = (pacienteId) => `cu77_borrador_${pacienteId}`;
 
+// CU24: el triaje del paciente se anexa a la anamnesis entre estas marcas.
+// Antes quedaba mezclado dentro del cuadro de texto editable y se leía como
+// un bloque confuso; ahora se separa y se muestra como tarjeta de lectura.
+const TRIAJE_INICIO = '── TRIAJE AUTOMATIZADO';
+const TRIAJE_FIN = '── FIN TRIAJE ──';
+
+/** Extrae los bloques de triaje del texto y devuelve el resto editable. */
+function separarTriajes(texto) {
+  const bloques = [];
+  let resto = texto;
+  for (;;) {
+    const inicio = resto.indexOf(TRIAJE_INICIO);
+    if (inicio === -1) break;
+    const fin = resto.indexOf(TRIAJE_FIN, inicio);
+    if (fin === -1) break;
+    bloques.push(resto.slice(inicio, fin + TRIAJE_FIN.length).trim());
+    resto = (resto.slice(0, inicio) + resto.slice(fin + TRIAJE_FIN.length)).trim();
+  }
+  return { bloques, resto };
+}
+
+/** Líneas legibles de un bloque de triaje (sin las marcas). */
+function lineasDeTriaje(bloque) {
+  return bloque
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith(TRIAJE_INICIO) && l !== TRIAJE_FIN);
+}
+
+/** Fecha del bloque, si el encabezado la trae: "── TRIAJE AUTOMATIZADO (05/09/2026) ──" */
+function fechaDeTriaje(bloque) {
+  return bloque.match(/\(([^)]+)\)/)?.[1] || '';
+}
+
+// Valores del triaje que corresponden a campos de la plantilla de evaluación.
+// Solo se proponen si el campo está vacío; el profesional siempre puede
+// corregirlos.
+const PRELLENADO_DESDE_TRIAJE = [
+  { campoId: 'dolor_eva', prefijo: 'Intensidad reportada: ', limpiar: (v) => v.replace('/10', '').replace('.', '').trim() },
+  { campoId: 'habitos', prefijo: 'Hábitos alimentarios declarados: ', limpiar: (v) => v.replace(/\.$/, '').trim() },
+];
+
 /** Separa el bloque estructurado del texto libre de la anamnesis. */
 function separarBloque(texto) {
   const inicio = texto.indexOf(MARCA_INICIO);
@@ -45,6 +87,9 @@ export default function AnamnesisScreen({ route, navigation }) {
   const [erroresCampos, setErroresCampos] = useState({});
 
   // Listas representadas como texto separado por comas para edición simple
+  // CU24: bloques de la entrevista previa (solo lectura, se conservan al guardar).
+  const [bloquesTriaje, setBloquesTriaje] = useState([]);
+
   const [alergiasTexto, setAlergiasTexto] = useState('');
   const [quirurgicosTexto, setQuirurgicosTexto] = useState('');
   const [patologicosTexto, setPatologicosTexto] = useState('');
@@ -86,8 +131,25 @@ export default function AnamnesisScreen({ route, navigation }) {
           if (campo) valores[campo.id] = linea.slice(separador + 1).trim();
         }
       }
+
+      // CU24: separar la entrevista del paciente del texto libre del profesional.
+      const { bloques, resto } = separarTriajes(libre);
+      setBloquesTriaje(bloques);
+
+      // Lo que el paciente ya contestó se propone en la plantilla (si el
+      // campo existe para esta especialidad y está vacío).
+      if (plantillaCargada && bloques.length > 0) {
+        const lineasUltimo = lineasDeTriaje(bloques[bloques.length - 1]);
+        for (const regla of PRELLENADO_DESDE_TRIAJE) {
+          const existe = plantillaCargada.campos.some((c) => c.id === regla.campoId);
+          if (!existe || String(valores[regla.campoId] || '').trim()) continue;
+          const linea = lineasUltimo.find((l) => l.startsWith(regla.prefijo));
+          if (linea) valores[regla.campoId] = regla.limpiar(linea.slice(regla.prefijo.length));
+        }
+      }
+
       setCamposValores(valores);
-      setAnamnesis(libre);
+      setAnamnesis(resto);
       if (!plantillaCargada) setPlantillaEspecialidad(data.plantilla_especialidad || '');
       setAlergiasTexto((data.alergias || []).join(', '));
       setQuirurgicosTexto((data.antecedentes_quirurgicos || []).join(', '));
@@ -129,10 +191,15 @@ export default function AnamnesisScreen({ route, navigation }) {
   }, []);
 
   // ─ Excepción 1: truncado en tiempo real 
+  // El tope de 2000 es sobre el texto completo: lo que ocupa la entrevista del
+  // paciente se descuenta del espacio libre para que nada se trunque al guardar.
+  const textoTriaje = bloquesTriaje.join('\n\n');
+  const limiteLibre = Math.max(200, LIMITE_ANAMNESIS - (textoTriaje ? textoTriaje.length + 2 : 0));
+
   const manejarCambioAnamnesis = (texto) => {
-    if (texto.length > LIMITE_ANAMNESIS) {
-      setAnamnesis(texto.slice(0, LIMITE_ANAMNESIS));
-      setAvisoTruncado(`Se alcanzó el límite de ${LIMITE_ANAMNESIS} caracteres.`);
+    if (texto.length > limiteLibre) {
+      setAnamnesis(texto.slice(0, limiteLibre));
+      setAvisoTruncado(`Se alcanzó el límite de ${limiteLibre} caracteres (la entrevista del paciente ocupa el resto).`);
     } else {
       setAnamnesis(texto);
       if (avisoTruncado) setAvisoTruncado('');
@@ -187,6 +254,10 @@ export default function AnamnesisScreen({ route, navigation }) {
       if (lineas.length > 0) {
         anamnesisCompleta = `${MARCA_INICIO}\n${lineas.join('\n')}\n${MARCA_FIN}\n\n${anamnesis}`;
       }
+    }
+    // CU24: la entrevista del paciente se conserva íntegra al final.
+    if (textoTriaje) {
+      anamnesisCompleta = `${anamnesisCompleta.trim()}\n\n${textoTriaje}`;
     }
 
     try {
@@ -339,6 +410,21 @@ export default function AnamnesisScreen({ route, navigation }) {
           </>
         )}
 
+        {/* ─ CU24: entrevista previa del paciente (solo lectura) */}
+        {bloquesTriaje.map((bloque, i) => (
+          <View key={i} style={styles.tarjetaTriaje}>
+            <Text style={styles.tituloTriaje}>
+              🩺 Entrevista previa del paciente{fechaDeTriaje(bloque) ? ` · ${fechaDeTriaje(bloque)}` : ''}
+            </Text>
+            {lineasDeTriaje(bloque).map((linea, j) => (
+              <Text key={j} style={styles.lineaTriaje}>• {linea}</Text>
+            ))}
+            <Text style={styles.notaTriaje}>
+              Respuestas del propio paciente. Se conservan en la ficha; corrige o completa en los campos de abajo.
+            </Text>
+          </View>
+        ))}
+
         {/* ─ Anamnesis */}
         <Text style={styles.label}>Anamnesis *</Text>
         <TextInput
@@ -354,7 +440,7 @@ export default function AnamnesisScreen({ route, navigation }) {
           onChangeText={manejarCambioAnamnesis}
         />
         <Text style={styles.contador}>
-          {anamnesis.length} / {LIMITE_ANAMNESIS}
+          {anamnesis.length} / {limiteLibre}
         </Text>
         {errores.anamnesis && (
           <Text style={styles.errorTexto}>Este campo es obligatorio.</Text>
@@ -434,6 +520,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avisoSinEspecialidadTexto: { color: '#b71c1c' },
+  tarjetaTriaje: {
+    backgroundColor: '#fffbea',
+    borderWidth: 1,
+    borderColor: '#f3d27a',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 16,
+  },
+  tituloTriaje: { fontWeight: 'bold', color: '#7a5c00', marginBottom: 6 },
+  lineaTriaje: { color: '#3a3a3a', fontSize: 13, marginBottom: 3, lineHeight: 18 },
+  notaTriaje: { color: '#8a7a3a', fontSize: 11, marginTop: 6, fontStyle: 'italic' },
   container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   cargandoTexto: { marginTop: 10, color: '#666' },

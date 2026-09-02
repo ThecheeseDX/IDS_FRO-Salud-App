@@ -139,19 +139,23 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         c.fecha_hora_inicio,
         c.fecha_hora_fin,
         c.estado,
-        c.modalidad,
+        -- Modalidad real de la cita. Las citas anteriores a que se guardara
+        -- la modalidad heredan la del profesional (salvo AMBOS, que no dice nada).
+        COALESCE(c.modalidad, NULLIF(pr.tipo_sede, 'AMBOS')) AS modalidad,
         COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno), 'Profesional no registrado') AS profesional,
-        COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad,
-        COALESCE(s.nombre, 'No informado') AS tipo_sede
+        COALESCE(e.nombre, 'Especialidad no registrada') AS especialidad
       FROM Cita c
       LEFT JOIN Profesional pr ON pr.profesional_id = c.profesional_id
       LEFT JOIN Usuario u ON u.usuario_id = pr.usuario_id
       LEFT JOIN Especialidad e ON e.especialidad_id = pr.especialidad_id
-      LEFT JOIN Sede s ON s.sede_id = c.sede_id
       WHERE c.paciente_id = ?
+        -- Cada profesional ve y gestiona solo sus propias citas con el
+        -- paciente; las de otros profesionales (otra especialidad) no le
+        -- corresponden. El resto de la ficha clinica sigue siendo compartido.
+        AND pr.usuario_id = ?
       ORDER BY c.fecha_hora_inicio DESC
       `,
-      [pacienteId]
+      [pacienteId, usuarioId]
     );
 
     const [episodios] = await db.query(

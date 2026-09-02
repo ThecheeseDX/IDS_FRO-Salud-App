@@ -1,87 +1,115 @@
 // Ruta: fro-vista/src/utils/fechas.js
 //
-// Formateo de fechas del servidor. Existe por un error real: las citas se
-// mostraban tres o cuatro horas antes de la hora agendada.
+// Único formateador de fechas de la app. Cumple el requerimiento del proyecto:
+//   Fechas: DD/MM/AAAA.
+//   Horas: HH:MM en formato de 24 horas, en la zona horaria de Chile
+//          Continental (UTC-4 en invierno, UTC-3 en verano).
 //
-// El servidor entrega dos cosas distintas que NO se pueden tratar igual:
+// No usa toLocaleString: según el motor del teléfono entregaba "8:00 a. m."
+// o "05-09-2026", y por eso la app mezclaba formatos de 12 y 24 horas.
 //
-//  1. Columnas de fecha/hora de la base ("2026-09-05 08:00:00"). Son hora de
-//     pared chilena, sin huso. Convertirlas desplaza la hora: la cita de las
-//     08:00 terminaba mostrándose a las 05:00. Se leen tal cual.
-//
-//  2. Marcas de tiempo instantáneas en JSON ("2026-09-05T11:00:00.000Z"), como
-//     los check-in de evidencia. Esas sí son momentos absolutos en UTC y deben
-//     convertirse al huso del teléfono.
-//
-// parsearFecha() distingue ambos casos por su formato.
+// El servidor entrega dos cosas distintas que NO se tratan igual:
+//  1. Columnas de fecha/hora de la base ("2026-09-05 08:00:00"): ya son hora
+//     de pared chilena, sin huso. Se imprimen tal cual, sin convertir.
+//  2. Marcas instantáneas en JSON ("2026-09-05T11:00:00.000Z"): momentos
+//     absolutos en UTC (check-in GPS, sesiones). Se convierten a hora chilena
+//     aunque el teléfono esté configurado en otro huso.
 
+const ZONA_CHILE = 'America/Santiago';
 const PATRON_HORA_PARED = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
 const PATRON_SOLO_FECHA = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-/**
- * Convierte un valor del servidor en un Date del teléfono.
- * Devuelve null si el valor no es una fecha reconocible.
- */
-export function parsearFecha(valor) {
+/** Interpreta el valor y dice si es un instante absoluto o una hora de pared. */
+function interpretar(valor) {
   if (!valor) return null;
 
   if (valor instanceof Date) {
-    return Number.isNaN(valor.getTime()) ? null : valor;
+    return Number.isNaN(valor.getTime()) ? null : { fecha: valor, esInstante: true };
   }
 
   const texto = String(valor).trim();
 
-  // Caso 1: hora de pared. Se construye con los componentes locales para que
-  // el teléfono NO aplique ninguna conversión de huso.
   const pared = texto.match(PATRON_HORA_PARED);
   if (pared) {
     const [, anio, mes, dia, hora, minuto, segundo] = pared;
-    return new Date(
-      Number(anio), Number(mes) - 1, Number(dia),
-      Number(hora), Number(minuto), Number(segundo || 0)
-    );
+    return {
+      fecha: new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hora), Number(minuto), Number(segundo || 0)),
+      esInstante: false,
+    };
   }
 
   const soloFecha = texto.match(PATRON_SOLO_FECHA);
   if (soloFecha) {
     const [, anio, mes, dia] = soloFecha;
-    return new Date(Number(anio), Number(mes) - 1, Number(dia));
+    return { fecha: new Date(Number(anio), Number(mes) - 1, Number(dia)), esInstante: false };
   }
 
-  // Caso 2: instante absoluto (ISO con Z u offset). Aquí sí corresponde
-  // convertir al huso local del teléfono.
   const fecha = new Date(texto);
-  return Number.isNaN(fecha.getTime()) ? null : fecha;
+  return Number.isNaN(fecha.getTime()) ? null : { fecha, esInstante: true };
 }
 
-/** Fecha y hora completas: "sábado, 05-09, 08:00" */
-export function formatearFechaHora(valor, respaldo = 'Fecha no informada') {
-  const fecha = parsearFecha(valor);
-  if (!fecha) return respaldo;
-  return fecha.toLocaleString('es-CL', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+/** Compatibilidad: devuelve solo el Date. */
+export function parsearFecha(valor) {
+  return interpretar(valor)?.fecha || null;
 }
 
-/** Solo la fecha: "05-09-2026" */
+const dosDigitos = (n) => String(n).padStart(2, '0');
+
+/** Día, mes, año, hora y minuto ya en hora chilena. */
+function partes({ fecha, esInstante }) {
+  if (esInstante) {
+    try {
+      const formateador = new Intl.DateTimeFormat('es-CL', {
+        timeZone: ZONA_CHILE,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      });
+      const mapa = {};
+      for (const parte of formateador.formatToParts(fecha)) mapa[parte.type] = parte.value;
+      if (mapa.year && mapa.month && mapa.day && mapa.hour && mapa.minute) {
+        return {
+          dia: mapa.day, mes: mapa.month, anio: mapa.year,
+          hora: mapa.hour === '24' ? '00' : mapa.hour, minuto: mapa.minute,
+        };
+      }
+    } catch {
+      // Motor sin datos de zonas horarias: se cae a la hora local del teléfono.
+    }
+  }
+  return {
+    dia: dosDigitos(fecha.getDate()),
+    mes: dosDigitos(fecha.getMonth() + 1),
+    anio: String(fecha.getFullYear()),
+    hora: dosDigitos(fecha.getHours()),
+    minuto: dosDigitos(fecha.getMinutes()),
+  };
+}
+
+/** "05/09/2026" */
 export function formatearFecha(valor, respaldo = 'Fecha no informada') {
-  const fecha = parsearFecha(valor);
-  if (!fecha) return respaldo;
-  return fecha.toLocaleDateString('es-CL');
+  const v = interpretar(valor);
+  if (!v) return respaldo;
+  const p = partes(v);
+  return `${p.dia}/${p.mes}/${p.anio}`;
 }
 
-/** Solo la hora: "08:00" */
+/** "08:00" (24 horas) */
 export function formatearHora(valor, respaldo = '--:--') {
-  const fecha = parsearFecha(valor);
-  if (!fecha) return respaldo;
-  return fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  const v = interpretar(valor);
+  if (!v) return respaldo;
+  const p = partes(v);
+  return `${p.hora}:${p.minuto}`;
 }
 
-/** Rango de una cita: "08:00 a 09:00" */
+/** "05/09/2026 08:00" */
+export function formatearFechaHora(valor, respaldo = 'Fecha no informada') {
+  const v = interpretar(valor);
+  if (!v) return respaldo;
+  const p = partes(v);
+  return `${p.dia}/${p.mes}/${p.anio} ${p.hora}:${p.minuto}`;
+}
+
+/** "08:00 a 09:00" */
 export function formatearRango(inicio, fin) {
   const desde = formatearHora(inicio, null);
   const hasta = formatearHora(fin, null);

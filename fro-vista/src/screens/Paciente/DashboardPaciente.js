@@ -6,7 +6,7 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 
 export default function DashboardPaciente({ navigation }) {
-  const { userData, logoutSession } = useContext(AuthContext);
+  const { userData, confirmarCierreSesion } = useContext(AuthContext);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorRed, setErrorRed] = useState(false);
@@ -131,7 +131,7 @@ export default function DashboardPaciente({ navigation }) {
         )}
       </ScrollView>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logoutSession}>
+      <TouchableOpacity style={styles.logoutButton} onPress={confirmarCierreSesion}>
         <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
       </TouchableOpacity>
     </View>

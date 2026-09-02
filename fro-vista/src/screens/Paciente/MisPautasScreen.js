@@ -14,9 +14,15 @@ import {
   StyleSheet,
 } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import apiClient from '../../api/client';
+import { formatearFecha, formatearFechaHora } from '../../utils/fechas';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
+
+// CU48 — Excepción 2: última pauta que cargó bien, para mostrarla sin señal.
+const CLAVE_CACHE = 'cu48_cache_pautas';
 
 export default function MisPautasScreen() {
   const [pautas, setPautas] = useState([]);
@@ -24,6 +30,8 @@ export default function MisPautasScreen() {
   const [refrescando, setRefrescando] = useState(false);
   const [errorRed, setErrorRed] = useState(false);
   const [marcandoId, setMarcandoId] = useState(null);
+  // Fecha en que se guardó la copia local que se está mostrando (null = datos en vivo).
+  const [desdeCache, setDesdeCache] = useState(null);
 
   const cargarPautas = useCallback(async (esRefresco = false) => {
     if (esRefresco) setRefrescando(true);
@@ -32,9 +40,29 @@ export default function MisPautasScreen() {
 
     try {
       const { data } = await apiClient.get('/clinica/pautas/mis-pautas');
-      setPautas(data?.pautas || []);
+      const lista = data?.pautas || [];
+      setPautas(lista);
+      setDesdeCache(null);
+      // Cada carga exitosa deja una copia local: es lo que se muestra sin señal.
+      AsyncStorage.setItem(
+        CLAVE_CACHE,
+        JSON.stringify({ pautas: lista, guardadoEn: new Date().toISOString() })
+      ).catch(() => {});
     } catch {
-      // CU48 — Excepción 2: sin conexión se ofrece recargar la lista.
+      // CU48 — Excepción 2: falla de comunicación → se activa la caché local.
+      // Si hay copia, se muestra (solo lectura) con la fecha en que se guardó;
+      // si no la hay, se ofrece recargar.
+      try {
+        const copia = await AsyncStorage.getItem(CLAVE_CACHE);
+        if (copia) {
+          const { pautas: guardadas, guardadoEn } = JSON.parse(copia);
+          setPautas(guardadas || []);
+          setDesdeCache(guardadoEn || 'desconocida');
+          return;
+        }
+      } catch {
+        // caché ilegible: se cae al aviso de recarga
+      }
       setErrorRed(true);
     } finally {
       setCargando(false);
@@ -48,6 +76,11 @@ export default function MisPautasScreen() {
 
   // ── CU48: marcar / desmarcar el día de hoy ─────────────────────────────────
   const alternarCumplimiento = async (ejercicio) => {
+    // Sin conexión no se puede registrar: la marca necesita llegar al servidor.
+    if (desdeCache) {
+      Alert.alert('Sin conexión', 'Estás viendo tu pauta guardada. Recarga la lista cuando vuelva la señal para marcar ejercicios.');
+      return;
+    }
     // Anti-rebote local: mientras hay una marca en vuelo se ignoran más toques.
     if (marcandoId !== null) return;
     setMarcandoId(ejercicio.pauta_ejercicio_id);
@@ -94,6 +127,15 @@ export default function MisPautasScreen() {
         <RefreshControl refreshing={refrescando} onRefresh={() => cargarPautas(true)} colors={['#0052cc']} />
       }
     >
+      {desdeCache && (
+        <View style={estilos.avisoCache}>
+          <Text style={estilos.avisoCacheTexto}>
+            📴 Sin conexión. Mostrando tu pauta guardada el {formatearFechaHora(desdeCache, 'fecha desconocida')}.
+            Desliza hacia abajo para recargar cuando vuelva la señal.
+          </Text>
+        </View>
+      )}
+
       {pautas.length === 0 ? (
         // CU48 — Excepción 1: sin rutinas en el rango actual.
         <View style={estilos.vacio}>
@@ -124,7 +166,7 @@ export default function MisPautasScreen() {
                 </Text>
               </View>
               <Text style={estilos.pautaFechas}>
-                {pauta.fecha_inicio} → {pauta.fecha_expiracion}
+                {formatearFecha(pauta.fecha_inicio)} → {formatearFecha(pauta.fecha_expiracion)}
               </Text>
 
               {expirada ? (
@@ -135,7 +177,7 @@ export default function MisPautasScreen() {
                 </Text>
               ) : programada ? (
                 <Text style={estilos.textoProgramada}>
-                  Esta pauta comienza el {pauta.fecha_inicio}. Aún no puedes marcar ejercicios.
+                  Esta pauta comienza el {formatearFecha(pauta.fecha_inicio)}. Aún no puedes marcar ejercicios.
                 </Text>
               ) : (
                 pauta.ejercicios.map((ejercicio) => (
@@ -143,7 +185,7 @@ export default function MisPautasScreen() {
                     key={ejercicio.pauta_ejercicio_id}
                     style={[estilos.filaEjercicio, ejercicio.cumplido_hoy && estilos.filaCumplida]}
                     onPress={() => alternarCumplimiento(ejercicio)}
-                    disabled={marcandoId !== null}
+                    disabled={marcandoId !== null || desdeCache !== null}
                   >
                     <Text style={estilos.checkbox}>
                       {marcandoId === ejercicio.pauta_ejercicio_id
@@ -183,6 +225,15 @@ const estilos = StyleSheet.create({
   contenido: { padding: 16, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
 
+  avisoCache: {
+    backgroundColor: '#fff4e5',
+    borderWidth: 1,
+    borderColor: '#ffcc80',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  avisoCacheTexto: { color: '#8a4b00', fontSize: 13, lineHeight: 18 },
   vacio: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 },
   vacioIcono: { fontSize: 48, marginBottom: 12 },
   vacioTitulo: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 6 },

@@ -41,7 +41,18 @@ export const AuthProvider = ({ children }) => {
    * (motivo presente), se explica por qué: CU08 exige avisar al usuario que su
    * sesión fue cerrada desde otro dispositivo, y antes se cerraba en silencio.
    */
-  const logoutSession = async (motivo) => {
+  const logoutSession = async (motivoRecibido) => {
+    // Solo cuenta como motivo lo que manda el interceptor ({codigo, mensaje}).
+    // Los botones "Cerrar sesión" llamaban onPress={logoutSession} y React
+    // Native pasaba el evento del toque como primer argumento: como era un
+    // objeto, se tomaba por motivo y salía el aviso de "sesión expirada" en
+    // cada cierre manual.
+    const motivo =
+      motivoRecibido && typeof motivoRecibido === 'object' && !motivoRecibido.nativeEvent &&
+      (motivoRecibido.codigo || motivoRecibido.mensaje)
+        ? motivoRecibido
+        : null;
+
     // CU08: se avisa al servidor para que la sesión deje de figurar como
     // activa. Mejor esfuerzo: si falla, el cierre local ocurre igual.
     apiClient.post('/auth/logout').catch(() => {});
@@ -63,6 +74,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /** Cierre manual: pide confirmación antes de salir, sin ningún aviso extra. */
+  const confirmarCierreSesion = () => {
+    Alert.alert('Cerrar sesión', '¿Quieres cerrar tu sesión en este dispositivo?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cerrar sesión', style: 'destructive', onPress: () => logoutSession() },
+    ]);
+  };
+
   // Registra logoutSession como handler del interceptor de Axios.
   // Si el servidor devuelve 401, se limpia estado + SecureStore juntos.
   useEffect(() => {
@@ -70,7 +89,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ loginSession, logoutSession, userToken, userData, isLoading }}>
+    <AuthContext.Provider value={{ loginSession, logoutSession, confirmarCierreSesion, userToken, userData, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

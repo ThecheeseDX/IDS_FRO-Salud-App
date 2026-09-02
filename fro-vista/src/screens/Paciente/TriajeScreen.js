@@ -20,6 +20,7 @@ import {
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { formatearFecha } from '../../utils/fechas';
 
 export default function TriajeScreen({ navigation }) {
   // fase: 'cargando' | 'error' | 'disclaimer' | 'entrevista' | 'completado' | 'resumen'
@@ -255,7 +256,7 @@ export default function TriajeScreen({ navigation }) {
         <Text style={estilos.textoCentrado}>
           Tus respuestas fueron integradas a tu ficha clínica
           {fechaCompletado
-            ? ` el ${new Date(fechaCompletado).toLocaleDateString('es-CL')}`
+            ? ` el ${formatearFecha(fechaCompletado)}`
             : ''}.
           Tu profesional las revisará en la consulta.
         </Text>

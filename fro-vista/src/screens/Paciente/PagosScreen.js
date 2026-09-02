@@ -19,6 +19,7 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { formatearFechaHora } from '../../utils/fechas';
 
 const METODOS = [
   { valor: 'TARJETA_OK', etiqueta: 'Tarjeta terminada en 1111' },
@@ -142,8 +143,7 @@ export default function PagosScreen() {
     }
   };
 
-  const formatearFecha = (valor) =>
-    new Date(valor).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+  const formatearFecha = (valor) => formatearFechaHora(valor);
 
   if (cargando) {
     return (

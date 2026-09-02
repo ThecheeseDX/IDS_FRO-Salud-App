@@ -308,6 +308,12 @@ exports.completarTriaje = async (req, res) => {
         [fichaId, antecedente]
       );
     }
+    for (const cirugia of estructura.quirurgicos || []) {
+      await connection.execute(
+        `INSERT IGNORE INTO Ficha_Antecedente_Quirurgico (ficha_clinica_id, antecedente) VALUES (?, ?)`,
+        [fichaId, cirugia]
+      );
+    }
 
     try {
       await connection.execute(
@@ -329,6 +335,7 @@ exports.completarTriaje = async (req, res) => {
       triaje_id: triajeId,
       vista_previa: estructura.texto,
       alergias_registradas: estructura.alergias,
+      cirugias_registradas: estructura.quirurgicos || [],
       sin_clasificar: estructura.sinClasificar,
     });
   } catch (error) {

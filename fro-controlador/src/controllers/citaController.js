@@ -387,6 +387,35 @@ exports.transicionarEstadoCita = async (req, res) => {
     const cita = rows[0];
     const estado_anterior = cita.estado;
 
+    // Solo el profesional o el paciente de la cita pueden moverla de estado.
+    // Antes bastaba con conocer el id: otro profesional podia confirmar,
+    // iniciar o cancelar citas ajenas desde la ficha del paciente.
+    if (rolActor === 'Profesional') {
+      const [[dueno]] = await connection.execute(
+        `SELECT 1 AS ok FROM Profesional WHERE profesional_id = ? AND usuario_id = ? LIMIT 1`,
+        [cita.profesional_id, req.user.usuario_id]
+      );
+      if (!dueno) {
+        await connection.rollback();
+        return res.status(403).json({
+          error: 'CITA_AJENA',
+          mensaje: 'Esta cita pertenece a otro profesional. Solo puedes gestionar tus propias citas.',
+        });
+      }
+    } else if (rolActor === 'Paciente') {
+      const [[dueno]] = await connection.execute(
+        `SELECT 1 AS ok FROM Paciente WHERE paciente_id = ? AND usuario_id = ? LIMIT 1`,
+        [cita.paciente_id, req.user.usuario_id]
+      );
+      if (!dueno) {
+        await connection.rollback();
+        return res.status(403).json({
+          error: 'CITA_AJENA',
+          mensaje: 'Esta cita no es tuya.',
+        });
+      }
+    }
+
     // 2. Evaluar máquina de estados
     const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento);
 
@@ -718,7 +747,7 @@ exports.obtenerCitasPaciente = async (req, res) => {
           c.fecha_hora_inicio, 
           c.fecha_hora_fin, 
           c.estado,
-          c.modalidad,
+          COALESCE(c.modalidad, NULLIF(prof.tipo_sede, 'AMBOS')) AS modalidad,
           CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
           CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
        FROM Cita c
@@ -748,7 +777,7 @@ exports.obtenerCitasProfesional = async (req, res) => {
           c.fecha_hora_inicio, 
           c.fecha_hora_fin, 
           c.estado,
-          c.modalidad,
+          COALESCE(c.modalidad, NULLIF(prof.tipo_sede, 'AMBOS')) AS modalidad,
           CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
           CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
        FROM Cita c

@@ -21,6 +21,7 @@ import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
+import { etiquetaModalidad, iconoModalidad } from '../../utils/modalidad';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
@@ -125,7 +126,7 @@ export default function MisCitasScreen({ navigation }) {
 
         <Text style={styles.profesional}>
           Profesional: {item.nombre_profesional}
-          {item.modalidad ? `  ·  ${item.modalidad === 'ONLINE' ? '📹 Online' : '🏠 Domicilio'}` : ''}
+          {`  ·  ${iconoModalidad(item.modalidad)} ${etiquetaModalidad(item.modalidad)}`}
         </Text>
 
         {/* CU39/CU43: evidencia de la sesión (check-in GPS o teleconsulta) */}

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import apiClient from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
+import { formatearFecha } from '../../../utils/fechas';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13
@@ -132,7 +133,7 @@ export default function EpisodioScreen() {
               <Text style={styles.resultadoTitulo}>Episodio #{episodio.episodio_clinico_id}</Text>
               <Text style={styles.resultadoCampo}>Motivo: {episodio.motivo_consulta}</Text>
               <Text style={styles.resultadoCampo}>Estado: {episodio.estado ?? 'Sin estado'}</Text>
-              <Text style={styles.resultadoCampo}>Inicio: {new Date(episodio.fecha_inicio).toLocaleDateString()}</Text>
+              <Text style={styles.resultadoCampo}>Inicio: {formatearFecha(episodio.fecha_inicio)}</Text>
               
               {/* NUEVO BOTÓN PARA CREAR LA EVOLUCIÓN */}
               <TouchableOpacity 

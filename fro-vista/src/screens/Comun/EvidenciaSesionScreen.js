@@ -22,6 +22,7 @@ import * as SecureStore from 'expo-secure-store';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { formatearHora } from '../../utils/fechas';
 
 const clavePendiente = (citaId) => `cu43_pendiente_${citaId}`;
 
@@ -182,7 +183,7 @@ export default function EvidenciaSesionScreen({ route }) {
 
   const marcaTexto = (marca) =>
     marca
-      ? `✅ ${new Date(marca.momento_registro).toLocaleTimeString('es-CL')} (${marca.lat.toFixed(4)}, ${marca.lng.toFixed(4)})`
+      ? `✅ ${formatearHora(marca.momento_registro)} (${marca.lat.toFixed(4)}, ${marca.lng.toFixed(4)})`
       : '— pendiente';
 
   return (
@@ -235,7 +236,7 @@ export default function EvidenciaSesionScreen({ route }) {
             segmentos.map((segmento, i) => (
               <Text key={i} style={estilos.detalle}>
                 {segmento.evento} · {segmento.rol} ·{' '}
-                {new Date(segmento.momento).toLocaleTimeString('es-CL')}
+                {formatearHora(segmento.momento)}
                 {segmento.latencia_ms ? ` · ${segmento.latencia_ms} ms` : ''}
               </Text>
             ))

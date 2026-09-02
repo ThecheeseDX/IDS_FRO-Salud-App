@@ -21,7 +21,7 @@ import { AuthContext } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
 export default function DashboardProfesional({ navigation }) {
-  const { userData, logoutSession } = useContext(AuthContext);
+  const { userData, confirmarCierreSesion } = useContext(AuthContext);
 
   const [pacientes, setPacientes] = useState([]);
   const [buscar, setBuscar] = useState('');
@@ -161,7 +161,7 @@ export default function DashboardProfesional({ navigation }) {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={logoutSession}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={confirmarCierreSesion}>
         <Text style={styles.logoutText}>Cerrar Sesión</Text>
       </TouchableOpacity>
     </View>

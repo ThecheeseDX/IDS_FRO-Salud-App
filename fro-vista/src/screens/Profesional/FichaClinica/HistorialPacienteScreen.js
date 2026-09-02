@@ -21,6 +21,7 @@ import { AuthContext } from '../../../context/AuthContext';
 import DialogoMotivo from '../../../components/DialogoMotivo';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
+import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
 
 /**
  * Arma la dirección del paciente para mostrarla en pantalla. El servidor
@@ -510,7 +511,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   </Text>
                   <Text>Profesional: {item.profesional}</Text>
                   <Text>Especialidad: {item.especialidad}</Text>
-                  <Text>Modalidad: {item.tipo_sede}</Text>
+                  <Text>Modalidad: {iconoModalidad(item.modalidad)} {etiquetaModalidad(item.modalidad)}</Text>
 
                   {/* PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
                   <View style={styles.containerAcciones}>

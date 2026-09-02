@@ -20,6 +20,7 @@ import {
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { formatearFechaHora } from '../../utils/fechas';
 
 export default function SeguridadScreen() {
   const { userData, logoutSession } = useContext(AuthContext);
@@ -176,10 +177,7 @@ export default function SeguridadScreen() {
     }
   };
 
-  const formatearFecha = (valor) =>
-    valor
-      ? new Date(valor).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
-      : '—';
+  const formatearFecha = (valor) => formatearFechaHora(valor, '—');
 
   return (
     <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>

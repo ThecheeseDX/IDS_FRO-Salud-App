@@ -17,6 +17,8 @@ import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
+// El formateador local de arriba arma AAAA-MM-DD para el servidor; este es para mostrar.
+import { formatearFecha as fechaLegible } from '../../utils/fechas';
 
 const DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -117,7 +119,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
     if (reprogramacion) {
       Alert.alert(
         'Confirmar nuevo horario',
-        `¿Mover tu cita al bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fecha}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
+        `¿Mover tu cita al bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fechaLegible(fecha)}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Continuar', onPress: () => setPedirMotivoReprogramacion(true) },
@@ -128,7 +130,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
 
     Alert.alert(
       'Confirmar reserva',
-      `¿Deseas reservar el bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fecha}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
+      `¿Deseas reservar el bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fechaLegible(fecha)}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Confirmar', onPress: ejecutarBloqueo },
@@ -190,7 +192,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
       // Poscondición CU15: bloque reservado exclusivamente
       Alert.alert(
         '¡Reserva exitosa!',
-        `Tu cita quedó agendada para el ${bloqueSeleccionado.fecha} de ${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}.`,
+        `Tu cita quedó agendada para el ${fechaLegible(bloqueSeleccionado.fecha)} de ${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}.`,
         [
           {
             text: 'OK',
@@ -308,7 +310,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
       <Text style={styles.label}>Fecha</Text>
       <TouchableOpacity style={styles.fechaBtn} onPress={() => setMostrarCalendario(true)}>
         <Text style={styles.fechaBtnText}>
-          {fechaSeleccionada ? `📅  ${fechaSeleccionada}` : '📅  Seleccionar fecha'}
+          {fechaSeleccionada ? `📅  ${fechaLegible(fechaSeleccionada)}` : '📅  Seleccionar fecha'}
         </Text>
       </TouchableOpacity>
 
