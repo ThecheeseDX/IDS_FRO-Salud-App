@@ -4,21 +4,39 @@ const pool = require('../config/database');
 // MIDDLEWARE CU13: interceptar_y_auditar_acceso()
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Entidades clínicas que este middleware sabe auditar.
+ *
+ * IMPORTANTE: si agregas una ruta nueva con auditarAccesoClinico, REGISTRA su
+ * entidad acá. El middleware bloquea preventivamente todo lo que no reconoce
+ * (Excepción 1 del CU13), así que olvidarlo deja la pantalla con un 403 y un
+ * mensaje genérico de "servicio no disponible". Le pasó justamente a
+ * /pautas/paciente/:id, que quedó inaccesible para el profesional.
+ *
+ * El orden importa: se evalúa de arriba abajo y gana la primera coincidencia.
+ */
+const ENTIDADES_AUDITABLES = [
+    { fragmento: '/ficha',     sufijo: 'FICHA_CLINICA' },
+    { fragmento: '/episodio',  sufijo: 'EPISODIO_CLINICO' },
+    { fragmento: '/evolucion', sufijo: 'EVOLUCION_CLINICA' },
+    { fragmento: '/pautas',    sufijo: 'PAUTA_EJERCICIO' },
+];
+
+const VERBOS = {
+    GET: 'LECTURA',
+    POST: 'CREACION',
+    PUT: 'MODIFICACION',
+    DELETE: 'ELIMINACION',
+};
+
 function detectarAccion(req) {
-    const metodo = req.method;
-    const ruta = req.path;
+    const verbo = VERBOS[req.method];
+    if (!verbo) return null;
 
-    if (metodo === 'GET' && ruta.includes('/ficha')) return 'LECTURA_FICHA_CLINICA';
-    if (metodo === 'POST' && ruta.includes('/ficha')) return 'CREACION_FICHA_CLINICA';
-    if (metodo === 'PUT' && ruta.includes('/ficha')) return 'MODIFICACION_FICHA_CLINICA';
-    if (metodo === 'GET' && ruta.includes('/episodio')) return 'LECTURA_EPISODIO_CLINICO';
-    if (metodo === 'POST' && ruta.includes('/episodio')) return 'CREACION_EPISODIO_CLINICO';
-    if (metodo === 'PUT' && ruta.includes('/episodio')) return 'MODIFICACION_EPISODIO_CLINICO';
-    if (metodo === 'GET' && ruta.includes('/evolucion')) return 'LECTURA_EVOLUCION_CLINICA';
-    if (metodo === 'POST' && ruta.includes('/evolucion')) return 'CREACION_EVOLUCION_CLINICA';
-    if (metodo === 'PUT' && ruta.includes('/evolucion')) return 'MODIFICACION_EVOLUCION_CLINICA';
+    const entidad = ENTIDADES_AUDITABLES.find((e) => req.path.includes(e.fragmento));
+    if (!entidad) return null; // Excepción 1
 
-    return null; // Excepción 1
+    return `${verbo}_${entidad.sufijo}`;
 }
 
 function obtenerIP(req) {
@@ -36,6 +54,10 @@ async function auditarAccesoClinico(req, res, next) {
 
     // Excepción 1: acción no reconocida
     if (!accion) {
+        console.warn(
+            `[auditoria] Ruta sin entidad registrada: ${req.method} ${req.path}. ` +
+            'Se bloquea el acceso. Registra su entidad en ENTIDADES_AUDITABLES.'
+        );
         return res.status(403).json({
             error: 'ACCION_NO_RECONOCIDA',
             mensaje: 'La operación solicitada no es reconocida por el sistema de auditoría. Acceso bloqueado preventivamente.'
