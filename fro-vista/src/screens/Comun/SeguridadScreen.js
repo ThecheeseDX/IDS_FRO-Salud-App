@@ -21,6 +21,7 @@ import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFechaHora } from '../../utils/fechas';
+import { colores, radio } from '../../theme';
 
 export default function SeguridadScreen() {
   const { userData, logoutSession } = useContext(AuthContext);
@@ -188,7 +189,7 @@ export default function SeguridadScreen() {
       </Text>
 
       {cargandoSesiones ? (
-        <ActivityIndicator size="large" color="#0052cc" style={estilos.cargando} />
+        <ActivityIndicator size="large" color={colores.primario} style={estilos.cargando} />
       ) : errorSesiones ? (
         <View style={estilos.avisoError}>
           <Text style={estilos.avisoErrorTexto}>
@@ -234,7 +235,7 @@ export default function SeguridadScreen() {
           disabled={procesandoCambio}
         >
           {procesandoCambio ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colores.superficie} />
           ) : (
             <Text style={estilos.botonPrimarioTexto}>Cambiar contraseña</Text>
           )}
@@ -278,7 +279,7 @@ export default function SeguridadScreen() {
             disabled={procesandoCambio}
           >
             {procesandoCambio ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colores.superficie} />
             ) : (
               <Text style={estilos.botonPrimarioTexto}>Confirmar cambio</Text>
             )}
@@ -299,7 +300,7 @@ export default function SeguridadScreen() {
           </Text>
 
           {privacidad === null ? (
-            <ActivityIndicator size="small" color="#0052cc" style={estilos.cargando} />
+            <ActivityIndicator size="small" color={colores.primario} style={estilos.cargando} />
           ) : (
             <View style={estilos.tarjetaPrivacidad}>
               <View style={estilos.filaPreferencia}>
@@ -327,63 +328,63 @@ export default function SeguridadScreen() {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 20, paddingBottom: 40 },
-  seccion: { fontSize: 18, fontWeight: 'bold', color: '#1c3d5a', marginTop: 18, marginBottom: 6 },
-  ayudaSeccion: { color: '#666', fontSize: 13, marginBottom: 12 },
+  seccion: { fontSize: 17, fontWeight: 'bold', color: colores.primario, marginTop: 18, marginBottom: 6 },
+  ayudaSeccion: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
   cargando: { marginVertical: 12 },
 
-  avisoError: { backgroundColor: '#fdecea', borderRadius: 10, padding: 14 },
-  avisoErrorTexto: { color: '#b71c1c', marginBottom: 6 },
+  avisoError: { backgroundColor: colores.errorSuave, borderRadius: radio.md, padding: 14 },
+  avisoErrorTexto: { color: colores.error, marginBottom: 6 },
 
   tarjetaSesion: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 14,
     marginBottom: 10,
   },
   sesionInfo: { flex: 1 },
-  sesionDispositivo: { fontWeight: 'bold', color: '#1f2937' },
-  sesionDetalle: { color: '#777', fontSize: 12, marginTop: 3 },
+  sesionDispositivo: { fontWeight: 'bold', color: colores.texto },
+  sesionDetalle: { color: colores.textoSuave, fontSize: 13, marginTop: 3 },
   botonCerrarSesion: {
     borderWidth: 1,
-    borderColor: '#d32f2f',
-    borderRadius: 8,
+    borderColor: colores.error,
+    borderRadius: radio.sm,
     paddingVertical: 8,
     paddingHorizontal: 14,
     marginLeft: 10,
   },
-  botonCerrarTexto: { color: '#d32f2f', fontWeight: 'bold', fontSize: 13 },
+  botonCerrarTexto: { color: colores.error, fontWeight: 'bold', fontSize: 13 },
 
-  tarjetaCambio: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e0e0e0', padding: 16 },
+  tarjetaCambio: { backgroundColor: colores.superficie, borderRadius: radio.md, borderWidth: 1, borderColor: colores.borde, padding: 16 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.md,
     padding: 12,
     marginBottom: 10,
     fontSize: 15,
   },
-  inputCodigo: { letterSpacing: 6, fontSize: 18, textAlign: 'center' },
-  textoError: { color: '#d32f2f', fontSize: 13, marginBottom: 4 },
+  inputCodigo: { letterSpacing: 6, fontSize: 17, textAlign: 'center' },
+  textoError: { color: colores.error, fontSize: 13, marginBottom: 4 },
 
   botonPrimario: {
-    backgroundColor: '#0052cc',
-    borderRadius: 10,
+    backgroundColor: colores.primario,
+    borderRadius: radio.md,
     padding: 14,
     alignItems: 'center',
     marginTop: 6,
   },
-  botonPrimarioTexto: { color: '#fff', fontWeight: 'bold' },
+  botonPrimarioTexto: { color: colores.superficie, fontWeight: 'bold' },
   deshabilitado: { opacity: 0.6 },
-  enlace: { color: '#0052cc', textAlign: 'center', marginTop: 12, fontWeight: '600' },
+  enlace: { color: colores.primario, textAlign: 'center', marginTop: 12, fontWeight: '600' },
 
-  tarjetaPrivacidad: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e0e0e0', padding: 6 },
+  tarjetaPrivacidad: { backgroundColor: colores.superficie, borderRadius: radio.md, borderWidth: 1, borderColor: colores.borde, padding: 6 },
   filaPreferencia: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -391,5 +392,5 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  preferenciaTexto: { color: '#1f2937', fontSize: 15 },
+  preferenciaTexto: { color: colores.texto, fontSize: 15 },
 });

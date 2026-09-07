@@ -4,6 +4,7 @@ import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { AuthContext } from '../../context/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { colores, radio, sombra } from '../../theme';
 
 export default function GestionDisponibilidadScreen() {
   const { userData, isLoading } = useContext(AuthContext);
@@ -18,7 +19,7 @@ export default function GestionDisponibilidadScreen() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -128,16 +129,18 @@ export default function GestionDisponibilidadScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f6f8' },
-  card: { backgroundColor: '#ffffff', borderRadius: 15, padding: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
-  cardTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  cardSubtitle: { fontSize: 13, color: '#777', marginBottom: 20 },
+  container: { flex: 1, backgroundColor: colores.fondo },
+  card: { backgroundColor: colores.superficie, borderRadius: radio.lg, padding: 20,
+    ...sombra.media,
+  },
+  cardTitle: { fontSize: 22, fontWeight: 'bold', color: colores.texto, marginBottom: 5 },
+  cardSubtitle: { fontSize: 13, color: colores.textoSuave, marginBottom: 20 },
   inputContainer: { marginBottom: 15 },
-  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
-  input: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#e0e0e0', fontSize: 16 },
-  datePickerBtn: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 15, borderWidth: 1, borderColor: '#0052cc', marginBottom: 15, alignItems: 'center' },
-  datePickerText: { color: '#0052cc', fontWeight: '500' },
-  actionButton: { backgroundColor: '#d32f2f', paddingVertical: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-  saveButtonText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 },
-  errorText: { textAlign: 'center', marginTop: 20, color: '#d32f2f', fontSize: 16 }
+  label: { fontSize: 13, fontWeight: '600', color: colores.textoSuave, marginBottom: 8 },
+  input: { backgroundColor: colores.superficieSuave, borderRadius: radio.sm, padding: 12, borderWidth: 1, borderColor: colores.borde, fontSize: 17 },
+  datePickerBtn: { backgroundColor: colores.superficieSuave, borderRadius: radio.sm, padding: 15, borderWidth: 1, borderColor: colores.primario, marginBottom: 15, alignItems: 'center' },
+  datePickerText: { color: colores.primario, fontWeight: '500' },
+  actionButton: { backgroundColor: colores.error, paddingVertical: 15, borderRadius: radio.md, alignItems: 'center', marginTop: 10 },
+  saveButtonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 15, letterSpacing: 1 },
+  errorText: { textAlign: 'center', marginTop: 20, color: colores.error, fontSize: 17 }
 });

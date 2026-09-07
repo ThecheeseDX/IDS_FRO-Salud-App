@@ -21,6 +21,7 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFecha } from '../../utils/fechas';
+import { colores, radio } from '../../theme';
 
 export default function TriajeScreen({ navigation }) {
   // fase: 'cargando' | 'error' | 'disclaimer' | 'entrevista' | 'completado' | 'resumen'
@@ -206,7 +207,7 @@ export default function TriajeScreen({ navigation }) {
   if (fase === 'cargando') {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -236,7 +237,7 @@ export default function TriajeScreen({ navigation }) {
           disabled={procesando}
         >
           {procesando ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colores.superficie} />
           ) : (
             <Text style={estilos.botonPrimarioTexto}>Acepto y quiero continuar</Text>
           )}
@@ -340,53 +341,53 @@ export default function TriajeScreen({ navigation }) {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 20, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
 
-  titulo: { fontSize: 22, fontWeight: 'bold', color: '#1c3d5a', marginBottom: 14 },
+  titulo: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 14 },
   tarjetaLegal: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 18,
     marginBottom: 18,
   },
-  textoLegal: { color: '#333', lineHeight: 21 },
-  versionLegal: { color: '#999', fontSize: 12, marginTop: 12, textAlign: 'right' },
-  enlaceRechazo: { color: '#d32f2f', textAlign: 'center', marginTop: 14, fontWeight: '600' },
+  textoLegal: { color: colores.texto, lineHeight: 21 },
+  versionLegal: { color: colores.textoTenue, fontSize: 13, marginTop: 12, textAlign: 'right' },
+  enlaceRechazo: { color: colores.error, textAlign: 'center', marginTop: 14, fontWeight: '600' },
 
   iconoGrande: { fontSize: 52, marginBottom: 10, textAlign: 'center' },
-  tituloCentrado: { fontSize: 20, fontWeight: 'bold', color: '#1c3d5a', textAlign: 'center', marginBottom: 8 },
-  textoCentrado: { color: '#555', textAlign: 'center', marginBottom: 18, lineHeight: 20 },
+  tituloCentrado: { fontSize: 22, fontWeight: 'bold', color: colores.primario, textAlign: 'center', marginBottom: 8 },
+  textoCentrado: { color: colores.textoSuave, textAlign: 'center', marginBottom: 18, lineHeight: 20 },
 
   tarjetaResumen: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
+    borderColor: colores.exitoBorde,
     padding: 16,
     marginBottom: 18,
   },
-  textoResumen: { color: '#333', fontFamily: 'monospace', fontSize: 12.5, lineHeight: 19 },
+  textoResumen: { color: colores.texto, fontFamily: 'monospace', fontSize: 13.5, lineHeight: 19 },
 
-  progreso: { color: '#0052cc', fontWeight: 'bold', fontSize: 13, marginBottom: 6 },
-  pregunta: { fontSize: 19, fontWeight: 'bold', color: '#1f2937', marginBottom: 18, lineHeight: 26 },
+  progreso: { color: colores.primario, fontWeight: 'bold', fontSize: 13, marginBottom: 6 },
+  pregunta: { fontSize: 22, fontWeight: 'bold', color: colores.texto, marginBottom: 18, lineHeight: 26 },
   opcion: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#0052cc',
-    borderRadius: 12,
+    borderColor: colores.primario,
+    borderRadius: radio.md,
     padding: 16,
     marginBottom: 10,
   },
-  opcionTexto: { color: '#0052cc', fontWeight: '600', fontSize: 15 },
+  opcionTexto: { color: colores.primario, fontWeight: '600', fontSize: 15 },
   entrada: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 12,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.md,
     padding: 14,
     fontSize: 15,
     marginBottom: 12,
@@ -394,13 +395,13 @@ const estilos = StyleSheet.create({
   entradaLarga: { minHeight: 100, textAlignVertical: 'top' },
 
   botonPrimario: {
-    backgroundColor: '#0052cc',
-    borderRadius: 12,
+    backgroundColor: colores.primario,
+    borderRadius: radio.md,
     padding: 15,
     alignItems: 'center',
     marginTop: 4,
   },
-  botonPrimarioTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  botonPrimarioTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
   deshabilitado: { opacity: 0.6 },
-  notaAvance: { color: '#888', fontSize: 12, textAlign: 'center', marginTop: 16 },
+  notaAvance: { color: colores.textoTenue, fontSize: 13, textAlign: 'center', marginTop: 16 },
 });

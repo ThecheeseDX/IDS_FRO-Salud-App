@@ -19,6 +19,7 @@ import {
 
 import { AuthContext } from '../../context/AuthContext';
 import apiClient from '../../api/client';
+import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
 
 export default function DashboardProfesional({ navigation }) {
   const { userData, confirmarCierreSesion } = useContext(AuthContext);
@@ -94,25 +95,31 @@ export default function DashboardProfesional({ navigation }) {
       <Text style={styles.title}>Dr(a). {userData?.apellido_paterno}</Text>
       <Text style={styles.subtitle}>Pacientes asignados</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Buscar por nombre o RUT"
-        value={buscar}
-        onChangeText={setBuscar}
-        onSubmitEditing={() => cargarPacientes(false)}
-        returnKeyType="search"
-      />
+      <View style={styles.filaBuscador}>
+        <TextInput
+          style={styles.input}
+          placeholder="Buscar por nombre o RUT"
+          placeholderTextColor={colores.textoTenue}
+          value={buscar}
+          onChangeText={setBuscar}
+          onSubmitEditing={() => cargarPacientes(false)}
+          returnKeyType="search"
+        />
+        <TouchableOpacity
+          style={styles.botonBuscar}
+          onPress={() => cargarPacientes(false)}
+          activeOpacity={interaccion.opacidadActiva}
+        >
+          <Text style={styles.botonTexto}>Buscar</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity style={styles.botonBuscar} onPress={() => cargarPacientes(false)}>
-        <Text style={styles.botonTexto}>Buscar</Text>
-      </TouchableOpacity>
-
-      {loading && <ActivityIndicator size="large" color="#2e7d32" style={styles.cargando} />}
+      {loading && <ActivityIndicator size="large" color={colores.primario} style={styles.cargando} />}
 
       {error !== '' && (
         <View style={styles.errorCaja}>
           <Text style={styles.error}>{error}</Text>
-          <TouchableOpacity style={styles.botonBuscar} onPress={() => cargarPacientes(false)}>
+          <TouchableOpacity style={styles.botonReintentar} onPress={() => cargarPacientes(false)}>
             <Text style={styles.botonTexto}>Reintentar</Text>
           </TouchableOpacity>
         </View>
@@ -180,7 +187,7 @@ export default function DashboardProfesional({ navigation }) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => cargarPacientes(true)}
-          colors={['#2e7d32']}
+          colors={[colores.primario]}
         />
       }
     />
@@ -188,80 +195,80 @@ export default function DashboardProfesional({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e8f5e9' },
-  content: { padding: 16, paddingBottom: 32 },
+  container: { flex: 1, backgroundColor: colores.fondo },
+  content: { padding: espacio.lg, paddingBottom: espacio.xxl },
 
-  title: { fontSize: 26, fontWeight: 'bold', color: '#2e7d32' },
-  subtitle: { fontSize: 16, color: '#555', marginBottom: 16 },
+  title: { ...tipografia.display, color: colores.textoTitulo },
+  subtitle: { ...tipografia.cuerpo, color: colores.textoSuave, marginBottom: espacio.base },
 
-  input: {
+  // Buscador en una sola fila: campo ancho y acción al costado.
+  filaBuscador: { flexDirection: 'row', gap: espacio.sm, marginBottom: espacio.base },
+  input: { ...piezas.campo, flex: 1 },
+  botonBuscar: { ...piezas.botonPrimario, paddingHorizontal: espacio.lg, paddingVertical: espacio.md },
+  botonReintentar: { ...piezas.botonPrimario, marginTop: espacio.sm },
+  botonTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
+
+  cargando: { marginBottom: espacio.base },
+  errorCaja: {
+    backgroundColor: colores.errorSuave,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
+    borderColor: colores.errorBorde,
+    borderRadius: radio.md,
+    padding: espacio.base,
+    marginBottom: espacio.md,
   },
-  botonBuscar: {
-    backgroundColor: '#2e7d32',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 16,
+  error: { ...tipografia.meta, color: colores.error, marginBottom: espacio.sm },
+  sinResultados: {
+    ...tipografia.meta,
+    textAlign: 'center',
+    marginVertical: espacio.xl,
+    color: colores.textoTenue,
   },
-  cargando: { marginBottom: 16 },
-  errorCaja: { marginBottom: 8 },
-  error: { color: '#d32f2f', marginBottom: 10 },
-  sinResultados: { textAlign: 'center', marginVertical: 20, color: '#666' },
 
-  card: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#c8e6c9',
-    borderRadius: 8,
-    marginBottom: 12,
-    backgroundColor: '#fff',
-  },
-  nombre: { fontSize: 18, fontWeight: 'bold', marginBottom: 6, color: '#1b5e20' },
-  dato: { color: '#555' },
-  boton: {
-    backgroundColor: '#16a34a',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  botonTexto: { color: '#fff', fontWeight: 'bold' },
+  card: { ...piezas.tarjeta, marginBottom: espacio.md },
+  nombre: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.xs },
+  dato: { ...tipografia.meta, color: colores.textoSuave },
+  boton: { ...piezas.botonSecundario, marginTop: espacio.md, paddingVertical: espacio.md },
 
-  pie: { marginTop: 8 },
+  pie: { marginTop: espacio.lg },
   seccion: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2e7d32',
-    marginBottom: 10,
-    marginTop: 8,
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    marginBottom: espacio.md,
+    marginTop: espacio.sm,
   },
+
+  // Herramientas: mismas fichas que el resto, con el ícono en pastilla verde.
   herramienta: {
+    ...piezas.tarjeta,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ff9800',
-    marginBottom: 12,
+    marginBottom: espacio.md,
   },
-  herramientaIcono: { fontSize: 26, marginRight: 12 },
+  herramientaIcono: {
+    fontSize: 22,
+    marginRight: espacio.base,
+    width: 46,
+    height: 46,
+    borderRadius: radio.md,
+    backgroundColor: colores.primarioSuave,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    lineHeight: 46,
+    overflow: 'hidden',
+  },
   herramientaTexto: { flex: 1 },
-  herramientaTitulo: { fontSize: 16, fontWeight: 'bold', color: '#ef6c00' },
-  herramientaSub: { color: '#666', fontSize: 13 },
+  herramientaTitulo: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginBottom: 2 },
+  herramientaSub: { ...tipografia.meta, color: colores.textoSuave },
 
   logoutBtn: {
-    backgroundColor: '#d32f2f',
-    padding: 15,
-    borderRadius: 8,
+    marginTop: espacio.md,
+    paddingVertical: espacio.md,
+    borderRadius: radio.md,
+    borderWidth: 1,
+    borderColor: colores.errorBorde,
+    backgroundColor: colores.errorSuave,
     alignItems: 'center',
-    marginTop: 10,
   },
-  logoutText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  logoutText: { ...tipografia.cuerpoFuerte, color: colores.error },
 });

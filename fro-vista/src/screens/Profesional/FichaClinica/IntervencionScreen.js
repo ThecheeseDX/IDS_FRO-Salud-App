@@ -18,6 +18,7 @@ import {
 } from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
+import { colores, radio } from '../../../theme';
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;
@@ -182,7 +183,7 @@ export default function IntervencionScreen() {
         <Text style={styles.sectionTitle}>Sesión clínica</Text>
 
         {cargandoSesiones ? (
-          <ActivityIndicator size="large" color="#2e7d32" />
+          <ActivityIndicator size="large" color={colores.exito} />
         ) : errorCarga ? (
           <ErrorRetry
             mensaje="No fue posible recuperar las sesiones."
@@ -205,7 +206,7 @@ export default function IntervencionScreen() {
       </View>
 
       {cargandoDetalle && (
-        <ActivityIndicator size="large" color="#2e7d32" style={styles.loading} />
+        <ActivityIndicator size="large" color={colores.exito} style={styles.loading} />
       )}
 
       {contexto && !cargandoDetalle && (
@@ -270,7 +271,7 @@ export default function IntervencionScreen() {
               onPress={handleGuardar}
             >
               {guardando ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colores.superficie} />
               ) : (
                 <Text style={styles.saveButtonText}>Guardar intervención</Text>
               )}
@@ -283,74 +284,74 @@ export default function IntervencionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e8f5e9' },
+  container: { flex: 1, backgroundColor: colores.fondo },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1f2937' },
-  subtitle: { color: '#666', marginTop: 4, marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: 'bold', color: colores.texto },
+  subtitle: { color: colores.textoSuave, marginTop: 4, marginBottom: 20 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    borderRadius: 10,
+    borderColor: colores.borde,
+    borderRadius: radio.md,
     padding: 16,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#2e7d32',
+    color: colores.exito,
     marginBottom: 8,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderColor: colores.borde,
+    borderRadius: radio.sm,
     overflow: 'hidden',
   },
   loading: { marginVertical: 20 },
   patientCard: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colores.primarioSuave,
     borderWidth: 1,
-    borderColor: '#93c5fd',
-    borderRadius: 10,
+    borderColor: colores.primarioBorde,
+    borderRadius: radio.md,
     padding: 16,
     marginBottom: 16,
   },
   patientName: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#1d4ed8',
+    color: colores.primario,
     marginBottom: 6,
   },
-  activeState: { color: '#2e7d32', fontWeight: 'bold', marginTop: 8 },
-  readOnlyState: { color: '#b45309', fontWeight: 'bold', marginTop: 8 },
-  helper: { color: '#6b7280', fontSize: 13, marginBottom: 10 },
+  activeState: { color: colores.exito, fontWeight: 'bold', marginTop: 8 },
+  readOnlyState: { color: colores.advertencia, fontWeight: 'bold', marginTop: 8 },
+  helper: { color: colores.textoSuave, fontSize: 13, marginBottom: 10 },
   textArea: {
     minHeight: 150,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderColor: colores.borde,
+    borderRadius: radio.sm,
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colores.superficieSuave,
     fontSize: 15,
   },
-  disabledInput: { backgroundColor: '#e5e7eb', color: '#4b5563' },
+  disabledInput: { backgroundColor: colores.bordeSuave, color: colores.textoSuave },
   alertBox: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colores.errorSuave,
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: colores.error,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radio.sm,
     marginTop: 12,
   },
-  alertTitle: { color: '#b91c1c', fontWeight: 'bold', marginBottom: 4 },
-  alertText: { color: '#7f1d1d' },
+  alertTitle: { color: colores.error, fontWeight: 'bold', marginBottom: 4 },
+  alertText: { color: colores.error },
   saveButton: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 10,
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
     padding: 15,
     alignItems: 'center',
   },
   disabledButton: { opacity: 0.6 },
-  saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  saveButtonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 17 },
 });

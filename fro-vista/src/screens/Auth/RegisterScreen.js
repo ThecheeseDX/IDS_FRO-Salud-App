@@ -4,6 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { validateRut } from '../../utils/validators';
+import { colores, radio } from '../../theme';
 
 const RegisterScreen = ({ navigation }) => {
     const [esProfesional, setEsProfesional] = useState(false);
@@ -224,7 +225,7 @@ const RegisterScreen = ({ navigation }) => {
 
                         <View style={[styles.pickerContainer, errores.sexo_clinico && styles.inputError]}>
                             <Picker selectedValue={formData.sexo_clinico} onValueChange={(v) => handleChange('sexo_clinico', v)}>
-                                <Picker.Item label="Seleccione su Sexo..." value="" color="#999" />
+                                <Picker.Item label="Seleccione su Sexo..." value="" color={colores.textoTenue} />
                                 <Picker.Item label="Hombre" value="Hombre" />
                                 <Picker.Item label="Mujer" value="Mujer" />
                             </Picker>
@@ -233,7 +234,7 @@ const RegisterScreen = ({ navigation }) => {
                         <Text style={styles.subHeader}>Dirección</Text>
                         <View style={[styles.pickerContainer, errores.comuna_id && styles.inputError]}>
                             <Picker selectedValue={formData.comuna_id} onValueChange={(v) => handleChange('comuna_id', v)}>
-                                <Picker.Item label="Seleccione su comuna..." value="" color="#999" />
+                                <Picker.Item label="Seleccione su comuna..." value="" color={colores.textoTenue} />
                                 {comunas.map((c) => (<Picker.Item key={c.comuna_id.toString()} label={c.nombre} value={c.comuna_id.toString()} />))}
                             </Picker>
                         </View>
@@ -254,20 +255,20 @@ const RegisterScreen = ({ navigation }) => {
 
                 {esProfesional && (
                     <View>
-                        <Text style={[styles.sectionHeader, { backgroundColor: '#d1ecf1' }]}>Sección 3: Acreditación Profesional</Text>
+                        <Text style={[styles.sectionHeader, { backgroundColor: colores.primarioSuave }]}>Sección 3: Acreditación Profesional</Text>
 
                         <TextInput style={[styles.input, errores.num_registro_salud && styles.inputError]} placeholder="Número de Registro Superintendencia" value={formData.num_registro_salud} onChangeText={(v) => handleChange('num_registro_salud', v)} />
 
                         <View style={[styles.pickerContainer, errores.especialidad_id && styles.inputError]}>
                             <Picker selectedValue={formData.especialidad_id} onValueChange={(v) => handleChange('especialidad_id', v)}>
-                                <Picker.Item label="Especialidad Clínica..." value="" color="#999" />
+                                <Picker.Item label="Especialidad Clínica..." value="" color={colores.textoTenue} />
                                 {especialidades.map((e) => (<Picker.Item key={e.especialidad_id.toString()} label={e.nombre} value={e.especialidad_id.toString()} />))}
                             </Picker>
                         </View>
 
                         <View style={[styles.pickerContainer, errores.tipo_sede && styles.inputError]}>
                             <Picker selectedValue={formData.tipo_sede} onValueChange={(v) => handleChange('tipo_sede', v)}>
-                                <Picker.Item label="Modalidad de Atención..." value="" color="#999" />
+                                <Picker.Item label="Modalidad de Atención..." value="" color={colores.textoTenue} />
                                 <Picker.Item label="Atención Domiciliaria" value="DOMICILIO" />
                                 <Picker.Item label="Teleconsulta Online" value="ONLINE" />
                                 <Picker.Item label="Ambas Modalidades" value="AMBOS" />
@@ -301,37 +302,37 @@ const RegisterScreen = ({ navigation }) => {
                                     <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="Inicio (ej 08:00)" value={bloque.hora_inicio} onChangeText={(v) => actualizarHorario(index, 'hora_inicio', v)} />
                                     <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="Fin (ej 13:00)" value={bloque.hora_fin} onChangeText={(v) => actualizarHorario(index, 'hora_fin', v)} />
                                     <TouchableOpacity style={styles.btnEliminar} onPress={() => eliminarHorario(index)}>
-                                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>X</Text>
+                                        <Text style={{ color: colores.superficie, fontWeight: 'bold' }}>X</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ))}
-                        <Button title="+ Añadir Bloque Horario" onPress={agregarBloqueHorario} color="#457b9d" />
+                        <Button title="+ Añadir Bloque Horario" onPress={agregarBloqueHorario} color={colores.primario} />
                     </View>
                 )}
 
                 <View style={styles.buttonContainer}>
-                    <Button title={esProfesional ? "FINALIZAR ALTA MÉDICA" : "FINALIZAR REGISTRO PACIENTE"} onPress={confirmarCreacionCuenta} color={esProfesional ? "#2a9d8f" : "#1c3d5a"} />
+                    <Button title={esProfesional ? "FINALIZAR ALTA MÉDICA" : "FINALIZAR REGISTRO PACIENTE"} onPress={confirmarCreacionCuenta} color={esProfesional ? colores.primario : colores.primario} />
                 </View>
         </VistaConTeclado>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
-    title: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: '#1c3d5a' },
-    sectionHeader: { fontSize: 16, fontWeight: 'bold', backgroundColor: '#e0e0e0', padding: 10, marginTop: 10, marginBottom: 15, borderRadius: 8 },
-    subHeader: { fontSize: 14, fontWeight: 'bold', marginTop: 10, marginBottom: 10, color: '#444' },
+    container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
+    title: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: colores.primario },
+    sectionHeader: { fontSize: 17, fontWeight: 'bold', backgroundColor: colores.borde, padding: 10, marginTop: 10, marginBottom: 15, borderRadius: radio.sm },
+    subHeader: { fontSize: 15, fontWeight: 'bold', marginTop: 10, marginBottom: 10, color: colores.texto },
     row: { flexDirection: 'row', justifyContent: 'space-between' },
-    input: { borderWidth: 1, borderColor: '#ccc', backgroundColor: '#fff', padding: 12, marginBottom: 15, borderRadius: 25, fontSize: 15 },
+    input: { borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficie, padding: 12, marginBottom: 15, borderRadius: radio.completo, fontSize: 15 },
     halfInput: { width: '48%' },
-    inputError: { borderColor: '#ff4444', borderWidth: 2 },
-    pickerContainer: { borderWidth: 1, borderColor: '#ccc', backgroundColor: '#fff', borderRadius: 25, marginBottom: 15, overflow: 'hidden' },
-    btnValidar: { backgroundColor: '#457b9d', width: '40%', borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-    txtBtnValidar: { color: '#fff', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-    horarioBox: { backgroundColor: '#fff', padding: 10, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ddd' },
-    pickerContainerHorario: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, marginBottom: 10, overflow: 'hidden' },
-    btnEliminar: { backgroundColor: '#e63946', width: '15%', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+    inputError: { borderColor: colores.error, borderWidth: 2 },
+    pickerContainer: { borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficie, borderRadius: radio.completo, marginBottom: 15, overflow: 'hidden' },
+    btnValidar: { backgroundColor: colores.primario, width: '40%', borderRadius: radio.completo, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+    txtBtnValidar: { color: colores.superficie, fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
+    horarioBox: { backgroundColor: colores.superficie, padding: 10, borderRadius: radio.md, marginBottom: 15, borderWidth: 1, borderColor: colores.borde },
+    pickerContainerHorario: { borderWidth: 1, borderColor: colores.bordeCampo, borderRadius: radio.md, marginBottom: 10, overflow: 'hidden' },
+    btnEliminar: { backgroundColor: colores.error, width: '15%', borderRadius: radio.md, justifyContent: 'center', alignItems: 'center' },
     buttonContainer: { marginTop: 25, marginBottom: 50 }
 });
 

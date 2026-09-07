@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import client from "../../api/client";
 import VistaConTeclado from "../../components/VistaConTeclado";
+import { colores, radio, sombra } from '../../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OTPScreen
@@ -190,7 +191,7 @@ export default function OTPScreen({ route, navigation }) {
           disabled={cargando}
         >
           {cargando ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colores.superficie} />
           ) : (
             <Text style={estilos.textoBoton}>Verificar código</Text>
           )}
@@ -204,7 +205,7 @@ export default function OTPScreen({ route, navigation }) {
           ) : (
             <TouchableOpacity onPress={reenviarCodigo} disabled={cargandoReenvio}>
               {cargandoReenvio ? (
-                <ActivityIndicator size="small" color="#2563eb" />
+                <ActivityIndicator size="small" color={colores.primario} />
               ) : (
                 <Text style={estilos.textoEnlace}>Reenviar ahora</Text>
               )}
@@ -220,7 +221,7 @@ export default function OTPScreen({ route, navigation }) {
 const estilos = StyleSheet.create({
   fondo: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colores.fondo,
   },
   contenedor: {
     flexGrow: 1,
@@ -230,32 +231,29 @@ const estilos = StyleSheet.create({
   },
   tarjeta: {
     width: "100%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.lg,
     padding: 28,
-    shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 4,
     alignItems: "center",
+    ...sombra.media,
   },
   titulo: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: colores.textoTitulo,
     marginBottom: 8,
     textAlign: "center",
   },
   subtitulo: {
-    fontSize: 14,
-    color: "#64748b",
+    fontSize: 15,
+    color: colores.textoSuave,
     textAlign: "center",
     marginBottom: 28,
     lineHeight: 20,
   },
   destino: {
     fontWeight: "600",
-    color: "#334155",
+    color: colores.primario,
   },
   filaOTP: {
     flexDirection: "row",
@@ -266,29 +264,29 @@ const estilos = StyleSheet.create({
     width: 44,
     height: 54,
     borderWidth: 1.5,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
+    borderColor: colores.borde,
+    borderRadius: radio.md,
     textAlign: "center",
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
-    backgroundColor: "#f8fafc",
+    color: colores.textoTitulo,
+    backgroundColor: colores.fondo,
   },
   celdaError: {
-    borderColor: "#ef4444",
-    backgroundColor: "#fef2f2",
+    borderColor: colores.error,
+    backgroundColor: colores.errorSuave,
   },
   textoError: {
-    color: "#ef4444",
+    color: colores.error,
     fontSize: 13,
     marginBottom: 12,
     textAlign: "center",
   },
   boton: {
     width: "100%",
-    backgroundColor: "#2563eb",
+    backgroundColor: colores.primario,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radio.md,
     alignItems: "center",
     marginTop: 8,
   },
@@ -296,8 +294,8 @@ const estilos = StyleSheet.create({
     opacity: 0.6,
   },
   textoBoton: {
-    color: "#fff",
-    fontSize: 16,
+    color: colores.superficie,
+    fontSize: 17,
     fontWeight: "600",
   },
   filareenvio: {
@@ -306,11 +304,11 @@ const estilos = StyleSheet.create({
     marginTop: 20,
   },
   textoGris: {
-    color: "#94a3b8",
+    color: colores.textoTenue,
     fontSize: 13,
   },
   textoEnlace: {
-    color: "#2563eb",
+    color: colores.primario,
     fontSize: 13,
     fontWeight: "600",
   },

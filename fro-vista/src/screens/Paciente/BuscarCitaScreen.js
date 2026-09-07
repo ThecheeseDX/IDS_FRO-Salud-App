@@ -19,6 +19,7 @@ import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // El formateador local de arriba arma AAAA-MM-DD para el servidor; este es para mostrar.
 import { formatearFecha as fechaLegible } from '../../utils/fechas';
+import { colores, radio } from '../../theme';
 
 const DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -338,7 +339,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
         disabled={cargandoBusqueda}
       >
         {cargandoBusqueda ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colores.superficie} />
         ) : (
           <Text style={styles.btnTexto}>Buscar disponibilidad</Text>
         )}
@@ -404,7 +405,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
           disabled={cargandoBloqueo}
         >
           {cargandoBloqueo ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colores.superficie} />
           ) : (
             <Text style={styles.btnTexto}>Confirmar reserva</Text>
           )}
@@ -416,7 +417,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
         titulo="Motivo de la reprogramación"
         descripcion="Indica brevemente por qué cambias el horario:"
         etiquetaConfirmar="Reprogramar"
-        colorConfirmar="#0052cc"
+        colorConfirmar={colores.primario}
         onConfirmar={ejecutarReprogramacion}
         onCancelar={() => setPedirMotivoReprogramacion(false)}
       />
@@ -426,70 +427,70 @@ export default function BuscarCitaScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   bannerReprogramacion: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: colores.primarioSuave,
     borderLeftWidth: 4,
-    borderLeftColor: '#0052cc',
-    borderRadius: 8,
+    borderLeftColor: colores.primario,
+    borderRadius: radio.sm,
     padding: 12,
     marginBottom: 16,
   },
-  bannerTexto: { color: '#0d47a1' },
+  bannerTexto: { color: colores.primario },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colores.superficieSuave,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#0052cc',
+    color: colores.primario,
     marginBottom: 20,
     textAlign: 'center',
   },
   subtitulo: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#333',
+    color: colores.texto,
     marginTop: 20,
     marginBottom: 10,
   },
   label: {
     fontWeight: '600',
-    color: '#333',
+    color: colores.texto,
     marginBottom: 6,
-    fontSize: 14,
+    fontSize: 15,
   },
   pickerContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.sm,
     marginBottom: 14,
     overflow: 'hidden',
   },
   fechaBtn: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.sm,
     padding: 14,
     marginBottom: 14,
   },
   fechaBtnText: {
-    color: '#333',
+    color: colores.texto,
     fontSize: 15,
   },
   btnBuscar: {
-    backgroundColor: '#0052cc',
+    backgroundColor: colores.primario,
     padding: 14,
-    borderRadius: 10,
+    borderRadius: radio.md,
     alignItems: 'center',
     marginBottom: 10,
   },
   btnConfirmar: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: colores.exito,
     padding: 16,
-    borderRadius: 10,
+    borderRadius: radio.md,
     alignItems: 'center',
     marginTop: 20,
   },
@@ -497,43 +498,43 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   btnTexto: {
-    color: '#fff',
+    color: colores.superficie,
     fontWeight: 'bold',
     fontSize: 15,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     padding: 16,
-    borderRadius: 10,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colores.borde,
     marginBottom: 12,
   },
   cardSeleccionada: {
-    borderColor: '#0052cc',
+    borderColor: colores.primario,
     borderWidth: 2,
-    backgroundColor: '#e8f0fe',
+    backgroundColor: colores.primarioSuave,
   },
   nombre: {
     fontWeight: 'bold',
-    fontSize: 16,
-    color: '#1c3d5a',
+    fontSize: 17,
+    color: colores.primario,
     marginBottom: 6,
   },
   detalle: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 15,
+    color: colores.textoSuave,
     marginBottom: 3,
   },
   bloque: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0052cc',
+    color: colores.primario,
     marginTop: 6,
   },
   seleccionadoLabel: {
     marginTop: 8,
-    color: '#0052cc',
+    color: colores.primario,
     fontWeight: 'bold',
     fontSize: 13,
   },
@@ -541,19 +542,19 @@ const styles = StyleSheet.create({
     marginTop: 24,
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
   },
   sinResultadosTexto: {
-    color: '#555',
+    color: colores.textoSuave,
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 6,
   },
   sinResultadosHint: {
-    color: '#999',
+    color: colores.textoTenue,
     fontSize: 13,
     textAlign: 'center',
   },

@@ -21,6 +21,7 @@ import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
+import { colores, radio } from '../../../theme';
 
 function estadoNormalizado(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_');
@@ -180,7 +181,7 @@ export default function MarcasTemporalesScreen() {
         <RefreshControl
           refreshing={actualizando}
           onRefresh={() => cargarCitas(true)}
-          colors={['#2e7d32']}
+          colors={[colores.primario]}
         />
       }
     >
@@ -190,7 +191,7 @@ export default function MarcasTemporalesScreen() {
       </Text>
 
       {cargando ? (
-        <ActivityIndicator size="large" color="#2e7d32" />
+        <ActivityIndicator size="large" color={colores.exito} />
       ) : errorCarga ? (
         <ErrorRetry
           mensaje="No fue posible recuperar las citas."
@@ -261,7 +262,7 @@ export default function MarcasTemporalesScreen() {
                     onPress={() => ejecutarInicio(cita.cita_id)}
                   >
                     {procesando ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={colores.superficie} />
                     ) : (
                       <Text style={styles.buttonText}>Iniciar atencion</Text>
                     )}
@@ -286,7 +287,7 @@ export default function MarcasTemporalesScreen() {
                     onPress={() => confirmarTermino(cita.cita_id)}
                   >
                     {procesando ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={colores.superficie} />
                     ) : (
                       <Text style={styles.buttonText}>Finalizar atencion</Text>
                     )}
@@ -365,15 +366,15 @@ export default function MarcasTemporalesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e8f5e9' },
+  container: { flex: 1, backgroundColor: colores.fondo },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1f2937' },
-  subtitle: { color: '#666', marginTop: 4, marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: 'bold', color: colores.texto },
+  subtitle: { color: colores.textoSuave, marginTop: 4, marginBottom: 20 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    borderRadius: 12,
+    borderColor: colores.borde,
+    borderRadius: radio.md,
     padding: 16,
     marginBottom: 14,
   },
@@ -383,66 +384,66 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-  patient: { flex: 1, fontSize: 17, fontWeight: 'bold', color: '#1f2937' },
+  patient: { flex: 1, fontSize: 17, fontWeight: 'bold', color: colores.texto },
   badge: {
     overflow: 'hidden',
-    borderRadius: 12,
+    borderRadius: radio.md,
     paddingHorizontal: 9,
     paddingVertical: 4,
     fontSize: 11,
     fontWeight: 'bold',
   },
-  badgeReady: { backgroundColor: '#dbeafe', color: '#1d4ed8' },
-  badgeActive: { backgroundColor: '#ede9fe', color: '#6d28d9' },
-  badgeDone: { backgroundColor: '#dcfce7', color: '#15803d' },
-  detail: { color: '#4b5563', marginBottom: 5 },
+  badgeReady: { backgroundColor: colores.primarioSuave, color: colores.primario },
+  badgeActive: { backgroundColor: colores.primarioSuave, color: colores.primario },
+  badgeDone: { backgroundColor: colores.exitoSuave, color: colores.primario },
+  detail: { color: colores.textoSuave, marginBottom: 5 },
   duration: {
-    color: '#2e7d32',
+    color: colores.exito,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 17,
     marginTop: 6,
   },
   startButton: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: colores.exito,
     borderRadius: 9,
     padding: 13,
     alignItems: 'center',
     marginTop: 14,
   },
   finishButton: {
-    backgroundColor: '#0052cc',
+    backgroundColor: colores.primario,
     borderRadius: 9,
     padding: 13,
     alignItems: 'center',
     marginTop: 14,
   },
-  buttonText: { color: '#fff', fontWeight: 'bold' },
+  buttonText: { color: colores.superficie, fontWeight: 'bold' },
   manualButton: {
     paddingVertical: 10,
     alignItems: 'center',
   },
   manualButtonText: {
-    color: '#0052cc',
+    color: colores.primario,
     fontSize: 13,
     fontWeight: '600',
   },
   recoveryBox: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: colores.advertenciaSuave,
     borderLeftWidth: 4,
-    borderLeftColor: '#f97316',
-    borderRadius: 8,
+    borderLeftColor: colores.advertencia,
+    borderRadius: radio.sm,
     padding: 10,
     marginTop: 10,
   },
-  recoveryText: { color: '#9a3412', fontSize: 13 },
+  recoveryText: { color: colores.advertencia, fontSize: 13 },
   emptyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    borderRadius: 12,
+    borderColor: colores.borde,
+    borderRadius: radio.md,
     padding: 20,
   },
-  emptyText: { color: '#666', textAlign: 'center' },
+  emptyText: { color: colores.textoSuave, textAlign: 'center' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
@@ -456,24 +457,24 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     padding: 18,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colores.texto,
     marginBottom: 6,
   },
-  modalHelp: { color: '#6b7280', fontSize: 12, marginBottom: 12 },
+  modalHelp: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderColor: colores.borde,
+    borderRadius: radio.sm,
     padding: 11,
     marginBottom: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colores.superficieSuave,
   },
   justificationInput: { minHeight: 90 },
   modalActions: {
@@ -485,10 +486,10 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     marginRight: 8,
   },
-  cancelButtonText: { color: '#4b5563', fontWeight: 'bold' },
+  cancelButtonText: { color: colores.textoSuave, fontWeight: 'bold' },
   confirmButton: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 8,
+    backgroundColor: colores.exito,
+    borderRadius: radio.sm,
     paddingHorizontal: 16,
     paddingVertical: 11,
   },

@@ -8,13 +8,14 @@ import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
 import VistaConTeclado from './VistaConTeclado';
+import { colores, radio } from '../theme';
 
 export default function DialogoMotivo({
   visible,
   titulo,
   descripcion,
   etiquetaConfirmar = 'Confirmar',
-  colorConfirmar = '#d32f2f',
+  colorConfirmar = colores.error,
   onConfirmar,
   onCancelar,
 }) {
@@ -79,22 +80,22 @@ export default function DialogoMotivo({
 const estilos = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
   centrado: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  tarjeta: { backgroundColor: '#fff', borderRadius: 14, padding: 20 },
-  titulo: { fontSize: 18, fontWeight: 'bold', color: '#1f2937', marginBottom: 6 },
-  descripcion: { color: '#555', marginBottom: 12 },
+  tarjeta: { backgroundColor: colores.superficie, borderRadius: radio.lg, padding: 20 },
+  titulo: { fontSize: 17, fontWeight: 'bold', color: colores.texto, marginBottom: 6 },
+  descripcion: { color: colores.textoSuave, marginBottom: 12 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.sm,
     padding: 12,
     minHeight: 80,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colores.superficieSuave,
   },
-  inputError: { borderColor: '#d32f2f' },
-  textoError: { color: '#d32f2f', marginTop: 6, fontSize: 13 },
+  inputError: { borderColor: colores.error },
+  textoError: { color: colores.error, marginTop: 6, fontSize: 13 },
   acciones: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, gap: 10 },
   botonSecundario: { paddingVertical: 12, paddingHorizontal: 16 },
-  textoSecundario: { color: '#555', fontWeight: 'bold' },
-  botonPrimario: { paddingVertical: 12, paddingHorizontal: 18, borderRadius: 8 },
-  textoPrimario: { color: '#fff', fontWeight: 'bold' },
+  textoSecundario: { color: colores.textoSuave, fontWeight: 'bold' },
+  botonPrimario: { paddingVertical: 12, paddingHorizontal: 18, borderRadius: radio.sm },
+  textoPrimario: { color: colores.superficie, fontWeight: 'bold' },
 });

@@ -7,6 +7,7 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import ErrorRetry from '../../../components/ErrorRetry';
+import { colores, radio } from '../../../theme';
 
 // CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
 const PALABRAS_SUBJETIVAS = /\b(mejorar|mejor[íi]a|sentirse?\s+bien|bienestar|aliviar|alivio|fortalecer|avanzar|progresar|recuperar|estar\s+mejor|c[óo]modo|tranquil|m[áa]s\s+[áa]gil)/i;
@@ -234,7 +235,7 @@ export default function EvolucionClinicaScreen({ route }) {
               onChangeText={setEpisodioId}
             />
             <TouchableOpacity style={styles.boton} onPress={cargarMetas} disabled={isLoadingMetas}>
-              {isLoadingMetas ? <ActivityIndicator color="#fff" /> : <Text style={styles.botonTexto}>Cargar metas</Text>}
+              {isLoadingMetas ? <ActivityIndicator color={colores.superficie} /> : <Text style={styles.botonTexto}>Cargar metas</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -245,7 +246,7 @@ export default function EvolucionClinicaScreen({ route }) {
 
           {isLoadingMetas ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color="#0052cc" />
+              <ActivityIndicator size="large" color={colores.primario} />
               <Text style={styles.loadingText}>Cargando historial de metas…</Text>
             </View>
           ) : errorRed ? (
@@ -296,11 +297,11 @@ export default function EvolucionClinicaScreen({ route }) {
             onChangeText={(v) => setNuevoObjetivo({ ...nuevoObjetivo, unidad: v })}
           />
           <TouchableOpacity
-            style={[styles.boton, { backgroundColor: '#2e7d32' }, (camposBloqueados || enviandoMeta) && styles.botonOff]}
+            style={[styles.boton, { backgroundColor: colores.exito }, (camposBloqueados || enviandoMeta) && styles.botonOff]}
             onPress={handleCrearObjetivo}
             disabled={camposBloqueados || enviandoMeta}
           >
-            {enviandoMeta ? <ActivityIndicator color="#fff" /> : <Text style={styles.botonTexto}>Guardar meta</Text>}
+            {enviandoMeta ? <ActivityIndicator color={colores.superficie} /> : <Text style={styles.botonTexto}>Guardar meta</Text>}
           </TouchableOpacity>
         </View>
 
@@ -340,7 +341,7 @@ export default function EvolucionClinicaScreen({ route }) {
             onPress={handleRegistrarAvance}
             disabled={camposBloqueados || enviandoAvance}
           >
-            {enviandoAvance ? <ActivityIndicator color="#fff" /> : <Text style={styles.botonTexto}>Registrar avance</Text>}
+            {enviandoAvance ? <ActivityIndicator color={colores.superficie} /> : <Text style={styles.botonTexto}>Registrar avance</Text>}
           </TouchableOpacity>
         </View>
       </VistaConTeclado>
@@ -348,35 +349,35 @@ export default function EvolucionClinicaScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1c3d5a', marginBottom: 4 },
-  subtitulo: { fontSize: 13, color: '#888', marginBottom: 24, fontStyle: 'italic' },
+  container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
+  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
+  subtitulo: { fontSize: 13, color: colores.textoTenue, marginBottom: 24, fontStyle: 'italic' },
   seccion: {
-    backgroundColor: '#fff', padding: 16, borderRadius: 12,
-    borderWidth: 1, borderColor: '#e0e0e0', marginBottom: 20
+    backgroundColor: colores.superficie, padding: 16, borderRadius: radio.md,
+    borderWidth: 1, borderColor: colores.borde, marginBottom: 20
   },
-  seccionTitulo: { fontSize: 17, fontWeight: 'bold', color: '#2e7d32', marginBottom: 12 },
+  seccionTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 12 },
   input: {
-    borderWidth: 1, borderColor: '#ccc', backgroundColor: '#f9f9f9',
-    padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 15
+    borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficieSuave,
+    padding: 12, borderRadius: radio.md, marginBottom: 12, fontSize: 15
   },
-  inputError: { borderColor: '#d32f2f', backgroundColor: '#fff0f0' },
-  errorText: { color: '#d32f2f', fontSize: 12, marginTop: -6, marginBottom: 12 },
-  boton: { backgroundColor: '#0052cc', padding: 14, borderRadius: 10, alignItems: 'center' },
+  inputError: { borderColor: colores.error, backgroundColor: colores.errorSuave },
+  errorText: { color: colores.error, fontSize: 13, marginTop: -6, marginBottom: 12 },
+  boton: { backgroundColor: colores.primario, padding: 14, borderRadius: radio.md, alignItems: 'center' },
   botonOff: { opacity: 0.5 },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
   loadingBox: { paddingVertical: 24, alignItems: 'center' },
-  loadingText: { marginTop: 10, color: '#666', fontSize: 14 },
-  vacio: { color: '#888', fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
+  loadingText: { marginTop: 10, color: colores.textoSuave, fontSize: 15 },
+  vacio: { color: colores.textoTenue, fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
   metaCard: {
-    backgroundColor: '#f0f6ff', padding: 12, borderRadius: 10,
-    borderWidth: 1, borderColor: '#d6e4ff', marginBottom: 10
+    backgroundColor: colores.primarioSuave, padding: 12, borderRadius: radio.md,
+    borderWidth: 1, borderColor: colores.primarioSuave, marginBottom: 10
   },
-  metaDesc: { fontSize: 15, fontWeight: '600', color: '#1c3d5a', marginBottom: 4 },
-  metaValores: { fontSize: 13, color: '#444', marginBottom: 8 },
-  barraFondo: { height: 8, backgroundColor: '#e0e0e0', borderRadius: 4, overflow: 'hidden' },
-  barraProgreso: { height: 8, backgroundColor: '#0052cc', borderRadius: 4 },
-  pickerWrap: { borderWidth: 1, borderColor: '#ccc', backgroundColor: '#f9f9f9', borderRadius: 10, marginBottom: 12 },
-  avisoBanner: { backgroundColor: '#fff8e1', borderWidth: 1, borderColor: '#ffe082', borderRadius: 10, padding: 12, marginBottom: 16 },
-  avisoBannerText: { color: '#8d6e00', fontSize: 13, textAlign: 'center' }
+  metaDesc: { fontSize: 15, fontWeight: '600', color: colores.primario, marginBottom: 4 },
+  metaValores: { fontSize: 13, color: colores.texto, marginBottom: 8 },
+  barraFondo: { height: 8, backgroundColor: colores.borde, borderRadius: radio.sm, overflow: 'hidden' },
+  barraProgreso: { height: 8, backgroundColor: colores.primario, borderRadius: radio.sm },
+  pickerWrap: { borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficieSuave, borderRadius: radio.md, marginBottom: 12 },
+  avisoBanner: { backgroundColor: colores.advertenciaSuave, borderWidth: 1, borderColor: colores.advertenciaBorde, borderRadius: radio.md, padding: 12, marginBottom: 16 },
+  avisoBannerText: { color: colores.advertencia, fontSize: 13, textAlign: 'center' }
 });

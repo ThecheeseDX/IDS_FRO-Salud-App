@@ -4,6 +4,7 @@ import {
   Alert, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import apiClient from '../../../api/client';
+import { colores, radio } from '../../../theme';
 
 export default function InalterabilidadScreen() {
   const [evolucionId, setEvolucionId] = useState('');
@@ -95,7 +96,7 @@ export default function InalterabilidadScreen() {
         disabled={cargando}
       >
         {cargando ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colores.superficie} />
         ) : (
           <Text style={styles.buttonText}>Firmar y Sellar Documento</Text>
         )}
@@ -119,17 +120,17 @@ export default function InalterabilidadScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f4f6f8' },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#0052cc', marginBottom: 10, textAlign: 'center' },
-  description: { fontSize: 14, color: '#555', marginBottom: 24, textAlign: 'center' },
-  label: { fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 16 },
-  button: { backgroundColor: '#2e7d32', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 4 },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  infoBox: { marginTop: 24, backgroundColor: '#fff', borderLeftWidth: 4, borderLeftColor: '#0052cc', padding: 14, borderRadius: 8 },
-  infoTitle: { fontWeight: 'bold', color: '#0052cc', marginBottom: 4 },
-  infoText: { color: '#555' },
-  successBox: { marginTop: 20, backgroundColor: '#e8f5e9', borderWidth: 1, borderColor: '#c8e6c9', padding: 15, borderRadius: 8 },
-  successTitle: { fontWeight: 'bold', color: '#2e7d32', marginBottom: 5 },
-  successText: { color: '#1b5e20', fontSize: 13, fontStyle: 'italic' }
+  container: { flex: 1, padding: 20, backgroundColor: colores.fondo },
+  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 10, textAlign: 'center' },
+  description: { fontSize: 15, color: colores.textoSuave, marginBottom: 24, textAlign: 'center' },
+  label: { fontWeight: 'bold', color: colores.texto, marginBottom: 6 },
+  input: { backgroundColor: colores.superficie, borderWidth: 1, borderColor: colores.bordeCampo, borderRadius: radio.sm, padding: 12, marginBottom: 16 },
+  button: { backgroundColor: colores.exito, padding: 15, borderRadius: radio.sm, alignItems: 'center', marginTop: 4 },
+  buttonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 17 },
+  infoBox: { marginTop: 24, backgroundColor: colores.superficie, borderLeftWidth: 4, borderLeftColor: colores.primario, padding: 14, borderRadius: radio.sm },
+  infoTitle: { fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
+  infoText: { color: colores.textoSuave },
+  successBox: { marginTop: 20, backgroundColor: colores.exitoSuave, borderWidth: 1, borderColor: colores.exitoBorde, padding: 15, borderRadius: radio.sm },
+  successTitle: { fontWeight: 'bold', color: colores.exito, marginBottom: 5 },
+  successText: { color: colores.exito, fontSize: 13, fontStyle: 'italic' }
 });

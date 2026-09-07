@@ -20,6 +20,7 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFechaHora } from '../../utils/fechas';
+import { colores, radio } from '../../theme';
 
 const METODOS = [
   { valor: 'TARJETA_OK', etiqueta: 'Tarjeta terminada en 1111' },
@@ -148,7 +149,7 @@ export default function PagosScreen() {
   if (cargando) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -169,7 +170,7 @@ export default function PagosScreen() {
       style={estilos.fondo}
       contentContainerStyle={estilos.contenido}
       refreshControl={
-        <RefreshControl refreshing={refrescando} onRefresh={() => cargar(true)} colors={['#0052cc']} />
+        <RefreshControl refreshing={refrescando} onRefresh={() => cargar(true)} colors={[colores.primario]} />
       }
     >
       {/* ── Citas y sus pagos ── */}
@@ -193,7 +194,7 @@ export default function PagosScreen() {
                 <Text style={estilos.tituloCita}>
                   {formatearFecha(cita.fecha_hora_inicio)}
                 </Text>
-                <Text style={[estilos.badge, { color: cita.pagada ? '#2e7d32' : '#ef6c00' }]}>
+                <Text style={[estilos.badge, { color: cita.pagada ? colores.exito : colores.advertencia }]}>
                   {cita.pagada ? 'PAGADA' : enTransito ? 'EN TRÁNSITO' : 'PENDIENTE'}
                 </Text>
               </View>
@@ -205,7 +206,7 @@ export default function PagosScreen() {
               {cita.folio ? (
                 <Text style={estilos.detalle}>
                   Bono {cita.folio} ({cita.nombre_institucion}):{' '}
-                  <Text style={{ color: bonoValidado ? '#2e7d32' : '#d32f2f', fontWeight: 'bold' }}>
+                  <Text style={{ color: bonoValidado ? colores.exito : colores.error, fontWeight: 'bold' }}>
                     {cita.estado_validacion}
                   </Text>
                   {bonoValidado ? ` · cobertura ${pesos(cita.monto_cobertura)}` : ''}
@@ -249,7 +250,7 @@ export default function PagosScreen() {
                           disabled={procesando}
                         >
                           {procesando ? (
-                            <ActivityIndicator color="#fff" />
+                            <ActivityIndicator color={colores.superficie} />
                           ) : (
                             <Text style={estilos.botonPrimarioTexto}>Validar bono</Text>
                           )}
@@ -282,7 +283,7 @@ export default function PagosScreen() {
                     disabled={procesando}
                   >
                     {procesando ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={colores.superficie} />
                     ) : (
                       <Text style={estilos.botonPrimarioTexto}>
                         {enTransito ? 'Conciliar pago en tránsito' : `Pagar ${pesos(cita.copago_exigible)}`}
@@ -335,7 +336,7 @@ export default function PagosScreen() {
           disabled={comprandoPlan}
         >
           {comprandoPlan ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colores.superficie} />
           ) : (
             <Text style={estilos.botonPrimarioTexto}>Comprar plan</Text>
           )}
@@ -351,76 +352,76 @@ export default function PagosScreen() {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 16, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
 
-  seccion: { fontSize: 18, fontWeight: 'bold', color: '#1c3d5a', marginTop: 10, marginBottom: 6 },
-  ayuda: { color: '#666', fontSize: 13, marginBottom: 12 },
-  sinDatos: { color: '#777', fontStyle: 'italic', marginBottom: 10 },
+  seccion: { fontSize: 17, fontWeight: 'bold', color: colores.primario, marginTop: 10, marginBottom: 6 },
+  ayuda: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
+  sinDatos: { color: colores.textoSuave, fontStyle: 'italic', marginBottom: 10 },
 
   tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 14,
     marginBottom: 12,
   },
   filaTitulo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tituloCita: { fontWeight: 'bold', color: '#1f2937', fontSize: 15, textTransform: 'capitalize' },
-  badge: { fontWeight: 'bold', fontSize: 12, marginLeft: 8 },
-  detalle: { color: '#555', fontSize: 13, marginTop: 3 },
-  copago: { color: '#1c3d5a', fontWeight: 'bold', marginTop: 8, fontSize: 15 },
+  tituloCita: { fontWeight: 'bold', color: colores.texto, fontSize: 15, textTransform: 'capitalize' },
+  badge: { fontWeight: 'bold', fontSize: 13, marginLeft: 8 },
+  detalle: { color: colores.textoSuave, fontSize: 13, marginTop: 3 },
+  copago: { color: colores.primario, fontWeight: 'bold', marginTop: 8, fontSize: 15 },
 
   formBono: { marginTop: 10 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.sm,
     padding: 11,
     marginBottom: 8,
   },
   selector: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.sm,
     marginTop: 8,
     marginBottom: 4,
     overflow: 'hidden',
   },
 
   botonPrimario: {
-    backgroundColor: '#0052cc',
-    borderRadius: 8,
+    backgroundColor: colores.primario,
+    borderRadius: radio.sm,
     padding: 13,
     alignItems: 'center',
     marginTop: 8,
   },
-  botonPrimarioTexto: { color: '#fff', fontWeight: 'bold' },
+  botonPrimarioTexto: { color: colores.superficie, fontWeight: 'bold' },
   botonSecundario: {
     borderWidth: 1,
-    borderColor: '#0052cc',
-    borderRadius: 8,
+    borderColor: colores.primario,
+    borderRadius: radio.sm,
     padding: 11,
     alignItems: 'center',
     marginTop: 10,
   },
-  botonSecundarioTexto: { color: '#0052cc', fontWeight: 'bold' },
+  botonSecundarioTexto: { color: colores.primario, fontWeight: 'bold' },
   deshabilitado: { opacity: 0.6 },
-  enlace: { color: '#555', textAlign: 'center', marginTop: 10, fontWeight: '600' },
+  enlace: { color: colores.textoSuave, textAlign: 'center', marginTop: 10, fontWeight: '600' },
 
   tarjetaPlan: {
-    backgroundColor: '#e8f5e9',
-    borderRadius: 10,
+    backgroundColor: colores.exitoSuave,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
+    borderColor: colores.exitoBorde,
     padding: 12,
     marginBottom: 8,
   },
-  tituloPlan: { fontWeight: 'bold', color: '#1b5e20' },
+  tituloPlan: { fontWeight: 'bold', color: colores.exito },
 
-  notaDemo: { color: '#999', fontSize: 11, textAlign: 'center', marginTop: 14, fontStyle: 'italic' },
+  notaDemo: { color: colores.textoTenue, fontSize: 11, textAlign: 'center', marginTop: 14, fontStyle: 'italic' },
 });

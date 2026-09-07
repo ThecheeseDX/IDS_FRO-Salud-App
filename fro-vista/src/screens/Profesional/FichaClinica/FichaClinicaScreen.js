@@ -15,6 +15,7 @@ import EpisodioScreen from './EpisodioScreen';
 import EvolucionClinicaScreen from './EvolucionClinicaScreen';
 import IntervencionScreen from './IntervencionScreen';
 import PautasScreen from './PautasScreen';
+import { colores } from '../../../theme';
 
 const TABS = [
   { key: 'historial',    titulo: 'Historial',    icono: '📋', Componente: HistorialPacienteScreen, requierePaciente: true },
@@ -125,7 +126,7 @@ export default function FichaClinicaScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
   },
   panel: {
     flex: 1,
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   avisoTexto: {
-    color: '#666',
+    color: colores.textoSuave,
     fontStyle: 'italic',
     textAlign: 'center',
   },

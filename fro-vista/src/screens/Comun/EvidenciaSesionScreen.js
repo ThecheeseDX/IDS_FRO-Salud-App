@@ -23,6 +23,7 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearHora } from '../../utils/fechas';
+import { colores, radio } from '../../theme';
 
 const clavePendiente = (citaId) => `cu43_pendiente_${citaId}`;
 
@@ -172,7 +173,7 @@ export default function EvidenciaSesionScreen({ route }) {
   if (!resumen) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -263,7 +264,7 @@ export default function EvidenciaSesionScreen({ route }) {
         </View>
       )}
 
-      {procesando && <ActivityIndicator size="small" color="#0052cc" style={{ marginTop: 8 }} />}
+      {procesando && <ActivityIndicator size="small" color={colores.primario} style={{ marginTop: 8 }} />}
 
       <Text style={estilos.nota}>
         Estas marcas certifican la ejecución de la prestación y quedan en la
@@ -274,36 +275,36 @@ export default function EvidenciaSesionScreen({ route }) {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 20, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
 
-  titulo: { fontSize: 22, fontWeight: 'bold', color: '#1c3d5a' },
-  subtitulo: { color: '#666', marginBottom: 12 },
+  titulo: { fontSize: 22, fontWeight: 'bold', color: colores.primario },
+  subtitulo: { color: colores.textoSuave, marginBottom: 12 },
 
   tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 14,
     marginBottom: 14,
   },
-  seccion: { fontWeight: 'bold', color: '#1f2937', fontSize: 15, marginBottom: 8 },
-  detalle: { color: '#555', fontSize: 13, marginBottom: 4 },
+  seccion: { fontWeight: 'bold', color: colores.texto, fontSize: 15, marginBottom: 8 },
+  detalle: { color: colores.textoSuave, fontSize: 13, marginBottom: 4 },
 
   filaBotones: { flexDirection: 'row', gap: 10, marginTop: 10 },
   boton: {
     flex: 1,
-    backgroundColor: '#0052cc',
-    borderRadius: 8,
+    backgroundColor: colores.primario,
+    borderRadius: radio.sm,
     padding: 12,
     alignItems: 'center',
   },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
-  botonSecundario: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#0052cc' },
-  botonSecundarioTexto: { color: '#0052cc', fontWeight: 'bold', fontSize: 13 },
+  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 13 },
+  botonSecundario: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colores.primario },
+  botonSecundarioTexto: { color: colores.primario, fontWeight: 'bold', fontSize: 13 },
   deshabilitado: { opacity: 0.6 },
 
-  nota: { color: '#888', fontSize: 12, textAlign: 'center', marginTop: 10 },
+  nota: { color: colores.textoTenue, fontSize: 13, textAlign: 'center', marginTop: 10 },
 });

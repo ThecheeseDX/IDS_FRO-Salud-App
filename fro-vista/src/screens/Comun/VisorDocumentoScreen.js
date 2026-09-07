@@ -23,6 +23,7 @@ import { WebView } from 'react-native-webview';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFecha } from '../../utils/fechas';
+import { colores, radio } from '../../theme';
 
 export default function VisorDocumentoScreen({ route }) {
   const { documentoId, nombre } = route?.params || {};
@@ -70,7 +71,7 @@ export default function VisorDocumentoScreen({ route }) {
   if (!documento) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -157,7 +158,7 @@ export default function VisorDocumentoScreen({ route }) {
           startInLoadingState
           renderLoading={() => (
             <View style={estilos.centrado}>
-              <ActivityIndicator size="large" color="#0052cc" />
+              <ActivityIndicator size="large" color={colores.primario} />
             </View>
           )}
         />
@@ -167,12 +168,12 @@ export default function VisorDocumentoScreen({ route }) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1c1f24' },
-  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#f4f6f8' },
+  contenedor: { flex: 1, backgroundColor: colores.neutro[900] },
+  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colores.fondo },
 
-  cabecera: { padding: 12, backgroundColor: '#11141a' },
-  nombre: { color: '#fff', fontWeight: 'bold' },
-  detalle: { color: '#9aa4b2', fontSize: 12, marginTop: 2 },
+  cabecera: { padding: 12, backgroundColor: colores.secundario },
+  nombre: { color: colores.superficie, fontWeight: 'bold' },
+  detalle: { color: colores.textoTenue, fontSize: 13, marginTop: 2 },
 
   imagen: { flex: 1 },
   web: { flex: 1 },
@@ -181,25 +182,25 @@ const estilos = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#9aa4b2',
-    borderRadius: 6,
+    borderColor: colores.textoTenue,
+    borderRadius: radio.sm,
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
-  botonOriginalTexto: { color: '#e5e7eb', fontSize: 12, fontWeight: '600' },
+  botonOriginalTexto: { color: colores.bordeSuave, fontSize: 13, fontWeight: '600' },
 
   paginas: { padding: 8, paddingBottom: 30 },
   pagina: { marginBottom: 12 },
-  imagenPagina: { width: '100%', aspectRatio: 0.7071, backgroundColor: '#fff', borderRadius: 4 },
-  numeroPagina: { color: '#9aa4b2', fontSize: 11, textAlign: 'center', marginTop: 4 },
+  imagenPagina: { width: '100%', aspectRatio: 0.7071, backgroundColor: colores.superficie, borderRadius: radio.sm },
+  numeroPagina: { color: colores.textoTenue, fontSize: 11, textAlign: 'center', marginTop: 4 },
 
-  codigoError: { fontWeight: 'bold', color: '#d32f2f', fontSize: 16, marginBottom: 6 },
-  textoError: { color: '#555', textAlign: 'center', marginBottom: 16 },
+  codigoError: { fontWeight: 'bold', color: colores.error, fontSize: 17, marginBottom: 6 },
+  textoError: { color: colores.textoSuave, textAlign: 'center', marginBottom: 16 },
   botonRecarga: {
-    backgroundColor: '#0052cc',
-    borderRadius: 8,
+    backgroundColor: colores.primario,
+    borderRadius: radio.sm,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
-  botonRecargaTexto: { color: '#fff', fontWeight: 'bold' },
+  botonRecargaTexto: { color: colores.superficie, fontWeight: 'bold' },
 });

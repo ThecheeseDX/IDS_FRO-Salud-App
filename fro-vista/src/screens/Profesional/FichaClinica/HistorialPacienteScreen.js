@@ -22,6 +22,7 @@ import DialogoMotivo from '../../../components/DialogoMotivo';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
+import { colores, radio, sombra } from '../../../theme';
 
 /**
  * Arma la dirección del paciente para mostrarla en pantalla. El servidor
@@ -383,7 +384,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     <ScrollView 
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => cargarHistorial(true)} colors={['#2563eb']} />
+        <RefreshControl refreshing={refreshing} onRefresh={() => cargarHistorial(true)} colors={[colores.primario]} />
       }
     >
       <Text style={styles.titulo}>Ficha Clínica Electrónica</Text>
@@ -412,7 +413,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         <Text style={styles.botonAnamnesisTexto}>📋 Registrar Anamnesis</Text>
       </TouchableOpacity>
 
-      {loading && <ActivityIndicator size="large" style={styles.loading} color="#2563eb" />}
+      {loading && <ActivityIndicator size="large" style={styles.loading} color={colores.primario} />}
 
       {error !== '' && (
         <View style={styles.errorContainer}>
@@ -459,7 +460,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                 disabled={sincronizando}
               >
                 {sincronizando ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={colores.superficie} size="small" />
                 ) : (
                   <Text style={styles.botonCuadraturaTexto}>Sincronizar con coberturas</Text>
                 )}
@@ -508,7 +509,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   <Text style={styles.fecha}>
                     {formatearFecha(item.fecha_hora_inicio)}
                   </Text>
-                  <Text style={{ fontWeight: 'bold', color: '#374151' }}>
+                  <Text style={{ fontWeight: 'bold', color: colores.texto }}>
                     Estado: <Text style={styles.estadoTexto}>{item.estado}</Text>
                   </Text>
                   <Text>Profesional: {item.profesional}</Text>
@@ -533,14 +534,14 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {estadoCita === 'AGENDADA' && (
                       <>
                         <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: '#eab308' }]}
+                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CONFIRMAR')}
                         >
                           <Text style={styles.textoBotonAccion}>👍 Confirmar</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: '#dc2626' }]}
+                          style={[styles.botonAccion, { backgroundColor: colores.error }]}
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
                         >
                           <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
@@ -552,21 +553,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {estadoCita === 'CONFIRMADA' && (
                       <>
                         <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: '#2563eb' }]}
+                          style={[styles.botonAccion, { backgroundColor: colores.primario }]}
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
                         >
                           <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: '#d97706' }]}
+                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'REGISTRAR_INASISTENCIA')}
                         >
                           <Text style={styles.textoBotonAccion}>🤷‍♂️ Ausente</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: '#dc2626' }]}
+                          style={[styles.botonAccion, { backgroundColor: colores.error }]}
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
                         >
                           <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
@@ -577,7 +578,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {/* ACCIONES SI LA CITA ESTÁ EN CURSO */}
                     {estadoCita === 'EN_CURSO' && (
                       <TouchableOpacity 
-                        style={[styles.botonAccion, { backgroundColor: '#16a34a', marginHorizontal: 0 }]}
+                        style={[styles.botonAccion, { backgroundColor: colores.exito, marginHorizontal: 0 }]}
                         onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
                       >
                         <Text style={styles.textoBotonAccion}>✅ Finalizar Atención</Text>
@@ -775,7 +776,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
             : ''
         }
         etiquetaConfirmar="Guardar versión"
-        colorConfirmar="#2e7d32"
+        colorConfirmar={colores.exito}
         onConfirmar={(texto) => crearCorreccion(correccionEvolucion.evolucion_clinica_id, texto)}
         onCancelar={() => setCorreccionEvolucion(null)}
       />
@@ -786,7 +787,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         titulo="Cierre manual auditado"
         descripcion="Justifica el cierre sin la marca de término del paciente:"
         etiquetaConfirmar="Certificar sesión"
-        colorConfirmar="#2e7d32"
+        colorConfirmar={colores.exito}
         onConfirmar={(motivo) => {
           const cita = cierreManualCita;
           setCierreManualCita(null);
@@ -813,208 +814,204 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 16, backgroundColor: colores.superficie },
   titulo: {
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 4,
-    color: '#1f2937',
+    color: colores.texto,
   },
   subtitulo: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 15,
+    color: colores.textoSuave,
     marginBottom: 16,
   },
   infoPaciente: {
     padding: 14,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderColor: colores.borde,
+    borderRadius: radio.sm,
     marginBottom: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colores.superficieSuave,
   },
   infoTitulo: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 17,
     marginBottom: 6,
-    color: '#2563eb',
+    color: colores.primario,
   },
   loading: { marginTop: 20 },
   seccionTitulo: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     marginTop: 18,
     marginBottom: 10,
-    color: '#111827',
+    color: colores.textoTitulo,
   },
   card: {
     padding: 14,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: colores.borde,
+    borderRadius: radio.sm,
     marginBottom: 12,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colores.superficieSuave,
   },
   cardEpisodio: {
     padding: 14,
     borderWidth: 1,
-    borderColor: '#93c5fd',
-    borderRadius: 8,
+    borderColor: colores.primarioBorde,
+    borderRadius: radio.sm,
     marginBottom: 12,
-    backgroundColor: '#eff6ff',
+    backgroundColor: colores.primarioSuave,
   },
   cardEvolucion: {
     padding: 14,
     borderWidth: 1,
-    borderColor: '#86efac',
-    borderRadius: 8,
+    borderColor: colores.exitoBorde,
+    borderRadius: radio.sm,
     marginBottom: 12,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colores.exitoSuave,
   },
   // CU33/CU35: acceso al repositorio multimedia
   botonDocumentos: {
     borderWidth: 1,
-    borderColor: '#0052cc',
-    backgroundColor: '#eef4ff',
-    borderRadius: 8,
+    borderColor: colores.primario,
+    backgroundColor: colores.primarioSuave,
+    borderRadius: radio.sm,
     padding: 12,
     alignItems: 'center',
     marginBottom: 14,
   },
-  botonDocumentosTexto: { color: '#0052cc', fontWeight: 'bold' },
+  botonDocumentosTexto: { color: colores.primario, fontWeight: 'bold' },
   // CU31: correcciones versionadas
   filaVersiones: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  enlaceVersiones: { color: '#0052cc', fontWeight: '600', fontSize: 13 },
-  pistaCorreccion: { color: '#6b7280', fontSize: 12, fontStyle: 'italic', marginTop: 8 },
-  enlaceCorreccion: { color: '#2e7d32', fontWeight: '600', fontSize: 13 },
+  enlaceVersiones: { color: colores.primario, fontWeight: '600', fontSize: 13 },
+  pistaCorreccion: { color: colores.textoSuave, fontSize: 13, fontStyle: 'italic', marginTop: 8 },
+  enlaceCorreccion: { color: colores.exito, fontWeight: '600', fontSize: 13 },
   cajaVersiones: {
     marginTop: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#0052cc',
+    borderLeftColor: colores.primario,
     paddingLeft: 10,
   },
   itemVersion: { marginBottom: 8 },
-  tituloVersion: { fontWeight: 'bold', fontSize: 12, color: '#1c3d5a' },
-  textoVersion: { color: '#444', fontSize: 13 },
+  tituloVersion: { fontWeight: 'bold', fontSize: 13, color: colores.primario },
+  textoVersion: { color: colores.texto, fontSize: 13 },
   fecha: { fontWeight: 'bold', marginBottom: 6 },
   errorContainer: { marginTop: 20 },
   error: { color: 'red', marginBottom: 10 },
   boton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colores.primario,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radio.sm,
     alignItems: 'center',
   },
-  botonTexto: { color: '#fff', fontWeight: 'bold' },
+  botonTexto: { color: colores.superficie, fontWeight: 'bold' },
   botonAnamnesis: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: colores.exito,
     padding: 14,
-    borderRadius: 10,
+    borderRadius: radio.md,
     alignItems: 'center',
     marginTop: 12,
     marginBottom: 4,
   },
   botonAnamnesisTexto: {
-    color: '#fff',
+    color: colores.superficie,
     fontWeight: 'bold',
     fontSize: 15,
   },
   warningBox: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: colores.advertenciaSuave,
     borderLeftWidth: 4,
-    borderLeftColor: '#f97316',
+    borderLeftColor: colores.advertencia,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: radio.sm,
     marginTop: 16,
   },
   warningTitle: {
     fontWeight: 'bold',
-    color: '#c2410c',
+    color: colores.advertencia,
     marginBottom: 4,
   },
-  warningText: { color: '#7c2d12' },
-  sinResultados: { color: '#666', marginBottom: 12 },
+  warningText: { color: colores.advertencia },
+  sinResultados: { color: colores.textoSuave, marginBottom: 12 },
   
   containerAcciones: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colores.bordeSuave,
     paddingTop: 12,
   },
   botonAccion: {
     flex: 1,
     paddingVertical: 9,
     marginHorizontal: 4,
-    borderRadius: 6,
+    borderRadius: radio.sm,
     alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
+    ...sombra.suave,
   },
   textoBotonAccion: {
-    color: '#fff',
-    fontSize: 12,
+    color: colores.superficie,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   estadoTexto: {
     fontWeight: '600',
-    color: '#2563eb'
+    color: colores.primario
   },
   tarjetaCuadratura: {
-    backgroundColor: '#fff8e1',
+    backgroundColor: colores.advertenciaSuave,
     borderWidth: 1,
-    borderColor: '#ffe082',
-    borderRadius: 10,
+    borderColor: colores.advertenciaBorde,
+    borderRadius: radio.md,
     padding: 12,
     marginTop: 14,
     marginBottom: 6,
   },
-  tituloCuadratura: { fontWeight: 'bold', color: '#8d6e00', marginBottom: 8, fontSize: 15 },
+  tituloCuadratura: { fontWeight: 'bold', color: colores.advertencia, marginBottom: 8, fontSize: 15 },
   botonCuadratura: {
-    backgroundColor: '#ef6c00',
-    borderRadius: 8,
+    backgroundColor: colores.advertencia,
+    borderRadius: radio.sm,
     padding: 11,
     alignItems: 'center',
   },
-  botonCuadraturaTexto: { color: '#fff', fontWeight: 'bold' },
-  lineaCuadratura: { color: '#5d4a00', marginBottom: 6 },
-  alertaCuadratura: { color: '#b71c1c', marginBottom: 6, fontWeight: '600' },
-  okCuadratura: { color: '#2e7d32', marginBottom: 6, fontWeight: '600' },
-  descartarCuadratura: { color: '#8d6e00', fontWeight: 'bold', textAlign: 'right', marginTop: 4 },
+  botonCuadraturaTexto: { color: colores.superficie, fontWeight: 'bold' },
+  lineaCuadratura: { color: colores.advertencia, marginBottom: 6 },
+  alertaCuadratura: { color: colores.error, marginBottom: 6, fontWeight: '600' },
+  okCuadratura: { color: colores.exito, marginBottom: 6, fontWeight: '600' },
+  descartarCuadratura: { color: colores.advertencia, fontWeight: 'bold', textAlign: 'right', marginTop: 4 },
   enlaceEvidencia: {
-    color: '#2e7d32',
+    color: colores.exito,
     fontWeight: 'bold',
     fontSize: 13,
     marginTop: 10,
   },
   filaCierre: { flexDirection: 'row', justifyContent: 'space-between' },
   enlaceTrazabilidad: {
-    color: '#0052cc',
+    color: colores.primario,
     fontWeight: 'bold',
     fontSize: 13,
     marginTop: 10,
   },
-  textoCertificada: { color: '#2e7d32', fontWeight: '600', fontSize: 13 },
-  textoPendienteFirma: { color: '#b45309', fontSize: 12, marginBottom: 4 },
+  textoCertificada: { color: colores.exito, fontWeight: '600', fontSize: 13 },
+  textoPendienteFirma: { color: colores.advertencia, fontSize: 13, marginBottom: 4 },
   cajaAjena: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colores.superficieSuave,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderColor: colores.borde,
+    borderRadius: radio.sm,
     padding: 10,
     marginTop: 10,
   },
-  textoAjena: { color: '#4b5563', fontSize: 13, lineHeight: 18 },
+  textoAjena: { color: colores.textoSuave, fontSize: 13, lineHeight: 18 },
   textoTerminal: {
-    color: '#6b7280',
+    color: colores.textoSuave,
     fontSize: 13,
     fontStyle: 'italic',
     paddingVertical: 4,

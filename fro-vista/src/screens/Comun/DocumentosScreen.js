@@ -24,6 +24,7 @@ import * as ImagePicker from 'expo-image-picker';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFecha } from '../../utils/fechas';
+import { colores, radio, sombra } from '../../theme';
 
 const ICONO_POR_VISOR = { imagen: '🖼️', pdf: '📄', video: '🎬' };
 
@@ -267,7 +268,7 @@ export default function DocumentosScreen({ route, navigation }) {
 
       {cargando ? (
         <View style={estilos.centrado}>
-          <ActivityIndicator size="large" color="#0052cc" />
+          <ActivityIndicator size="large" color={colores.primario} />
         </View>
       ) : (
         <FlatList
@@ -310,7 +311,7 @@ export default function DocumentosScreen({ route, navigation }) {
 
       {subiendo && (
         <View style={estilos.velo}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color={colores.superficie} />
           <Text style={estilos.veloTexto}>Transfiriendo al repositorio…</Text>
         </View>
       )}
@@ -346,42 +347,42 @@ export default function DocumentosScreen({ route, navigation }) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f4f6f8' },
+  contenedor: { flex: 1, backgroundColor: colores.fondo },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  subtitulo: { color: '#555', paddingHorizontal: 16, paddingTop: 12, fontWeight: '600' },
+  subtitulo: { color: colores.textoSuave, paddingHorizontal: 16, paddingTop: 12, fontWeight: '600' },
 
   filtros: { maxHeight: 46, marginTop: 10 },
   chip: {
     borderWidth: 1,
-    borderColor: '#0052cc',
-    borderRadius: 16,
+    borderColor: colores.primario,
+    borderRadius: radio.lg,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
   },
-  chipActivo: { backgroundColor: '#0052cc' },
-  chipTexto: { color: '#0052cc', fontSize: 12 },
-  chipTextoActivo: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  chipActivo: { backgroundColor: colores.primario },
+  chipTexto: { color: colores.primario, fontSize: 13 },
+  chipTextoActivo: { color: colores.superficie, fontSize: 13, fontWeight: 'bold' },
 
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 12,
     marginBottom: 10,
   },
-  icono: { fontSize: 26, marginRight: 10 },
+  icono: { fontSize: 28, marginRight: 10 },
   info: { flex: 1 },
-  nombre: { fontWeight: 'bold', color: '#1f2937' },
-  detalle: { color: '#666', fontSize: 12, marginTop: 2 },
+  nombre: { fontWeight: 'bold', color: colores.texto },
+  detalle: { color: colores.textoSuave, fontSize: 13, marginTop: 2 },
   botonEtiqueta: { padding: 8 },
 
   vacio: { alignItems: 'center', paddingTop: 60 },
   vacioIcono: { fontSize: 44, marginBottom: 10 },
-  vacioTexto: { color: '#666', textAlign: 'center', paddingHorizontal: 30 },
+  vacioTexto: { color: colores.textoSuave, textAlign: 'center', paddingHorizontal: 30 },
 
   barraCarga: {
     position: 'absolute',
@@ -393,38 +394,38 @@ const estilos = StyleSheet.create({
   },
   botonCarga: {
     flex: 1,
-    backgroundColor: '#0052cc',
-    borderRadius: 10,
+    backgroundColor: colores.primario,
+    borderRadius: radio.md,
     padding: 14,
     alignItems: 'center',
-    elevation: 4,
+    ...sombra.media,
   },
-  botonCargaTexto: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+  botonCargaTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 13 },
   deshabilitado: { opacity: 0.6 },
 
   velo: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: colores.velo,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  veloTexto: { color: '#fff', marginTop: 12, fontWeight: '600' },
+  veloTexto: { color: colores.superficie, marginTop: 12, fontWeight: '600' },
 
   fondoModal: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colores.velo,
     justifyContent: 'center',
     padding: 24,
   },
-  cajaModal: { backgroundColor: '#fff', borderRadius: 14, padding: 18 },
-  tituloModal: { fontSize: 17, fontWeight: 'bold', color: '#1c3d5a', marginBottom: 4 },
+  cajaModal: { backgroundColor: colores.superficie, borderRadius: radio.lg, padding: 18 },
+  tituloModal: { fontSize: 17, fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
   opcionCategoria: {
     borderWidth: 1,
-    borderColor: '#dbe3ec',
-    borderRadius: 8,
+    borderColor: colores.primarioBorde,
+    borderRadius: radio.sm,
     padding: 12,
     marginTop: 8,
   },
-  opcionTexto: { color: '#1f2937' },
-  omitir: { color: '#888', textAlign: 'center', marginTop: 14, fontStyle: 'italic' },
+  opcionTexto: { color: colores.texto },
+  omitir: { color: colores.textoTenue, textAlign: 'center', marginTop: 14, fontStyle: 'italic' },
 });

@@ -19,8 +19,9 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
+import { colores, radio } from '../../../theme';
 
-const COLOR_ESTADO = { VIGENTE: '#2e7d32', PROGRAMADA: '#0052cc', EXPIRADA: '#9e9e9e' };
+const COLOR_ESTADO = { VIGENTE: colores.exito, PROGRAMADA: colores.primario, EXPIRADA: colores.textoDeshabilitado };
 
 function fechaMasDias(dias) {
   const fecha = new Date();
@@ -197,7 +198,7 @@ export default function PautasScreen({ route }) {
   if (cargando) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2e7d32" />
+        <ActivityIndicator size="large" color={colores.exito} />
       </View>
     );
   }
@@ -260,7 +261,7 @@ export default function PautasScreen({ route }) {
           <View key={pauta.pauta_tratamiento_id} style={estilos.tarjeta}>
             <View style={estilos.filaPauta}>
               <Text style={estilos.pautaNombre}>{pauta.nombre}</Text>
-              <Text style={[estilos.badge, { color: COLOR_ESTADO[pauta.estado] || '#555' }]}>
+              <Text style={[estilos.badge, { color: COLOR_ESTADO[pauta.estado] || colores.textoSuave }]}>
                 {pauta.estado}
               </Text>
             </View>
@@ -388,7 +389,7 @@ export default function PautasScreen({ route }) {
             disabled={guardando}
           >
             {guardando ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colores.superficie} />
             ) : (
               <Text style={estilos.botonPrimarioTexto}>Prescribir pauta</Text>
             )}
@@ -403,18 +404,18 @@ export default function PautasScreen({ route }) {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f5f5f5' },
+  fondo: { flex: 1, backgroundColor: colores.superficieSuave },
   contenido: { padding: 16, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  titulo: { fontSize: 22, fontWeight: 'bold', color: '#1b5e20', marginBottom: 12 },
-  seccion: { fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 10, marginTop: 4 },
-  etiqueta: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6, marginTop: 4 },
+  titulo: { fontSize: 22, fontWeight: 'bold', color: colores.exito, marginBottom: 12 },
+  seccion: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 10, marginTop: 4 },
+  etiqueta: { fontSize: 13, fontWeight: '600', color: colores.textoSuave, marginBottom: 6, marginTop: 4 },
 
   tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 14,
     marginBottom: 14,
   },
@@ -422,47 +423,47 @@ const estilos = StyleSheet.create({
   inputBusqueda: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.sm,
     padding: 10,
   },
   botonBuscar: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 8,
+    backgroundColor: colores.exito,
+    borderRadius: radio.sm,
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
-  botonBuscarTexto: { color: '#fff', fontWeight: 'bold' },
-  sinResultados: { color: '#777', fontStyle: 'italic', marginTop: 10, marginBottom: 6 },
+  botonBuscarTexto: { color: colores.superficie, fontWeight: 'bold' },
+  sinResultados: { color: colores.textoSuave, fontStyle: 'italic', marginTop: 10, marginBottom: 6 },
   tarjetaMaterial: {
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colores.bordeSuave,
     paddingVertical: 8,
     marginTop: 8,
   },
-  materialNombre: { fontWeight: 'bold', color: '#1f2937' },
-  materialDetalle: { color: '#777', fontSize: 12, marginTop: 2 },
+  materialNombre: { fontWeight: 'bold', color: colores.texto },
+  materialDetalle: { color: colores.textoSuave, fontSize: 13, marginTop: 2 },
 
   filaPauta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pautaNombre: { fontSize: 16, fontWeight: 'bold', color: '#1f2937', flex: 1 },
-  badge: { fontWeight: 'bold', fontSize: 12, marginLeft: 8 },
-  pautaDetalle: { color: '#777', fontSize: 12, marginBottom: 8 },
-  ejercicioLinea: { color: '#444', marginBottom: 4, fontSize: 13 },
+  pautaNombre: { fontSize: 17, fontWeight: 'bold', color: colores.texto, flex: 1 },
+  badge: { fontWeight: 'bold', fontSize: 13, marginLeft: 8 },
+  pautaDetalle: { color: colores.textoSuave, fontSize: 13, marginBottom: 8 },
+  ejercicioLinea: { color: colores.texto, marginBottom: 4, fontSize: 13 },
 
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.sm,
     padding: 10,
     marginBottom: 8,
   },
   selector: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.sm,
     marginBottom: 8,
     overflow: 'hidden',
   },
@@ -472,33 +473,33 @@ const estilos = StyleSheet.create({
 
   tarjetaEjercicio: {
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    borderRadius: 10,
+    borderColor: colores.exitoBorde,
+    borderRadius: radio.md,
     padding: 10,
     marginBottom: 10,
-    backgroundColor: '#f9fff9',
+    backgroundColor: colores.exitoSuave,
   },
-  quitarEjercicio: { color: '#d32f2f', fontWeight: '600', fontSize: 13, textAlign: 'right' },
+  quitarEjercicio: { color: colores.error, fontWeight: '600', fontSize: 13, textAlign: 'right' },
 
   botonPrimario: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 10,
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
     padding: 14,
     alignItems: 'center',
     marginTop: 6,
     marginBottom: 8,
   },
-  botonPrimarioTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  botonPrimarioTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
   botonSecundario: {
     borderWidth: 1,
-    borderColor: '#2e7d32',
-    borderRadius: 10,
+    borderColor: colores.exito,
+    borderRadius: radio.md,
     padding: 12,
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 8,
   },
-  botonSecundarioTexto: { color: '#2e7d32', fontWeight: 'bold' },
+  botonSecundarioTexto: { color: colores.exito, fontWeight: 'bold' },
   deshabilitado: { opacity: 0.6 },
-  enlace: { color: '#555', textAlign: 'center', marginTop: 8, fontWeight: '600' },
+  enlace: { color: colores.textoSuave, textAlign: 'center', marginTop: 8, fontWeight: '600' },
 });

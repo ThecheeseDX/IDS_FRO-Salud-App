@@ -9,6 +9,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import TabSelector from '../../../components/TabSelector';
 import InalterabilidadScreen from './InalterabilidadScreen';
 import MarcasTemporalesScreen from './MarcasTemporalesScreen';
+import { colores } from '../../../theme';
 
 const TABS = [
   {
@@ -43,7 +44,7 @@ export default function TrazabilidadScreen() {
 
   return (
     <View style={styles.contenedor}>
-      <TabSelector tabs={TABS} tabActiva={tabActiva} onCambiarTab={abrirTab} color="#ef6c00" />
+      <TabSelector tabs={TABS} tabActiva={tabActiva} onCambiarTab={abrirTab} color={colores.advertencia} />
 
       <Text style={styles.descripcion}>{descripcion}</Text>
 
@@ -72,14 +73,14 @@ export default function TrazabilidadScreen() {
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
   },
   descripcion: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    color: '#666',
+    color: colores.textoSuave,
     fontStyle: 'italic',
-    backgroundColor: '#fff8e1',
+    backgroundColor: colores.advertenciaSuave,
   },
   panel: {
     flex: 1,

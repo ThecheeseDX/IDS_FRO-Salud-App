@@ -19,6 +19,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, PanResponder, StyleSheet } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
+import { colores, radio } from '../theme';
 
 const ALTO_LIENZO = 220;
 
@@ -85,7 +86,7 @@ export default function LienzoFirma({ onCambio }) {
               key={i}
               points={aPuntosSVG(trazo)}
               fill="none"
-              stroke="#1c3d5a"
+              stroke={colores.primario}
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -95,7 +96,7 @@ export default function LienzoFirma({ onCambio }) {
             <Polyline
               points={aPuntosSVG(trazoActual.current)}
               fill="none"
-              stroke="#1c3d5a"
+              stroke={colores.primario}
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -118,10 +119,10 @@ export default function LienzoFirma({ onCambio }) {
 const estilos = StyleSheet.create({
   lienzo: {
     height: ALTO_LIENZO,
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderWidth: 2,
-    borderColor: '#0052cc',
-    borderRadius: 12,
+    borderColor: colores.primario,
+    borderRadius: radio.md,
     borderStyle: 'dashed',
     overflow: 'hidden',
     justifyContent: 'center',
@@ -129,9 +130,9 @@ const estilos = StyleSheet.create({
   marcaAgua: {
     position: 'absolute',
     alignSelf: 'center',
-    color: '#c5cdd8',
+    color: colores.textoDeshabilitado,
     fontSize: 22,
     fontStyle: 'italic',
   },
-  limpiar: { color: '#d32f2f', fontWeight: '600', textAlign: 'right', marginTop: 8 },
+  limpiar: { color: colores.error, fontWeight: '600', textAlign: 'right', marginTop: 8 },
 });

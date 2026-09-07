@@ -20,6 +20,7 @@ import apiClient from '../../api/client';
 import { formatearFecha, formatearFechaHora } from '../../utils/fechas';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { colores, radio } from '../../theme';
 
 // CU48 — Excepción 2: última pauta que cargó bien, para mostrarla sin señal.
 const CLAVE_CACHE = 'cu48_cache_pautas';
@@ -103,7 +104,7 @@ export default function MisPautasScreen() {
   if (cargando) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -124,7 +125,7 @@ export default function MisPautasScreen() {
       style={estilos.fondo}
       contentContainerStyle={estilos.contenido}
       refreshControl={
-        <RefreshControl refreshing={refrescando} onRefresh={() => cargarPautas(true)} colors={['#0052cc']} />
+        <RefreshControl refreshing={refrescando} onRefresh={() => cargarPautas(true)} colors={[colores.primario]} />
       }
     >
       {desdeCache && (
@@ -159,7 +160,7 @@ export default function MisPautasScreen() {
                 <Text
                   style={[
                     estilos.badge,
-                    { color: expirada ? '#9e9e9e' : programada ? '#0052cc' : '#2e7d32' },
+                    { color: expirada ? colores.textoDeshabilitado : programada ? colores.primario : colores.exito },
                   ]}
                 >
                   {pauta.estado}
@@ -221,56 +222,56 @@ export default function MisPautasScreen() {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 16, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
 
   avisoCache: {
-    backgroundColor: '#fff4e5',
+    backgroundColor: colores.advertenciaSuave,
     borderWidth: 1,
-    borderColor: '#ffcc80',
-    borderRadius: 10,
+    borderColor: colores.advertenciaBorde,
+    borderRadius: radio.md,
     padding: 12,
     marginBottom: 12,
   },
-  avisoCacheTexto: { color: '#8a4b00', fontSize: 13, lineHeight: 18 },
+  avisoCacheTexto: { color: colores.advertencia, fontSize: 13, lineHeight: 18 },
   vacio: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 },
   vacioIcono: { fontSize: 48, marginBottom: 12 },
-  vacioTitulo: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  vacioTexto: { color: '#666', textAlign: 'center' },
+  vacioTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.texto, marginBottom: 6 },
+  vacioTexto: { color: colores.textoSuave, textAlign: 'center' },
 
   tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 14,
     marginBottom: 14,
   },
-  tarjetaExpirada: { backgroundColor: '#f5f5f5' },
+  tarjetaExpirada: { backgroundColor: colores.superficieSuave },
   filaTitulo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pautaNombre: { fontSize: 16, fontWeight: 'bold', color: '#1f2937', flex: 1 },
-  badge: { fontWeight: 'bold', fontSize: 12, marginLeft: 8 },
-  pautaFechas: { color: '#777', fontSize: 12, marginBottom: 10 },
+  pautaNombre: { fontSize: 17, fontWeight: 'bold', color: colores.texto, flex: 1 },
+  badge: { fontWeight: 'bold', fontSize: 13, marginLeft: 8 },
+  pautaFechas: { color: colores.textoSuave, fontSize: 13, marginBottom: 10 },
 
-  textoExpirada: { color: '#757575', fontStyle: 'italic' },
-  textoProgramada: { color: '#0052cc', fontStyle: 'italic' },
+  textoExpirada: { color: colores.textoTenue, fontStyle: 'italic' },
+  textoProgramada: { color: colores.primario, fontStyle: 'italic' },
 
   filaEjercicio: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
+    borderColor: colores.borde,
+    borderRadius: radio.md,
     padding: 12,
     marginBottom: 8,
   },
-  filaCumplida: { backgroundColor: '#e8f5e9', borderColor: '#c8e6c9' },
+  filaCumplida: { backgroundColor: colores.exitoSuave, borderColor: colores.exitoBorde },
   checkbox: { fontSize: 22, marginRight: 12 },
   ejercicioInfo: { flex: 1 },
-  ejercicioNombre: { fontWeight: 'bold', color: '#1f2937' },
-  ejercicioDetalle: { color: '#666', fontSize: 13, marginTop: 2 },
-  adherencia: { color: '#2e7d32', fontSize: 12, marginTop: 4, fontWeight: '600' },
+  ejercicioNombre: { fontWeight: 'bold', color: colores.texto },
+  ejercicioDetalle: { color: colores.textoSuave, fontSize: 13, marginTop: 2 },
+  adherencia: { color: colores.exito, fontSize: 13, marginTop: 4, fontWeight: '600' },
 
-  notaPie: { color: '#888', fontSize: 12, textAlign: 'center', marginTop: 8 },
+  notaPie: { color: colores.textoTenue, fontSize: 13, textAlign: 'center', marginTop: 8 },
 });

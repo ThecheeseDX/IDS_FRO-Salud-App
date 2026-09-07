@@ -9,6 +9,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Styl
 
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { colores, radio, sombra } from '../../theme';
 
 export default function RecuperarContrasenaScreen({ navigation }) {
   const [paso, setPaso] = useState(1);
@@ -148,7 +149,7 @@ export default function RecuperarContrasenaScreen({ navigation }) {
           disabled={cargando}
         >
           {cargando ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colores.superficie} />
           ) : (
             <Text style={estilos.botonTexto}>
               {paso === 1 ? 'Enviar código' : 'Cambiar contraseña'}
@@ -171,40 +172,36 @@ export default function RecuperarContrasenaScreen({ navigation }) {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenedor: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.lg,
     padding: 24,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    ...sombra.suave,
   },
-  titulo: { fontSize: 22, fontWeight: 'bold', color: '#1c3d5a', marginBottom: 8 },
-  subtitulo: { color: '#555', marginBottom: 16 },
+  titulo: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 8 },
+  subtitulo: { color: colores.textoSuave, marginBottom: 16 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.md,
     padding: 12,
     marginBottom: 12,
     fontSize: 15,
   },
-  inputCodigo: { letterSpacing: 6, fontSize: 18, textAlign: 'center' },
-  ayuda: { color: '#888', fontSize: 12, marginBottom: 4 },
-  error: { color: '#d32f2f', marginTop: 4, fontSize: 13 },
+  inputCodigo: { letterSpacing: 6, fontSize: 17, textAlign: 'center' },
+  ayuda: { color: colores.textoTenue, fontSize: 13, marginBottom: 4 },
+  error: { color: colores.error, marginTop: 4, fontSize: 13 },
   boton: {
-    backgroundColor: '#0052cc',
-    borderRadius: 10,
+    backgroundColor: colores.primario,
+    borderRadius: radio.md,
     padding: 14,
     alignItems: 'center',
     marginTop: 14,
   },
   botonDeshabilitado: { opacity: 0.6 },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-  enlace: { color: '#0052cc', textAlign: 'center', marginTop: 16, fontWeight: '600' },
+  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
+  enlace: { color: colores.primario, textAlign: 'center', marginTop: 16, fontWeight: '600' },
 });

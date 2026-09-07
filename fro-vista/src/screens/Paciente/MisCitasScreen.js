@@ -22,17 +22,18 @@ import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../utils/modalidad';
+import { colores, radio, sombra } from '../../theme';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
 
 const COLOR_ESTADO = {
-  AGENDADA: '#0052cc',
-  CONFIRMADA: '#2e7d32',
-  EN_CURSO: '#ef6c00',
-  REALIZADA: '#555',
-  CANCELADA: '#d32f2f',
-  INASISTENCIA: '#d32f2f',
+  AGENDADA: colores.primario,
+  CONFIRMADA: colores.exito,
+  EN_CURSO: colores.advertencia,
+  REALIZADA: colores.textoSuave,
+  CANCELADA: colores.error,
+  INASISTENCIA: colores.error,
 };
 
 export default function MisCitasScreen({ navigation }) {
@@ -119,7 +120,7 @@ export default function MisCitasScreen({ navigation }) {
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.fecha}>{formatearFecha(item.fecha_hora_inicio)}</Text>
-          <Text style={[styles.estado, { color: COLOR_ESTADO[item.estado] || '#555' }]}>
+          <Text style={[styles.estado, { color: COLOR_ESTADO[item.estado] || colores.textoSuave }]}>
             {item.estado}
           </Text>
         </View>
@@ -172,7 +173,7 @@ export default function MisCitasScreen({ navigation }) {
   if (cargando) {
     return (
       <View style={styles.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -199,7 +200,7 @@ export default function MisCitasScreen({ navigation }) {
           <RefreshControl
             refreshing={refrescando}
             onRefresh={() => cargarCitas(true)}
-            colors={['#0052cc']}
+            colors={[colores.primario]}
           />
         }
         ListEmptyComponent={
@@ -240,18 +241,18 @@ export default function MisCitasScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f4f6f8' },
+  contenedor: { flex: 1, backgroundColor: colores.fondo },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   lista: { padding: 16, paddingBottom: 96 },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 16,
     marginBottom: 12,
-    elevation: 2,
+    ...sombra.suave,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -259,58 +260,54 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 6,
   },
-  fecha: { flex: 1, fontSize: 15, fontWeight: 'bold', color: '#333', textTransform: 'capitalize' },
-  estado: { fontSize: 12, fontWeight: 'bold', marginLeft: 8 },
-  profesional: { color: '#555' },
+  fecha: { flex: 1, fontSize: 15, fontWeight: 'bold', color: colores.texto, textTransform: 'capitalize' },
+  estado: { fontSize: 13, fontWeight: 'bold', marginLeft: 8 },
+  profesional: { color: colores.textoSuave },
 
   filaAcciones: { flexDirection: 'row', gap: 10, marginTop: 12 },
   botonEvidencia: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#2e7d32',
-    borderRadius: 8,
+    borderColor: colores.exito,
+    borderRadius: radio.sm,
     padding: 10,
     alignItems: 'center',
   },
-  botonEvidenciaTexto: { color: '#2e7d32', fontWeight: 'bold' },
+  botonEvidenciaTexto: { color: colores.exito, fontWeight: 'bold' },
   botonReprogramar: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#0052cc',
-    borderRadius: 8,
+    borderColor: colores.primario,
+    borderRadius: radio.sm,
     padding: 10,
     alignItems: 'center',
   },
-  botonReprogramarTexto: { color: '#0052cc', fontWeight: 'bold' },
+  botonReprogramarTexto: { color: colores.primario, fontWeight: 'bold' },
   botonCancelar: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#d32f2f',
-    borderRadius: 8,
+    borderColor: colores.error,
+    borderRadius: radio.sm,
     padding: 10,
     alignItems: 'center',
   },
   botonDeshabilitado: { opacity: 0.6 },
-  botonCancelarTexto: { color: '#d32f2f', fontWeight: 'bold' },
+  botonCancelarTexto: { color: colores.error, fontWeight: 'bold' },
 
   vacio: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 },
   vacioIcono: { fontSize: 48, marginBottom: 12 },
-  vacioTitulo: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  vacioTexto: { color: '#666', textAlign: 'center' },
+  vacioTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.texto, marginBottom: 6 },
+  vacioTexto: { color: colores.textoSuave, textAlign: 'center' },
 
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 24,
-    backgroundColor: '#0052cc',
+    backgroundColor: colores.primario,
     paddingVertical: 16,
     paddingHorizontal: 22,
-    borderRadius: 30,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    borderRadius: radio.completo,
+    ...sombra.media,
   },
-  fabTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  fabTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
 });

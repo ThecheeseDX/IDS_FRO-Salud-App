@@ -17,6 +17,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado'; 
 import { AuthContext } from '../../context/AuthContext'
 import { formatearFechaHora } from '../../utils/fechas';
+import { colores, radio, sombra } from '../../theme';
 
 export default function ParametrosScreen({ navigation }) {
   const { confirmarCierreSesion } = useContext(AuthContext);
@@ -151,7 +152,7 @@ const aplicarRestriccion = async () => {
 
       {isLoading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#0052cc" />
+          <ActivityIndicator size="large" color={colores.primario} />
           <Text style={styles.loadingText}>Sincronizando variables maestras...</Text>
         </View>
       ) : errorRed ? (
@@ -263,27 +264,33 @@ const aplicarRestriccion = async () => {
 
 const styles = StyleSheet.create({
   securityLink: { alignItems: 'center', paddingVertical: 10 },
-  securityLinkText: { color: '#0052cc', fontWeight: 'bold' },
-  container: { flex: 1, backgroundColor: '#f4f6f8' },
-  header: { backgroundColor: '#0052cc', padding: 20, paddingTop: 40, borderBottomLeftRadius: 15, borderBottomRightRadius: 15, elevation: 4 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#ffffff' },
-  subtitle: { fontSize: 14, color: '#e0e0e0', marginTop: 5 },
+  securityLinkText: { color: colores.primario, fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: colores.fondo },
+  header: { backgroundColor: colores.primario, padding: 20, paddingTop: 40, borderBottomLeftRadius: radio.lg, borderBottomRightRadius: radio.lg,
+    ...sombra.media,
+  },
+  title: { fontSize: 22, fontWeight: 'bold', color: colores.superficie },
+  subtitle: { fontSize: 15, color: colores.borde, marginTop: 5 },
   centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 15, color: '#666', fontSize: 14 },
+  loadingText: { marginTop: 15, color: colores.textoSuave, fontSize: 15 },
   scrollContent: { padding: 15, paddingBottom: 40 },
-  infoText: { backgroundColor: '#e3f2fd', color: '#0277bd', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 20, borderWidth: 1, borderColor: '#bbdefb' },
-  card: { backgroundColor: '#ffffff', borderRadius: 10, padding: 18, marginBottom: 15, borderWidth: 1, borderColor: '#e0e0e0', elevation: 2 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
-  cardDesc: { fontSize: 13, color: '#777', marginBottom: 15, fontStyle: 'italic' },
-  label: { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 8 },
-  input: { backgroundColor: '#fafafa', color: '#000', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, marginBottom: 15, borderWidth: 1, borderColor: '#ccc', fontWeight: 'bold' },
-  inputError: { borderColor: '#d32f2f', backgroundColor: '#fff0f0', marginBottom: 5 },
-  errorText: { color: '#d32f2f', fontSize: 11, marginBottom: 15, fontWeight: '500' },
-  saveButton: { backgroundColor: '#0052cc', paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
-  saveButtonDisabled: { backgroundColor: '#e0e0e0' },
-  saveButtonText: { color: '#ffffff', fontWeight: 'bold', fontSize: 13, letterSpacing: 1 },
-  saveButtonTextDisabled: { color: '#999999' },
-  timestampText: { fontSize: 10, color: '#999', marginTop: 10, textAlign: 'center' },
-  logoutButton: { backgroundColor: '#d32f2f', margin: 20, padding: 15, borderRadius: 8, alignItems: 'center', elevation: 3 },
-  logoutButtonText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 }
+  infoText: { backgroundColor: colores.primarioSuave, color: colores.primario, padding: 12, borderRadius: radio.sm, fontSize: 13, marginBottom: 20, borderWidth: 1, borderColor: colores.primarioBorde },
+  card: { backgroundColor: colores.superficie, borderRadius: radio.md, padding: 18, marginBottom: 15, borderWidth: 1, borderColor: colores.borde,
+    ...sombra.suave,
+  },
+  cardTitle: { fontSize: 17, fontWeight: 'bold', color: colores.texto, marginBottom: 4 },
+  cardDesc: { fontSize: 13, color: colores.textoSuave, marginBottom: 15, fontStyle: 'italic' },
+  label: { fontSize: 13, fontWeight: '600', color: colores.textoSuave, marginBottom: 8 },
+  input: { backgroundColor: colores.fondo, color: colores.textoTitulo, borderRadius: radio.sm, paddingHorizontal: 12, paddingVertical: 10, fontSize: 17, marginBottom: 15, borderWidth: 1, borderColor: colores.bordeCampo, fontWeight: 'bold' },
+  inputError: { borderColor: colores.error, backgroundColor: colores.errorSuave, marginBottom: 5 },
+  errorText: { color: colores.error, fontSize: 11, marginBottom: 15, fontWeight: '500' },
+  saveButton: { backgroundColor: colores.primario, paddingVertical: 12, borderRadius: radio.sm, alignItems: 'center' },
+  saveButtonDisabled: { backgroundColor: colores.borde },
+  saveButtonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 13, letterSpacing: 1 },
+  saveButtonTextDisabled: { color: colores.textoTenue },
+  timestampText: { fontSize: 11, color: colores.textoTenue, marginTop: 10, textAlign: 'center' },
+  logoutButton: { backgroundColor: colores.error, margin: 20, padding: 15, borderRadius: radio.sm, alignItems: 'center',
+    ...sombra.suave,
+  },
+  logoutButtonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 15, letterSpacing: 1 }
 });

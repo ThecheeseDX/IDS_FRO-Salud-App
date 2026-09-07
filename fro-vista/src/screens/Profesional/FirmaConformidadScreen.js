@@ -19,6 +19,7 @@ import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 import LienzoFirma from '../../components/LienzoFirma';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import { colores, radio } from '../../theme';
 
 export default function FirmaConformidadScreen({ route, navigation }) {
   const { citaId, nombrePaciente } = route?.params || {};
@@ -94,7 +95,7 @@ export default function FirmaConformidadScreen({ route, navigation }) {
   if (!declaracion) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#0052cc" />
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -121,7 +122,7 @@ export default function FirmaConformidadScreen({ route, navigation }) {
         disabled={guardando}
       >
         {guardando ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colores.superficie} />
         ) : (
           <Text style={estilos.botonPrimarioTexto}>Guardar firma de conformidad</Text>
         )}
@@ -153,38 +154,38 @@ export default function FirmaConformidadScreen({ route, navigation }) {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#f4f6f8' },
+  fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 20, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
 
-  titulo: { fontSize: 22, fontWeight: 'bold', color: '#1c3d5a' },
-  subtitulo: { color: '#666', marginBottom: 10 },
+  titulo: { fontSize: 22, fontWeight: 'bold', color: colores.primario },
+  subtitulo: { color: colores.textoSuave, marginBottom: 10 },
   tarjetaLegal: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colores.superficie,
+    borderRadius: radio.md,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colores.borde,
     padding: 16,
     marginVertical: 12,
   },
-  textoLegal: { color: '#333', lineHeight: 20 },
-  versionLegal: { color: '#999', fontSize: 11, marginTop: 8, textAlign: 'right' },
-  instruccion: { color: '#555', marginBottom: 10, fontWeight: '600' },
+  textoLegal: { color: colores.texto, lineHeight: 20 },
+  versionLegal: { color: colores.textoTenue, fontSize: 11, marginTop: 8, textAlign: 'right' },
+  instruccion: { color: colores.textoSuave, marginBottom: 10, fontWeight: '600' },
 
   botonPrimario: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 10,
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
     padding: 15,
     alignItems: 'center',
     marginTop: 16,
   },
-  botonPrimarioTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  botonPrimarioTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
   deshabilitado: { opacity: 0.6 },
   filaAlternativas: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 18,
   },
-  enlaceRechazo: { color: '#d32f2f', fontWeight: '600' },
-  enlaceCorreo: { color: '#0052cc', fontWeight: '600' },
+  enlaceRechazo: { color: colores.error, fontWeight: '600' },
+  enlaceCorreo: { color: colores.primario, fontWeight: '600' },
 });

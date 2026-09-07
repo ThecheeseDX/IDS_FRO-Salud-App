@@ -31,6 +31,8 @@ import EvidenciaSesionScreen from '../screens/Comun/EvidenciaSesionScreen';
 import FirmaConformidadScreen from '../screens/Profesional/FirmaConformidadScreen';
 import DocumentosScreen from '../screens/Comun/DocumentosScreen';
 import VisorDocumentoScreen from '../screens/Comun/VisorDocumentoScreen';
+import { colores, tipografia } from '../theme';
+import LogoFro from '../components/LogoFro';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,8 +41,8 @@ export default function AppNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f4f6f8' }}>
-        <ActivityIndicator size="large" color="#0052cc" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colores.fondo }}>
+        <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
@@ -49,15 +51,29 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: '#0052cc' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
+          // Cabecera clara: el verde de marca es acento, no fondo de toda la
+          // interfaz. Se separa del contenido con una línea fina en vez de
+          // una sombra dura.
+          headerStyle: {
+            backgroundColor: colores.superficie,
+            borderBottomWidth: 1,
+            borderBottomColor: colores.bordeSuave,
+          },
+          headerShadowVisible: false,
+          headerTintColor: colores.primario,
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            ...tipografia.subtitulo,
+            color: colores.textoTitulo,
+          },
+          contentStyle: { backgroundColor: colores.fondo },
+          animation: 'slide_from_right',
         }}
       >
         {userToken == null ? (
           // ── ESCENARIO A: Rutas Públicas (Sin iniciar sesión) ──
           <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Ingreso al Sistema' }} />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear Cuenta' }} />
             <Stack.Screen
               name="RecuperarContrasena"
@@ -76,7 +92,7 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardPaciente"
               component={DashboardPaciente}
-              options={{ title: 'Mi Salud', headerBackVisible: false, gestureEnabled: false }}
+              options={{ headerTitle: () => <LogoFro tamano="sm" />, headerBackVisible: false, gestureEnabled: false }}
             />
             {/* Gestión de citas unificada: listado + reserva desde el botón flotante */}
             <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
@@ -101,7 +117,7 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardProfesional"
               component={DashboardProfesional}
-              options={{ title: 'Mis Pacientes', headerBackVisible: false, gestureEnabled: false }}
+              options={{ headerTitle: () => <LogoFro tamano="sm" />, headerBackVisible: false, gestureEnabled: false }}
             />
             {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
@@ -129,7 +145,7 @@ export default function AppNavigator() {
             <Stack.Screen
               name="ParametrosScreen"
               component={ParametrosScreen}
-              options={{ title: 'Configuración Maestra', headerBackVisible: false, gestureEnabled: false }}
+              options={{ headerTitle: () => <LogoFro tamano="sm" />, headerBackVisible: false, gestureEnabled: false }}
             />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
           </>

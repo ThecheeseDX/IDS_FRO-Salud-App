@@ -5,8 +5,9 @@
 
 import React from 'react';
 import { ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { colores, espacio, tipografia } from '../theme';
 
-export default function TabSelector({ tabs, tabActiva, onCambiarTab, color = '#2e7d32' }) {
+export default function TabSelector({ tabs, tabActiva, onCambiarTab, color = colores.primario }) {
   return (
     <ScrollView
       horizontal
@@ -43,9 +44,9 @@ const styles = StyleSheet.create({
     height: 48,
     flexGrow: 0,
     flexShrink: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colores.superficie,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colores.borde,
   },
   contenido: {
     paddingHorizontal: 8,
@@ -55,8 +56,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 48,
-    paddingHorizontal: 14,
-    borderBottomWidth: 3,
+    paddingHorizontal: espacio.base,
+    borderBottomWidth: 2.5,
     borderBottomColor: 'transparent',
   },
   icono: {
@@ -64,7 +65,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   etiqueta: {
-    fontSize: 14,
-    color: '#666',
+    ...tipografia.cuerpo,
+    fontSize: 15,
+    color: colores.textoSuave,
   },
 });

@@ -6,6 +6,7 @@ import {
 import apiClient from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import { formatearFecha } from '../../../utils/fechas';
+import { colores, radio } from '../../../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13
@@ -124,7 +125,7 @@ export default function EpisodioScreen() {
           />
           <TouchableOpacity style={styles.boton} onPress={buscarEpisodio} disabled={cargandoBusqueda}>
             {cargandoBusqueda
-              ? <ActivityIndicator color="#fff" />
+              ? <ActivityIndicator color={colores.superficie} />
               : <Text style={styles.botonTexto}>Buscar</Text>}
           </TouchableOpacity>
           
@@ -137,12 +138,12 @@ export default function EpisodioScreen() {
               
               {/* NUEVO BOTÓN PARA CREAR LA EVOLUCIÓN */}
               <TouchableOpacity 
-                style={[styles.boton, { backgroundColor: '#f57c00', marginTop: 15 }]} 
+                style={[styles.boton, { backgroundColor: colores.advertencia, marginTop: 15 }]} 
                 onPress={iniciarAtencion} 
                 disabled={cargandoEvolucion}
               >
                 {cargandoEvolucion
-                  ? <ActivityIndicator color="#fff" />
+                  ? <ActivityIndicator color={colores.superficie} />
                   : <Text style={styles.botonTexto}>+ Iniciar Nueva Atención</Text>}
               </TouchableOpacity>
 
@@ -174,12 +175,12 @@ export default function EpisodioScreen() {
             onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, profesional_id: v })}
           />
           <TouchableOpacity
-            style={[styles.boton, { backgroundColor: '#2e7d32' }]}
+            style={[styles.boton, { backgroundColor: colores.exito }]}
             onPress={crearEpisodio}
             disabled={cargandoCreacion}
           >
             {cargandoCreacion
-              ? <ActivityIndicator color="#fff" />
+              ? <ActivityIndicator color={colores.superficie} />
               : <Text style={styles.botonTexto}>Crear Episodio</Text>}
           </TouchableOpacity>
         </View>
@@ -188,24 +189,24 @@ export default function EpisodioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1c3d5a', marginBottom: 4 },
-  subtitulo: { fontSize: 13, color: '#888', marginBottom: 24, fontStyle: 'italic' },
+  container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
+  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
+  subtitulo: { fontSize: 13, color: colores.textoTenue, marginBottom: 24, fontStyle: 'italic' },
   seccion: {
-    backgroundColor: '#fff', padding: 16, borderRadius: 12,
-    borderWidth: 1, borderColor: '#e0e0e0', marginBottom: 20
+    backgroundColor: colores.superficie, padding: 16, borderRadius: radio.md,
+    borderWidth: 1, borderColor: colores.borde, marginBottom: 20
   },
-  seccionTitulo: { fontSize: 17, fontWeight: 'bold', color: '#2e7d32', marginBottom: 12 },
+  seccionTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 12 },
   input: {
-    borderWidth: 1, borderColor: '#ccc', backgroundColor: '#f9f9f9',
-    padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 15
+    borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficieSuave,
+    padding: 12, borderRadius: radio.md, marginBottom: 12, fontSize: 15
   },
-  boton: { backgroundColor: '#0052cc', padding: 14, borderRadius: 10, alignItems: 'center' },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  boton: { backgroundColor: colores.primario, padding: 14, borderRadius: radio.md, alignItems: 'center' },
+  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
   resultado: {
-    marginTop: 16, backgroundColor: '#e8f5e9',
-    padding: 14, borderRadius: 10, borderWidth: 1, borderColor: '#c8e6c9'
+    marginTop: 16, backgroundColor: colores.exitoSuave,
+    padding: 14, borderRadius: radio.md, borderWidth: 1, borderColor: colores.exitoBorde
   },
-  resultadoTitulo: { fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginBottom: 8 },
-  resultadoCampo: { fontSize: 14, color: '#444', marginBottom: 4 }
+  resultadoTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 8 },
+  resultadoCampo: { fontSize: 15, color: colores.texto, marginBottom: 4 }
 });
