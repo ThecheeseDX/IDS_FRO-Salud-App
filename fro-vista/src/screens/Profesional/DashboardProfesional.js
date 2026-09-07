@@ -85,7 +85,7 @@ export default function DashboardProfesional({ navigation }) {
       <Text style={styles.dato}>Última atención: {item.ultima_atencion || 'Sin registros'}</Text>
 
       <View style={styles.boton}>
-        <Text style={styles.botonTexto}>Abrir ficha clínica</Text>
+        <Text style={styles.botonSecundarioTexto}>Abrir ficha clínica</Text>
       </View>
     </TouchableOpacity>
   );
@@ -228,7 +228,9 @@ const styles = StyleSheet.create({
   card: { ...piezas.tarjeta, marginBottom: espacio.md },
   nombre: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.xs },
   dato: { ...tipografia.meta, color: colores.textoSuave },
+  // Botón delineado: el texto va en verde, no en blanco (quedaba invisible).
   boton: { ...piezas.botonSecundario, marginTop: espacio.md, paddingVertical: espacio.md },
+  botonSecundarioTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
 
   pie: { marginTop: espacio.lg },
   seccion: {
@@ -265,9 +267,9 @@ const styles = StyleSheet.create({
     marginTop: espacio.md,
     paddingVertical: espacio.md,
     borderRadius: radio.md,
-    borderWidth: 1,
-    borderColor: colores.errorBorde,
-    backgroundColor: colores.errorSuave,
+    borderWidth: 1.5,
+    borderColor: colores.error,
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   logoutText: { ...tipografia.cuerpoFuerte, color: colores.error },

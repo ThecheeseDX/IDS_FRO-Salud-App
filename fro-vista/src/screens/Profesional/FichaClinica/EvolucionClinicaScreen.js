@@ -7,7 +7,7 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import ErrorRetry from '../../../components/ErrorRetry';
-import { colores, radio } from '../../../theme';
+import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 // CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
 const PALABRAS_SUBJETIVAS = /\b(mejorar|mejor[íi]a|sentirse?\s+bien|bienestar|aliviar|alivio|fortalecer|avanzar|progresar|recuperar|estar\s+mejor|c[óo]modo|tranquil|m[áa]s\s+[áa]gil)/i;
@@ -349,35 +349,67 @@ export default function EvolucionClinicaScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
-  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
-  subtitulo: { fontSize: 13, color: colores.textoTenue, marginBottom: 24, fontStyle: 'italic' },
-  seccion: {
-    backgroundColor: colores.superficie, padding: 16, borderRadius: radio.md,
-    borderWidth: 1, borderColor: colores.borde, marginBottom: 20
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
   },
-  seccionTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 12 },
+  title: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+    marginBottom: 4,
+  },
+  subtitulo: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginBottom: 24,
+  },
+  seccion: {
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
+    marginBottom: 20,
+  },
+  seccionTitulo: {
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
   input: {
-    borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficieSuave,
-    padding: 12, borderRadius: radio.md, marginBottom: 12, fontSize: 15
+    ...piezas.campo,
+    marginBottom: 12,
   },
   inputError: { borderColor: colores.error, backgroundColor: colores.errorSuave },
   errorText: { color: colores.error, fontSize: 13, marginTop: -6, marginBottom: 12 },
-  boton: { backgroundColor: colores.primario, padding: 14, borderRadius: radio.md, alignItems: 'center' },
+  boton: {
+    ...piezas.botonPrimario,
+    alignItems: 'center',
+  },
   botonOff: { opacity: 0.5 },
-  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
+  botonTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   loadingBox: { paddingVertical: 24, alignItems: 'center' },
   loadingText: { marginTop: 10, color: colores.textoSuave, fontSize: 15 },
   vacio: { color: colores.textoTenue, fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
   metaCard: {
-    backgroundColor: colores.primarioSuave, padding: 12, borderRadius: radio.md,
-    borderWidth: 1, borderColor: colores.primarioSuave, marginBottom: 10
+    ...piezas.tarjeta,
+    marginBottom: 10,
   },
   metaDesc: { fontSize: 15, fontWeight: '600', color: colores.primario, marginBottom: 4 },
   metaValores: { fontSize: 13, color: colores.texto, marginBottom: 8 },
   barraFondo: { height: 8, backgroundColor: colores.borde, borderRadius: radio.sm, overflow: 'hidden' },
   barraProgreso: { height: 8, backgroundColor: colores.primario, borderRadius: radio.sm },
-  pickerWrap: { borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficieSuave, borderRadius: radio.md, marginBottom: 12 },
+  pickerWrap: {
+    backgroundColor: colores.superficie,
+    borderWidth: 1,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.md,
+    overflow: 'hidden',
+    paddingHorizontal: espacio.sm,
+    marginBottom: 12,
+  },
   avisoBanner: { backgroundColor: colores.advertenciaSuave, borderWidth: 1, borderColor: colores.advertenciaBorde, borderRadius: radio.md, padding: 12, marginBottom: 16 },
   avisoBannerText: { color: colores.advertencia, fontSize: 13, textAlign: 'center' }
 });

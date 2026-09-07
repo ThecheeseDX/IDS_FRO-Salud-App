@@ -21,7 +21,37 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFecha } from '../../utils/fechas';
-import { colores, radio } from '../../theme';
+import { colores, espacio, radio, tipografia } from '../../theme';
+
+/**
+ * El servidor devuelve el resumen como un bloque de texto plano. Aquí se
+ * separa en piezas para pintarlo legible: encabezados de sección, pares
+ * "etiqueta: valor" y líneas sueltas. Antes se mostraba tal cual, en
+ * monoespaciada, y parecía un archivo de registro más que la ficha del
+ * paciente.
+ */
+function desglosarResumen(texto) {
+  return String(texto || '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((linea) => {
+      // "── TRIAJE AUTOMATIZADO (05/09/2026) ──" y sus cierres.
+      if (/^─+/.test(linea) || /^──/.test(linea)) {
+        const limpio = linea.replace(/[─-]/g, '').trim();
+        return limpio ? { tipo: 'encabezado', texto: limpio } : null;
+      }
+      const corte = linea.indexOf(':');
+      if (corte > 0 && corte < 60) {
+        const valor = linea.slice(corte + 1).trim().replace(/\.$/, '');
+        // "Sección:" sin valor es un subtítulo, no un dato vacío.
+        if (!valor) return { tipo: 'encabezado', texto: linea.slice(0, corte).trim() };
+        return { tipo: 'dato', etiqueta: linea.slice(0, corte).trim().replace(/^-\s*/, ''), valor };
+      }
+      return { tipo: 'suelto', texto: linea.replace(/^-\s*/, '• ') };
+    })
+    .filter(Boolean);
+}
 
 export default function TriajeScreen({ navigation }) {
   // fase: 'cargando' | 'error' | 'disclaimer' | 'entrevista' | 'completado' | 'resumen'
@@ -281,7 +311,18 @@ export default function TriajeScreen({ navigation }) {
           Esto es lo que quedó registrado en tu ficha clínica:
         </Text>
         <View style={estilos.tarjetaResumen}>
-          <Text style={estilos.textoResumen}>{vistaPrevia}</Text>
+          {desglosarResumen(vistaPrevia).map((linea, i) =>
+            linea.tipo === 'encabezado' ? (
+              <Text key={i} style={estilos.resumenEncabezado}>{linea.texto}</Text>
+            ) : linea.tipo === 'dato' ? (
+              <View key={i} style={estilos.resumenFila}>
+                <Text style={estilos.resumenEtiqueta}>{linea.etiqueta}</Text>
+                <Text style={estilos.resumenValor}>{linea.valor}</Text>
+              </View>
+            ) : (
+              <Text key={i} style={estilos.resumenSuelto}>{linea.texto}</Text>
+            )
+          )}
         </View>
         <TouchableOpacity style={estilos.botonPrimario} onPress={() => navigation.goBack()}>
           <Text style={estilos.botonPrimarioTexto}>Volver al inicio</Text>
@@ -370,7 +411,25 @@ const estilos = StyleSheet.create({
     padding: 16,
     marginBottom: 18,
   },
-  textoResumen: { color: colores.texto, fontFamily: 'monospace', fontSize: 13.5, lineHeight: 19 },
+  resumenEncabezado: {
+    ...tipografia.micro,
+    color: colores.primario,
+    marginBottom: espacio.md,
+    marginTop: espacio.xs,
+  },
+  resumenFila: {
+    borderTopWidth: 1,
+    borderTopColor: colores.bordeSuave,
+    paddingVertical: espacio.md,
+  },
+  resumenEtiqueta: { ...tipografia.meta, color: colores.textoSuave, marginBottom: 2 },
+  resumenValor: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
+  resumenSuelto: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginTop: espacio.sm,
+    lineHeight: 20,
+  },
 
   progreso: { color: colores.primario, fontWeight: 'bold', fontSize: 13, marginBottom: 6 },
   pregunta: { fontSize: 22, fontWeight: 'bold', color: colores.texto, marginBottom: 18, lineHeight: 26 },

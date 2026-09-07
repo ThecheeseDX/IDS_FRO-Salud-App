@@ -18,7 +18,7 @@ import {
 } from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
-import { colores, radio } from '../../../theme';
+import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;
@@ -284,37 +284,42 @@ export default function IntervencionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colores.fondo },
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+  },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: 'bold', color: colores.texto },
-  subtitle: { color: colores.textoSuave, marginTop: 4, marginBottom: 20 },
+  title: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+  },
+  subtitle: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginTop: 4,
+    marginBottom: 20,
+  },
   card: {
-    backgroundColor: colores.superficie,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.md,
-    padding: 16,
+    ...piezas.tarjeta,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: colores.exito,
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
     marginBottom: 8,
   },
   pickerContainer: {
+    backgroundColor: colores.superficie,
     borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.sm,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.md,
     overflow: 'hidden',
+    paddingHorizontal: espacio.sm,
   },
   loading: { marginVertical: 20 },
   patientCard: {
-    backgroundColor: colores.primarioSuave,
-    borderWidth: 1,
-    borderColor: colores.primarioBorde,
-    borderRadius: radio.md,
-    padding: 16,
+    ...piezas.tarjeta,
     marginBottom: 16,
   },
   patientName: {
@@ -325,17 +330,21 @@ const styles = StyleSheet.create({
   },
   activeState: { color: colores.exito, fontWeight: 'bold', marginTop: 8 },
   readOnlyState: { color: colores.advertencia, fontWeight: 'bold', marginTop: 8 },
-  helper: { color: colores.textoSuave, fontSize: 13, marginBottom: 10 },
-  textArea: {
-    minHeight: 150,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.sm,
-    padding: 12,
-    backgroundColor: colores.superficieSuave,
-    fontSize: 15,
+  helper: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginBottom: 10,
   },
-  disabledInput: { backgroundColor: colores.bordeSuave, color: colores.textoSuave },
+  textArea: {
+    ...piezas.campo,
+    minHeight: 140,
+    textAlignVertical: 'top',
+  },
+  disabledInput: {
+    ...piezas.campo,
+    backgroundColor: colores.superficieSuave,
+    color: colores.textoSuave,
+  },
   alertBox: {
     backgroundColor: colores.errorSuave,
     borderLeftWidth: 4,
@@ -347,11 +356,12 @@ const styles = StyleSheet.create({
   alertTitle: { color: colores.error, fontWeight: 'bold', marginBottom: 4 },
   alertText: { color: colores.error },
   saveButton: {
-    backgroundColor: colores.exito,
-    borderRadius: radio.md,
-    padding: 15,
+    ...piezas.botonPrimario,
     alignItems: 'center',
   },
   disabledButton: { opacity: 0.6 },
-  saveButtonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 17 },
+  saveButtonText: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
 });

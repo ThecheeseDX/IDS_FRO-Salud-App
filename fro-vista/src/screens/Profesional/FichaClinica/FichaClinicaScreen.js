@@ -126,7 +126,7 @@ export default function FichaClinicaScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: colores.superficie,
+    backgroundColor: colores.fondo,
   },
   panel: {
     flex: 1,

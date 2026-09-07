@@ -6,7 +6,7 @@ import {
 import apiClient from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import { formatearFecha } from '../../../utils/fechas';
-import { colores, radio } from '../../../theme';
+import { colores, piezas, tipografia } from '../../../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13
@@ -189,24 +189,48 @@ export default function EpisodioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
-  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
-  subtitulo: { fontSize: 13, color: colores.textoTenue, marginBottom: 24, fontStyle: 'italic' },
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+  },
+  title: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+    marginBottom: 4,
+  },
+  subtitulo: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginBottom: 24,
+  },
   seccion: {
-    backgroundColor: colores.superficie, padding: 16, borderRadius: radio.md,
-    borderWidth: 1, borderColor: colores.borde, marginBottom: 20
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
+    marginBottom: 20,
   },
-  seccionTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 12 },
+  seccionTitulo: {
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
   input: {
-    borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficieSuave,
-    padding: 12, borderRadius: radio.md, marginBottom: 12, fontSize: 15
+    ...piezas.campo,
+    marginBottom: 12,
   },
-  boton: { backgroundColor: colores.primario, padding: 14, borderRadius: radio.md, alignItems: 'center' },
-  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
+  boton: {
+    ...piezas.botonPrimario,
+    alignItems: 'center',
+  },
+  botonTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   resultado: {
-    marginTop: 16, backgroundColor: colores.exitoSuave,
-    padding: 14, borderRadius: radio.md, borderWidth: 1, borderColor: colores.exitoBorde
+    ...piezas.tarjeta,
+    marginTop: 16,
   },
-  resultadoTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 8 },
-  resultadoCampo: { fontSize: 15, color: colores.texto, marginBottom: 4 }
+  resultadoTitulo: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: 8 },
+  resultadoCampo: { ...tipografia.cuerpo, color: colores.texto, marginBottom: 4 }
 });

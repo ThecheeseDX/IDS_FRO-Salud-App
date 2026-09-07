@@ -54,17 +54,15 @@ export default function AppNavigator() {
           // Cabecera clara: el verde de marca es acento, no fondo de toda la
           // interfaz. Se separa del contenido con una línea fina en vez de
           // una sombra dura.
-          headerStyle: {
-            backgroundColor: colores.superficie,
-            borderBottomWidth: 1,
-            borderBottomColor: colores.bordeSuave,
-          },
+          // Cabecera verde de marca en toda la app. Las pantallas de inicio de
+          // cada rol son la excepción: ahí va el logo sobre fondo claro.
+          headerStyle: { backgroundColor: colores.primario },
           headerShadowVisible: false,
-          headerTintColor: colores.primario,
+          headerTintColor: colores.textoInverso,
           headerTitleAlign: 'center',
           headerTitleStyle: {
             ...tipografia.subtitulo,
-            color: colores.textoTitulo,
+            color: colores.textoInverso,
           },
           contentStyle: { backgroundColor: colores.fondo },
           animation: 'slide_from_right',
@@ -92,7 +90,17 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardPaciente"
               component={DashboardPaciente}
-              options={{ headerTitle: () => <LogoFro tamano="sm" />, headerBackVisible: false, gestureEnabled: false }}
+              options={{
+                headerTitle: () => <LogoFro tamano="sm" />,
+                headerStyle: {
+                  backgroundColor: colores.superficie,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colores.bordeSuave,
+                },
+                headerTintColor: colores.primario,
+                headerBackVisible: false,
+                gestureEnabled: false,
+              }}
             />
             {/* Gestión de citas unificada: listado + reserva desde el botón flotante */}
             <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
@@ -117,7 +125,17 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardProfesional"
               component={DashboardProfesional}
-              options={{ headerTitle: () => <LogoFro tamano="sm" />, headerBackVisible: false, gestureEnabled: false }}
+              options={{
+                headerTitle: () => <LogoFro tamano="sm" />,
+                headerStyle: {
+                  backgroundColor: colores.superficie,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colores.bordeSuave,
+                },
+                headerTintColor: colores.primario,
+                headerBackVisible: false,
+                gestureEnabled: false,
+              }}
             />
             {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
@@ -145,7 +163,17 @@ export default function AppNavigator() {
             <Stack.Screen
               name="ParametrosScreen"
               component={ParametrosScreen}
-              options={{ headerTitle: () => <LogoFro tamano="sm" />, headerBackVisible: false, gestureEnabled: false }}
+              options={{
+                headerTitle: () => <LogoFro tamano="sm" />,
+                headerStyle: {
+                  backgroundColor: colores.superficie,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colores.bordeSuave,
+                },
+                headerTintColor: colores.primario,
+                headerBackVisible: false,
+                gestureEnabled: false,
+              }}
             />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
           </>

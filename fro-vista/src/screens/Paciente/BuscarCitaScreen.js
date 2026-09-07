@@ -19,7 +19,7 @@ import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // El formateador local de arriba arma AAAA-MM-DD para el servidor; este es para mostrar.
 import { formatearFecha as fechaLegible } from '../../utils/fechas';
-import { colores, radio } from '../../theme';
+import { colores, radio, espacio } from '../../theme';
 
 const DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -322,6 +322,11 @@ export default function BuscarCitaScreen({ navigation, route }) {
           minimumDate={new Date()}
           mode="date"
           display="default"
+          // El calendario nativo sale azul si no se le pasan los colores.
+          accentColor={colores.primario}
+          textColor={colores.texto}
+          positiveButton={{ label: 'Aceptar', textColor: colores.primario }}
+          negativeButton={{ label: 'Cancelar', textColor: colores.textoSuave }}
           onChange={(event, selectedDate) => {
             setMostrarCalendario(false);
             if (selectedDate) {
@@ -460,20 +465,23 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontSize: 15,
   },
+  // Los tres filtros comparten forma: pastillas bien redondeadas.
   pickerContainer: {
     backgroundColor: colores.superficie,
     borderWidth: 1,
     borderColor: colores.bordeCampo,
-    borderRadius: radio.sm,
+    borderRadius: radio.xl,
     marginBottom: 14,
     overflow: 'hidden',
+    paddingHorizontal: espacio.sm,
   },
   fechaBtn: {
     backgroundColor: colores.superficie,
     borderWidth: 1,
     borderColor: colores.bordeCampo,
-    borderRadius: radio.sm,
-    padding: 14,
+    borderRadius: radio.xl,
+    paddingVertical: 15,
+    paddingHorizontal: espacio.lg,
     marginBottom: 14,
   },
   fechaBtnText: {
@@ -482,8 +490,8 @@ const styles = StyleSheet.create({
   },
   btnBuscar: {
     backgroundColor: colores.primario,
-    padding: 14,
-    borderRadius: radio.md,
+    padding: 15,
+    borderRadius: radio.xl,
     alignItems: 'center',
     marginBottom: 10,
   },

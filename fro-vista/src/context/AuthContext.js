@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+import DialogoConfirmacion from '../components/DialogoConfirmacion';
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { setUnauthorizedHandler } from '../api/client';
 
@@ -74,13 +74,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /** Cierre manual: pide confirmación antes de salir, sin ningún aviso extra. */
-  const confirmarCierreSesion = () => {
-    Alert.alert('Cerrar sesión', '¿Quieres cerrar tu sesión en este dispositivo?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Cerrar sesión', style: 'destructive', onPress: () => logoutSession() },
-    ]);
-  };
+  // Cierre manual: se confirma con el diálogo propio de la app. El Alert
+  // nativo de Android no se puede estilizar y rompía el diseño justo en el
+  // momento de decidir.
+  const [pidiendoCierre, setPidiendoCierre] = useState(false);
+  const confirmarCierreSesion = () => setPidiendoCierre(true);
 
   // Registra logoutSession como handler del interceptor de Axios.
   // Si el servidor devuelve 401, se limpia estado + SecureStore juntos.
@@ -91,6 +89,15 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ loginSession, logoutSession, confirmarCierreSesion, userToken, userData, isLoading }}>
       {children}
+      <DialogoConfirmacion
+        visible={pidiendoCierre}
+        titulo="Cerrar sesión"
+        mensaje="¿Quieres cerrar tu sesión en este dispositivo?"
+        etiquetaConfirmar="Cerrar sesión"
+        tono="peligro"
+        onConfirmar={() => { setPidiendoCierre(false); logoutSession(); }}
+        onCancelar={() => setPidiendoCierre(false)}
+      />
     </AuthContext.Provider>
   );
 };

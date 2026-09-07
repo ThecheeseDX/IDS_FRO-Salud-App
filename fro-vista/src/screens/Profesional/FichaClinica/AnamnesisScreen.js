@@ -6,7 +6,7 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { getFichaClinica, guardarAnamnesis } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
-import { colores, radio } from '../../../theme';
+import { colores, piezas, radio, tipografia } from '../../../theme';
 
 // CU77: el bloque estructurado de la evaluación viaja dentro de la anamnesis
 // delimitado por estas marcas, para poder reconstruir los campos al cargar.
@@ -532,26 +532,56 @@ const styles = StyleSheet.create({
   tituloTriaje: { fontWeight: 'bold', color: colores.advertencia, marginBottom: 6 },
   lineaTriaje: { color: colores.texto, fontSize: 13, marginBottom: 3, lineHeight: 18 },
   notaTriaje: { color: colores.advertencia, fontSize: 11, marginTop: 6, fontStyle: 'italic' },
-  container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
-  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  cargandoTexto: { marginTop: 10, color: colores.textoSuave },
-  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
-  subtitulo: { fontSize: 15, color: colores.textoTenue, marginBottom: 20 },
-  label: { fontWeight: '600', color: colores.texto, marginBottom: 6, marginTop: 12, fontSize: 15 },
-  input: {
-    borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficie,
-    padding: 12, borderRadius: radio.md, fontSize: 15
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
   },
-  textArea: { minHeight: 140, textAlignVertical: 'top' },
-  textAreaPeque: { minHeight: 70, textAlignVertical: 'top' },
+  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  cargandoTexto: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginTop: 10,
+  },
+  title: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+    marginBottom: 4,
+  },
+  subtitulo: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginBottom: 20,
+  },
+  label: {
+    ...piezas.etiqueta,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    ...piezas.campo,
+  },
+  textArea: {
+    ...piezas.campo,
+    minHeight: 140,
+    textAlignVertical: 'top',
+  },
+  textAreaPeque: {
+    ...piezas.campo,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
   inputError: { borderColor: colores.error, borderWidth: 2, backgroundColor: colores.errorSuave },
   errorTexto: { color: colores.error, fontSize: 13, marginTop: 4 },
   contador: { textAlign: 'right', color: colores.textoTenue, fontSize: 13, marginTop: 4 },
   avisoTruncado: { color: colores.advertencia, fontSize: 13, marginTop: 4, fontStyle: 'italic' },
   boton: {
-    backgroundColor: colores.exito, padding: 16, borderRadius: radio.md,
-    alignItems: 'center', marginTop: 28
+    ...piezas.botonPrimario,
+    alignItems: 'center',
+    marginTop: 28,
   },
   botonDeshabilitado: { opacity: 0.6 },
-  botonTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 17 }
+  botonTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  }
 });

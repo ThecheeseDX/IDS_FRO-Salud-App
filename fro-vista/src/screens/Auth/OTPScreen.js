@@ -11,6 +11,7 @@ import {
 import client from "../../api/client";
 import VistaConTeclado from "../../components/VistaConTeclado";
 import { colores, radio, sombra } from '../../theme';
+import CodigoOTP from '../../components/CodigoOTP';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OTPScreen
@@ -164,22 +165,16 @@ export default function OTPScreen({ route, navigation }) {
         </Text>
 
         {/* Campos OTP */}
-        <View style={estilos.filaOTP}>
-          {digitos.map((digito, i) => (
-            <TextInput
-              key={i}
-              ref={(ref) => (inputs.current[i] = ref)}
-              style={[estilos.celdaOTP, error && estilos.celdaError]}
-              value={digito}
-              onChangeText={(texto) => manejarCambio(texto, i)}
-              onKeyPress={(e) => manejarRetroceso(e, i)}
-              keyboardType="numeric"
-              maxLength={1}
-              selectTextOnFocus
-              autoFocus={i === 0}
-            />
-          ))}
-        </View>
+        <CodigoOTP
+          valor={digitos.join('')}
+          onCambiar={(v) => {
+            setDigitos(Array.from({ length: LARGO_OTP }, (_, i) => v[i] || ''));
+            setError(null);
+          }}
+          largo={LARGO_OTP}
+          error={Boolean(error)}
+          autoFocus
+        />
 
         {/* Mensaje de error */}
         {error && <Text style={estilos.textoError}>{error}</Text>}

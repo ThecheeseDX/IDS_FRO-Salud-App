@@ -20,6 +20,8 @@ import {
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import CodigoOTP from '../../components/CodigoOTP';
+import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, radio } from '../../theme';
 
@@ -76,18 +78,9 @@ export default function SeguridadScreen() {
   }, []);
 
   // ── CU08: cierre remoto ────────────────────────────────────────────────────
-  const confirmarCierre = (sesion) => {
-    Alert.alert(
-      sesion.actual ? 'Cerrar esta sesión' : 'Cerrar sesión remota',
-      sesion.actual
-        ? 'Es la sesión de este dispositivo: tendrás que iniciar sesión de nuevo.'
-        : `El dispositivo "${sesion.dispositivo}" perderá el acceso de inmediato.`,
-      [
-        { text: 'Volver', style: 'cancel' },
-        { text: 'Cerrar sesión', style: 'destructive', onPress: () => cerrarSesion(sesion) },
-      ]
-    );
-  };
+  // Confirmación con el diálogo propio: el Alert nativo no sigue el diseño.
+  const [sesionPorCerrar, setSesionPorCerrar] = useState(null);
+  const confirmarCierre = (sesion) => setSesionPorCerrar(sesion);
 
   const cerrarSesion = async (sesion) => {
     setCerrandoId(sesion.sesion_usuario_id);
@@ -245,14 +238,7 @@ export default function SeguridadScreen() {
           <Text style={estilos.ayudaSeccion}>
             Enviamos un código a {destinoOTP}. Escríbelo junto a tu contraseña nueva.
           </Text>
-          <TextInput
-            style={[estilos.input, estilos.inputCodigo]}
-            placeholder="Código de 6 dígitos"
-            keyboardType="numeric"
-            maxLength={6}
-            value={codigo}
-            onChangeText={(t) => setCodigo(t.replace(/[^0-9]/g, ''))}
-          />
+          <CodigoOTP valor={codigo} onCambiar={setCodigo} />
           <TextInput
             style={estilos.input}
             placeholder="Contraseña nueva"
@@ -309,6 +295,9 @@ export default function SeguridadScreen() {
                   value={privacidad.mostrar_direccion}
                   onValueChange={(v) => cambiarPreferencia('mostrar_direccion', v)}
                   disabled={guardandoPrivacidad}
+                  trackColor={{ false: colores.borde, true: colores.verde[300] }}
+                  thumbColor={privacidad.mostrar_direccion ? colores.primario : colores.superficie}
+                  ios_backgroundColor={colores.borde}
                 />
               </View>
               <View style={estilos.filaPreferencia}>
@@ -317,12 +306,32 @@ export default function SeguridadScreen() {
                   value={privacidad.mostrar_telefono}
                   onValueChange={(v) => cambiarPreferencia('mostrar_telefono', v)}
                   disabled={guardandoPrivacidad}
+                  trackColor={{ false: colores.borde, true: colores.verde[300] }}
+                  thumbColor={privacidad.mostrar_telefono ? colores.primario : colores.superficie}
+                  ios_backgroundColor={colores.borde}
                 />
               </View>
             </View>
           )}
         </>
       )}
+      <DialogoConfirmacion
+        visible={sesionPorCerrar !== null}
+        titulo={sesionPorCerrar?.actual ? 'Cerrar esta sesión' : 'Cerrar sesión remota'}
+        mensaje={
+          sesionPorCerrar?.actual
+            ? 'Es la sesión de este dispositivo: tendrás que iniciar sesión de nuevo.'
+            : 'Ese dispositivo perderá el acceso de inmediato.'
+        }
+        etiquetaConfirmar="Cerrar sesión"
+        tono="peligro"
+        onConfirmar={() => {
+          const sesion = sesionPorCerrar;
+          setSesionPorCerrar(null);
+          cerrarSesion(sesion);
+        }}
+        onCancelar={() => setSesionPorCerrar(null)}
+      />
     </VistaConTeclado>
   );
 }
@@ -370,7 +379,6 @@ const estilos = StyleSheet.create({
     marginBottom: 10,
     fontSize: 15,
   },
-  inputCodigo: { letterSpacing: 6, fontSize: 17, textAlign: 'center' },
   textoError: { color: colores.error, fontSize: 13, marginBottom: 4 },
 
   botonPrimario: {

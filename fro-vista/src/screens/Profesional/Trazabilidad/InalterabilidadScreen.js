@@ -110,7 +110,7 @@ export default function InalterabilidadScreen() {
       )}
 
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>CU36 - Inalterabilidad</Text>
+        <Text style={styles.infoTitle}>Cierre e inalterabilidad</Text>
         <Text style={styles.infoText}>
           Una vez aceptado el aviso, el registro queda legalmente firmado y protegido contra modificaciones posteriores.
         </Text>

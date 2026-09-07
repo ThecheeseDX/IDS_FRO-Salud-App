@@ -19,7 +19,7 @@ import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
-import { colores, radio } from '../../../theme';
+import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 const COLOR_ESTADO = { VIGENTE: colores.exito, PROGRAMADA: colores.primario, EXPIRADA: colores.textoDeshabilitado };
 
@@ -404,42 +404,50 @@ export default function PautasScreen({ route }) {
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: colores.superficieSuave },
+  fondo: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+  },
   contenido: { padding: 16, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  titulo: { fontSize: 22, fontWeight: 'bold', color: colores.exito, marginBottom: 12 },
-  seccion: { fontSize: 17, fontWeight: 'bold', color: colores.exito, marginBottom: 10, marginTop: 4 },
-  etiqueta: { fontSize: 13, fontWeight: '600', color: colores.textoSuave, marginBottom: 6, marginTop: 4 },
+  titulo: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+    marginBottom: 12,
+  },
+  seccion: {
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  etiqueta: {
+    ...piezas.etiqueta,
+    marginBottom: 6,
+    marginTop: 4,
+  },
 
   tarjeta: {
-    backgroundColor: colores.superficie,
-    borderRadius: radio.md,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    padding: 14,
+    ...piezas.tarjeta,
     marginBottom: 14,
   },
   filaBusqueda: { flexDirection: 'row', gap: 8 },
   inputBusqueda: {
+    ...piezas.campo,
     flex: 1,
-    borderWidth: 1,
-    borderColor: colores.bordeCampo,
-    backgroundColor: colores.fondo,
-    borderRadius: radio.sm,
-    padding: 10,
   },
   botonBuscar: {
-    backgroundColor: colores.exito,
-    borderRadius: radio.sm,
-    paddingHorizontal: 16,
+    ...piezas.botonPrimario,
     justifyContent: 'center',
   },
-  botonBuscarTexto: { color: colores.superficie, fontWeight: 'bold' },
+  botonBuscarTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   sinResultados: { color: colores.textoSuave, fontStyle: 'italic', marginTop: 10, marginBottom: 6 },
   tarjetaMaterial: {
-    borderTopWidth: 1,
-    borderTopColor: colores.bordeSuave,
-    paddingVertical: 8,
+    ...piezas.tarjeta,
     marginTop: 8,
   },
   materialNombre: { fontWeight: 'bold', color: colores.texto },
@@ -452,54 +460,48 @@ const estilos = StyleSheet.create({
   ejercicioLinea: { color: colores.texto, marginBottom: 4, fontSize: 13 },
 
   input: {
-    borderWidth: 1,
-    borderColor: colores.bordeCampo,
-    backgroundColor: colores.fondo,
-    borderRadius: radio.sm,
-    padding: 10,
+    ...piezas.campo,
     marginBottom: 8,
   },
   selector: {
+    backgroundColor: colores.superficie,
     borderWidth: 1,
     borderColor: colores.bordeCampo,
-    backgroundColor: colores.fondo,
-    borderRadius: radio.sm,
-    marginBottom: 8,
+    borderRadius: radio.md,
     overflow: 'hidden',
+    paddingHorizontal: espacio.sm,
+    marginBottom: 8,
   },
   filaFechas: { flexDirection: 'row', gap: 8 },
   mitad: { flex: 1 },
   tercio: { flex: 1 },
 
   tarjetaEjercicio: {
-    borderWidth: 1,
-    borderColor: colores.exitoBorde,
-    borderRadius: radio.md,
-    padding: 10,
+    ...piezas.tarjeta,
     marginBottom: 10,
-    backgroundColor: colores.exitoSuave,
   },
   quitarEjercicio: { color: colores.error, fontWeight: '600', fontSize: 13, textAlign: 'right' },
 
   botonPrimario: {
-    backgroundColor: colores.exito,
-    borderRadius: radio.md,
-    padding: 14,
+    ...piezas.botonPrimario,
     alignItems: 'center',
     marginTop: 6,
     marginBottom: 8,
   },
-  botonPrimarioTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
+  botonPrimarioTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   botonSecundario: {
-    borderWidth: 1,
-    borderColor: colores.exito,
-    borderRadius: radio.md,
-    padding: 12,
+    ...piezas.botonSecundario,
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 8,
   },
-  botonSecundarioTexto: { color: colores.exito, fontWeight: 'bold' },
+  botonSecundarioTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.primario,
+  },
   deshabilitado: { opacity: 0.6 },
   enlace: { color: colores.textoSuave, textAlign: 'center', marginTop: 8, fontWeight: '600' },
 });

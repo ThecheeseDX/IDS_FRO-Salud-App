@@ -11,15 +11,15 @@ export default function DashboardPaciente({ navigation }) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorRed, setErrorRed] = useState(false);
-  const [datosSensibles, setDatosSensibles] = useState('');
+  // La respuesta ya no se muestra (era un texto técnico de sesión), pero la
+  // llamada se mantiene: valida los permisos y detecta la caída del servidor.
 
   const cargarDatosProtegidos = async () => {
     setIsLoading(true);
     setErrorRed(false);
 
     try {
-      const response = await apiClient.get('/auth/mi-perfil');
-      setDatosSensibles(response.data.mensaje);
+      await apiClient.get('/auth/mi-perfil');
     } catch (error) {
       if (!error.response || error.response.status >= 500) {
         setErrorRed(true);
@@ -50,11 +50,6 @@ export default function DashboardPaciente({ navigation }) {
           />
         ) : (
           <>
-            <View style={styles.dataCard}>
-              <Text style={styles.dataTitle}>Sesión activa</Text>
-              <Text style={styles.dataText}>{datosSensibles}</Text>
-            </View>
-
             {/* CU14 + CU15: gestión de citas unificada (ver, agendar y cancelar) */}
             <TouchableOpacity
               style={styles.menuBtn}
@@ -194,17 +189,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: espacio.lg, paddingTop: espacio.xs, paddingBottom: espacio.sm },
 
-  dataCard: {
-    ...piezas.tarjeta,
-    backgroundColor: colores.primarioSuave,
-    borderColor: colores.primarioBorde,
-    width: '100%',
-    marginBottom: espacio.lg,
-    ...sombra.ninguna,
-    elevation: 0,
-  },
-  dataTitle: { ...tipografia.micro, color: colores.primario, marginBottom: espacio.xs },
-  dataText: { ...tipografia.meta, color: colores.primarioFuerte },
 
   // Fila: ícono en pastilla verde, texto a la izquierda, chevron al final.
   menuBtn: {
@@ -230,14 +214,15 @@ const styles = StyleSheet.create({
   menuChevron: { fontSize: 28, color: colores.textoDeshabilitado, marginLeft: espacio.sm },
 
   // Cerrar sesión es destructivo pero secundario: contorno, no bloque rojo.
+  // Solo el botón: sin panel de color detrás.
   logoutButton: {
     marginHorizontal: espacio.lg,
     marginBottom: espacio.lg,
     paddingVertical: espacio.md,
     borderRadius: radio.md,
-    borderWidth: 1,
-    borderColor: colores.errorBorde,
-    backgroundColor: colores.errorSuave,
+    borderWidth: 1.5,
+    borderColor: colores.error,
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   logoutButtonText: { ...tipografia.cuerpoFuerte, color: colores.error },

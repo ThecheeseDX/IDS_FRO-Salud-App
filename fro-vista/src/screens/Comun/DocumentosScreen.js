@@ -24,7 +24,8 @@ import * as ImagePicker from 'expo-image-picker';
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFecha } from '../../utils/fechas';
-import { colores, radio, sombra } from '../../theme';
+import { colores, espacio, piezas, radio, sombra } from '../../theme';
+import { Picker } from '@react-native-picker/picker';
 
 const ICONO_POR_VISOR = { imagen: '🖼️', pdf: '📄', video: '🎬' };
 
@@ -85,9 +86,8 @@ export default function DocumentosScreen({ route, navigation }) {
   }, []);
 
   const aplicarFiltro = (clave) => {
-    const nuevo = clave === filtro ? null : clave;
-    setFiltro(nuevo);
-    cargar(nuevo);
+    setFiltro(clave);
+    cargar(clave);
   };
 
   // ── CU33: carga de archivos (solo profesional) ─────────────────────────────
@@ -244,26 +244,26 @@ export default function DocumentosScreen({ route, navigation }) {
         <Text style={estilos.subtitulo}>Paciente: {nombrePaciente}</Text>
       ) : null}
 
-      {/* Filtros por categoría (CU34: recuperación selectiva) */}
+      {/* CU34: filtro por categoría. Antes eran pastillas en una tira
+          horizontal: con siete categorías había que desplazarse para ver las
+          últimas y no existía forma de volver a "todas". */}
       {categorias.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={estilos.filtros}
-          contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}
-        >
-          {categorias.map((c) => (
-            <TouchableOpacity
-              key={c.clave}
-              style={[estilos.chip, filtro === c.clave && estilos.chipActivo]}
-              onPress={() => aplicarFiltro(c.clave)}
+        <View style={estilos.filtros}>
+          <Text style={estilos.filtroEtiqueta}>Categoría</Text>
+          <View style={estilos.selector}>
+            <Picker
+              selectedValue={filtro ?? 'TODOS'}
+              onValueChange={(valor) => aplicarFiltro(valor === 'TODOS' ? null : valor)}
+              dropdownIconColor={colores.primario}
+              style={estilos.selectorPicker}
             >
-              <Text style={filtro === c.clave ? estilos.chipTextoActivo : estilos.chipTexto}>
-                {c.nombre}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              <Picker.Item label="Ver todos" value="TODOS" />
+              {categorias.map((c) => (
+                <Picker.Item key={c.clave} label={c.nombre} value={c.clave} />
+              ))}
+            </Picker>
+          </View>
+        </View>
       )}
 
       {cargando ? (
@@ -351,18 +351,17 @@ const estilos = StyleSheet.create({
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   subtitulo: { color: colores.textoSuave, paddingHorizontal: 16, paddingTop: 12, fontWeight: '600' },
 
-  filtros: { maxHeight: 46, marginTop: 10 },
-  chip: {
-    borderWidth: 1,
-    borderColor: colores.primario,
-    borderRadius: radio.lg,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  filtros: { paddingHorizontal: espacio.base, paddingTop: espacio.md },
+  filtroEtiqueta: { ...piezas.etiqueta },
+  selector: {
     backgroundColor: colores.superficie,
+    borderWidth: 1,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.xl,
+    overflow: 'hidden',
+    paddingHorizontal: espacio.sm,
   },
-  chipActivo: { backgroundColor: colores.primario },
-  chipTexto: { color: colores.primario, fontSize: 13 },
-  chipTextoActivo: { color: colores.superficie, fontSize: 13, fontWeight: 'bold' },
+  selectorPicker: { color: colores.texto },
 
   card: {
     flexDirection: 'row',

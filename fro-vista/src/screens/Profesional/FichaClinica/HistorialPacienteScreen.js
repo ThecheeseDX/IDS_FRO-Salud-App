@@ -22,7 +22,7 @@ import DialogoMotivo from '../../../components/DialogoMotivo';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
-import { colores, radio, sombra } from '../../../theme';
+import { colores, piezas, radio, sombra, tipografia } from '../../../theme';
 
 /**
  * Arma la dirección del paciente para mostrarla en pantalla. El servidor
@@ -814,63 +814,49 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: colores.superficie },
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+  },
   titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
     marginBottom: 4,
-    color: colores.texto,
   },
   subtitulo: {
-    fontSize: 15,
+    ...tipografia.meta,
     color: colores.textoSuave,
     marginBottom: 16,
   },
   infoPaciente: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.sm,
+    ...piezas.tarjeta,
     marginBottom: 12,
-    backgroundColor: colores.superficieSuave,
   },
   infoTitulo: {
-    fontWeight: 'bold',
-    fontSize: 17,
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
     marginBottom: 6,
-    color: colores.primario,
   },
   loading: { marginTop: 20 },
   seccionTitulo: {
-    fontSize: 17,
-    fontWeight: 'bold',
+    ...tipografia.micro,
+    color: colores.textoTenue,
+    textTransform: 'uppercase',
     marginTop: 18,
     marginBottom: 10,
-    color: colores.textoTitulo,
   },
   card: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.sm,
+    ...piezas.tarjeta,
     marginBottom: 12,
-    backgroundColor: colores.superficieSuave,
   },
   cardEpisodio: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colores.primarioBorde,
-    borderRadius: radio.sm,
+    ...piezas.tarjeta,
     marginBottom: 12,
-    backgroundColor: colores.primarioSuave,
   },
   cardEvolucion: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colores.exitoBorde,
-    borderRadius: radio.sm,
+    ...piezas.tarjeta,
     marginBottom: 12,
-    backgroundColor: colores.exitoSuave,
   },
   // CU33/CU35: acceso al repositorio multimedia
   botonDocumentos: {
@@ -905,24 +891,22 @@ const styles = StyleSheet.create({
   errorContainer: { marginTop: 20 },
   error: { color: 'red', marginBottom: 10 },
   boton: {
-    backgroundColor: colores.primario,
-    padding: 12,
-    borderRadius: radio.sm,
+    ...piezas.botonPrimario,
     alignItems: 'center',
   },
-  botonTexto: { color: colores.superficie, fontWeight: 'bold' },
+  botonTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   botonAnamnesis: {
-    backgroundColor: colores.exito,
-    padding: 14,
-    borderRadius: radio.md,
+    ...piezas.botonPrimario,
     alignItems: 'center',
     marginTop: 12,
     marginBottom: 4,
   },
   botonAnamnesisTexto: {
-    color: colores.superficie,
-    fontWeight: 'bold',
-    fontSize: 15,
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
   },
   warningBox: {
     backgroundColor: colores.advertenciaSuave,
@@ -976,12 +960,13 @@ const styles = StyleSheet.create({
   },
   tituloCuadratura: { fontWeight: 'bold', color: colores.advertencia, marginBottom: 8, fontSize: 15 },
   botonCuadratura: {
-    backgroundColor: colores.advertencia,
-    borderRadius: radio.sm,
-    padding: 11,
+    ...piezas.botonPrimario,
     alignItems: 'center',
   },
-  botonCuadraturaTexto: { color: colores.superficie, fontWeight: 'bold' },
+  botonCuadraturaTexto: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   lineaCuadratura: { color: colores.advertencia, marginBottom: 6 },
   alertaCuadratura: { color: colores.error, marginBottom: 6, fontWeight: '600' },
   okCuadratura: { color: colores.exito, marginBottom: 6, fontWeight: '600' },
