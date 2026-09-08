@@ -25,6 +25,46 @@ const pool = url
   ? mysql.createPool({ uri: url, ...opcionesComunes })
   : mysql.createPool({ ...datosSueltos(), ...opcionesComunes });
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Zona horaria de la sesión MySQL
+// ─────────────────────────────────────────────────────────────────────────────
+// Las columnas TIMESTAMP con DEFAULT CURRENT_TIMESTAMP las genera MySQL, no
+// nosotros, y usa la zona horaria de LA SESIÓN. El proveedor (Aiven) abre las
+// sesiones en UTC, así que esas fechas quedaban 3 o 4 horas adelantadas:
+// se veía en "Sesiones activas", y también en la bitácora, los documentos,
+// las versiones de evolución y el triaje.
+//
+// Se fija la zona en cada conexión nueva del pool. Se intenta primero con el
+// nombre de la zona (respeta el horario de verano por sí solo) y, si el
+// servidor no tiene cargadas las tablas de zonas horarias, se cae al desfase
+// numérico vigente hoy.
+const ZONA = process.env.TZ || 'America/Santiago';
+
+function desfaseActual() {
+  // Desfase real de la zona en este momento, con el signo que espera MySQL.
+  const minutos = -new Date().getTimezoneOffset();
+  const signo = minutos < 0 ? '-' : '+';
+  const abs = Math.abs(minutos);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `${signo}${hh}:${mm}`;
+}
+
+pool.on('connection', (conexion) => {
+  conexion.query(`SET time_zone = '${ZONA}'`, (error) => {
+    if (!error) return;
+    const respaldo = desfaseActual();
+    conexion.query(`SET time_zone = '${respaldo}'`, (error2) => {
+      if (error2) {
+        console.warn(
+          `⚠️  No se pudo fijar la zona horaria de MySQL (${error2.code || error2.message}). ` +
+            'Las fechas generadas por la base podrían quedar en UTC.'
+        );
+      }
+    });
+  });
+});
+
 // Valida la conexión al arrancar. En la nube la base de datos puede tardar unos
 // segundos en aceptar conexiones, así que se reintenta antes de rendirse.
 async function checkConnection(intentosRestantes = Number(process.env.DB_RETRIES || 5)) {

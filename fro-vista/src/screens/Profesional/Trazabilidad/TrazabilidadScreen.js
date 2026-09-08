@@ -9,7 +9,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import TabSelector from '../../../components/TabSelector';
 import InalterabilidadScreen from './InalterabilidadScreen';
 import MarcasTemporalesScreen from './MarcasTemporalesScreen';
-import { colores } from '../../../theme';
+import { colores, espacio, tipografia } from '../../../theme';
 
 const TABS = [
   {
@@ -73,14 +73,14 @@ export default function TrazabilidadScreen() {
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: colores.superficie,
+    backgroundColor: colores.fondo,
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
+    flex: 1,
   },
   descripcion: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    ...tipografia.meta,
     color: colores.textoSuave,
-    fontStyle: 'italic',
-    backgroundColor: colores.advertenciaSuave,
   },
   panel: {
     flex: 1,

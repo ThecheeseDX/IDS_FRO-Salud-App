@@ -4,7 +4,7 @@ import {
   Alert, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import apiClient from '../../../api/client';
-import { colores, radio } from '../../../theme';
+import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 export default function InalterabilidadScreen() {
   const [evolucionId, setEvolucionId] = useState('');
@@ -120,17 +120,58 @@ export default function InalterabilidadScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: colores.fondo },
-  title: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 10, textAlign: 'center' },
-  description: { fontSize: 15, color: colores.textoSuave, marginBottom: 24, textAlign: 'center' },
-  label: { fontWeight: 'bold', color: colores.texto, marginBottom: 6 },
-  input: { backgroundColor: colores.superficie, borderWidth: 1, borderColor: colores.bordeCampo, borderRadius: radio.sm, padding: 12, marginBottom: 16 },
-  button: { backgroundColor: colores.exito, padding: 15, borderRadius: radio.sm, alignItems: 'center', marginTop: 4 },
-  buttonText: { color: colores.superficie, fontWeight: 'bold', fontSize: 17 },
-  infoBox: { marginTop: 24, backgroundColor: colores.superficie, borderLeftWidth: 4, borderLeftColor: colores.primario, padding: 14, borderRadius: radio.sm },
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
+    flex: 1,
+  },
+  title: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+    marginBottom: 10,
+  },
+  description: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginBottom: 24,
+  },
+  label: {
+    ...piezas.etiqueta,
+    marginBottom: 6,
+  },
+  input: {
+    ...piezas.campo,
+    marginBottom: 16,
+  },
+  button: {
+    ...piezas.botonPrimario,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  buttonText: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
+  infoBox: {
+    backgroundColor: colores.primarioSuave,
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+    borderRadius: radio.lg,
+    padding: espacio.base,
+    marginTop: 24,
+  },
   infoTitle: { fontWeight: 'bold', color: colores.primario, marginBottom: 4 },
   infoText: { color: colores.textoSuave },
-  successBox: { marginTop: 20, backgroundColor: colores.exitoSuave, borderWidth: 1, borderColor: colores.exitoBorde, padding: 15, borderRadius: radio.sm },
+  successBox: {
+    backgroundColor: colores.exitoSuave,
+    borderWidth: 1,
+    borderColor: colores.exitoBorde,
+    borderRadius: radio.lg,
+    padding: espacio.base,
+    marginTop: 20,
+  },
   successTitle: { fontWeight: 'bold', color: colores.exito, marginBottom: 5 },
   successText: { color: colores.exito, fontSize: 13, fontStyle: 'italic' }
 });

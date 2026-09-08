@@ -22,43 +22,11 @@ import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../utils/modalidad';
+import { datosEstado, ordenarCitas } from '../../utils/estados';
 import { colores, espacio, radio, sombra, tipografia } from '../../theme';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
-
-// Cada estado tiene su color, su etiqueta legible (nada de guiones bajos en
-// pantalla) y su prioridad en la lista: lo que está ocurriendo ahora va
-// primero y lo ya terminado se va al final.
-const ESTADOS = {
-  EN_CURSO:     { color: colores.advertencia, etiqueta: 'En curso',     orden: 0 },
-  CONFIRMADA:   { color: colores.exito,       etiqueta: 'Confirmada',   orden: 1 },
-  AGENDADA:     { color: colores.primario,    etiqueta: 'Agendada',     orden: 2 },
-  REALIZADA:    { color: colores.textoSuave,  etiqueta: 'Realizada',    orden: 3 },
-  INASISTENCIA: { color: colores.error,       etiqueta: 'Inasistencia', orden: 4 },
-  CANCELADA:    { color: colores.error,       etiqueta: 'Cancelada',    orden: 5 },
-};
-
-const datosEstado = (estado) =>
-  ESTADOS[estado] || {
-    color: colores.textoSuave,
-    // Respaldo para un estado que no conozcamos: al menos sin guiones bajos.
-    etiqueta: String(estado || '').replace(/_/g, ' ').toLowerCase(),
-    orden: 3,
-  };
-
-/** En curso arriba, terminadas al final; dentro de cada grupo, por fecha. */
-function ordenarCitas(lista) {
-  return [...lista].sort((a, b) => {
-    const da = datosEstado(a.estado).orden;
-    const db = datosEstado(b.estado).orden;
-    if (da !== db) return da - db;
-    const fa = String(a.fecha_hora_inicio || '');
-    const fb = String(b.fecha_hora_inicio || '');
-    // Las terminadas se leen de la más reciente a la más antigua.
-    return da >= 3 ? fb.localeCompare(fa) : fa.localeCompare(fb);
-  });
-}
 
 export default function MisCitasScreen({ navigation }) {
   const [citas, setCitas] = useState([]);

@@ -16,6 +16,7 @@ import {
 
 import apiClient from '../../api/client';
 import DialogoMotivo from '../../components/DialogoMotivo';
+import DialogoAviso from '../../components/DialogoAviso';
 import ErrorRetry from '../../components/ErrorRetry';
 import LienzoFirma from '../../components/LienzoFirma';
 import VistaConTeclado from '../../components/VistaConTeclado';
@@ -29,6 +30,7 @@ export default function FirmaConformidadScreen({ route, navigation }) {
   const [trazos, setTrazos] = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [pedirRechazo, setPedirRechazo] = useState(false);
+  const [aviso, setAviso] = useState(null);
 
   // Excepción 2: sin declaración legal renderizada, el lienzo queda bloqueado.
   const cargarDeclaracion = async () => {
@@ -49,9 +51,7 @@ export default function FirmaConformidadScreen({ route, navigation }) {
     setGuardando(true);
     try {
       const { data } = await apiClient.post(`/citas/${citaId}/firma`, cuerpo);
-      Alert.alert(exitoTitulo, data?.mensaje || 'Registrado.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      setAviso({ tono: 'ok', titulo: exitoTitulo, mensaje: data?.mensaje || 'Registrado.', alSalir: true });
     } catch (err) {
       const respuesta = err.response?.data;
       Alert.alert('No se pudo registrar', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
@@ -136,6 +136,18 @@ export default function FirmaConformidadScreen({ route, navigation }) {
           <Text style={estilos.enlaceCorreo}>Validar por correo</Text>
         </TouchableOpacity>
       </View>
+
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const salir = aviso?.alSalir;
+          setAviso(null);
+          if (salir) navigation.goBack();
+        }}
+      />
 
       {/* Excepción 3: rechazo con justificación obligatoria */}
       <DialogoMotivo

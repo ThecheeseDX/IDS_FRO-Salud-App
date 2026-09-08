@@ -20,6 +20,7 @@ import apiClient from '../../../api/client';
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
+import { textoLegible } from '../../../utils/estados';
 
 const COLOR_ESTADO = { VIGENTE: colores.exito, PROGRAMADA: colores.primario, EXPIRADA: colores.textoDeshabilitado };
 
@@ -245,7 +246,7 @@ export default function PautasScreen({ route }) {
               <View key={material.material_terapeutico_id} style={estilos.tarjetaMaterial}>
                 <Text style={estilos.materialNombre}>{material.nombre}</Text>
                 <Text style={estilos.materialDetalle}>
-                  {material.categoria} · {material.tipo} · {material.formato}
+                  {textoLegible(material.categoria)} · {textoLegible(material.tipo)} · {material.formato}
                 </Text>
               </View>
             ))
@@ -367,7 +368,7 @@ export default function PautasScreen({ route }) {
                   {materiales.map((material) => (
                     <Picker.Item
                       key={material.material_terapeutico_id}
-                      label={`${material.nombre} (${material.categoria})`}
+                      label={`${material.nombre} (${textoLegible(material.categoria)})`}
                       value={String(material.material_terapeutico_id)}
                     />
                   ))}

@@ -3,8 +3,9 @@ import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } fr
 import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import LogoFro from '../../components/LogoFro';
 import { validateRut } from '../../utils/validators';
-import { colores, radio } from '../../theme';
+import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 
 const RegisterScreen = ({ navigation }) => {
     const [esProfesional, setEsProfesional] = useState(false);
@@ -196,7 +197,17 @@ const RegisterScreen = ({ navigation }) => {
 
     return (
         <VistaConTeclado style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
-                <Text style={styles.title}>{esProfesional ? "Alta de Profesional" : "Registro Único"}</Text>
+                <View style={styles.cabecera}>
+                    <LogoFro tamano="md" />
+                    <Text style={styles.title}>
+                        {esProfesional ? 'Alta de profesional' : 'Crear cuenta'}
+                    </Text>
+                    <Text style={styles.bajada}>
+                        {esProfesional
+                            ? 'Acredita tu RUT y completa tus datos profesionales.'
+                            : 'Completa tus datos para acceder a tu ficha y tus horas.'}
+                    </Text>
+                </View>
 
                 <Text style={styles.sectionHeader}>Sección 1: Identidad y Credenciales</Text>
 
@@ -319,21 +330,77 @@ const RegisterScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: colores.superficieSuave },
-    title: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: colores.primario },
-    sectionHeader: { fontSize: 17, fontWeight: 'bold', backgroundColor: colores.borde, padding: 10, marginTop: 10, marginBottom: 15, borderRadius: radio.sm },
-    subHeader: { fontSize: 15, fontWeight: 'bold', marginTop: 10, marginBottom: 10, color: colores.texto },
-    row: { flexDirection: 'row', justifyContent: 'space-between' },
-    input: { borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficie, padding: 12, marginBottom: 15, borderRadius: radio.completo, fontSize: 15 },
-    halfInput: { width: '48%' },
-    inputError: { borderColor: colores.error, borderWidth: 2 },
-    pickerContainer: { borderWidth: 1, borderColor: colores.bordeCampo, backgroundColor: colores.superficie, borderRadius: radio.completo, marginBottom: 15, overflow: 'hidden' },
-    btnValidar: { backgroundColor: colores.primario, width: '40%', borderRadius: radio.completo, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-    txtBtnValidar: { color: colores.superficie, fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
-    horarioBox: { backgroundColor: colores.superficie, padding: 10, borderRadius: radio.md, marginBottom: 15, borderWidth: 1, borderColor: colores.borde },
-    pickerContainerHorario: { borderWidth: 1, borderColor: colores.bordeCampo, borderRadius: radio.md, marginBottom: 10, overflow: 'hidden' },
-    btnEliminar: { backgroundColor: colores.error, width: '15%', borderRadius: radio.md, justifyContent: 'center', alignItems: 'center' },
-    buttonContainer: { marginTop: 25, marginBottom: 50 }
+    // Mismo lenguaje que el login: fondo blanco, formulario en tarjeta,
+    // campos y botones del sistema.
+    container: { flex: 1, padding: espacio.xl, backgroundColor: colores.superficie },
+
+    cabecera: { alignItems: 'center', marginBottom: espacio.xl },
+    title: { ...tipografia.titulo, color: colores.textoTitulo, marginTop: espacio.base },
+    bajada: {
+        ...tipografia.meta,
+        color: colores.textoSuave,
+        textAlign: 'center',
+        marginTop: espacio.xs,
+    },
+
+    // Rótulo de sección: mayúsculas pequeñas, sin la franja gris de antes.
+    sectionHeader: {
+        ...tipografia.micro,
+        color: colores.textoTenue,
+        textTransform: 'uppercase',
+        marginTop: espacio.xl,
+        marginBottom: espacio.md,
+    },
+    subHeader: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginTop: espacio.md, marginBottom: espacio.sm },
+
+    row: { flexDirection: 'row', justifyContent: 'space-between', gap: espacio.md },
+    input: { ...piezas.campo, marginBottom: espacio.base },
+    halfInput: { flex: 1 },
+    inputError: { ...piezas.campoError },
+
+    pickerContainer: {
+        backgroundColor: colores.superficie,
+        borderWidth: 1,
+        borderColor: colores.bordeCampo,
+        borderRadius: radio.md,
+        marginBottom: espacio.base,
+        overflow: 'hidden',
+        paddingHorizontal: espacio.sm,
+    },
+    pickerContainerHorario: {
+        backgroundColor: colores.superficie,
+        borderWidth: 1,
+        borderColor: colores.bordeCampo,
+        borderRadius: radio.md,
+        marginBottom: espacio.sm,
+        overflow: 'hidden',
+        paddingHorizontal: espacio.sm,
+    },
+
+    btnValidar: {
+        ...piezas.botonSecundario,
+        width: '40%',
+        paddingHorizontal: espacio.sm,
+        marginBottom: espacio.base,
+    },
+    txtBtnValidar: { ...tipografia.metaFuerte, color: colores.primario, textAlign: 'center' },
+
+    horarioBox: {
+        ...piezas.tarjeta,
+        padding: espacio.md,
+        marginBottom: espacio.base,
+    },
+    btnEliminar: {
+        width: 48,
+        borderRadius: radio.md,
+        borderWidth: 1.5,
+        borderColor: colores.error,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: espacio.sm,
+    },
+
+    buttonContainer: { marginTop: espacio.xl, marginBottom: espacio.xxxl },
 });
 
 export default RegisterScreen;

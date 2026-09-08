@@ -352,6 +352,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colores.fondo,
+    // El contenido no puede quedar al ras del borde de la pantalla.
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
   },
   title: {
     ...tipografia.titulo,

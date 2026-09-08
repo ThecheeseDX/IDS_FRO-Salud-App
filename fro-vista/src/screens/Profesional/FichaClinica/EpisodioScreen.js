@@ -3,17 +3,43 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   Alert, ActivityIndicator
 } from 'react-native';
-import apiClient from '../../../api/client';
+import apiClient, { getHistorialPaciente } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
+import DialogoAviso from '../../../components/DialogoAviso';
 import { formatearFecha } from '../../../utils/fechas';
-import { colores, piezas, tipografia } from '../../../theme';
+import { colores, espacio, piezas, tipografia } from '../../../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13
 // El token JWT se inyecta automáticamente por el interceptor de client.js
 // Cada petición dispara auditarAccesoClinico en el backend
 // ─────────────────────────────────────────────────────────────────────────────
-export default function EpisodioScreen() {
+export default function EpisodioScreen({ route }) {
+  // La ficha entrega el paciente en contexto; antes había que saberse de
+  // memoria el identificador del episodio para poder consultarlo.
+  const { pacienteId } = route?.params || {};
+
+  const [episodiosDisponibles, setEpisodiosDisponibles] = useState(null);
+  const [cargandoLista, setCargandoLista] = useState(false);
+
+  const verEpisodiosDelPaciente = async () => {
+    setCargandoLista(true);
+    try {
+      const data = await getHistorialPaciente(pacienteId);
+      const lista = (data?.episodios || []).map((ep) => ({
+        id: ep.episodio_clinico_id,
+        titulo: `Episodio #${ep.episodio_clinico_id}`,
+        detalle: ep.motivo_consulta || 'Sin motivo registrado',
+        nota: `${ep.estado || 'Sin estado'} · desde ${formatearFecha(ep.fecha_inicio)}`,
+      }));
+      setEpisodiosDisponibles(lista);
+    } catch (error) {
+      Alert.alert('No se pudo consultar', 'No fue posible obtener los episodios de este paciente.');
+    } finally {
+      setCargandoLista(false);
+    }
+  };
+
   // ─ Estado para BUSCAR episodio ──────────────────────────────────────────
   const [episodioId, setEpisodioId] = useState('');
   const [episodio, setEpisodio] = useState(null);
@@ -123,6 +149,18 @@ export default function EpisodioScreen() {
             value={episodioId}
             onChangeText={setEpisodioId}
           />
+          {pacienteId ? (
+            <TouchableOpacity
+              style={styles.botonVerEpisodios}
+              onPress={verEpisodiosDelPaciente}
+              disabled={cargandoLista}
+            >
+              <Text style={styles.botonVerEpisodiosTexto}>
+                {cargandoLista ? 'Buscando…' : '📁 Ver episodios de este paciente'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
           <TouchableOpacity style={styles.boton} onPress={buscarEpisodio} disabled={cargandoBusqueda}>
             {cargandoBusqueda
               ? <ActivityIndicator color={colores.superficie} />
@@ -184,7 +222,28 @@ export default function EpisodioScreen() {
               : <Text style={styles.botonTexto}>Crear Episodio</Text>}
           </TouchableOpacity>
         </View>
-      </VistaConTeclado>
+        <DialogoAviso
+        visible={episodiosDisponibles !== null}
+        titulo="Episodios del paciente"
+        mensaje={
+          episodiosDisponibles?.length
+            ? 'Toca uno para consultarlo.'
+            : 'Este paciente todavía no tiene episodios registrados.'
+        }
+        lista={episodiosDisponibles || []}
+        tono="info"
+        etiquetaCerrar="Cerrar"
+        onSeleccionarFila={
+          episodiosDisponibles?.length
+            ? (fila) => {
+                setEpisodioId(String(fila.id));
+                setEpisodiosDisponibles(null);
+              }
+            : undefined
+        }
+        onCerrar={() => setEpisodiosDisponibles(null)}
+      />
+    </VistaConTeclado>
   );
 }
 
@@ -192,6 +251,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colores.fondo,
+    // El contenido no puede quedar al ras del borde de la pantalla.
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
   },
   title: {
     ...tipografia.titulo,
@@ -231,6 +293,12 @@ const styles = StyleSheet.create({
     ...piezas.tarjeta,
     marginTop: 16,
   },
+  botonVerEpisodios: {
+    ...piezas.botonSecundario,
+    paddingVertical: espacio.md,
+    marginBottom: espacio.md,
+  },
+  botonVerEpisodiosTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
   resultadoTitulo: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: 8 },
   resultadoCampo: { ...tipografia.cuerpo, color: colores.texto, marginBottom: 4 }
 });

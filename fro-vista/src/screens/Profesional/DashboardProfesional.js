@@ -168,29 +168,37 @@ export default function DashboardProfesional({ navigation }) {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={confirmarCierreSesion}>
-        <Text style={styles.logoutText}>Cerrar Sesión</Text>
-      </TouchableOpacity>
     </View>
   );
 
   return (
-    <FlatList
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      data={pacientes}
-      keyExtractor={(item) => item.paciente_id.toString()}
-      renderItem={renderPaciente}
-      ListHeaderComponent={Encabezado}
-      ListFooterComponent={PieDeLista}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => cargarPacientes(true)}
-          colors={[colores.primario]}
-        />
-      }
-    />
+    <View style={styles.pantalla}>
+      <FlatList
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        data={pacientes}
+        keyExtractor={(item) => item.paciente_id.toString()}
+        renderItem={renderPaciente}
+        ListHeaderComponent={Encabezado}
+        ListFooterComponent={PieDeLista}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => cargarPacientes(true)}
+            colors={[colores.primario]}
+          />
+        }
+      />
+
+      {/* Fijo al borde inferior, igual que en la vista de Paciente. */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={confirmarCierreSesion}
+        activeOpacity={interaccion.opacidadActiva}
+      >
+        <Text style={styles.logoutText}>Cerrar sesión</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -263,8 +271,10 @@ const styles = StyleSheet.create({
   herramientaTitulo: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginBottom: 2 },
   herramientaSub: { ...tipografia.meta, color: colores.textoSuave },
 
+  pantalla: { flex: 1, backgroundColor: colores.fondo },
   logoutBtn: {
-    marginTop: espacio.md,
+    marginHorizontal: espacio.lg,
+    marginBottom: espacio.lg,
     paddingVertical: espacio.md,
     borderRadius: radio.md,
     borderWidth: 1.5,

@@ -10,6 +10,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Styl
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { colores, radio, sombra } from '../../theme';
+import CodigoOTP from '../../components/CodigoOTP';
 
 export default function RecuperarContrasenaScreen({ navigation }) {
   const [paso, setPaso] = useState(1);
@@ -109,15 +110,7 @@ export default function RecuperarContrasenaScreen({ navigation }) {
             <Text style={estilos.subtitulo}>
               Escribe el código que llegó a {email.trim()} y tu contraseña nueva.
             </Text>
-            <TextInput
-              style={[estilos.input, estilos.inputCodigo]}
-              placeholder="Código de 6 dígitos"
-              keyboardType="numeric"
-              maxLength={6}
-              value={codigo}
-              onChangeText={(t) => setCodigo(t.replace(/[^0-9]/g, ''))}
-              editable={!cargando}
-            />
+            <CodigoOTP valor={codigo} onCambiar={setCodigo} editable={!cargando} />
             <TextInput
               style={estilos.input}
               placeholder="Contraseña nueva"
@@ -191,7 +184,6 @@ const estilos = StyleSheet.create({
     marginBottom: 12,
     fontSize: 15,
   },
-  inputCodigo: { letterSpacing: 6, fontSize: 17, textAlign: 'center' },
   ayuda: { color: colores.textoTenue, fontSize: 13, marginBottom: 4 },
   error: { color: colores.error, marginTop: 4, fontSize: 13 },
   boton: {

@@ -6,7 +6,7 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { getFichaClinica, guardarAnamnesis } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
-import { colores, piezas, radio, tipografia } from '../../../theme';
+import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 // CU77: el bloque estructurado de la evaluación viaja dentro de la anamnesis
 // delimitado por estas marcas, para poder reconstruir los campos al cargar.
@@ -535,6 +535,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colores.fondo,
+    // El contenido no puede quedar al ras del borde de la pantalla.
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
   },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   cargandoTexto: {

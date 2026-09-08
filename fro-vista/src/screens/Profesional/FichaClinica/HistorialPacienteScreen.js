@@ -19,10 +19,12 @@ import apiClient, {
 } from '../../../api/client';
 import { AuthContext } from '../../../context/AuthContext';
 import DialogoMotivo from '../../../components/DialogoMotivo';
+import DialogoAviso from '../../../components/DialogoAviso';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
-import { colores, piezas, radio, sombra, tipografia } from '../../../theme';
+import { datosEstado, etiquetaEstado } from '../../../utils/estados';
+import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
 
 /**
  * Arma la dirección del paciente para mostrarla en pantalla. El servidor
@@ -69,6 +71,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [correccionEvolucion, setCorreccionEvolucion] = useState(null);
   // CU31: versiones desplegadas por evolución { evolucionId: [versiones] }.
   const [versionesPorEvolucion, setVersionesPorEvolucion] = useState({});
+  // Avisos de resultado con el diálogo de la app (Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -140,7 +144,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const { data } = await apiClient.post(`/clinica/evolucion/${evolucionId}/versiones`, {
         texto,
       });
-      Alert.alert('Corrección guardada', data?.mensaje || 'Versión creada.');
+      setAviso({ tono: 'ok', titulo: 'Corrección guardada', mensaje: data?.mensaje || 'Versión creada.' });
       // Refrescar el desplegable si estaba abierto y el contador del historial.
       setVersionesPorEvolucion((previas) => {
         const copia = { ...previas };
@@ -169,7 +173,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     try {
       if (evento === 'INICIAR') {
         const data = await iniciarAtencion(citaId, {});
-        Alert.alert('Atención iniciada', `Marca de inicio: ${formatearFecha(data.marca_inicio)}`);
+        setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
       } else {
         const data = await finalizarAtencion(citaId, {});
         const inv = data.inventario;
@@ -178,7 +182,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           : inv.sin_paquete
             ? '\n\nEl paciente no tiene un paquete de sesiones activo: no se descontó ninguna sesión.'
             : `\n\nSesiones restantes del paquete: ${inv.sesiones_restantes}${inv.paquete_agotado ? ' (paquete agotado)' : ''}`;
-        Alert.alert('Atención finalizada', `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}`);
+        setAviso({ tono: 'ok', titulo: 'Atención finalizada', mensaje: `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}` });
       }
       cargarHistorial(false);
     } catch (err) {
@@ -196,7 +200,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
               onPress: async () => {
                 try {
                   const data = await iniciarAtencion(citaId, { confirmar_inicio_anticipado: true });
-                  Alert.alert('Atención iniciada', `Marca de inicio: ${formatearFecha(data.marca_inicio)}`);
+                  setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
                   cargarHistorial(false);
                 } catch (error) {
                   Alert.alert(
@@ -289,7 +293,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const { data } = await apiClient.post(`/citas/${citaId}/validar-sesion`, extras);
 
       if (data.certificada) {
-        Alert.alert('Sesión certificada', `${data.mensaje}\n\n${textoFactores(data.factores)}`);
+        setAviso({ tono: 'ok', titulo: 'Sesión certificada', mensaje: `${data.mensaje}\n\n${textoFactores(data.factores)}` });
         // Refresca la lista para que el botón dé paso a "Sesión validada".
         cargarHistorial(true);
         return;
@@ -360,23 +364,28 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const eventos = data?.eventos || [];
 
       if (eventos.length === 0) {
-        Alert.alert('Trazabilidad', 'Esta cita aún no registra cambios auditados.');
+        setAviso({ tono: 'info', titulo: 'Trazabilidad', mensaje: 'Esta cita aún no registra cambios auditados.' });
         return;
       }
 
-      const lineas = eventos.map((e) => {
-        const momento = formatearFecha(e.momento);
-        const cambio = e.accion === 'REPROGRAMACION_CITA'
-          ? `Reprogramada al ${e.bloque_nuevo?.fecha_hora_inicio || '?'}`
-          : `${e.estado_anterior || '?'} → ${e.nuevo_estado || '?'}`;
-        const motivo = e.motivo ? `\n   Motivo: ${e.motivo}` : '';
-        const actor = e.rol_actor ? ` (${e.rol_actor})` : '';
-        return `• ${momento}${actor}\n   ${cambio}${motivo}`;
-      });
+      // Cada evento es una fila de la línea de tiempo, no texto amontonado.
+      const filas = eventos.map((e) => ({
+        titulo:
+          e.accion === 'REPROGRAMACION_CITA'
+            ? `Reprogramada al ${formatearFecha(e.bloque_nuevo?.fecha_hora_inicio) || 'nuevo bloque'}`
+            : `${etiquetaEstado(e.estado_anterior)} → ${etiquetaEstado(e.nuevo_estado)}`,
+        detalle: `${formatearFecha(e.momento)}${e.rol_actor ? ` · ${e.rol_actor}` : ''}`,
+        nota: e.motivo ? `Motivo: ${e.motivo}` : null,
+      }));
 
-      Alert.alert(`Trazabilidad cita #${citaId}`, lineas.join('\n\n'));
+      setAviso({
+        tono: 'info',
+        titulo: `Trazabilidad de la cita #${citaId}`,
+        mensaje: `${eventos.length} cambio(s) auditado(s), del más reciente al más antiguo.`,
+        lista: filas,
+      });
     } catch (error) {
-      Alert.alert('Error', 'No se pudo obtener la trazabilidad de la cita.');
+      setAviso({ tono: 'error', titulo: 'Sin trazabilidad', mensaje: 'No se pudo obtener la trazabilidad de la cita.' });
     }
   };
 
@@ -510,7 +519,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {formatearFecha(item.fecha_hora_inicio)}
                   </Text>
                   <Text style={{ fontWeight: 'bold', color: colores.texto }}>
-                    Estado: <Text style={styles.estadoTexto}>{item.estado}</Text>
+                    Estado: <Text style={[styles.estadoTexto, { color: datosEstado(item.estado).color }]}>{etiquetaEstado(item.estado)}</Text>
                   </Text>
                   <Text>Profesional: {item.profesional}</Text>
                   <Text>Especialidad: {item.especialidad}</Text>
@@ -673,7 +682,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   Episodio #{item.episodio_clinico_id}
                 </Text>
                 <Text>Motivo: {item.motivo_consulta}</Text>
-                <Text>Estado: {item.estado || 'No informado'}</Text>
+                <Text>Estado: {item.estado ? etiquetaEstado(item.estado) : 'No informado'}</Text>
                 <Text>Inicio: {formatearFecha(item.fecha_inicio)}</Text>
                 <Text>Término: {formatearFecha(item.fecha_terminado)}</Text>
               </View>
@@ -796,6 +805,15 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         onCancelar={() => setCierreManualCita(null)}
       />
 
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        lista={aviso?.lista}
+        tono={aviso?.tono}
+        onCerrar={() => setAviso(null)}
+      />
+
       {/* CU22: la cancelación del profesional también exige justificación */}
       <DialogoMotivo
         visible={citaPorCancelar !== null}
@@ -817,6 +835,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colores.fondo,
+    // El contenido no puede quedar al ras del borde de la pantalla.
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
   },
   titulo: {
     ...tipografia.titulo,
@@ -932,18 +953,20 @@ const styles = StyleSheet.create({
     borderTopColor: colores.bordeSuave,
     paddingTop: 12,
   },
+  // Acciones de la cita: misma altura, radio y tipografía que el resto de
+  // los botones de la app; el color lo pone el estado al que llevan.
   botonAccion: {
     flex: 1,
-    paddingVertical: 9,
-    marginHorizontal: 4,
-    borderRadius: radio.sm,
+    paddingVertical: espacio.md,
+    marginHorizontal: espacio.xs,
+    borderRadius: radio.md,
     alignItems: 'center',
+    justifyContent: 'center',
     ...sombra.suave,
   },
   textoBotonAccion: {
-    color: colores.superficie,
-    fontSize: 13,
-    fontWeight: 'bold',
+    ...tipografia.metaFuerte,
+    color: colores.textoInverso,
   },
   estadoTexto: {
     fontWeight: '600',

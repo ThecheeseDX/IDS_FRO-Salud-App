@@ -21,7 +21,8 @@ import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
-import { colores, radio } from '../../../theme';
+import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
+import { etiquetaEstado } from '../../../utils/estados';
 
 function estadoNormalizado(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_');
@@ -222,7 +223,7 @@ export default function MarcasTemporalesScreen() {
                         : styles.badgeReady,
                   ]}
                 >
-                  {estado}
+                  {etiquetaEstado(estado)}
                 </Text>
               </View>
 
@@ -366,16 +367,26 @@ export default function MarcasTemporalesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colores.fondo },
+  container: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.base,
+    flex: 1,
+  },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: 'bold', color: colores.texto },
-  subtitle: { color: colores.textoSuave, marginTop: 4, marginBottom: 20 },
+  title: {
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
+  },
+  subtitle: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginTop: 4,
+    marginBottom: 20,
+  },
   card: {
-    backgroundColor: colores.superficie,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.md,
-    padding: 16,
+    ...piezas.tarjeta,
     marginBottom: 14,
   },
   cardHeader: {
@@ -384,7 +395,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-  patient: { flex: 1, fontSize: 17, fontWeight: 'bold', color: colores.texto },
+  patient: {
+    ...tipografia.subtitulo,
+    color: colores.textoTitulo,
+    flex: 1,
+  },
   badge: {
     overflow: 'hidden',
     borderRadius: radio.md,
@@ -396,7 +411,11 @@ const styles = StyleSheet.create({
   badgeReady: { backgroundColor: colores.primarioSuave, color: colores.primario },
   badgeActive: { backgroundColor: colores.primarioSuave, color: colores.primario },
   badgeDone: { backgroundColor: colores.exitoSuave, color: colores.primario },
-  detail: { color: colores.textoSuave, marginBottom: 5 },
+  detail: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginBottom: 5,
+  },
   duration: {
     color: colores.exito,
     fontWeight: 'bold',
@@ -404,49 +423,50 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   startButton: {
-    backgroundColor: colores.exito,
-    borderRadius: 9,
-    padding: 13,
+    ...piezas.botonPrimario,
     alignItems: 'center',
     marginTop: 14,
   },
   finishButton: {
-    backgroundColor: colores.primario,
-    borderRadius: 9,
-    padding: 13,
+    ...piezas.botonPrimario,
+    backgroundColor: colores.exito,
     alignItems: 'center',
     marginTop: 14,
   },
-  buttonText: { color: colores.superficie, fontWeight: 'bold' },
+  buttonText: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.textoInverso,
+  },
   manualButton: {
-    paddingVertical: 10,
+    ...piezas.botonSecundario,
     alignItems: 'center',
   },
   manualButtonText: {
+    ...tipografia.cuerpoFuerte,
     color: colores.primario,
-    fontSize: 13,
-    fontWeight: '600',
   },
   recoveryBox: {
     backgroundColor: colores.advertenciaSuave,
-    borderLeftWidth: 4,
-    borderLeftColor: colores.advertencia,
-    borderRadius: radio.sm,
-    padding: 10,
+    borderWidth: 1,
+    borderColor: colores.advertenciaBorde,
+    borderRadius: radio.lg,
+    padding: espacio.base,
     marginTop: 10,
   },
   recoveryText: { color: colores.advertencia, fontSize: 13 },
   emptyCard: {
-    backgroundColor: colores.superficie,
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.md,
-    padding: 20,
+    ...piezas.tarjeta,
   },
-  emptyText: { color: colores.textoSuave, textAlign: 'center' },
+  emptyText: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: colores.velo,
+    justifyContent: 'center',
+    padding: espacio.xl,
+    flex: 1,
   },
   modalContenido: {
     flexGrow: 1,
@@ -455,42 +475,45 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    width: '100%',
-    maxWidth: 420,
     backgroundColor: colores.superficie,
-    borderRadius: radio.md,
-    padding: 18,
+    borderRadius: radio.xl,
+    padding: espacio.xl,
+    ...sombra.elevada,
+    width: '100%',
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: colores.texto,
+    ...tipografia.titulo,
+    color: colores.textoTitulo,
     marginBottom: 6,
   },
-  modalHelp: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: radio.sm,
-    padding: 11,
+  modalHelp: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
     marginBottom: 12,
-    backgroundColor: colores.superficieSuave,
   },
-  justificationInput: { minHeight: 90 },
+  input: {
+    ...piezas.campo,
+    marginBottom: 12,
+  },
+  justificationInput: {
+    ...piezas.campo,
+    minHeight: 90,
+    textAlignVertical: 'top',
+    minHeight: 90,
+  },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   cancelButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    ...piezas.botonSecundario,
     marginRight: 8,
   },
-  cancelButtonText: { color: colores.textoSuave, fontWeight: 'bold' },
+  cancelButtonText: {
+    ...tipografia.cuerpoFuerte,
+    color: colores.primario,
+  },
   confirmButton: {
-    backgroundColor: colores.exito,
-    borderRadius: radio.sm,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
+    ...piezas.botonPrimario,
   },
 });

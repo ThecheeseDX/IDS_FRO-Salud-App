@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   loginButtonText: { ...tipografia.cuerpoFuerte, color: colores.textoInverso, letterSpacing: 0.8 },
   loginButtonTextDisabled: { color: colores.textoDeshabilitado },
 
-  registerLink: { marginTop: espacio.xl, alignItems: 'center' },
-  registerLinkText: { ...tipografia.meta, color: colores.textoSuave },
+  registerLink: { marginTop: espacio.xl, alignSelf: 'stretch', alignItems: 'center' },
+  registerLinkText: { ...tipografia.meta, color: colores.textoSuave, textAlign: 'center' },
   registerLinkHighlight: { color: colores.primario, fontWeight: '700' },
 });
