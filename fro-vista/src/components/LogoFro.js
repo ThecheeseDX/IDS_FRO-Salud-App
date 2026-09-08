@@ -21,7 +21,7 @@ const PROPORCION = 2.6;
  * @param {boolean} conNombre      muestra "Salud" bajo el logotipo
  */
 export default function LogoFro({ tamano = 'md', conNombre = false, style }) {
-  const alto = { sm: 34, md: 46, lg: 88 }[tamano] || 46;
+  const alto = { sm: 90, md: 90, lg: 160 }[tamano] || 46;
 
   return (
     <View style={[estilos.contenedor, style]}>

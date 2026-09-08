@@ -205,17 +205,44 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
     destinatario,
     asunto: plantilla.asunto,
     html: `
-      <div style="font-family:sans-serif;max-width:400px;margin:auto;padding:24px;
-                  border:1px solid #e5e7eb;border-radius:8px;">
-        <h2 style="color:#0f172a">${plantilla.titulo}</h2>
-        <p style="color:#475569">${plantilla.bajada}</p>
-        <div style="font-size:36px;font-weight:bold;letter-spacing:8px;
-                    color:#2563eb;text-align:center;padding:16px 0;">${codigo}</div>
-        <p style="color:#94a3b8;font-size:13px">
-          Expira en ${OTP_EXPIRACION_MINUTOS} minutos.<br/>
-          ${plantilla.cierre}
-        </p>
-      </div>`,
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            
+            <!-- Encabezado Verde Corporativo -->
+            <div style="background-color: #004639; padding: 20px; text-align: center;">
+                <h1 style="color: #FFFFFF; margin: 0; font-size: 24px; letter-spacing: 1px;">FRO Salud</h1>
+            </div>
+
+            <!-- Cuerpo del mensaje -->
+            <div style="padding: 30px; color: #000000; line-height: 1.6;">
+                <h2 style="color: #004639; font-size: 20px; margin-top: 0;">${plantilla.titulo}</h2>
+                <p style="font-size: 16px;">${plantilla.bajada}</p>
+                
+                <!-- Caja Destacada Código OTP -->
+                <div style="text-align: center; margin: 30px 0;">
+                    <span style="display: inline-block; padding: 15px 30px; background-color: #FFFFFF; color: #000000; font-size: 32px; font-weight: bold; letter-spacing: 6px; border: 2px solid #004639; border-radius: 6px;">
+                        ${codigo}
+                    </span>
+                </div>
+                
+                <!-- Textos Inferiores -->
+                <p style="font-size: 13px; color: #000000;">
+                    Expira en ${OTP_EXPIRACION_MINUTOS} minutos.<br/>
+                    ${plantilla.cierre}
+                </p>
+            </div>
+            
+            <!-- Pie de página -->
+            <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
+                <p style="font-size: 12px; color: #000000; margin: 0;">
+                    &copy; ${new Date().getFullYear()} FRO Salud. Todos los derechos reservados.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>`
   });
 }
 
