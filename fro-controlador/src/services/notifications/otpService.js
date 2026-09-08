@@ -237,7 +237,7 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
             
             <!-- Pie de página con el Logo -->
             <div style="background-color: #f9f9f9; padding: 32px 20px; text-align: center; border-top: 1px solid #eeeeee;">
-                <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 60px; width: auto; margin: 0 auto 16px auto; display: block; border: 0;">
+                <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 160px; width: auto; margin: 0 auto 16px auto; display: block; border: 0;">
                 <p style="font-size: 12px; color: #888888; margin: 0;">
                     &copy; ${new Date().getFullYear()} FRO Salud. Todos los derechos reservados.
                 </p>
