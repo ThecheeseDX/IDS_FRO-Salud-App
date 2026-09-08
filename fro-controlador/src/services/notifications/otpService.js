@@ -208,16 +208,16 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
     <!DOCTYPE html>
     <html lang="es">
     <head>
-        <!-- Importar tipografía Geist (similar a Inter pero con el toque exacto de FRO Salud) -->
         <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
     </head>
     <body style="font-family: 'Geist', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f5f4; margin: 0; padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
             
-            <!-- Encabezado con degradado radial corporativo -->
-            <div style="background: radial-gradient(120% 120% at 50% -10%, #004639 0%, #002b23 100%); padding: 48px 20px; text-align: center; border-bottom: 4px solid #004639;">
-                <!-- Logo: Reemplaza la URL con la imagen oficial alojada en la web -->
-                <img src="https://frosalud.cl/icon.svg?icon.12t0ysyi4916w.svg" alt="FRO Salud" style="height: 40px; width: auto; margin: 0 auto; display: block; border: 0; filter: brightness(0) invert(1);">
+            <!-- Encabezado con degradado radial y logo en "cápsula" blanca -->
+            <div style="background: radial-gradient(120% 120% at 50% -10%, #004639 0%, #002b23 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid #004639;">
+                <div style="display: inline-block; background-color: #FFFFFF; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 32px; width: auto; display: block; border: 0;">
+                </div>
             </div>
 
             <!-- Cuerpo del mensaje -->
@@ -241,7 +241,7 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
         </div>
     </body>
     </html>`
-  });
+  }); 
 }
 
 function explicarErrorSMTP(error) {
