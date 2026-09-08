@@ -213,15 +213,11 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
     <body style="font-family: 'Geist', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f5f4; margin: 0; padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
             
-            <!-- Encabezado con degradado radial y logo en "cápsula" blanca -->
-            <div style="background: radial-gradient(120% 120% at 50% -10%, #004639 0%, #002b23 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid #004639;">
-                <div style="display: inline-block; background-color: #FFFFFF; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                    <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 32px; width: auto; display: block; border: 0;">
-                </div>
-            </div>
+            <!-- Barra superior decorativa con el degradado -->
+            <div style="background: radial-gradient(120% 120% at 50% -10%, #004639 0%, #002b23 100%); height: 12px; width: 100%;"></div>
 
             <!-- Cuerpo del mensaje -->
-            <div style="padding: 48px 40px; color: #1a1a1a; line-height: 1.6;">
+            <div style="padding: 48px 40px 32px 40px; color: #1a1a1a; line-height: 1.6;">
                 <h2 style="color: #004639; font-size: 22px; margin-top: 0; font-weight: 600; letter-spacing: -0.5px;">${plantilla.titulo}</h2>
                 <p style="font-size: 15px; color: #4a4a4a; margin-bottom: 12px;">${plantilla.bajada}</p>
                 
@@ -238,10 +234,18 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
                     ${plantilla.cierre}
                 </p>
             </div>
+            
+            <!-- Pie de página con el Logo -->
+            <div style="background-color: #f9f9f9; padding: 32px 20px; text-align: center; border-top: 1px solid #eeeeee;">
+                <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 24px; width: auto; margin: 0 auto 16px auto; display: block; border: 0;">
+                <p style="font-size: 12px; color: #888888; margin: 0;">
+                    &copy; ${new Date().getFullYear()} FRO Salud. Todos los derechos reservados.
+                </p>
+            </div>
         </div>
     </body>
     </html>`
-  }); 
+  });
 }
 
 function explicarErrorSMTP(error) {
