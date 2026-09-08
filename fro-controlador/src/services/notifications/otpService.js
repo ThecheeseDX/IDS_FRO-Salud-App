@@ -207,36 +207,40 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
     html: `
     <!DOCTYPE html>
     <html>
-    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+    <head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    </head>
+    <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.08);">
             
-            <!-- Encabezado Verde Corporativo -->
-            <div style="background-color: #004639; padding: 20px; text-align: center;">
-                <h1 style="color: #FFFFFF; margin: 0; font-size: 24px; letter-spacing: 1px;">FRO Salud</h1>
+            <!-- Encabezado Verde Corporativo con Logo -->
+            <div style="background-color: #004639; padding: 30px 20px; text-align: center;">
+                <!-- IMPORTANTE: Reemplaza la URL del src por el enlace público de tu logo -->
+                <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 48px; width: auto; margin: 0 auto; display: block; border: 0;">
             </div>
 
             <!-- Cuerpo del mensaje -->
-            <div style="padding: 30px; color: #000000; line-height: 1.6;">
-                <h2 style="color: #004639; font-size: 20px; margin-top: 0;">${plantilla.titulo}</h2>
-                <p style="font-size: 16px;">${plantilla.bajada}</p>
+            <div style="padding: 40px 30px; color: #000000; line-height: 1.6;">
+                <h2 style="color: #004639; font-size: 24px; margin-top: 0; font-weight: 700; letter-spacing: -0.5px;">${plantilla.titulo}</h2>
+                <p style="font-size: 16px; color: #333333;">${plantilla.bajada}</p>
                 
                 <!-- Caja Destacada Código OTP -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <span style="display: inline-block; padding: 15px 30px; background-color: #FFFFFF; color: #000000; font-size: 32px; font-weight: bold; letter-spacing: 6px; border: 2px solid #004639; border-radius: 6px;">
+                <div style="text-align: center; margin: 35px 0;">
+                    <span style="display: inline-block; padding: 18px 40px; background-color: #FFFFFF; color: #004639; font-size: 36px; font-weight: 700; letter-spacing: 8px; border: 2px solid #004639; border-radius: 12px;">
                         ${codigo}
                     </span>
                 </div>
                 
                 <!-- Textos Inferiores -->
-                <p style="font-size: 13px; color: #000000;">
+                <p style="font-size: 14px; color: #666666;">
                     Expira en ${OTP_EXPIRACION_MINUTOS} minutos.<br/>
                     ${plantilla.cierre}
                 </p>
             </div>
             
             <!-- Pie de página -->
-            <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
-                <p style="font-size: 12px; color: #000000; margin: 0;">
+            <div style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
+                <p style="font-size: 13px; color: #888888; margin: 0;">
                     &copy; ${new Date().getFullYear()} FRO Salud. Todos los derechos reservados.
                 </p>
             </div>
