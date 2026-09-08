@@ -206,42 +206,36 @@ async function enviarPorEmail(destinatario, codigo, proposito = "VERIFICACION") 
     asunto: plantilla.asunto,
     html: `
     <!DOCTYPE html>
-    <html>
+    <html lang="es">
     <head>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+        <!-- Importar tipografía Geist (similar a Inter pero con el toque exacto de FRO Salud) -->
+        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
     </head>
-    <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.08);">
+    <body style="font-family: 'Geist', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f5f4; margin: 0; padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
             
-            <!-- Encabezado Verde Corporativo con Logo -->
-            <div style="background-color: #004639; padding: 30px 20px; text-align: center;">
-                <!-- IMPORTANTE: Reemplaza la URL del src por el enlace público de tu logo -->
-                <img src="https://res.cloudinary.com/nh9pk4h8/image/upload/v1788834473/logo-fro.png" alt="FRO Salud" style="height: 48px; width: auto; margin: 0 auto; display: block; border: 0;">
+            <!-- Encabezado con degradado radial corporativo -->
+            <div style="background: radial-gradient(120% 120% at 50% -10%, #004639 0%, #002b23 100%); padding: 48px 20px; text-align: center; border-bottom: 4px solid #004639;">
+                <!-- Logo: Reemplaza la URL con la imagen oficial alojada en la web -->
+                <img src="https://frosalud.cl/icon.svg?icon.12t0ysyi4916w.svg" alt="FRO Salud" style="height: 40px; width: auto; margin: 0 auto; display: block; border: 0; filter: brightness(0) invert(1);">
             </div>
 
             <!-- Cuerpo del mensaje -->
-            <div style="padding: 40px 30px; color: #000000; line-height: 1.6;">
-                <h2 style="color: #004639; font-size: 24px; margin-top: 0; font-weight: 700; letter-spacing: -0.5px;">${plantilla.titulo}</h2>
-                <p style="font-size: 16px; color: #333333;">${plantilla.bajada}</p>
+            <div style="padding: 48px 40px; color: #1a1a1a; line-height: 1.6;">
+                <h2 style="color: #004639; font-size: 22px; margin-top: 0; font-weight: 600; letter-spacing: -0.5px;">${plantilla.titulo}</h2>
+                <p style="font-size: 15px; color: #4a4a4a; margin-bottom: 12px;">${plantilla.bajada}</p>
                 
                 <!-- Caja Destacada Código OTP -->
-                <div style="text-align: center; margin: 35px 0;">
-                    <span style="display: inline-block; padding: 18px 40px; background-color: #FFFFFF; color: #004639; font-size: 36px; font-weight: 700; letter-spacing: 8px; border: 2px solid #004639; border-radius: 12px;">
+                <div style="text-align: center; margin: 40px 0;">
+                    <span style="display: inline-block; padding: 20px 48px; background-color: #FFFFFF; color: #004639; font-size: 32px; font-weight: 700; letter-spacing: 12px; border: 2px solid #004639; border-radius: 12px;">
                         ${codigo}
                     </span>
                 </div>
                 
                 <!-- Textos Inferiores -->
-                <p style="font-size: 14px; color: #666666;">
+                <p style="font-size: 14px; color: #666666; margin-top: 32px;">
                     Expira en ${OTP_EXPIRACION_MINUTOS} minutos.<br/>
                     ${plantilla.cierre}
-                </p>
-            </div>
-            
-            <!-- Pie de página -->
-            <div style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
-                <p style="font-size: 13px; color: #888888; margin: 0;">
-                    &copy; ${new Date().getFullYear()} FRO Salud. Todos los derechos reservados.
                 </p>
             </div>
         </div>
