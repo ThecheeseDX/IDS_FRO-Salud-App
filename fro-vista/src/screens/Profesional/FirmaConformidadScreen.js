@@ -54,7 +54,7 @@ export default function FirmaConformidadScreen({ route, navigation }) {
       setAviso({ tono: 'ok', titulo: exitoTitulo, mensaje: data?.mensaje || 'Registrado.', alSalir: true });
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert('No se pudo registrar', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'No se pudo registrar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
     } finally {
       setGuardando(false);
     }
@@ -63,7 +63,7 @@ export default function FirmaConformidadScreen({ route, navigation }) {
   const guardarFirma = () => {
     // Excepción 4: un trazo vacío no constituye firma.
     if (!trazos.some((t) => t.length >= 2)) {
-      Alert.alert('Lienzo vacío', 'Pide al paciente dibujar su firma antes de guardar.');
+      setAviso({ tono: 'error', titulo: 'Lienzo vacío', mensaje: 'Pide al paciente dibujar su firma antes de guardar.' });
       return;
     }
     enviar({ trazos }, 'Firma registrada');

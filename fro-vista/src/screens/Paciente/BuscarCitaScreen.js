@@ -20,6 +20,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 // El formateador local de arriba arma AAAA-MM-DD para el servidor; este es para mostrar.
 import { formatearFecha as fechaLegible } from '../../utils/fechas';
 import { colores, radio, espacio } from '../../theme';
+import DialogoAviso from '../../components/DialogoAviso';
 
 const DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -32,6 +33,8 @@ export default function BuscarCitaScreen({ navigation, route }) {
   const reprogramacion = route?.params?.reprogramacion || null;
 
   // CU17: motivo pendiente mientras se muestra el diálogo
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [pedirMotivoReprogramacion, setPedirMotivoReprogramacion] = useState(false);
 
   // ── CU14: filtros de búsqueda ─────────────────────────────────────────────
@@ -78,7 +81,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
   // ── CU14 — Buscar disponibilidad (Excepción 2 si no hay resultados) ───────
   const buscarDisponibilidad = async () => {
     if (!especialidadId || !tipoSede || !fechaSeleccionada) {
-      Alert.alert('Campos incompletos', 'Debe seleccionar especialidad, modalidad y fecha.');
+      setAviso({ tono: 'error', titulo: 'Campos incompletos', mensaje: 'Debe seleccionar especialidad, modalidad y fecha.' });
       return;
     }
     setBloqueSeleccionado(null);
@@ -94,10 +97,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
       setDisponibilidad(response.data.data || []);
       // Excepción 2 se muestra visualmente cuando disponibilidad.length === 0
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.error || 'No se pudo obtener la disponibilidad.'
-      );
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: error.response?.data?.error || 'No se pudo obtener la disponibilidad.' });
     } finally {
       setCargandoBusqueda(false);
     }
@@ -160,10 +160,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
       );
     } catch (error) {
       const respuesta = error.response?.data;
-      Alert.alert(
-        'No se pudo reprogramar',
-        respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.'
-      );
+      setAviso({ tono: 'error', titulo: 'No se pudo reprogramar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
       // Si el bloque fue tomado por otro (colisión), refrescar la búsqueda.
       if (respuesta?.error === 'BLOQUE_OCUPADO') {
         setBloqueSeleccionado(null);
@@ -210,10 +207,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
 
       // CU15 — Excepción 2: token caducado
       if (error.response?.status === 401) {
-        Alert.alert(
-          'Sesión expirada',
-          'Tu sesión ha expirado. Por favor inicia sesión nuevamente.'
-        );
+        setAviso({ tono: 'error', titulo: 'Sesión expirada', mensaje: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.' });
         return;
       }
 
@@ -233,14 +227,11 @@ export default function BuscarCitaScreen({ navigation, route }) {
 
       // CU15 — Excepción 1: pérdida de conexión
       if (!error.response) {
-        Alert.alert(
-          'Sin conexión',
-          'Verifica tu conexión a internet e intenta nuevamente.'
-        );
+        setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'Verifica tu conexión a internet e intenta nuevamente.' });
         return;
       }
 
-      Alert.alert('Error', err?.error || 'No se pudo completar la reserva. Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.error || 'No se pudo completar la reserva. Intenta nuevamente.' });
     } finally {
       setCargandoBloqueo(false);
     }
@@ -426,6 +417,17 @@ export default function BuscarCitaScreen({ navigation, route }) {
         onConfirmar={ejecutarReprogramacion}
         onCancelar={() => setPedirMotivoReprogramacion(false)}
       />
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </ScrollView>
   );
 }

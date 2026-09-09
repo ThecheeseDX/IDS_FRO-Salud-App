@@ -8,6 +8,8 @@ import { validateRut } from '../../utils/validators';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 
 const RegisterScreen = ({ navigation }) => {
+    // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+    const [aviso, setAviso] = useState(null);
     const [esProfesional, setEsProfesional] = useState(false);
     const [comunas, setComunas] = useState([]);
     const [especialidades, setEspecialidades] = useState([]);
@@ -41,20 +43,20 @@ const RegisterScreen = ({ navigation }) => {
 
     const validarRUTProfesional = async () => {
         if (!validateRut(formData.rut)) {
-            Alert.alert("Error", "Ingrese un RUT válido primero.");
+            setAviso({ tono: 'error', titulo: "Error", mensaje: "Ingrese un RUT válido primero." });
             return;
         }
         try {
             const res = await apiClient.get(`/auth/validar-profesional/${formData.rut}`);
             if (res.status === 200) {
                 setEsProfesional(true);
-                Alert.alert("Acreditación Exitosa", "Se han habilitado los campos para registro médico.");
+                setAviso({ tono: 'ok', titulo: "Acreditación Exitosa", mensaje: "Se han habilitado los campos para registro médico." });
             }
         } catch (error) {
             if (error.response && error.response.status === 404) {
-                Alert.alert("Acreditación Denegada", error.response.data.error);
+                setAviso({ tono: 'error', titulo: "Acreditación Denegada", mensaje: error.response.data.error });
             } else {
-                Alert.alert("Error", "No se pudo validar el RUT en este momento.");
+                setAviso({ tono: 'error', titulo: "Error", mensaje: "No se pudo validar el RUT en este momento." });
             }
             setEsProfesional(false);
         }
@@ -87,7 +89,7 @@ const RegisterScreen = ({ navigation }) => {
         }
         if (formData.contrasena !== formData.confirmar_contrasena) {
             nuevosErrores.contrasena = true; nuevosErrores.confirmar_contrasena = true; esValido = false;
-            Alert.alert("Alerta de discrepancia", "Las contraseñas no coinciden.");
+            setAviso({ tono: 'error', titulo: "Alerta de discrepancia", mensaje: "Las contraseñas no coinciden." });
         }
         if (!validateRut(formData.rut)) { 
             nuevosErrores.rut = true; 
@@ -102,7 +104,7 @@ const RegisterScreen = ({ navigation }) => {
             if(formData.especialidad_id === '') { nuevosErrores.especialidad_id = true; esValido = false; }
             if(formData.tipo_sede === '') { nuevosErrores.tipo_sede = true; esValido = false; }
             if(disponibilidad.length === 0) { 
-                Alert.alert("Agenda Vacía", "Debe agregar al menos un bloque horario."); 
+                setAviso({ tono: 'error', titulo: "Agenda Vacía", mensaje: "Debe agregar al menos un bloque horario." }); 
                 esValido = false; 
             }
         }
@@ -112,7 +114,7 @@ const RegisterScreen = ({ navigation }) => {
         const tieneErroresRojos = Object.keys(nuevosErrores).some(key => key !== 'contrasena' && key !== 'confirmar_contrasena');
         
         if (tieneErroresRojos) {
-            Alert.alert("Error", "Por favor, revise los campos marcados en rojo.");
+            setAviso({ tono: 'error', titulo: "Error", mensaje: "Por favor, revise los campos marcados en rojo." });
         }
 
         return esValido;
@@ -153,11 +155,11 @@ const RegisterScreen = ({ navigation }) => {
             if (error.response && error.response.status === 409) {
                 const campoError = error.response.data.campo;
                 setErrores(prevErrores => ({ ...prevErrores, [campoError]: true }));
-                Alert.alert("Aviso de Duplicidad", error.response.data.error);
+                setAviso({ tono: 'error', titulo: "Aviso de Duplicidad", mensaje: error.response.data.error });
             } else if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('Network'))) {
-                Alert.alert("Error de Conexión", "El servicio de validación no está disponible. Verifique su conexión y reintente.");
+                setAviso({ tono: 'error', titulo: "Error de Conexión", mensaje: "El servicio de validación no está disponible. Verifique su conexión y reintente." });
             } else {
-                Alert.alert("Error del sistema", "Ocurrió un error inesperado al validar la información.");
+                setAviso({ tono: 'error', titulo: "Error del sistema", mensaje: "Ocurrió un error inesperado al validar la información." });
             }
         }
     };
@@ -191,7 +193,7 @@ const RegisterScreen = ({ navigation }) => {
             }
         } catch (error) {
             const msg = error.response ? error.response.data.error : "No se pudo conectar con el servidor.";
-            Alert.alert("Error del sistema", msg);
+            setAviso({ tono: 'error', titulo: "Error del sistema", mensaje: msg });
         }
     };
 
@@ -212,23 +214,47 @@ const RegisterScreen = ({ navigation }) => {
                 <Text style={styles.sectionHeader}>Sección 1: Identidad y Credenciales</Text>
 
                 <View style={styles.row}>
-                    <TextInput style={[styles.input, { width: '55%' }, errores.rut && styles.inputError]} placeholder="RUT (Sin puntos ni guion)" value={formData.rut} onChangeText={(v) => handleChange('rut', v)} />
+                    <View style={styles.campoMitad}>
+                        <Text style={styles.label}>RUT</Text>
+                        <TextInput style={[styles.input, errores.rut && styles.inputError]} placeholder="12345678K" value={formData.rut} onChangeText={(v) => handleChange('rut', v)} />
+                    </View>
                     <TouchableOpacity style={styles.btnValidar} onPress={validarRUTProfesional}>
                         <Text style={styles.txtBtnValidar}>Acreditar RUT Médico</Text>
                     </TouchableOpacity>
                 </View>
 
-                <TextInput style={[styles.input, errores.nombres && styles.inputError]} placeholder="Nombres" value={formData.nombres} onChangeText={(v) => handleChange('nombres', v)} />
-
-                <View style={styles.row}>
-                    <TextInput style={[styles.input, styles.halfInput, errores.apellido_paterno && styles.inputError]} placeholder="Apellido Paterno" value={formData.apellido_paterno} onChangeText={(v) => handleChange('apellido_paterno', v)} />
-                    <TextInput style={[styles.input, styles.halfInput, errores.apellido_materno && styles.inputError]} placeholder="Apellido Materno" value={formData.apellido_materno} onChangeText={(v) => handleChange('apellido_materno', v)} />
+                <View style={styles.campo}>
+                    <Text style={styles.label}>Nombres</Text>
+                    <TextInput style={[styles.input, errores.nombres && styles.inputError]} placeholder="Como aparece en tu cédula" value={formData.nombres} onChangeText={(v) => handleChange('nombres', v)} />
                 </View>
 
-                <TextInput style={[styles.input, errores.email && styles.inputError]} placeholder="Correo Electrónico" keyboardType="email-address" value={formData.email} onChangeText={(v) => handleChange('email', v)} autoCapitalize="none" />
-                <TextInput style={[styles.input, errores.telefono && styles.inputError]} placeholder="Teléfono (+56 9 XXXX XXXX)" keyboardType="phone-pad" value={formData.telefono} onChangeText={(v) => handleChange('telefono', v)} />
-                <TextInput style={[styles.input, errores.contrasena && styles.inputError]} placeholder="Contraseña" secureTextEntry value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
-                <TextInput style={[styles.input, errores.confirmar_contrasena && styles.inputError]} placeholder="Confirmar Contraseña" secureTextEntry value={formData.confirmar_contrasena} onChangeText={(v) => handleChange('confirmar_contrasena', v)} />
+                <View style={styles.row}>
+                    <View style={styles.campoMitad}>
+                        <Text style={styles.label}>Apellido paterno</Text>
+                        <TextInput style={[styles.input, errores.apellido_paterno && styles.inputError]} placeholder="" value={formData.apellido_paterno} onChangeText={(v) => handleChange('apellido_paterno', v)} />
+                    </View>
+                    <View style={styles.campoMitad}>
+                        <Text style={styles.label}>Apellido materno</Text>
+                        <TextInput style={[styles.input, errores.apellido_materno && styles.inputError]} placeholder="" value={formData.apellido_materno} onChangeText={(v) => handleChange('apellido_materno', v)} />
+                    </View>
+                </View>
+
+                <View style={styles.campo}>
+                    <Text style={styles.label}>Correo electrónico</Text>
+                    <TextInput style={[styles.input, errores.email && styles.inputError]} placeholder="correo@ejemplo.cl" keyboardType="email-address" value={formData.email} onChangeText={(v) => handleChange('email', v)} autoCapitalize="none" />
+                </View>
+                <View style={styles.campo}>
+                    <Text style={styles.label}>Teléfono</Text>
+                    <TextInput style={[styles.input, errores.telefono && styles.inputError]} placeholder="+56 9 XXXX XXXX" keyboardType="phone-pad" value={formData.telefono} onChangeText={(v) => handleChange('telefono', v)} />
+                </View>
+                <View style={styles.campo}>
+                    <Text style={styles.label}>Contraseña</Text>
+                    <TextInput style={[styles.input, errores.contrasena && styles.inputError]} placeholder="Mínimo 8 caracteres" secureTextEntry value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
+                </View>
+                <View style={styles.campo}>
+                    <Text style={styles.label}>Confirmar contraseña</Text>
+                    <TextInput style={[styles.input, errores.confirmar_contrasena && styles.inputError]} placeholder="Repite la contraseña" secureTextEntry value={formData.confirmar_contrasena} onChangeText={(v) => handleChange('confirmar_contrasena', v)} />
+                </View>
 
                 {!esProfesional && (
                     <View>
@@ -249,26 +275,47 @@ const RegisterScreen = ({ navigation }) => {
                                 {comunas.map((c) => (<Picker.Item key={c.comuna_id.toString()} label={c.nombre} value={c.comuna_id.toString()} />))}
                             </Picker>
                         </View>
-                        <TextInput style={styles.input} placeholder="Calle" value={formData.calle} onChangeText={(v) => handleChange('calle', v)} />
+                        <View style={styles.campo}>
+                            <Text style={styles.label}>Calle</Text>
+                            <TextInput style={styles.input} placeholder="" value={formData.calle} onChangeText={(v) => handleChange('calle', v)} />
+                        </View>
                         <View style={styles.row}>
-                            <TextInput style={[styles.input, styles.halfInput]} placeholder="Número" value={formData.numero_calle} onChangeText={(v) => handleChange('numero_calle', v)} />
-                            <TextInput style={[styles.input, styles.halfInput]} placeholder="Depto (Opcional)" value={formData.departamento} onChangeText={(v) => handleChange('departamento', v)} />
+                            <View style={styles.campoMitad}>
+                                <Text style={styles.label}>Número</Text>
+                                <TextInput style={[styles.input]} placeholder="" value={formData.numero_calle} onChangeText={(v) => handleChange('numero_calle', v)} />
+                            </View>
+                            <View style={styles.campoMitad}>
+                                <Text style={styles.label}>Departamento (opcional)</Text>
+                                <TextInput style={[styles.input]} placeholder="" value={formData.departamento} onChangeText={(v) => handleChange('departamento', v)} />
+                            </View>
                         </View>
 
                         <Text style={styles.subHeader}>Contacto de Emergencia</Text>
-                        <TextInput style={styles.input} placeholder="Nombre Contacto" value={formData.emergencia_nombre} onChangeText={(v) => handleChange('emergencia_nombre', v)} />
+                        <View style={styles.campo}>
+                            <Text style={styles.label}>Nombre del contacto</Text>
+                            <TextInput style={styles.input} placeholder="" value={formData.emergencia_nombre} onChangeText={(v) => handleChange('emergencia_nombre', v)} />
+                        </View>
                         <View style={styles.row}>
-                            <TextInput style={[styles.input, styles.halfInput]} placeholder="Parentesco" value={formData.emergencia_parentesco} onChangeText={(v) => handleChange('emergencia_parentesco', v)} />
-                            <TextInput style={[styles.input, styles.halfInput]} placeholder="Teléfono" keyboardType="phone-pad" value={formData.emergencia_telefono} onChangeText={(v) => handleChange('emergencia_telefono', v)} />
+                            <View style={styles.campoMitad}>
+                                <Text style={styles.label}>Parentesco</Text>
+                                <TextInput style={[styles.input]} placeholder="Madre, hermano…" value={formData.emergencia_parentesco} onChangeText={(v) => handleChange('emergencia_parentesco', v)} />
+                            </View>
+                            <View style={styles.campoMitad}>
+                                <Text style={styles.label}>Teléfono</Text>
+                                <TextInput style={[styles.input]} placeholder="+56 9 XXXX XXXX" keyboardType="phone-pad" value={formData.emergencia_telefono} onChangeText={(v) => handleChange('emergencia_telefono', v)} />
+                            </View>
                         </View>
                     </View>
                 )}
 
                 {esProfesional && (
                     <View>
-                        <Text style={[styles.sectionHeader, { backgroundColor: colores.primarioSuave }]}>Sección 3: Acreditación Profesional</Text>
+                        <Text style={styles.sectionHeader}>Sección 3: Acreditación Profesional</Text>
 
-                        <TextInput style={[styles.input, errores.num_registro_salud && styles.inputError]} placeholder="Número de Registro Superintendencia" value={formData.num_registro_salud} onChangeText={(v) => handleChange('num_registro_salud', v)} />
+                        <View style={styles.campo}>
+                            <Text style={styles.label}>Número de registro</Text>
+                            <TextInput style={[styles.input, errores.num_registro_salud && styles.inputError]} placeholder="Superintendencia de Salud" value={formData.num_registro_salud} onChangeText={(v) => handleChange('num_registro_salud', v)} />
+                        </View>
 
                         <View style={[styles.pickerContainer, errores.especialidad_id && styles.inputError]}>
                             <Picker selectedValue={formData.especialidad_id} onValueChange={(v) => handleChange('especialidad_id', v)}>
@@ -286,7 +333,10 @@ const RegisterScreen = ({ navigation }) => {
                             </Picker>
                         </View>
 
-                        <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} placeholder="Reseña Curricular (Breve)" multiline numberOfLines={3} value={formData.resena_curricular} onChangeText={(v) => handleChange('resena_curricular', v)} />
+                        <View style={styles.campo}>
+                            <Text style={styles.label}>Reseña curricular</Text>
+                            <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} placeholder="Breve descripción de tu experiencia" multiline numberOfLines={3} value={formData.resena_curricular} onChangeText={(v) => handleChange('resena_curricular', v)} />
+                        </View>
 
                         <Text style={styles.subHeader}>Matriz de Jornada Laboral</Text>
                         {disponibilidad.map((bloque, index) => (
@@ -310,8 +360,14 @@ const RegisterScreen = ({ navigation }) => {
                                     </Picker>
                                 </View>
                                 <View style={styles.row}>
-                                    <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="Inicio (ej 08:00)" value={bloque.hora_inicio} onChangeText={(v) => actualizarHorario(index, 'hora_inicio', v)} />
-                                    <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="Fin (ej 13:00)" value={bloque.hora_fin} onChangeText={(v) => actualizarHorario(index, 'hora_fin', v)} />
+                                    <View style={styles.campo}>
+                                        <Text style={styles.label}>Inicio</Text>
+                                        <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="08:00" value={bloque.hora_inicio} onChangeText={(v) => actualizarHorario(index, 'hora_inicio', v)} />
+                                    </View>
+                                    <View style={styles.campo}>
+                                        <Text style={styles.label}>Fin</Text>
+                                        <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="13:00" value={bloque.hora_fin} onChangeText={(v) => actualizarHorario(index, 'hora_fin', v)} />
+                                    </View>
                                     <TouchableOpacity style={styles.btnEliminar} onPress={() => eliminarHorario(index)}>
                                         <Text style={{ color: colores.superficie, fontWeight: 'bold' }}>X</Text>
                                     </TouchableOpacity>
@@ -325,6 +381,17 @@ const RegisterScreen = ({ navigation }) => {
                 <View style={styles.buttonContainer}>
                     <Button title={esProfesional ? "FINALIZAR ALTA MÉDICA" : "FINALIZAR REGISTRO PACIENTE"} onPress={confirmarCreacionCuenta} color={esProfesional ? colores.primario : colores.primario} />
                 </View>
+        <DialogoAviso
+          visible={aviso !== null}
+          titulo={aviso?.titulo || ''}
+          mensaje={aviso?.mensaje}
+          tono={aviso?.tono}
+          onCerrar={() => {
+            const seguir = aviso?.alCerrar;
+            setAviso(null);
+            if (seguir) seguir();
+          }}
+        />
         </VistaConTeclado>
     );
 };
@@ -344,17 +411,25 @@ const styles = StyleSheet.create({
     },
 
     // Rótulo de sección: mayúsculas pequeñas, sin la franja gris de antes.
+    // Título de sección: verde de marca, con una barra que lo ancla a la
+    // izquierda en vez del rótulo gris apagado de antes.
     sectionHeader: {
-        ...tipografia.micro,
-        color: colores.textoTenue,
-        textTransform: 'uppercase',
-        marginTop: espacio.xl,
-        marginBottom: espacio.md,
+        ...tipografia.subtitulo,
+        color: colores.primario,
+        borderLeftWidth: 3,
+        borderLeftColor: colores.primario,
+        paddingLeft: espacio.md,
+        marginTop: espacio.xxl,
+        marginBottom: espacio.base,
     },
+    campo: { marginBottom: espacio.base },
+    campoMitad: { flex: 1, marginBottom: espacio.base },
+    label: { ...piezas.etiqueta },
     subHeader: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginTop: espacio.md, marginBottom: espacio.sm },
 
-    row: { flexDirection: 'row', justifyContent: 'space-between', gap: espacio.md },
-    input: { ...piezas.campo, marginBottom: espacio.base },
+    // alignItems al final: el botón queda a la altura del campo, no de su etiqueta.
+    row: { flexDirection: 'row', justifyContent: 'space-between', gap: espacio.md, alignItems: 'flex-end' },
+    input: { ...piezas.campo },
     halfInput: { flex: 1 },
     inputError: { ...piezas.campoError },
 

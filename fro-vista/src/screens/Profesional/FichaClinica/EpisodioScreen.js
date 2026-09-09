@@ -19,6 +19,10 @@ export default function EpisodioScreen({ route }) {
   // memoria el identificador del episodio para poder consultarlo.
   const { pacienteId } = route?.params || {};
 
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
+
   const [episodiosDisponibles, setEpisodiosDisponibles] = useState(null);
   const [cargandoLista, setCargandoLista] = useState(false);
 
@@ -34,7 +38,7 @@ export default function EpisodioScreen({ route }) {
       }));
       setEpisodiosDisponibles(lista);
     } catch (error) {
-      Alert.alert('No se pudo consultar', 'No fue posible obtener los episodios de este paciente.');
+      setAviso({ tono: 'error', titulo: 'No se pudo consultar', mensaje: 'No fue posible obtener los episodios de este paciente.' });
     } finally {
       setCargandoLista(false);
     }
@@ -60,7 +64,7 @@ export default function EpisodioScreen({ route }) {
   // ─ LECTURA_EPISODIO_CLINICO en Bitacora_Auditoria
   const buscarEpisodio = async () => {
     if (!episodioId) {
-      Alert.alert('Error', 'Ingresa el ID del episodio.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'Ingresa el ID del episodio.' });
       return;
     }
     setCargandoBusqueda(true);
@@ -71,13 +75,13 @@ export default function EpisodioScreen({ route }) {
     } catch (error) {
       const err = error.response?.data;
       if (error.response?.status === 401) {
-        Alert.alert('Sesión inválida', 'Tu sesión ha expirado. Inicia sesión nuevamente.');
+        setAviso({ tono: 'error', titulo: 'Sesión inválida', mensaje: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
       } else if (error.response?.status === 403) {
-        Alert.alert('Acceso denegado', err?.error || 'No tienes permisos para esta acción.');
+        setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: err?.error || 'No tienes permisos para esta acción.' });
       } else if (err?.error === 'FALLO_BITACORA') {
-        Alert.alert('Error de auditoría', err.mensaje);
+        setAviso({ tono: 'error', titulo: 'Error de auditoría', mensaje: err.mensaje });
       } else {
-        Alert.alert('Error', err?.error || 'No se pudo obtener el episodio.');
+        setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.error || 'No se pudo obtener el episodio.' });
       }
     } finally {
       setCargandoBusqueda(false);
@@ -89,13 +93,10 @@ export default function EpisodioScreen({ route }) {
     setCargandoEvolucion(true);
     try {
       const { data } = await apiClient.post(`/clinica/episodio/${episodio.episodio_clinico_id}/evolucion`);
-      Alert.alert(
-        'Atención Iniciada',
-        `${data.mensaje}\n\nEl ID de tu nueva Evolución es: ${data.evolucion_clinica_id}\n(Anótalo para registrar avances o firmarlo)`
-      );
+      setAviso({ tono: 'ok', titulo: 'Atención Iniciada', mensaje: `${data.mensaje}\n\nEl ID de tu nueva Evolución es: ${data.evolucion_clinica_id}\n(Anótalo para registrar avances o firmarlo)` });
     } catch (error) {
       const err = error.response?.data;
-      Alert.alert('Error', err?.error || 'No se pudo iniciar la sesión clínica.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.error || 'No se pudo iniciar la sesión clínica.' });
     } finally {
       setCargandoEvolucion(false);
     }
@@ -106,7 +107,7 @@ export default function EpisodioScreen({ route }) {
   const crearEpisodio = async () => {
     const { motivo_consulta, paciente_id, profesional_id } = nuevoEpisodio;
     if (!motivo_consulta || !paciente_id || !profesional_id) {
-      Alert.alert('Error', 'Todos los campos son requeridos.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'Todos los campos son requeridos.' });
       return;
     }
     setCargandoCreacion(true);
@@ -116,18 +117,18 @@ export default function EpisodioScreen({ route }) {
         paciente_id: parseInt(paciente_id),
         profesional_id: parseInt(profesional_id)
       });
-      Alert.alert('Éxito', data.mensaje);
+      setAviso({ tono: 'ok', titulo: 'Éxito', mensaje: data.mensaje });
       setNuevoEpisodio({ motivo_consulta: '', paciente_id: '', profesional_id: '' });
     } catch (error) {
       const err = error.response?.data;
       if (error.response?.status === 401) {
-        Alert.alert('Sesión inválida', 'Tu sesión ha expirado. Inicia sesión nuevamente.');
+        setAviso({ tono: 'error', titulo: 'Sesión inválida', mensaje: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
       } else if (error.response?.status === 403) {
-        Alert.alert('Acceso denegado', err?.error || 'No tienes permisos para esta acción.');
+        setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: err?.error || 'No tienes permisos para esta acción.' });
       } else if (err?.error === 'FALLO_BITACORA') {
-        Alert.alert('Error de auditoría', err.mensaje);
+        setAviso({ tono: 'error', titulo: 'Error de auditoría', mensaje: err.mensaje });
       } else {
-        Alert.alert('Error', err?.error || 'No se pudo crear el episodio.');
+        setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.error || 'No se pudo crear el episodio.' });
       }
     } finally {
       setCargandoCreacion(false);
@@ -142,9 +143,10 @@ export default function EpisodioScreen({ route }) {
         {/* ── BUSCAR EPISODIO ─────────────────────────────────────────────── */}
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>Consultar Episodio</Text>
+          <Text style={styles.label}>ID del episodio</Text>
           <TextInput
             style={styles.input}
-            placeholder="ID del episodio"
+            placeholder="Ej: 12"
             keyboardType="numeric"
             value={episodioId}
             onChangeText={setEpisodioId}
@@ -192,22 +194,25 @@ export default function EpisodioScreen({ route }) {
         {/* ── CREAR EPISODIO ──────────────────────────────────────────────── */}
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>Crear Episodio</Text>
+          <Text style={styles.label}>Motivo de consulta</Text>
           <TextInput
             style={styles.input}
-            placeholder="Motivo de consulta"
+            placeholder="Ej: dolor lumbar"
             value={nuevoEpisodio.motivo_consulta}
             onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, motivo_consulta: v })}
           />
+          <Text style={styles.label}>ID del paciente</Text>
           <TextInput
             style={styles.input}
-            placeholder="ID del paciente"
+            placeholder="Ej: 7"
             keyboardType="numeric"
             value={nuevoEpisodio.paciente_id}
             onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, paciente_id: v })}
           />
+          <Text style={styles.label}>ID del profesional</Text>
           <TextInput
             style={styles.input}
-            placeholder="ID del profesional"
+            placeholder="Ej: 3"
             keyboardType="numeric"
             value={nuevoEpisodio.profesional_id}
             onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, profesional_id: v })}
@@ -243,11 +248,23 @@ export default function EpisodioScreen({ route }) {
         }
         onCerrar={() => setEpisodiosDisponibles(null)}
       />
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const seguir = aviso?.alCerrar;
+          setAviso(null);
+          if (seguir) seguir();
+        }}
+      />
     </VistaConTeclado>
   );
 }
 
 const styles = StyleSheet.create({
+  label: { ...piezas.etiqueta },
   container: {
     flex: 1,
     backgroundColor: colores.fondo,

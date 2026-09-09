@@ -21,6 +21,9 @@ import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, radio } from '../../theme';
+import EtiquetaEstado from '../../components/EtiquetaEstado';
+import { etiquetaEstado } from '../../utils/estados';
+import DialogoAviso from '../../components/DialogoAviso';
 
 const METODOS = [
   { valor: 'TARJETA_OK', etiqueta: 'Tarjeta terminada en 1111' },
@@ -31,6 +34,8 @@ const METODOS = [
 const pesos = (n) => `$${Number(n || 0).toLocaleString('es-CL')}`;
 
 export default function PagosScreen() {
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
@@ -78,7 +83,7 @@ export default function PagosScreen() {
     const folioLimpio = folio.trim().toUpperCase();
     // Excepción 1: validación local por expresión regular antes de enviar.
     if (!/^BON-\d{6}$/.test(folioLimpio)) {
-      Alert.alert('Folio inválido', 'El folio debe tener el formato BON-XXXXXX (6 dígitos). Ej: BON-123456');
+      setAviso({ tono: 'error', titulo: 'Folio inválido', mensaje: 'El folio debe tener el formato BON-XXXXXX (6 dígitos). Ej: BON-123456' });
       return;
     }
 
@@ -88,16 +93,13 @@ export default function PagosScreen() {
         folio: folioLimpio,
         financiador_id: Number(financiadorId),
       });
-      Alert.alert(
-        'Bono validado',
-        `${data.mensaje}\n\nArancel: ${pesos(data.arancel)}\nCobertura: ${pesos(data.monto_cobertura)}\nTu copago: ${pesos(data.copago)}`
-      );
+      setAviso({ tono: 'info', titulo: 'Bono validado', mensaje: `${data.mensaje}\n\nArancel: ${pesos(data.arancel)}\nCobertura: ${pesos(data.monto_cobertura)}\nTu copago: ${pesos(data.copago)}` });
       setBonoAbiertoEn(null);
       setFolio('');
       await cargar(true);
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert('No se pudo validar', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'No se pudo validar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
       if (respuesta?.error === 'BONO_NO_VALIDADO') {
         setBonoAbiertoEn(null);
         setFolio('');
@@ -115,11 +117,11 @@ export default function PagosScreen() {
       const { data } = await apiClient.post(`/pagos/citas/${cita.cita_id}/pagar`, {
         metodo_pago: metodoPago,
       });
-      Alert.alert(data.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : 'Pago realizado', data.mensaje);
+      setAviso({ tono: 'alerta', titulo: data.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : 'Pago realizado', mensaje: data.mensaje });
       await cargar(true);
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert('Pago no completado', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
+      setAviso({ tono: 'ok', titulo: 'Pago no completado', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
       await cargar(true);
     } finally {
       setProcesandoId(null);
@@ -134,11 +136,11 @@ export default function PagosScreen() {
         sesiones: Number(sesionesPlan),
         metodo_pago: metodoPlan,
       });
-      Alert.alert('Plan activado', data.mensaje);
+      setAviso({ tono: 'ok', titulo: 'Plan activado', mensaje: data.mensaje });
       await cargar(true);
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert('Compra no completada', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
+      setAviso({ tono: 'ok', titulo: 'Compra no completada', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
     } finally {
       setComprandoPlan(false);
     }
@@ -194,9 +196,10 @@ export default function PagosScreen() {
                 <Text style={estilos.tituloCita}>
                   {formatearFecha(cita.fecha_hora_inicio)}
                 </Text>
-                <Text style={[estilos.badge, { color: cita.pagada ? colores.exito : colores.advertencia }]}>
-                  {cita.pagada ? 'PAGADA' : enTransito ? 'EN TRÁNSITO' : 'PENDIENTE'}
-                </Text>
+                <EtiquetaEstado
+                  estado={cita.pagada ? 'PAGADA' : enTransito ? 'EN_TRANSITO' : 'PENDIENTE'}
+                  style={estilos.badge}
+                />
               </View>
               <Text style={estilos.detalle}>
                 {cita.nombre_profesional} · cita {cita.estado.toLowerCase()}
@@ -206,8 +209,8 @@ export default function PagosScreen() {
               {cita.folio ? (
                 <Text style={estilos.detalle}>
                   Bono {cita.folio} ({cita.nombre_institucion}):{' '}
-                  <Text style={{ color: bonoValidado ? colores.exito : colores.error, fontWeight: 'bold' }}>
-                    {cita.estado_validacion}
+                  <Text style={{ color: bonoValidado ? colores.exito : colores.error, fontWeight: '700' }}>
+                    {etiquetaEstado(cita.estado_validacion)}
                   </Text>
                   {bonoValidado ? ` · cobertura ${pesos(cita.monto_cobertura)}` : ''}
                 </Text>
@@ -306,9 +309,10 @@ export default function PagosScreen() {
 
       {(resumen?.paquetes || []).map((paquete) => (
         <View key={paquete.paquete_sesiones_id} style={estilos.tarjetaPlan}>
-          <Text style={estilos.tituloPlan}>
-            Plan de {paquete.sesiones_total} sesiones · {paquete.estado}
-          </Text>
+          <View style={estilos.filaTitulo}>
+            <Text style={estilos.tituloPlan}>Plan de {paquete.sesiones_total} sesiones</Text>
+            <EtiquetaEstado estado={paquete.estado} tamano="sm" />
+          </View>
           <Text style={estilos.detalle}>
             Usadas {paquete.sesiones_usadas} de {paquete.sesiones_total} · {pesos(paquete.precio_total)}
           </Text>
@@ -347,6 +351,17 @@ export default function PagosScreen() {
         Demo del financiador: un folio terminado en 9 simula rechazo biométrico y
         uno terminado en 0 simula un financiador caído (reintentos y espera).
       </Text>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </VistaConTeclado>
   );
 }
@@ -370,7 +385,7 @@ const estilos = StyleSheet.create({
   },
   filaTitulo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tituloCita: { fontWeight: 'bold', color: colores.texto, fontSize: 15, textTransform: 'capitalize' },
-  badge: { fontWeight: 'bold', fontSize: 13, marginLeft: 8 },
+  badge: { marginLeft: espacio.sm },
   detalle: { color: colores.textoSuave, fontSize: 13, marginTop: 3 },
   copago: { color: colores.primario, fontWeight: 'bold', marginTop: 8, fontSize: 15 },
 

@@ -21,11 +21,15 @@ import { formatearFecha, formatearFechaHora } from '../../utils/fechas';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { colores, radio } from '../../theme';
+import EtiquetaEstado from '../../components/EtiquetaEstado';
+import DialogoAviso from '../../components/DialogoAviso';
 
 // CU48 — Excepción 2: última pauta que cargó bien, para mostrarla sin señal.
 const CLAVE_CACHE = 'cu48_cache_pautas';
 
 export default function MisPautasScreen() {
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [pautas, setPautas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
@@ -79,7 +83,7 @@ export default function MisPautasScreen() {
   const alternarCumplimiento = async (ejercicio) => {
     // Sin conexión no se puede registrar: la marca necesita llegar al servidor.
     if (desdeCache) {
-      Alert.alert('Sin conexión', 'Estás viendo tu pauta guardada. Recarga la lista cuando vuelva la señal para marcar ejercicios.');
+      setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'Estás viendo tu pauta guardada. Recarga la lista cuando vuelva la señal para marcar ejercicios.' });
       return;
     }
     // Anti-rebote local: mientras hay una marca en vuelo se ignoran más toques.
@@ -95,7 +99,7 @@ export default function MisPautasScreen() {
       await cargarPautas(true);
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert('No se pudo registrar', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'No se pudo registrar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
     } finally {
       setMarcandoId(null);
     }
@@ -157,14 +161,7 @@ export default function MisPautasScreen() {
                 <Text style={estilos.pautaNombre}>
                   {expirada ? '🔒 ' : ''}{pauta.nombre}
                 </Text>
-                <Text
-                  style={[
-                    estilos.badge,
-                    { color: expirada ? colores.textoDeshabilitado : programada ? colores.primario : colores.exito },
-                  ]}
-                >
-                  {pauta.estado}
-                </Text>
+                <EtiquetaEstado estado={pauta.estado} tamano="sm" />
               </View>
               <Text style={estilos.pautaFechas}>
                 {formatearFecha(pauta.fecha_inicio)} → {formatearFecha(pauta.fecha_expiracion)}
@@ -217,6 +214,17 @@ export default function MisPautasScreen() {
       <Text style={estilos.notaPie}>
         Marca cada ejercicio el día que lo completes. Solo puedes registrar el día de hoy.
       </Text>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </VistaConTeclado>
   );
 }
@@ -251,7 +259,6 @@ const estilos = StyleSheet.create({
   tarjetaExpirada: { backgroundColor: colores.superficieSuave },
   filaTitulo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pautaNombre: { fontSize: 17, fontWeight: 'bold', color: colores.texto, flex: 1 },
-  badge: { fontWeight: 'bold', fontSize: 13, marginLeft: 8 },
   pautaFechas: { color: colores.textoSuave, fontSize: 13, marginBottom: 10 },
 
   textoExpirada: { color: colores.textoTenue, fontStyle: 'italic' },

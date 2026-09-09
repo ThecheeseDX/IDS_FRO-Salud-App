@@ -15,6 +15,20 @@ export const ESTADOS = {
   REALIZADA:    { color: colores.textoSuave,  etiqueta: 'Realizada',    orden: 3 },
   INASISTENCIA: { color: colores.error,       etiqueta: 'Inasistencia', orden: 4 },
   CANCELADA:    { color: colores.error,       etiqueta: 'Cancelada',    orden: 5 },
+
+  // Pagos y bonos
+  PAGADA:       { color: colores.exito,       etiqueta: 'Pagada',       orden: 3 },
+  PENDIENTE:    { color: colores.advertencia, etiqueta: 'Pendiente',    orden: 2 },
+  EN_TRANSITO:  { color: colores.primario,    etiqueta: 'En tránsito',  orden: 1 },
+  VALIDADO:     { color: colores.exito,       etiqueta: 'Validado',     orden: 3 },
+  RECHAZADO:    { color: colores.error,       etiqueta: 'Rechazado',    orden: 5 },
+
+  // Pautas de ejercicio
+  VIGENTE:      { color: colores.exito,       etiqueta: 'Vigente',      orden: 1 },
+  PROGRAMADA:   { color: colores.primario,    etiqueta: 'Programada',   orden: 2 },
+  EXPIRADA:     { color: colores.textoSuave,  etiqueta: 'Expirada',     orden: 4 },
+  ACTIVO:       { color: colores.exito,       etiqueta: 'Activo',       orden: 1 },
+  AGOTADO:      { color: colores.textoSuave,  etiqueta: 'Agotado',      orden: 4 },
 };
 
 /** Datos de presentación de un estado, con respaldo para valores desconocidos. */

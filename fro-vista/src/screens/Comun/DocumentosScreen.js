@@ -26,6 +26,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFecha } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, sombra } from '../../theme';
 import { Picker } from '@react-native-picker/picker';
+import DialogoAviso from '../../components/DialogoAviso';
 
 const ICONO_POR_VISOR = { imagen: '🖼️', pdf: '📄', video: '🎬' };
 
@@ -44,6 +45,10 @@ function pesoLegible(bytes) {
 export default function DocumentosScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route?.params || {};
   const esProfesional = Boolean(pacienteId);
+
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
 
   const [documentos, setDocumentos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -71,7 +76,7 @@ export default function DocumentosScreen({ route, navigation }) {
     } catch (error) {
       const respuesta = error.response?.data;
       if (error.response?.status === 403) {
-        Alert.alert('Acceso denegado', respuesta?.mensaje || 'Sin autorización.');
+        setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: respuesta?.mensaje || 'Sin autorización.' });
         navigation.goBack();
         return;
       }
@@ -128,10 +133,7 @@ export default function DocumentosScreen({ route, navigation }) {
     } catch (error) {
       const respuesta = error.response?.data;
       // Excepciones 1, 2 y 4 del CU33 llegan explicadas desde el servidor.
-      Alert.alert(
-        'Carga no realizada',
-        respuesta?.mensaje || respuesta?.error || 'Se interrumpió la transferencia. Reinicia el proceso de carga.'
-      );
+      setAviso({ tono: 'info', titulo: 'Carga no realizada', mensaje: respuesta?.mensaje || respuesta?.error || 'Se interrumpió la transferencia. Reinicia el proceso de carga.' });
     } finally {
       setSubiendo(false);
     }
@@ -140,7 +142,7 @@ export default function DocumentosScreen({ route, navigation }) {
   const elegirImagen = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permiso.status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Sin acceso a la galería no es posible seleccionar imágenes.');
+      setAviso({ tono: 'error', titulo: 'Permiso denegado', mensaje: 'Sin acceso a la galería no es posible seleccionar imágenes.' });
       return;
     }
     const resultado = await ImagePicker.launchImageLibraryAsync({
@@ -185,10 +187,7 @@ export default function DocumentosScreen({ route, navigation }) {
     } catch (error) {
       const respuesta = error.response?.data;
       // CU34 Excepción 3: falla de indexación → acceso directo sigue operativo.
-      Alert.alert(
-        'Clasificación no aplicada',
-        respuesta?.mensaje || 'Falló el motor de indexación. El documento sigue accesible de forma directa; informa al administrador.'
-      );
+      setAviso({ tono: 'info', titulo: 'Clasificación no aplicada', mensaje: respuesta?.mensaje || 'Falló el motor de indexación. El documento sigue accesible de forma directa; informa al administrador.' });
     }
   };
 
@@ -342,6 +341,17 @@ export default function DocumentosScreen({ route, navigation }) {
           </View>
         </View>
       </Modal>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </View>
   );
 }

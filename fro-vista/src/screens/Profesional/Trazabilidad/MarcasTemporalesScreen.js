@@ -23,12 +23,16 @@ import VistaConTeclado from '../../../components/VistaConTeclado';
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
 import { etiquetaEstado } from '../../../utils/estados';
+import EtiquetaEstado from '../../../components/EtiquetaEstado';
+import DialogoAviso from '../../../components/DialogoAviso';
 
 function estadoNormalizado(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_');
 }
 
 export default function MarcasTemporalesScreen() {
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [citas, setCitas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [actualizando, setActualizando] = useState(false);
@@ -73,7 +77,7 @@ export default function MarcasTemporalesScreen() {
         confirmar_inicio_anticipado: confirmarAnticipado,
         ...payloadAdicional,
       });
-      Alert.alert('Atencion iniciada', `Marca: ${formatearFecha(data.marca_inicio)}`);
+      setAviso({ tono: 'ok', titulo: 'Atencion iniciada', mensaje: `Marca: ${formatearFecha(data.marca_inicio)}` });
       await cargarCitas(true);
     } catch (error) {
       const detalle = error.response?.data;
@@ -91,10 +95,7 @@ export default function MarcasTemporalesScreen() {
           ]
         );
       } else {
-        Alert.alert(
-          'No fue posible iniciar',
-          detalle?.mensaje || 'Revisa la conexion e intenta nuevamente.'
-        );
+        setAviso({ tono: 'info', titulo: 'No fue posible iniciar', mensaje: detalle?.mensaje || 'Revisa la conexion e intenta nuevamente.' });
       }
     } finally {
       setProcesandoId(null);
@@ -105,16 +106,10 @@ export default function MarcasTemporalesScreen() {
     setProcesandoId(citaId);
     try {
       const data = await finalizarAtencion(citaId, payload);
-      Alert.alert(
-        'Atencion finalizada',
-        `Duracion total: ${data.duracion_minutos} minutos.`
-      );
+      setAviso({ tono: 'ok', titulo: 'Atencion finalizada', mensaje: `Duracion total: ${data.duracion_minutos} minutos.` });
       await cargarCitas(true);
     } catch (error) {
-      Alert.alert(
-        'No fue posible finalizar',
-        error.response?.data?.mensaje || 'Revisa la conexion e intenta nuevamente.'
-      );
+      setAviso({ tono: 'info', titulo: 'No fue posible finalizar', mensaje: error.response?.data?.mensaje || 'Revisa la conexion e intenta nuevamente.' });
     } finally {
       setProcesandoId(null);
     }
@@ -153,10 +148,7 @@ export default function MarcasTemporalesScreen() {
 
   const confirmarMarcaManual = async () => {
     if (!marcaManual.fechaHora.trim() || !marcaManual.justificacion.trim()) {
-      Alert.alert(
-        'Datos requeridos',
-        'Indica la fecha, hora y justificacion de la marca manual.'
-      );
+      setAviso({ tono: 'info', titulo: 'Datos requeridos', mensaje: 'Indica la fecha, hora y justificacion de la marca manual.' });
       return;
     }
 
@@ -213,18 +205,7 @@ export default function MarcasTemporalesScreen() {
             <View key={cita.cita_id} style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.patient}>{cita.paciente}</Text>
-                <Text
-                  style={[
-                    styles.badge,
-                    estado === 'EN_CURSO'
-                      ? styles.badgeActive
-                      : estado === 'REALIZADA'
-                        ? styles.badgeDone
-                        : styles.badgeReady,
-                  ]}
-                >
-                  {etiquetaEstado(estado)}
-                </Text>
+                <EtiquetaEstado estado={estado} tamano="sm" />
               </View>
 
               <Text style={styles.detail}>Cita #{cita.cita_id}</Text>
@@ -362,6 +343,17 @@ export default function MarcasTemporalesScreen() {
           </View>
         </VistaConTeclado>
       </Modal>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </ScrollView>
   );
 }
@@ -400,17 +392,6 @@ const styles = StyleSheet.create({
     color: colores.textoTitulo,
     flex: 1,
   },
-  badge: {
-    overflow: 'hidden',
-    borderRadius: radio.md,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  badgeReady: { backgroundColor: colores.primarioSuave, color: colores.primario },
-  badgeActive: { backgroundColor: colores.primarioSuave, color: colores.primario },
-  badgeDone: { backgroundColor: colores.exitoSuave, color: colores.primario },
   detail: {
     ...tipografia.meta,
     color: colores.textoSuave,
@@ -426,12 +407,14 @@ const styles = StyleSheet.create({
     ...piezas.botonPrimario,
     alignItems: 'center',
     marginTop: 14,
+    marginBottom: espacio.md,
   },
   finishButton: {
     ...piezas.botonPrimario,
     backgroundColor: colores.exito,
     alignItems: 'center',
     marginTop: 14,
+    marginBottom: espacio.md,
   },
   buttonText: {
     ...tipografia.cuerpoFuerte,
@@ -440,6 +423,7 @@ const styles = StyleSheet.create({
   manualButton: {
     ...piezas.botonSecundario,
     alignItems: 'center',
+    marginTop: espacio.sm,
   },
   manualButtonText: {
     ...tipografia.cuerpoFuerte,

@@ -18,9 +18,14 @@ import VistaConTeclado from '../../components/VistaConTeclado';
 import { AuthContext } from '../../context/AuthContext'
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, radio, sombra } from '../../theme';
+import DialogoAviso from '../../components/DialogoAviso';
 
 export default function ParametrosScreen({ navigation }) {
   const { confirmarCierreSesion } = useContext(AuthContext);
+
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
 
   const [parametros, setParametros] = useState([]);
   const [erroresLocales, setErroresLocales] = useState({}); 
@@ -96,7 +101,7 @@ export default function ParametrosScreen({ navigation }) {
       });
       
       setIsSaving(false);
-      Alert.alert("Cambio Aplicado", "La modificación arancelaria ya está activa en la red.");
+      setAviso({ tono: 'info', titulo: "Cambio Aplicado", mensaje: "La modificación arancelaria ya está activa en la red." });
       cargarParametros();
 
     } catch (error) {
@@ -114,7 +119,7 @@ export default function ParametrosScreen({ navigation }) {
             accionReintento: () => guardarCambio(parametro) 
           });
         } else {
-          Alert.alert("Error", error.response.data.error || "Error desconocido al procesar.");
+          setAviso({ tono: 'error', titulo: "Error", mensaje: error.response.data.error || "Error desconocido al procesar." });
         }
       } else {
         setErrorExcepcion({
@@ -126,7 +131,7 @@ export default function ParametrosScreen({ navigation }) {
   };
 
 const aplicarRestriccion = async () => {
-    if (!inicio || !fin) return Alert.alert("Error", "Complete fechas (DD/MM/AAAA)");
+    if (!inicio || !fin) return setAviso({ tono: 'error', titulo: "Error", mensaje: "Complete fechas (DD/MM/AAAA)" });
 
     try {
         // El backend recibe el ID del profesional
@@ -136,10 +141,10 @@ const aplicarRestriccion = async () => {
             fecha_fin: fin, 
             motivo: 'Inactividad administrativa'
         });
-        Alert.alert("Éxito", "Bloqueo aplicado exitosamente.");
+        setAviso({ tono: 'ok', titulo: "Éxito", mensaje: "Bloqueo aplicado exitosamente." });
     } catch (error) {
         // El backend devuelve el mensaje de error si hay citas confirmadas
-        Alert.alert("Error", error.response?.data?.mensaje || "Error al procesar el bloqueo");
+        setAviso({ tono: 'error', titulo: "Error", mensaje: error.response?.data?.mensaje || "Error al procesar el bloqueo" });
     }
 };
 
@@ -258,6 +263,17 @@ const aplicarRestriccion = async () => {
       <TouchableOpacity style={styles.logoutButton} onPress={confirmarCierreSesion}>
         <Text style={styles.logoutButtonText}>CERRAR SESIÓN</Text>
       </TouchableOpacity>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </View>
   );
 }

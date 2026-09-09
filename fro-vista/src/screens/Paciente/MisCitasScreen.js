@@ -22,13 +22,17 @@ import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../utils/modalidad';
-import { datosEstado, ordenarCitas } from '../../utils/estados';
+import { ordenarCitas } from '../../utils/estados';
 import { colores, espacio, radio, sombra, tipografia } from '../../theme';
+import EtiquetaEstado from '../../components/EtiquetaEstado';
+import DialogoAviso from '../../components/DialogoAviso';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
 
 export default function MisCitasScreen({ navigation }) {
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [citas, setCitas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
@@ -81,14 +85,11 @@ export default function MisCitasScreen({ navigation }) {
         data?.cupos_notificados > 0
           ? ` Se avisó a ${data.cupos_notificados} persona(s) en lista de espera.`
           : '';
-      Alert.alert('Cita cancelada', `Tu hora fue liberada correctamente.${aviso}`);
+      setAviso({ tono: 'info', titulo: 'Cita cancelada', mensaje: `Tu hora fue liberada correctamente.${aviso}` });
       await cargarCitas(true);
     } catch (error) {
       const respuesta = error.response?.data;
-      Alert.alert(
-        'No se pudo cancelar',
-        respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.'
-      );
+      setAviso({ tono: 'error', titulo: 'No se pudo cancelar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
     } finally {
       setCancelandoId(null);
     }
@@ -112,9 +113,7 @@ export default function MisCitasScreen({ navigation }) {
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.fecha}>{formatearFecha(item.fecha_hora_inicio)}</Text>
-          <View style={[styles.estadoPastilla, { backgroundColor: datosEstado(item.estado).color }]}>
-            <Text style={styles.estadoTexto}>{datosEstado(item.estado).etiqueta}</Text>
-          </View>
+          <EtiquetaEstado estado={item.estado} style={styles.estadoPastilla} />
         </View>
 
         <Text style={styles.profesional}>
@@ -228,6 +227,17 @@ export default function MisCitasScreen({ navigation }) {
         onConfirmar={(motivo) => cancelarCita(citaPorCancelar, motivo)}
         onCancelar={() => setCitaPorCancelar(null)}
       />
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </View>
   );
 }
@@ -253,14 +263,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   fecha: { flex: 1, fontSize: 15, fontWeight: 'bold', color: colores.texto, textTransform: 'capitalize' },
-  // Pastilla rellena con el color del estado, no texto suelto.
-  estadoPastilla: {
-    marginLeft: espacio.sm,
-    paddingHorizontal: espacio.md,
-    paddingVertical: 5,
-    borderRadius: radio.completo,
-  },
-  estadoTexto: { ...tipografia.micro, color: colores.textoInverso, letterSpacing: 0.3 },
+  estadoPastilla: { marginLeft: espacio.sm },
   profesional: { color: colores.textoSuave },
 
   filaAcciones: { flexDirection: 'row', gap: 10, marginTop: 12 },

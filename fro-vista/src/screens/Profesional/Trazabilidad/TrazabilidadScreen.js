@@ -44,7 +44,7 @@ export default function TrazabilidadScreen() {
 
   return (
     <View style={styles.contenedor}>
-      <TabSelector tabs={TABS} tabActiva={tabActiva} onCambiarTab={abrirTab} color={colores.advertencia} />
+      <TabSelector tabs={TABS} tabActiva={tabActiva} onCambiarTab={abrirTab} />
 
       <Text style={styles.descripcion}>{descripcion}</Text>
 
@@ -71,16 +71,18 @@ export default function TrazabilidadScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Sin padding arriba: la barra de pestañas se adosa a la cabecera de
+  // navegación en vez de quedar flotando bajo ella.
   contenedor: {
     flex: 1,
     backgroundColor: colores.fondo,
-    paddingHorizontal: espacio.lg,
-    paddingTop: espacio.base,
-    flex: 1,
   },
   descripcion: {
     ...tipografia.meta,
     color: colores.textoSuave,
+    paddingHorizontal: espacio.lg,
+    paddingTop: espacio.md,
+    paddingBottom: espacio.xs,
   },
   panel: {
     flex: 1,

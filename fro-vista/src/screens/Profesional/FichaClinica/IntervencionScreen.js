@@ -19,6 +19,7 @@ import {
 import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
+import DialogoAviso from '../../../components/DialogoAviso';
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;
@@ -26,6 +27,8 @@ const PATRON_ALERTA_PRIORITARIA =
 const claveBorrador = (episodioId) => `cu40_borrador_${episodioId}`;
 
 export default function IntervencionScreen() {
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [sesiones, setSesiones] = useState([]);
   const [episodioId, setEpisodioId] = useState('');
   const [contexto, setContexto] = useState(null);
@@ -85,16 +88,10 @@ export default function IntervencionScreen() {
       );
 
       if (borrador) {
-        Alert.alert(
-          'Borrador recuperado',
-          'Se recuperó el contenido guardado localmente para esta sesión.'
-        );
+        setAviso({ tono: 'alerta', titulo: 'Borrador recuperado', mensaje: 'Se recuperó el contenido guardado localmente para esta sesión.' });
       }
     } catch (error) {
-      Alert.alert(
-        'No fue posible cargar la sesión',
-        error.response?.data?.mensaje || 'Revisa la conexión e intenta nuevamente.'
-      );
+      setAviso({ tono: 'info', titulo: 'No fue posible cargar la sesión', mensaje: error.response?.data?.mensaje || 'Revisa la conexión e intenta nuevamente.' });
     } finally {
       setCargandoDetalle(false);
     }
@@ -113,10 +110,7 @@ export default function IntervencionScreen() {
 
   const handleGuardar = async () => {
     if (!tecnicasAplicadas.trim() || !respuestaFisiologica.trim()) {
-      Alert.alert(
-        'Campos obligatorios',
-        'Documenta las técnicas aplicadas y la respuesta fisiológica.'
-      );
+      setAviso({ tono: 'info', titulo: 'Campos obligatorios', mensaje: 'Documenta las técnicas aplicadas y la respuesta fisiológica.' });
       return;
     }
 
@@ -145,24 +139,15 @@ export default function IntervencionScreen() {
 
       await SecureStore.deleteItemAsync(claveBorrador(episodioId));
 
-      Alert.alert(
-        data.alerta_prioritaria ? 'Registro con alerta prioritaria' : 'Registro guardado',
-        data.alerta_prioritaria
+      setAviso({ tono: 'alerta', titulo: data.alerta_prioritaria ? 'Registro con alerta prioritaria' : 'Registro guardado', mensaje: data.alerta_prioritaria
           ? 'La intervención fue guardada. Activa el protocolo clínico prioritario.'
-          : data.mensaje
-      );
+          : data.mensaje });
     } catch (error) {
       if (!error.response) {
         await guardarBorradorLocal();
-        Alert.alert(
-          'Sin conexión',
-          'El contenido quedó guardado como borrador local. Podrás sincronizarlo al recuperar la conexión.'
-        );
+        setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'El contenido quedó guardado como borrador local. Podrás sincronizarlo al recuperar la conexión.' });
       } else {
-        Alert.alert(
-          'No fue posible guardar',
-          error.response.data?.mensaje || 'Intenta nuevamente.'
-        );
+        setAviso({ tono: 'info', titulo: 'No fue posible guardar', mensaje: error.response.data?.mensaje || 'Intenta nuevamente.' });
       }
     } finally {
       setGuardando(false);
@@ -279,6 +264,17 @@ export default function IntervencionScreen() {
           )}
         </>
       )}
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </VistaConTeclado>
   );
 }

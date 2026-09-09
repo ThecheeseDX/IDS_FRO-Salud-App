@@ -21,6 +21,8 @@ import ErrorRetry from '../../../components/ErrorRetry';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 import { textoLegible } from '../../../utils/estados';
+import EtiquetaEstado from '../../../components/EtiquetaEstado';
+import DialogoAviso from '../../../components/DialogoAviso';
 
 const COLOR_ESTADO = { VIGENTE: colores.exito, PROGRAMADA: colores.primario, EXPIRADA: colores.textoDeshabilitado };
 
@@ -32,6 +34,10 @@ function fechaMasDias(dias) {
 
 export default function PautasScreen({ route }) {
   const { pacienteId } = route?.params || {};
+
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
 
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
@@ -114,7 +120,7 @@ export default function PautasScreen({ route }) {
     } catch {
       // CU46 — Excepción 2: sin motor de búsqueda, catálogo completo.
       setResultadosBiblioteca(materiales);
-      Alert.alert('Aviso', 'El buscador no respondió; se muestra el catálogo completo.');
+      setAviso({ tono: 'alerta', titulo: 'Aviso', mensaje: 'El buscador no respondió; se muestra el catálogo completo.' });
     } finally {
       setBuscandoBiblioteca(false);
     }
@@ -141,28 +147,25 @@ export default function PautasScreen({ route }) {
   const guardarPauta = async () => {
     // CU47 — Excepción 4: sin episodio clínico no hay vinculación.
     if (!episodioId) {
-      Alert.alert(
-        'Falta el episodio clínico',
-        'Este paciente no tiene episodios. Crea primero el episodio base en la pestaña Episodios.'
-      );
+      setAviso({ tono: 'info', titulo: 'Falta el episodio clínico', mensaje: 'Este paciente no tiene episodios. Crea primero el episodio base en la pestaña Episodios.' });
       return;
     }
     if (!nombrePauta.trim()) {
-      Alert.alert('Falta el nombre', 'Dale un nombre a la pauta (ej: "Rehabilitación rodilla semana 1-4").');
+      setAviso({ tono: 'info', titulo: 'Falta el nombre', mensaje: 'Dale un nombre a la pauta (ej: "Rehabilitación rodilla semana 1-4").' });
       return;
     }
     if (ejercicios.length === 0) {
-      Alert.alert('Pauta vacía', 'Agrega al menos un ejercicio.');
+      setAviso({ tono: 'error', titulo: 'Pauta vacía', mensaje: 'Agrega al menos un ejercicio.' });
       return;
     }
     for (const ejercicio of ejercicios) {
       if (!ejercicio.nombre_ejercicio.trim()) {
-        Alert.alert('Ejercicio sin nombre', 'Todos los ejercicios necesitan un nombre.');
+        setAviso({ tono: 'alerta', titulo: 'Ejercicio sin nombre', mensaje: 'Todos los ejercicios necesitan un nombre.' });
         return;
       }
       // CU47 — Excepción 3: solo números en series y repeticiones.
       if (!/^\d+$/.test(ejercicio.series) || !/^\d+$/.test(ejercicio.repeticiones)) {
-        Alert.alert('Valores inválidos', `Series y repeticiones de "${ejercicio.nombre_ejercicio}" deben ser números.`);
+        setAviso({ tono: 'error', titulo: 'Valores inválidos', mensaje: `Series y repeticiones de "${ejercicio.nombre_ejercicio}" deben ser números.` });
         return;
       }
     }
@@ -183,14 +186,14 @@ export default function PautasScreen({ route }) {
         })),
       });
 
-      Alert.alert('Pauta prescrita', 'El paciente ya puede verla en su aplicación.');
+      setAviso({ tono: 'info', titulo: 'Pauta prescrita', mensaje: 'El paciente ya puede verla en su aplicación.' });
       setFormVisible(false);
       setNombrePauta('');
       setEjercicios([]);
       cargarTodo();
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert('No se pudo guardar', respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'No se pudo guardar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
     } finally {
       setGuardando(false);
     }
@@ -262,9 +265,7 @@ export default function PautasScreen({ route }) {
           <View key={pauta.pauta_tratamiento_id} style={estilos.tarjeta}>
             <View style={estilos.filaPauta}>
               <Text style={estilos.pautaNombre}>{pauta.nombre}</Text>
-              <Text style={[estilos.badge, { color: COLOR_ESTADO[pauta.estado] || colores.textoSuave }]}>
-                {pauta.estado}
-              </Text>
+              <EtiquetaEstado estado={pauta.estado} tamano="sm" />
             </View>
             <Text style={estilos.pautaDetalle}>
               {pauta.fecha_inicio} → {pauta.fecha_expiracion} · Episodio #{pauta.episodio_clinico_id}
@@ -328,23 +329,26 @@ export default function PautasScreen({ route }) {
           <Text style={estilos.etiqueta}>Ejercicios</Text>
           {ejercicios.map((ejercicio, indice) => (
             <View key={indice} style={estilos.tarjetaEjercicio}>
+              <Text style={estilos.label}>Nombre del ejercicio</Text>
               <TextInput
                 style={estilos.input}
-                placeholder="Nombre del ejercicio"
+                placeholder="Ej: elongación de isquiotibiales"
                 value={ejercicio.nombre_ejercicio}
                 onChangeText={(v) => actualizarEjercicio(indice, 'nombre_ejercicio', v)}
               />
               <View style={estilos.filaFechas}>
+                <Text style={estilos.label}>Series</Text>
                 <TextInput
                   style={[estilos.input, estilos.tercio]}
-                  placeholder="Series"
+                  placeholder="Ej: 3"
                   keyboardType="numeric"
                   value={ejercicio.series}
                   onChangeText={(v) => actualizarEjercicio(indice, 'series', v.replace(/[^0-9]/g, ''))}
                 />
+                <Text style={estilos.label}>Repeticiones</Text>
                 <TextInput
                   style={[estilos.input, estilos.tercio]}
-                  placeholder="Repeticiones"
+                  placeholder="Ej: 12"
                   keyboardType="numeric"
                   value={ejercicio.repeticiones}
                   onChangeText={(v) => actualizarEjercicio(indice, 'repeticiones', v.replace(/[^0-9]/g, ''))}
@@ -400,11 +404,23 @@ export default function PautasScreen({ route }) {
           </TouchableOpacity>
         </View>
       )}
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </VistaConTeclado>
   );
 }
 
 const estilos = StyleSheet.create({
+  label: { ...piezas.etiqueta },
   fondo: {
     flex: 1,
     backgroundColor: colores.fondo,
@@ -456,7 +472,6 @@ const estilos = StyleSheet.create({
 
   filaPauta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pautaNombre: { fontSize: 17, fontWeight: 'bold', color: colores.texto, flex: 1 },
-  badge: { fontWeight: 'bold', fontSize: 13, marginLeft: 8 },
   pautaDetalle: { color: colores.textoSuave, fontSize: 13, marginBottom: 8 },
   ejercicioLinea: { color: colores.texto, marginBottom: 4, fontSize: 13 },
 

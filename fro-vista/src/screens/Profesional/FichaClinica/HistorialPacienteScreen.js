@@ -134,7 +134,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         [evolucionId]: data.versiones || [],
       }));
     } catch (err) {
-      Alert.alert('Error', 'No se pudieron cargar las versiones de este registro.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'No se pudieron cargar las versiones de este registro.' });
     }
   };
 
@@ -156,10 +156,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const respuesta = err.response?.data;
       // Excepciones CU31: sin autoría (403), tope de versiones o registro
       // abierto (409), corrección vacía (400) y fallo de vinculación (500).
-      Alert.alert(
-        'Corrección no guardada',
-        respuesta?.mensaje || respuesta?.error || 'Reintenta el guardado.'
-      );
+      setAviso({ tono: 'ok', titulo: 'Corrección no guardada', mensaje: respuesta?.mensaje || respuesta?.error || 'Reintenta el guardado.' });
     }
   };
 
@@ -203,10 +200,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
                   cargarHistorial(false);
                 } catch (error) {
-                  Alert.alert(
-                    'No fue posible iniciar',
-                    error.response?.data?.mensaje || 'Intenta nuevamente.'
-                  );
+                  setAviso({ tono: 'info', titulo: 'No fue posible iniciar', mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.' });
                 }
               },
             },
@@ -215,10 +209,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         return;
       }
 
-      Alert.alert(
-        evento === 'INICIAR' ? 'No fue posible iniciar' : 'No fue posible finalizar',
-        detalle?.mensaje || 'Revisa la conexión e intenta nuevamente.'
-      );
+      setAviso({ tono: 'alerta', titulo: evento === 'INICIAR' ? 'No fue posible iniciar' : 'No fue posible finalizar', mensaje: detalle?.mensaje || 'Revisa la conexión e intenta nuevamente.' });
     }
   };
 
@@ -228,10 +219,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     const estadosTerminales = ['REALIZADA', 'CANCELADA', 'INASISTENCIA'];
 
     if (estadosTerminales.includes(deEstado)) {
-      Alert.alert(
-        "Acción no permitida",
-        "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal."
-      );
+      setAviso({ tono: 'info', titulo: "Acción no permitida", mensaje: "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal." });
       return;
     }
 
@@ -250,7 +238,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const response = await apiClient.post(`/citas/${citaId}/transicionar`, { evento, motivo });
 
       if (response.data.ok || response.status === 200) {
-        Alert.alert("Éxito", `Cita actualizada exitosamente a: ${response.data.nuevo_estado || 'nuevo estado'}`);
+        setAviso({ tono: 'ok', titulo: "Éxito", mensaje: `Cita actualizada exitosamente a: ${response.data.nuevo_estado || 'nuevo estado'}` });
         cargarHistorial(false); // Recargar la lista para reflejar los cambios inmediatos
       }
     } catch (err) {
@@ -259,19 +247,13 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
         // EXCEPCIÓN 2: Muestra el error exacto que envía el backend para saber qué falló
         if (status === 422 || data.code === 'TRANSICION_INVALIDA') {
-          Alert.alert(
-            "Error de validación de flujo lógico",
-            `${data.error || 'La transición no está permitida por las reglas de negocio.'}\n\nPor favor, sigue el orden del flujo clínico.`
-          );
+          setAviso({ tono: 'error', titulo: "Error de validación de flujo lógico", mensaje: `${data.error || 'La transición no está permitida por las reglas de negocio.'}\n\nPor favor, sigue el orden del flujo clínico.` });
         } 
         // EXCEPCIÓN 4: Fallo de persistencia en BD
         else if (status === 500 || data.code === 'PERSIST_FAIL') {
-          Alert.alert(
-            "Alerta de Error Crítica",
-            "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia. Intente nuevamente o contacte a soporte."
-          );
+          setAviso({ tono: 'error', titulo: "Alerta de Error Crítica", mensaje: "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia. Intente nuevamente o contacte a soporte." });
         } else {
-          Alert.alert("Error", data.error || "No se pudo cambiar el estado.");
+          setAviso({ tono: 'error', titulo: "Error", mensaje: data.error || "No se pudo cambiar el estado." });
         }
       } else {
         // EXCEPCIÓN 3: Latencia o pérdida de red
@@ -327,16 +309,10 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const respuesta = err.response?.data;
       // Excepción 2: discrepancias críticas suspenden la validación.
       if (respuesta?.error === 'VALIDACION_SUSPENDIDA') {
-        Alert.alert(
-          'Validación suspendida',
-          `${respuesta.mensaje}\n\n${textoFactores(respuesta.factores)}`
-        );
+        setAviso({ tono: 'info', titulo: 'Validación suspendida', mensaje: `${respuesta.mensaje}\n\n${textoFactores(respuesta.factores)}` });
         return;
       }
-      Alert.alert(
-        'No se pudo validar',
-        respuesta?.mensaje || 'El cierre quedó encolado. Reintenta en unos minutos.'
-      );
+      setAviso({ tono: 'error', titulo: 'No se pudo validar', mensaje: respuesta?.mensaje || 'El cierre quedó encolado. Reintenta en unos minutos.' });
     }
   };
 
@@ -348,10 +324,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       setCuadratura(data);
     } catch (err) {
       // Excepción 4: la sincronización queda pendiente y se reintenta.
-      Alert.alert(
-        'Sincronización pendiente',
-        err.response?.data?.mensaje || 'No se pudo completar. Reintenta en unos minutos.'
-      );
+      setAviso({ tono: 'alerta', titulo: 'Sincronización pendiente', mensaje: err.response?.data?.mensaje || 'No se pudo completar. Reintenta en unos minutos.' });
     } finally {
       setSincronizando(false);
     }
@@ -618,21 +591,41 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                   {estadoCita === 'REALIZADA' && (
                     <View style={styles.filaCierre}>
                       {item.sesion_certificada_en ? (
-                        // Ya certificada: se informa y el botón desaparece.
-                        <Text style={styles.textoCertificada}>
-                          ✅ Sesión validada el {formatearFecha(item.sesion_certificada_en)}
-                          {item.certificacion_tipo === 'MANUAL' ? ' (cierre manual)' : ''}
-                        </Text>
+                        // Ya certificada: se resume, y el detalle con fecha y
+                        // hora se consulta al tocar.
+                        <TouchableOpacity
+                          onPress={() =>
+                            setAviso({
+                              tono: 'ok',
+                              titulo: 'Sesión verificada',
+                              mensaje:
+                                `Validada el ${formatearFecha(item.sesion_certificada_en)}.` +
+                                (item.certificacion_tipo === 'MANUAL'
+                                  ? '\n\nSe cerró con justificación manual porque faltaba la marca de término del paciente.'
+                                  : '\n\nTodos los factores del protocolo multi-factor coincidieron.'),
+                            })
+                          }
+                        >
+                          <Text style={styles.textoCertificada}>✅ Sesión verificada</Text>
+                        </TouchableOpacity>
                       ) : (
                         <TouchableOpacity onPress={() => validarSesion(item.cita_id)}>
                           <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
                         </TouchableOpacity>
                       )}
                       {item.firma_tipo === 'FIRMA' ? (
-                        // Firmada: queda bloqueada, igual que la validación.
-                        <Text style={styles.textoCertificada}>
-                          ✅ Firma verificada el {formatearFecha(item.firma_momento)}
-                        </Text>
+                        // Firmada: se resume igual que la validación.
+                        <TouchableOpacity
+                          onPress={() =>
+                            setAviso({
+                              tono: 'ok',
+                              titulo: 'Firma verificada',
+                              mensaje: `El paciente firmó su conformidad el ${formatearFecha(item.firma_momento)}.`,
+                            })
+                          }
+                        >
+                          <Text style={styles.textoCertificada}>✅ Firma verificada</Text>
+                        </TouchableOpacity>
                       ) : (
                         <View>
                           {item.firma_tipo === 'RECHAZO' && (

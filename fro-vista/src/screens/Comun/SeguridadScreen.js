@@ -24,12 +24,15 @@ import CodigoOTP from '../../components/CodigoOTP';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, radio } from '../../theme';
+import DialogoAviso from '../../components/DialogoAviso';
 
 export default function SeguridadScreen() {
   const { userData, logoutSession } = useContext(AuthContext);
   const esPaciente = userData?.rol === 'Paciente';
 
   // ── CU08: sesiones ─────────────────────────────────────────────────────────
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [sesiones, setSesiones] = useState([]);
   const [cargandoSesiones, setCargandoSesiones] = useState(true);
   const [errorSesiones, setErrorSesiones] = useState(false);
@@ -94,7 +97,7 @@ export default function SeguridadScreen() {
     } catch (err) {
       const respuesta = err.response?.data;
       // CU08 — Excepción 3: la sesión ya había expirado; se refresca la lista.
-      Alert.alert('Aviso', respuesta?.mensaje || 'No se pudo cerrar la sesión.');
+      setAviso({ tono: 'alerta', titulo: 'Aviso', mensaje: respuesta?.mensaje || 'No se pudo cerrar la sesión.' });
       await cargarSesiones();
     } finally {
       setCerrandoId(null);
@@ -110,7 +113,7 @@ export default function SeguridadScreen() {
       setDestinoOTP(data?.destino || 'tu correo');
       setCambioActivo(true);
     } catch {
-      Alert.alert('Error', 'No se pudo enviar el código. Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'No se pudo enviar el código. Intenta nuevamente.' });
     } finally {
       setProcesandoCambio(false);
     }
@@ -133,9 +136,12 @@ export default function SeguridadScreen() {
         codigo: codigo.trim(),
         nueva_contrasena: nuevaContrasena,
       });
-      Alert.alert('Contraseña actualizada', data?.mensaje || 'Vuelve a iniciar sesión.', [
-        { text: 'Entendido', onPress: logoutSession },
-      ]);
+      setAviso({
+        tono: 'ok',
+        titulo: 'Contraseña actualizada',
+        mensaje: data?.mensaje || 'Vuelve a iniciar sesión.',
+        alCerrar: logoutSession,
+      });
     } catch (err) {
       const respuesta = err.response?.data;
       if (respuesta?.error === 'CONTRASENA_DEBIL') {
@@ -162,10 +168,7 @@ export default function SeguridadScreen() {
     } catch (err) {
       // CU09 — Excepción 4: si la escritura falla, se restaura lo anterior.
       setPrivacidad(anterior);
-      Alert.alert(
-        'No se pudo guardar',
-        err.response?.data?.mensaje || 'Los cambios no se aplicaron. Intenta nuevamente.'
-      );
+      setAviso({ tono: 'error', titulo: 'No se pudo guardar', mensaje: err.response?.data?.mensaje || 'Los cambios no se aplicaron. Intenta nuevamente.' });
     } finally {
       setGuardandoPrivacidad(false);
     }
@@ -331,6 +334,17 @@ export default function SeguridadScreen() {
           cerrarSesion(sesion);
         }}
         onCancelar={() => setSesionPorCerrar(null)}
+      />
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const seguir = aviso?.alCerrar;
+          setAviso(null);
+          if (seguir) seguir();
+        }}
       />
     </VistaConTeclado>
   );

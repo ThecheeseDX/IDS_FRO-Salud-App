@@ -11,8 +11,11 @@ import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { colores, radio, sombra } from '../../theme';
 import CodigoOTP from '../../components/CodigoOTP';
+import DialogoAviso from '../../components/DialogoAviso';
 
 export default function RecuperarContrasenaScreen({ navigation }) {
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [paso, setPaso] = useState(1);
   const [email, setEmail] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -36,7 +39,7 @@ export default function RecuperarContrasenaScreen({ navigation }) {
     setError('');
     try {
       const { data } = await apiClient.post('/auth/recuperar/solicitar', { email: correo });
-      Alert.alert('Revisa tu correo', data?.mensaje || 'Si el correo está registrado, recibirás un código.');
+      setAviso({ tono: 'info', titulo: 'Revisa tu correo', mensaje: data?.mensaje || 'Si el correo está registrado, recibirás un código.' });
       setPaso(2);
     } catch (err) {
       const respuesta = err.response?.data;
@@ -68,9 +71,12 @@ export default function RecuperarContrasenaScreen({ navigation }) {
         codigo: codigo.trim(),
         nueva_contrasena: nuevaContrasena,
       });
-      Alert.alert('Contraseña actualizada', data?.mensaje || 'Ya puedes iniciar sesión.', [
-        { text: 'Iniciar sesión', onPress: () => navigation.replace('Login') },
-      ]);
+      setAviso({
+        tono: 'ok',
+        titulo: 'Contraseña actualizada',
+        mensaje: data?.mensaje || 'Ya puedes iniciar sesión.',
+        alCerrar: () => navigation.replace('Login'),
+      });
     } catch (err) {
       const respuesta = err.response?.data;
       // CU07 — Excepción 3: se muestran los requisitos incumplidos.
@@ -160,6 +166,17 @@ export default function RecuperarContrasenaScreen({ navigation }) {
           <Text style={estilos.enlace}>Volver al inicio de sesión</Text>
         </TouchableOpacity>
       </View>
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const seguir = aviso?.alCerrar;
+          setAviso(null);
+          if (seguir) seguir();
+        }}
+      />
     </VistaConTeclado>
   );
 }

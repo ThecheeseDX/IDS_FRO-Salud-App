@@ -22,6 +22,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFecha } from '../../utils/fechas';
 import { colores, espacio, radio, tipografia } from '../../theme';
+import DialogoAviso from '../../components/DialogoAviso';
 
 /**
  * El servidor devuelve el resumen como un bloque de texto plano. Aquí se
@@ -55,6 +56,8 @@ function desglosarResumen(texto) {
 
 export default function TriajeScreen({ navigation }) {
   // fase: 'cargando' | 'error' | 'disclaimer' | 'entrevista' | 'completado' | 'resumen'
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+  const [aviso, setAviso] = useState(null);
   const [fase, setFase] = useState('cargando');
   const [disclaimer, setDisclaimer] = useState(null);
   const [arbol, setArbol] = useState(null);
@@ -134,10 +137,7 @@ export default function TriajeScreen({ navigation }) {
       await cargarArbol(respuestasRef.current);
     } catch (err) {
       // Exc.3: sin marca temporal no se habilita el triaje.
-      Alert.alert(
-        'No se pudo registrar',
-        err.response?.data?.mensaje || 'Tu consentimiento no quedó registrado. Intenta nuevamente.'
-      );
+      setAviso({ tono: 'error', titulo: 'No se pudo registrar', mensaje: err.response?.data?.mensaje || 'Tu consentimiento no quedó registrado. Intenta nuevamente.' });
     } finally {
       setProcesando(false);
     }
@@ -158,13 +158,13 @@ export default function TriajeScreen({ navigation }) {
     const valorLimpio = typeof valor === 'string' ? valor.trim() : valor;
 
     if (nodo.tipo !== 'opciones' && !String(valorLimpio).length) {
-      Alert.alert('Respuesta vacía', 'Escribe una respuesta para continuar.');
+      setAviso({ tono: 'error', titulo: 'Respuesta vacía', mensaje: 'Escribe una respuesta para continuar.' });
       return;
     }
     if (nodo.tipo === 'numero') {
       const numero = Number(valorLimpio);
       if (!Number.isFinite(numero) || numero < (nodo.minimo ?? 0) || numero > (nodo.maximo ?? 999)) {
-        Alert.alert('Valor fuera de rango', `Ingresa un número entre ${nodo.minimo} y ${nodo.maximo}.`);
+        setAviso({ tono: 'info', titulo: 'Valor fuera de rango', mensaje: `Ingresa un número entre ${nodo.minimo} y ${nodo.maximo}.` });
         return;
       }
     }
@@ -226,7 +226,7 @@ export default function TriajeScreen({ navigation }) {
       setRespuestas({});
       setFase('disclaimer');
     } catch {
-      Alert.alert('Error', 'No se pudo iniciar una nueva entrevista.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'No se pudo iniciar una nueva entrevista.' });
     } finally {
       setProcesando(false);
     }
@@ -377,6 +377,17 @@ export default function TriajeScreen({ navigation }) {
       <Text style={estilos.notaAvance}>
         Tu avance se guarda automáticamente: puedes salir y retomar cuando quieras.
       </Text>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </VistaConTeclado>
   );
 }

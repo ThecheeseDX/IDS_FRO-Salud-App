@@ -12,6 +12,7 @@ import client from "../../api/client";
 import VistaConTeclado from "../../components/VistaConTeclado";
 import { colores, radio, sombra } from '../../theme';
 import CodigoOTP from '../../components/CodigoOTP';
+import DialogoAviso from '../../components/DialogoAviso';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OTPScreen
@@ -26,6 +27,10 @@ const SEGUNDOS_REENVIO = 60;
 
 export default function OTPScreen({ route, navigation }) {
   const { usuario_id, canal = "EMAIL", destino = "" } = route?.params ?? {};
+
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
 
   const [digitos, setDigitos] = useState(Array(LARGO_OTP).fill(""));
   const [cargando, setCargando] = useState(false);
@@ -128,7 +133,7 @@ export default function OTPScreen({ route, navigation }) {
       setSegundos(SEGUNDOS_REENVIO);
       setDigitos(Array(LARGO_OTP).fill(""));
       inputs.current[0]?.focus();
-      Alert.alert("Código reenviado", data?.mensaje || "Revisa tu correo.");
+      setAviso({ tono: 'ok', titulo: "Código reenviado", mensaje: data?.mensaje || "Revisa tu correo." });
     } catch (err) {
       const respuesta = err.response?.data;
       const errorCodigo = respuesta?.error;
@@ -144,7 +149,7 @@ export default function OTPScreen({ route, navigation }) {
           [{ text: "Reintentar", onPress: reenviarCodigo }, { text: "Cancelar" }]
         );
       } else {
-        Alert.alert("Error", "No se pudo reenviar el código. Intenta más tarde.");
+        setAviso({ tono: 'error', titulo: "Error", mensaje: "No se pudo reenviar el código. Intenta más tarde." });
       }
     } finally {
       setCargandoReenvio(false);
@@ -208,6 +213,17 @@ export default function OTPScreen({ route, navigation }) {
           )}
         </View>
       </View>
+    <DialogoAviso
+      visible={aviso !== null}
+      titulo={aviso?.titulo || ''}
+      mensaje={aviso?.mensaje}
+      tono={aviso?.tono}
+      onCerrar={() => {
+        const seguir = aviso?.alCerrar;
+        setAviso(null);
+        if (seguir) seguir();
+      }}
+    />
     </VistaConTeclado>
   );
 }

@@ -24,11 +24,16 @@ import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearHora } from '../../utils/fechas';
 import { colores, radio } from '../../theme';
+import DialogoAviso from '../../components/DialogoAviso';
 
 const clavePendiente = (citaId) => `cu43_pendiente_${citaId}`;
 
 export default function EvidenciaSesionScreen({ route }) {
   const { citaId, modalidad } = route?.params || {};
+
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
 
   const [resumen, setResumen] = useState(null);
   const [errorCarga, setErrorCarga] = useState(false);
@@ -46,7 +51,7 @@ export default function EvidenciaSesionScreen({ route }) {
         try {
           await apiClient.post(`/citas/${citaId}/evidencia-teleconsulta`, JSON.parse(pendiente));
           await SecureStore.deleteItemAsync(clavePendiente(citaId));
-          Alert.alert('Sincronizado', 'Se envió la evidencia que estaba pendiente en este dispositivo.');
+          setAviso({ tono: 'ok', titulo: 'Sincronizado', mensaje: 'Se envió la evidencia que estaba pendiente en este dispositivo.' });
         } catch {
           // sigue pendiente; se reintentará en la próxima visita
         }
@@ -69,18 +74,12 @@ export default function EvidenciaSesionScreen({ route }) {
       // Excepción 1: GPS apagado o sin permiso impide iniciar.
       const servicios = await Location.hasServicesEnabledAsync();
       if (!servicios) {
-        Alert.alert(
-          'Ubicación desactivada',
-          'Activa los servicios de ubicación de tu teléfono para hacer el check-in.'
-        );
+        setAviso({ tono: 'info', titulo: 'Ubicación desactivada', mensaje: 'Activa los servicios de ubicación de tu teléfono para hacer el check-in.' });
         return;
       }
       const permiso = await Location.requestForegroundPermissionsAsync();
       if (permiso.status !== 'granted') {
-        Alert.alert(
-          'Permiso denegado',
-          'Sin acceso a tu ubicación no es posible validar la presencialidad.'
-        );
+        setAviso({ tono: 'error', titulo: 'Permiso denegado', mensaje: 'Sin acceso a tu ubicación no es posible validar la presencialidad.' });
         return;
       }
 
@@ -94,14 +93,11 @@ export default function EvidenciaSesionScreen({ route }) {
         momento,
       });
 
-      Alert.alert('Check-in registrado', data?.mensaje || 'Marca guardada.');
+      setAviso({ tono: 'ok', titulo: 'Check-in registrado', mensaje: data?.mensaje || 'Marca guardada.' });
       await cargar();
     } catch (err) {
       const respuesta = err.response?.data;
-      Alert.alert(
-        'Check-in no registrado',
-        respuesta?.mensaje || respuesta?.error || 'Revisa tu conexión e intenta nuevamente.'
-      );
+      setAviso({ tono: 'ok', titulo: 'Check-in no registrado', mensaje: respuesta?.mensaje || respuesta?.error || 'Revisa tu conexión e intenta nuevamente.' });
     } finally {
       setProcesando(false);
     }
@@ -131,10 +127,7 @@ export default function EvidenciaSesionScreen({ route }) {
       const microfono = await Camera.requestMicrophonePermissionsAsync();
 
       if (camara.status !== 'granted' || microfono.status !== 'granted') {
-        Alert.alert(
-          'Permisos bloqueados',
-          'La teleconsulta requiere cámara y micrófono. Otorga los permisos en la configuración de tu teléfono e intenta de nuevo.'
-        );
+        setAviso({ tono: 'info', titulo: 'Permisos bloqueados', mensaje: 'La teleconsulta requiere cámara y micrófono. Otorga los permisos en la configuración de tu teléfono e intenta de nuevo.' });
         return;
       }
 
@@ -147,15 +140,12 @@ export default function EvidenciaSesionScreen({ route }) {
 
       try {
         const { data } = await apiClient.post(`/citas/${citaId}/evidencia-teleconsulta`, cuerpo);
-        Alert.alert('Evidencia registrada', data?.mensaje || 'Metadatos guardados.');
+        setAviso({ tono: 'ok', titulo: 'Evidencia registrada', mensaje: data?.mensaje || 'Metadatos guardados.' });
         await cargar();
       } catch (err) {
         // Excepción 4: falla de escritura → respaldo local para sincronizar.
         await SecureStore.setItemAsync(clavePendiente(citaId), JSON.stringify(cuerpo));
-        Alert.alert(
-          'Respaldo local',
-          'No se pudo guardar en el servidor. La evidencia quedó respaldada en este dispositivo y se sincronizará automáticamente.'
-        );
+        setAviso({ tono: 'alerta', titulo: 'Respaldo local', mensaje: 'No se pudo guardar en el servidor. La evidencia quedó respaldada en este dispositivo y se sincronizará automáticamente.' });
       }
     } finally {
       setProcesando(false);
@@ -270,6 +260,17 @@ export default function EvidenciaSesionScreen({ route }) {
         Estas marcas certifican la ejecución de la prestación y quedan en la
         bitácora de la sesión.
       </Text>
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const seguir = aviso?.alCerrar;
+          setAviso(null);
+          if (seguir) seguir();
+        }}
+      />
     </VistaConTeclado>
   );
 }

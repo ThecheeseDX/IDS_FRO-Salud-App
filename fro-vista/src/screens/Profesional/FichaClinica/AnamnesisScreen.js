@@ -7,6 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import apiClient, { getFichaClinica, guardarAnamnesis } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
+import DialogoAviso from '../../../components/DialogoAviso';
 
 // CU77: el bloque estructurado de la evaluación viaja dentro de la anamnesis
 // delimitado por estas marcas, para poder reconstruir los campos al cargar.
@@ -74,6 +75,10 @@ const LIMITE_ANAMNESIS = 2000;
 export default function AnamnesisScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route.params;
 
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
+
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [version, setVersion] = useState(null);
@@ -90,6 +95,9 @@ export default function AnamnesisScreen({ route, navigation }) {
   // Listas representadas como texto separado por comas para edición simple
   // CU24: bloques de la entrevista previa (solo lectura, se conservan al guardar).
   const [bloquesTriaje, setBloquesTriaje] = useState([]);
+  // Por defecto solo se muestra la entrevista más reciente: con varias,
+  // la pantalla se volvía una pared de texto.
+  const [verTodasLasEntrevistas, setVerTodasLasEntrevistas] = useState(false);
 
   const [alergiasTexto, setAlergiasTexto] = useState('');
   const [quirurgicosTexto, setQuirurgicosTexto] = useState('');
@@ -181,7 +189,7 @@ export default function AnamnesisScreen({ route, navigation }) {
         );
       }
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar la ficha clínica del paciente.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'No se pudo cargar la ficha clínica del paciente.' });
     } finally {
       setCargando(false);
     }
@@ -230,10 +238,7 @@ export default function AnamnesisScreen({ route, navigation }) {
     setErrores(nuevosErrores);
 
     if (Object.keys(nuevosErrores).length > 0 || Object.keys(nuevosErroresCampos).length > 0) {
-      Alert.alert(
-        'Campos incompletos',
-        'Existen campos obligatorios sin completar. Revisa los bloques resaltados.'
-      );
+      setAviso({ tono: 'error', titulo: 'Campos incompletos', mensaje: 'Existen campos obligatorios sin completar. Revisa los bloques resaltados.' });
       return false;
     }
     return true;
@@ -273,15 +278,12 @@ export default function AnamnesisScreen({ route, navigation }) {
       });
 
       if (data.truncado) {
-        Alert.alert(
-          'Texto truncado',
-          `La anamnesis excedía el límite de ${data.limite_anamnesis} caracteres y fue truncada.`
-        );
+        setAviso({ tono: 'info', titulo: 'Texto truncado', mensaje: `La anamnesis excedía el límite de ${data.limite_anamnesis} caracteres y fue truncada.` });
       }
 
       setVersion(data.version);
       await SecureStore.deleteItemAsync(claveBorrador(pacienteId)).catch?.(() => {});
-      Alert.alert('Éxito', data.mensaje);
+      setAviso({ tono: 'ok', titulo: 'Éxito', mensaje: data.mensaje });
 
     } catch (error) {
       const err = error.response?.data;
@@ -302,22 +304,22 @@ export default function AnamnesisScreen({ route, navigation }) {
         if (err.campos.includes('anamnesis')) nuevosErrores.anamnesis = true;
         if (err.campos.includes('plantilla_especialidad')) nuevosErrores.plantillaEspecialidad = true;
         setErrores(nuevosErrores);
-        Alert.alert('Campos incompletos', err.mensaje);
+        setAviso({ tono: 'error', titulo: 'Campos incompletos', mensaje: err.mensaje });
         return;
       }
 
       if (error.response?.status === 401) {
-        Alert.alert('Sesión expirada', 'Tu sesión ha expirado. Inicia sesión nuevamente.');
+        setAviso({ tono: 'error', titulo: 'Sesión expirada', mensaje: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
         return;
       }
 
       if (error.response?.status === 403) {
-        Alert.alert('Acceso denegado', err?.error || 'No tienes permisos para esta acción.');
+        setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: err?.error || 'No tienes permisos para esta acción.' });
         return;
       }
 
       if (err?.error === 'FALLO_BITACORA') {
-        Alert.alert('Error de auditoría', err.mensaje);
+        setAviso({ tono: 'error', titulo: 'Error de auditoría', mensaje: err.mensaje });
         return;
       }
 
@@ -328,14 +330,11 @@ export default function AnamnesisScreen({ route, navigation }) {
           claveBorrador(pacienteId),
           JSON.stringify({ camposValores, anamnesis, alergiasTexto, quirurgicosTexto, patologicosTexto })
         );
-        Alert.alert(
-          'Sin conexión',
-          'La evaluación quedó guardada en este dispositivo. Cuando vuelva la señal, guarda de nuevo para sincronizarla.'
-        );
+        setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'La evaluación quedó guardada en este dispositivo. Cuando vuelva la señal, guarda de nuevo para sincronizarla.' });
         return;
       }
 
-      Alert.alert('Error', err?.error || 'No se pudo guardar la anamnesis. Intenta nuevamente.');
+      setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.error || 'No se pudo guardar la anamnesis. Intenta nuevamente.' });
     } finally {
       setGuardando(false);
     }
@@ -412,7 +411,20 @@ export default function AnamnesisScreen({ route, navigation }) {
         )}
 
         {/* ─ CU24: entrevista previa del paciente (solo lectura) */}
-        {bloquesTriaje.map((bloque, i) => (
+        {bloquesTriaje.length > 1 && (
+          <TouchableOpacity
+            style={styles.botonHistorialTriaje}
+            onPress={() => setVerTodasLasEntrevistas((v) => !v)}
+          >
+            <Text style={styles.botonHistorialTriajeTexto}>
+              {verTodasLasEntrevistas
+                ? '▲ Ver solo la última entrevista'
+                : `📜 Ver entrevistas anteriores (${bloquesTriaje.length - 1})`}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {(verTodasLasEntrevistas ? bloquesTriaje : bloquesTriaje.slice(-1)).map((bloque, i) => (
           <View key={i} style={styles.tarjetaTriaje}>
             <Text style={styles.tituloTriaje}>
               🩺 Entrevista previa del paciente{fechaDeTriaje(bloque) ? ` · ${fechaDeTriaje(bloque)}` : ''}
@@ -490,6 +502,17 @@ export default function AnamnesisScreen({ route, navigation }) {
             ? <ActivityIndicator color={colores.superficie} />
             : <Text style={styles.botonTexto}>Guardar Anamnesis</Text>}
         </TouchableOpacity>
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const seguir = aviso?.alCerrar;
+          setAviso(null);
+          if (seguir) seguir();
+        }}
+      />
       </VistaConTeclado>
   );
 }
@@ -521,6 +544,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avisoSinEspecialidadTexto: { color: colores.error },
+  botonHistorialTriaje: {
+    ...piezas.botonSecundario,
+    paddingVertical: espacio.md,
+    marginTop: espacio.base,
+  },
+  botonHistorialTriajeTexto: { ...tipografia.metaFuerte, color: colores.primario },
   tarjetaTriaje: {
     backgroundColor: colores.advertenciaSuave,
     borderWidth: 1,

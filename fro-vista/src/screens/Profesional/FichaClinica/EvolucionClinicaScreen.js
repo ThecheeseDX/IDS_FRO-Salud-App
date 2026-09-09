@@ -8,6 +8,7 @@ import apiClient from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import ErrorRetry from '../../../components/ErrorRetry';
 import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
+import DialogoAviso from '../../../components/DialogoAviso';
 
 // CU32 Paso 2.3: heurística de cuantificación (Excepción 1) — solo sugerencia de UX.
 const PALABRAS_SUBJETIVAS = /\b(mejorar|mejor[íi]a|sentirse?\s+bien|bienestar|aliviar|alivio|fortalecer|avanzar|progresar|recuperar|estar\s+mejor|c[óo]modo|tranquil|m[áa]s\s+[áa]gil)/i;
@@ -17,6 +18,10 @@ const PALABRAS_SUBJETIVAS = /\b(mejorar|mejor[íi]a|sentirse?\s+bien|bienestar|a
 // ─────────────────────────────────────────────────────────────────────────────
 export default function EvolucionClinicaScreen({ route }) {
   const episodioIdParam = route?.params?.episodio_id;
+
+  // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
+
+  const [aviso, setAviso] = useState(null);
 
   const [episodioId, setEpisodioId] = useState(episodioIdParam ? String(episodioIdParam) : '');
 
@@ -38,7 +43,7 @@ export default function EvolucionClinicaScreen({ route }) {
   // ── 2.2: GET metas + carga (Excepción 2) ──────────────────────────────────
   const cargarMetas = async () => {
     if (!episodioId) {
-      Alert.alert('Falta el episodio', 'Indica el ID del episodio clínico para cargar sus metas.');
+      setAviso({ tono: 'info', titulo: 'Falta el episodio', mensaje: 'Indica el ID del episodio clínico para cargar sus metas.' });
       return;
     }
     setIsLoadingMetas(true);
@@ -49,9 +54,9 @@ export default function EvolucionClinicaScreen({ route }) {
     } catch (error) {
       if (error.response) {
         const err = error.response.data;
-        if (error.response.status === 401) Alert.alert('Sesión inválida', 'Tu sesión ha expirado. Inicia sesión nuevamente.');
-        else if (error.response.status === 403) Alert.alert('Acceso denegado', err?.error || 'No tienes permisos para esta acción.');
-        else Alert.alert('Error', err?.mensaje || err?.error || 'No se pudieron cargar las metas.');
+        if (error.response.status === 401) setAviso({ tono: 'error', titulo: 'Sesión inválida', mensaje: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
+        else if (error.response.status === 403) setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: err?.error || 'No tienes permisos para esta acción.' });
+        else setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.mensaje || err?.error || 'No se pudieron cargar las metas.' });
       } else {
         setErrorRed(true);
       }
@@ -71,8 +76,8 @@ export default function EvolucionClinicaScreen({ route }) {
     const metaValorTxt = nuevoObjetivo.meta_valor.trim();
     const unidad = nuevoObjetivo.unidad.trim();
 
-    if (!episodioId) { Alert.alert('Falta el episodio', 'Carga primero un episodio clínico.'); return; }
-    if (!descripcion) { Alert.alert('Campo requerido', 'Describe la meta clínica.'); return; }
+    if (!episodioId) { setAviso({ tono: 'info', titulo: 'Falta el episodio', mensaje: 'Carga primero un episodio clínico.' }); return; }
+    if (!descripcion) { setAviso({ tono: 'info', titulo: 'Campo requerido', mensaje: 'Describe la meta clínica.' }); return; }
 
     const sinCuantificar = metaValorTxt === '' || unidad === '';
     const pareceSubjetiva = PALABRAS_SUBJETIVAS.test(descripcion);
@@ -88,7 +93,7 @@ export default function EvolucionClinicaScreen({ route }) {
 
     const metaNum = Number(metaValorTxt);
     if (metaValorTxt === '' || Number.isNaN(metaNum) || metaNum <= 0 || unidad === '') {
-      Alert.alert('Meta no cuantificable', 'Indica un valor numérico mayor a 0 y una unidad de medida.');
+      setAviso({ tono: 'info', titulo: 'Meta no cuantificable', mensaje: 'Indica un valor numérico mayor a 0 y una unidad de medida.' });
       return;
     }
 
@@ -97,18 +102,18 @@ export default function EvolucionClinicaScreen({ route }) {
       const { data } = await apiClient.post(`/clinica/episodio/${episodioId}/objetivos`, {
         descripcion, meta_valor: metaNum, unidad
       });
-      Alert.alert('Meta creada', data.mensaje || 'Objetivo definido correctamente.');
+      setAviso({ tono: 'info', titulo: 'Meta creada', mensaje: data.mensaje || 'Objetivo definido correctamente.' });
       setNuevoObjetivo({ descripcion: '', meta_valor: '', unidad: '' });
       cargarMetas();
     } catch (error) {
       if (error.response) {
         const err = error.response.data;
-        if (error.response.status === 422) Alert.alert('Meta no cuantificable', err?.mensaje || 'Define un valor numérico y una unidad.');
-        else if (error.response.status === 401) Alert.alert('Sesión inválida', 'Tu sesión ha expirado. Inicia sesión nuevamente.');
-        else if (error.response.status === 403) Alert.alert('Acceso denegado', err?.error || 'No tienes permisos para esta acción.');
-        else Alert.alert('Error', err?.mensaje || err?.error || 'No se pudo crear la meta.');
+        if (error.response.status === 422) setAviso({ tono: 'info', titulo: 'Meta no cuantificable', mensaje: err?.mensaje || 'Define un valor numérico y una unidad.' });
+        else if (error.response.status === 401) setAviso({ tono: 'error', titulo: 'Sesión inválida', mensaje: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
+        else if (error.response.status === 403) setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: err?.error || 'No tienes permisos para esta acción.' });
+        else setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.mensaje || err?.error || 'No se pudo crear la meta.' });
       } else {
-        Alert.alert('Sin conexión', 'No se pudo conectar con el servidor. Intenta nuevamente.');
+        setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'No se pudo conectar con el servidor. Intenta nuevamente.' });
       }
     } finally {
       setEnviandoMeta(false);
@@ -161,15 +166,15 @@ export default function EvolucionClinicaScreen({ route }) {
     const idObj = avance.objetivo_terapeutico_id;
     const valorTxt = String(avance.valor_actual).trim();
 
-    if (!idObj) { Alert.alert('Selecciona un objetivo', 'Elige la meta a la que registrar el avance.'); return; }
-    if (valorTxt === '') { Alert.alert('Campo requerido', 'Ingresa el valor medido alcanzado.'); return; }
+    if (!idObj) { setAviso({ tono: 'info', titulo: 'Selecciona un objetivo', mensaje: 'Elige la meta a la que registrar el avance.' }); return; }
+    if (valorTxt === '') { setAviso({ tono: 'info', titulo: 'Campo requerido', mensaje: 'Ingresa el valor medido alcanzado.' }); return; }
 
     const valorNum = Number(valorTxt);
     const metaValor = objetivoSeleccionado ? Number(objetivoSeleccionado.meta_valor) : null;
 
-    if (Number.isNaN(valorNum) || valorNum < 0) { Alert.alert('Valor inválido', 'El avance debe ser un número igual o mayor a 0.'); return; }
+    if (Number.isNaN(valorNum) || valorNum < 0) { setAviso({ tono: 'error', titulo: 'Valor inválido', mensaje: 'El avance debe ser un número igual o mayor a 0.' }); return; }
     if (metaValor !== null && valorNum > metaValor) {
-      Alert.alert('Avance no válido', `No puede superar la meta (${metaValor} ${objetivoSeleccionado.unidad}).`);
+      setAviso({ tono: 'info', titulo: 'Avance no válido', mensaje: `No puede superar la meta (${metaValor} ${objetivoSeleccionado.unidad}).` });
       return;
     }
 
@@ -188,19 +193,19 @@ export default function EvolucionClinicaScreen({ route }) {
         mostrarAvisoAsincrono();
       }
 
-      Alert.alert('Avance registrado', `Cumplimiento actual: ${data.porcentaje_cumplimiento ?? '—'}%`);
+      setAviso({ tono: 'ok', titulo: 'Avance registrado', mensaje: `Cumplimiento actual: ${data.porcentaje_cumplimiento ?? '—'}%` });
       setAvance({ objetivo_terapeutico_id: '', valor_actual: '' });
       setAvanceError('');
     } catch (error) {
       if (error.response) {
         const err = error.response.data;
-        if (error.response.status === 400 && err?.error === 'AVANCE_SUPERA_META') Alert.alert('Avance no válido', err.mensaje);
-        else if (error.response.status === 404) Alert.alert('Objetivo no encontrado', err?.mensaje || 'La meta indicada no existe.');
-        else if (error.response.status === 401) Alert.alert('Sesión inválida', 'Tu sesión ha expirado. Inicia sesión nuevamente.');
-        else if (error.response.status === 403) Alert.alert('Acceso denegado', err?.error || 'No tienes permisos para esta acción.');
-        else Alert.alert('Error', err?.mensaje || err?.error || 'No se pudo registrar el avance.');
+        if (error.response.status === 400 && err?.error === 'AVANCE_SUPERA_META') setAviso({ tono: 'info', titulo: 'Avance no válido', mensaje: err.mensaje });
+        else if (error.response.status === 404) setAviso({ tono: 'info', titulo: 'Objetivo no encontrado', mensaje: err?.mensaje || 'La meta indicada no existe.' });
+        else if (error.response.status === 401) setAviso({ tono: 'error', titulo: 'Sesión inválida', mensaje: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
+        else if (error.response.status === 403) setAviso({ tono: 'error', titulo: 'Acceso denegado', mensaje: err?.error || 'No tienes permisos para esta acción.' });
+        else setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.mensaje || err?.error || 'No se pudo registrar el avance.' });
       } else {
-        Alert.alert('Sin conexión', 'No se pudo conectar con el servidor. Intenta nuevamente.');
+        setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'No se pudo conectar con el servidor. Intenta nuevamente.' });
       }
     } finally {
       setEnviandoAvance(false);
@@ -227,9 +232,10 @@ export default function EvolucionClinicaScreen({ route }) {
         {!episodioIdParam && (
           <View style={styles.seccion}>
             <Text style={styles.seccionTitulo}>Episodio activo</Text>
+            <Text style={styles.label}>ID del episodio</Text>
             <TextInput
               style={styles.input}
-              placeholder="ID del episodio"
+              placeholder="Ej: 12"
               keyboardType="numeric"
               value={episodioId}
               onChangeText={setEpisodioId}
@@ -274,24 +280,27 @@ export default function EvolucionClinicaScreen({ route }) {
         {/* 2.3: crear objetivo */}
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>Definir nueva meta</Text>
+          <Text style={styles.label}>Descripción de la meta</Text>
           <TextInput
             style={styles.input}
-            placeholder="Descripción de la meta (ej: aumentar rango articular)"
+            placeholder="Ej: aumentar rango articular"
             value={nuevoObjetivo.descripcion}
             editable={!camposBloqueados && !enviandoMeta}
             onChangeText={(v) => setNuevoObjetivo({ ...nuevoObjetivo, descripcion: v })}
           />
+          <Text style={styles.label}>Valor meta</Text>
           <TextInput
             style={styles.input}
-            placeholder="Valor meta (ej: 30)"
+            placeholder="Ej: 30"
             keyboardType="numeric"
             value={nuevoObjetivo.meta_valor}
             editable={!camposBloqueados && !enviandoMeta}
             onChangeText={(v) => setNuevoObjetivo({ ...nuevoObjetivo, meta_valor: v })}
           />
+          <Text style={styles.label}>Unidad</Text>
           <TextInput
             style={styles.input}
-            placeholder="Unidad (ej: grados, repeticiones)"
+            placeholder="Ej: grados"
             value={nuevoObjetivo.unidad}
             editable={!camposBloqueados && !enviandoMeta}
             onChangeText={(v) => setNuevoObjetivo({ ...nuevoObjetivo, unidad: v })}
@@ -344,11 +353,23 @@ export default function EvolucionClinicaScreen({ route }) {
             {enviandoAvance ? <ActivityIndicator color={colores.superficie} /> : <Text style={styles.botonTexto}>Registrar avance</Text>}
           </TouchableOpacity>
         </View>
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => {
+          const seguir = aviso?.alCerrar;
+          setAviso(null);
+          if (seguir) seguir();
+        }}
+      />
       </VistaConTeclado>
   );
 }
 
 const styles = StyleSheet.create({
+  label: { ...piezas.etiqueta },
   container: {
     flex: 1,
     backgroundColor: colores.fondo,
