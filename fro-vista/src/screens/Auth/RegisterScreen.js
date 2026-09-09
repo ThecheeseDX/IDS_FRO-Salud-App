@@ -6,6 +6,7 @@ import VistaConTeclado from '../../components/VistaConTeclado';
 import LogoFro from '../../components/LogoFro';
 import { validateRut } from '../../utils/validators';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
+import DialogoAviso from '../../components/DialogoAviso';
 
 const RegisterScreen = ({ navigation }) => {
     // Avisos con el diálogo de la app (el Alert nativo no se estiliza).

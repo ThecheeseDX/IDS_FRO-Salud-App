@@ -20,7 +20,7 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFechaHora } from '../../utils/fechas';
-import { colores, radio } from '../../theme';
+import { colores, espacio, radio } from '../../theme';
 import EtiquetaEstado from '../../components/EtiquetaEstado';
 import { etiquetaEstado } from '../../utils/estados';
 import DialogoAviso from '../../components/DialogoAviso';

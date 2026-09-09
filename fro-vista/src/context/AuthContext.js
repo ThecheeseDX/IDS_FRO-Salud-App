@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import DialogoConfirmacion from '../components/DialogoConfirmacion';
+import DialogoAviso from '../components/DialogoAviso';
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { setUnauthorizedHandler } from '../api/client';
 
@@ -64,13 +65,14 @@ export const AuthProvider = ({ children }) => {
 
     if (motivo) {
       const esRevocada = motivo.codigo === 'SESION_REVOCADA';
-      Alert.alert(
-        esRevocada ? 'Sesión cerrada' : 'Sesión finalizada',
-        motivo.mensaje ||
+      setAvisoSesion({
+        titulo: esRevocada ? 'Sesión cerrada' : 'Sesión finalizada',
+        mensaje:
+          motivo.mensaje ||
           (esRevocada
             ? 'La sesión fue cerrada desde otro dispositivo. Inicia sesión nuevamente.'
-            : 'Tu sesión expiró. Inicia sesión nuevamente.')
-      );
+            : 'Tu sesión expiró. Inicia sesión nuevamente.'),
+      });
     }
   };
 
@@ -78,6 +80,8 @@ export const AuthProvider = ({ children }) => {
   // nativo de Android no se puede estilizar y rompía el diseño justo en el
   // momento de decidir.
   const [pidiendoCierre, setPidiendoCierre] = useState(false);
+  // Aviso cuando el cierre lo provoca el servidor (sesión revocada o expirada).
+  const [avisoSesion, setAvisoSesion] = useState(null);
   const confirmarCierreSesion = () => setPidiendoCierre(true);
 
   // Registra logoutSession como handler del interceptor de Axios.
@@ -89,6 +93,13 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ loginSession, logoutSession, confirmarCierreSesion, userToken, userData, isLoading }}>
       {children}
+      <DialogoAviso
+        visible={avisoSesion !== null}
+        titulo={avisoSesion?.titulo || ''}
+        mensaje={avisoSesion?.mensaje}
+        tono="alerta"
+        onCerrar={() => setAvisoSesion(null)}
+      />
       <DialogoConfirmacion
         visible={pidiendoCierre}
         titulo="Cerrar sesión"
