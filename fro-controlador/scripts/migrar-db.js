@@ -430,6 +430,32 @@ const MIGRACIONES = [
       await conexion.query(`ALTER TABLE Documento_Clinico ADD COLUMN paginas INT NULL`);
     },
   },
+  {
+    nombre: 'Cita.episodio_clinico_id (vinculo cita-episodio)',
+    descripcion: 'Conecta cada cita con el episodio clinico que genero',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Cita'
+            AND COLUMN_NAME = 'episodio_clinico_id'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Cita ADD COLUMN episodio_clinico_id INT NULL`);
+      // La llave foranea es deseable pero no imprescindible: si falla por
+      // datos historicos, la columna igual queda utilizable.
+      try {
+        await conexion.query(
+          `ALTER TABLE Cita ADD CONSTRAINT fk_cita_episodio
+             FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)`
+        );
+      } catch (error) {
+        console.warn(`   (llave foranea cita-episodio omitida: ${error.code || error.message})`);
+      }
+    },
+  },
 ];
 
 /**

@@ -52,7 +52,11 @@ export default function PautasScreen({ route }) {
 
   // CU47: formulario de nueva pauta
   const [formVisible, setFormVisible] = useState(false);
-  const [episodioId, setEpisodioId] = useState('');
+  // El episodio llega del selector fijo de la ficha; el picker de abajo
+  // solo permite cambiarlo dentro de esta pantalla.
+  const [episodioId, setEpisodioId] = useState(
+    route?.params?.episodioId ? String(route.params.episodioId) : ''
+  );
   const [nombrePauta, setNombrePauta] = useState('');
   const [fechaInicio, setFechaInicio] = useState(fechaMasDias(0));
   const [fechaFin, setFechaFin] = useState(fechaMasDias(30));

@@ -1,29 +1,40 @@
 // Ruta: fro-vista/src/screens/Profesional/FichaClinica/FichaClinicaScreen.js
 //
-// Vista única de la ficha clínica del paciente. Reúne en pestañas internas las
-// pantallas que antes vivían sueltas en el stack (historial, anamnesis,
-// episodios, evolución e intervención) para que el profesional trabaje sin
-// salir del contexto del paciente.
+// Ficha clínica del paciente. Reúne en pestañas el trabajo clínico para que el
+// profesional no salga del contexto del paciente.
+//
+// Dos decisiones de arquitectura que explican cómo está armada:
+//
+// 1. El EPISODIO ACTIVO se elige una sola vez, arriba, y vale para todas las
+//    pestañas. Antes cada pantalla pedía que se escribiera su identificador a
+//    mano —el sistema llegaba a decir "anótalo para registrar avances"— y como
+//    tres pestañas no exigían paciente, se podía entrar a la ficha de alguien y
+//    terminar trabajando sobre el episodio de otro sin ninguna advertencia.
+//
+// 2. "Evolución" e "Intervención" eran dos pestañas que escribían la MISMA fila
+//    de Evolucion_Clinica, cada una con la mitad de los campos. Ahora son una
+//    sola: Sesión clínica.
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
 import TabSelector from '../../../components/TabSelector';
 import HistorialPacienteScreen from './HistorialPacienteScreen';
 import AnamnesisScreen from './AnamnesisScreen';
 import EpisodioScreen from './EpisodioScreen';
-import EvolucionClinicaScreen from './EvolucionClinicaScreen';
-import IntervencionScreen from './IntervencionScreen';
+import SesionClinicaScreen from './SesionClinicaScreen';
 import PautasScreen from './PautasScreen';
-import { colores } from '../../../theme';
+import { getHistorialPaciente } from '../../../api/client';
+import { colores, espacio, radio, tipografia, interaccion } from '../../../theme';
+import { formatearFecha } from '../../../utils/fechas';
 
 const TABS = [
-  { key: 'historial',    titulo: 'Historial',    icono: '📋', Componente: HistorialPacienteScreen, requierePaciente: true },
-  { key: 'anamnesis',    titulo: 'Anamnesis',    icono: '🩺', Componente: AnamnesisScreen,         requierePaciente: true },
-  { key: 'episodios',    titulo: 'Episodios',    icono: '📁', Componente: EpisodioScreen,          requierePaciente: false },
-  { key: 'evolucion',    titulo: 'Evolución',    icono: '📈', Componente: EvolucionClinicaScreen,  requierePaciente: false },
-  { key: 'intervencion', titulo: 'Intervención', icono: '💪', Componente: IntervencionScreen,      requierePaciente: false },
-  { key: 'pautas',       titulo: 'Pautas',       icono: '🏋️', Componente: PautasScreen,            requierePaciente: true },
+  { key: 'historial', titulo: 'Historial',      icono: '📋', Componente: HistorialPacienteScreen },
+  { key: 'anamnesis', titulo: 'Anamnesis',      icono: '🩺', Componente: AnamnesisScreen },
+  { key: 'episodios', titulo: 'Episodios',      icono: '📁', Componente: EpisodioScreen },
+  { key: 'sesion',    titulo: 'Sesión clínica', icono: '📈', Componente: SesionClinicaScreen },
+  { key: 'pautas',    titulo: 'Pautas',         icono: '🏋️', Componente: PautasScreen },
 ];
 
 // Las pantallas internas siguen llamando a navigation.navigate con los nombres
@@ -32,19 +43,49 @@ const RUTA_A_TAB = {
   HistorialPaciente: 'historial',
   Anamnesis: 'anamnesis',
   Episodio: 'episodios',
-  EvolucionClinica: 'evolucion',
-  Intervencion: 'intervencion',
+  EvolucionClinica: 'sesion',
+  Intervencion: 'sesion',
+  SesionClinica: 'sesion',
 };
 
 export default function FichaClinicaScreen({ route, navigation }) {
   const { pacienteId, nombrePaciente } = route?.params || {};
 
-  const [tabActiva, setTabActiva] = useState(pacienteId ? 'historial' : 'episodios');
-  // Se conservan montadas las pestañas ya abiertas para no perder lo que el
-  // profesional haya escrito al cambiar de una a otra.
-  const [visitadas, setVisitadas] = useState(() => new Set([pacienteId ? 'historial' : 'episodios']));
-  // Parámetros que una pestaña deja para otra (ej. el episodio seleccionado).
+  const [tabActiva, setTabActiva] = useState('historial');
+  // Las pestañas ya abiertas se mantienen montadas para no perder lo escrito.
+  const [visitadas, setVisitadas] = useState(() => new Set(['historial']));
   const [paramsExtra, setParamsExtra] = useState({});
+
+  // ── Episodio activo: el contexto que comparten todas las pestañas ────────
+  const [episodios, setEpisodios] = useState([]);
+  const [episodioActivo, setEpisodioActivo] = useState('');
+  const [cargandoEpisodios, setCargandoEpisodios] = useState(false);
+
+  const cargarEpisodios = useCallback(async () => {
+    if (!pacienteId) return;
+    setCargandoEpisodios(true);
+    try {
+      const datos = await getHistorialPaciente(pacienteId);
+      const lista = datos?.episodios || [];
+      setEpisodios(lista);
+      // Se preselecciona el más reciente: es casi siempre sobre el que se
+      // trabaja, y así la ficha queda utilizable sin tocar nada.
+      setEpisodioActivo((actual) => {
+        if (actual && lista.some((e) => String(e.episodio_clinico_id) === String(actual))) {
+          return actual;
+        }
+        return lista.length > 0 ? String(lista[0].episodio_clinico_id) : '';
+      });
+    } catch (error) {
+      setEpisodios([]);
+    } finally {
+      setCargandoEpisodios(false);
+    }
+  }, [pacienteId]);
+
+  useEffect(() => {
+    cargarEpisodios();
+  }, [cargarEpisodios]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -53,15 +94,14 @@ export default function FichaClinicaScreen({ route, navigation }) {
   }, [navigation, nombrePaciente]);
 
   const abrirTab = (key, params) => {
-    if (params) {
-      setParamsExtra((previos) => ({ ...previos, [key]: params }));
-    }
+    if (params) setParamsExtra((previos) => ({ ...previos, [key]: params }));
+    // Un episodio que llega desde otra pestaña pasa a ser el activo.
+    if (params?.episodio_id) setEpisodioActivo(String(params.episodio_id));
+    if (params?.episodioId) setEpisodioActivo(String(params.episodioId));
     setVisitadas((previas) => new Set(previas).add(key));
     setTabActiva(key);
   };
 
-  // navigation "envuelto": intercepta los saltos entre pantallas que ahora son
-  // pestañas y deja pasar el resto al stack real.
   const navegacionInterna = useMemo(
     () => ({
       ...navigation,
@@ -73,17 +113,67 @@ export default function FichaClinicaScreen({ route, navigation }) {
         }
         navigation.navigate(destino, params);
       },
-      // Dentro de la ficha, "volver" significa cerrar la ficha completa.
       goBack: () => navigation.goBack(),
-      // Las pestañas no deben reescribir el título de la ficha.
       setOptions: () => {},
     }),
     [navigation]
   );
 
+  const episodioElegido = episodios.find(
+    (e) => String(e.episodio_clinico_id) === String(episodioActivo)
+  );
+
   return (
     <View style={styles.contenedor}>
       <TabSelector tabs={TABS} tabActiva={tabActiva} onCambiarTab={abrirTab} />
+
+      {/* Contexto de trabajo: vale para todas las pestañas y siempre está a la
+          vista, así no hay dudas sobre en qué episodio se está escribiendo. */}
+      {pacienteId && (
+        <View style={styles.contexto}>
+          {cargandoEpisodios ? (
+            <ActivityIndicator size="small" color={colores.primario} />
+          ) : episodios.length === 0 ? (
+            <View style={styles.filaContexto}>
+              <Text style={styles.sinEpisodios}>
+                Este paciente no tiene episodios abiertos.
+              </Text>
+              <TouchableOpacity
+                onPress={() => abrirTab('episodios')}
+                activeOpacity={interaccion.opacidadActiva}
+              >
+                <Text style={styles.enlaceCrear}>Crear uno</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.etiquetaContexto}>Episodio en el que trabajas</Text>
+              <View style={styles.selector}>
+                <Picker
+                  selectedValue={String(episodioActivo)}
+                  onValueChange={(valor) => setEpisodioActivo(valor)}
+                  dropdownIconColor={colores.primario}
+                  style={styles.picker}
+                >
+                  {episodios.map((e) => (
+                    <Picker.Item
+                      key={e.episodio_clinico_id}
+                      label={`#${e.episodio_clinico_id} · ${e.motivo_consulta || 'Sin motivo'}`}
+                      value={String(e.episodio_clinico_id)}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              {episodioElegido && (
+                <Text style={styles.detalleContexto}>
+                  {episodioElegido.estado || 'Sin estado'} · desde{' '}
+                  {formatearFecha(episodioElegido.fecha_inicio)}
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+      )}
 
       <View style={styles.panel}>
         {TABS.map((tab) => {
@@ -92,7 +182,9 @@ export default function FichaClinicaScreen({ route, navigation }) {
           const activa = tab.key === tabActiva;
           const { Componente } = tab;
 
-          if (tab.requierePaciente && !pacienteId) {
+          // Toda la ficha exige paciente: ninguna pestaña puede trabajar sobre
+          // otro sin que se note.
+          if (!pacienteId) {
             return activa ? (
               <View key={tab.key} style={styles.aviso}>
                 <Text style={styles.avisoTexto}>
@@ -105,7 +197,13 @@ export default function FichaClinicaScreen({ route, navigation }) {
           const rutaInterna = {
             key: `ficha-${tab.key}`,
             name: tab.key,
-            params: { pacienteId, nombrePaciente, ...(paramsExtra[tab.key] || {}) },
+            params: {
+              pacienteId,
+              nombrePaciente,
+              episodioId: episodioActivo,
+              onEpisodiosCambiaron: cargarEpisodios,
+              ...(paramsExtra[tab.key] || {}),
+            },
           };
 
           return (
@@ -124,31 +222,41 @@ export default function FichaClinicaScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    backgroundColor: colores.fondo,
+  contenedor: { flex: 1, backgroundColor: colores.fondo },
+
+  contexto: {
+    backgroundColor: colores.primarioSuave,
+    borderBottomWidth: 1,
+    borderBottomColor: colores.primarioBorde,
+    paddingHorizontal: espacio.lg,
+    paddingVertical: espacio.md,
   },
-  panel: {
-    flex: 1,
+  etiquetaContexto: {
+    ...tipografia.micro,
+    color: colores.primario,
+    marginBottom: espacio.xs,
   },
+  selector: {
+    backgroundColor: colores.superficie,
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+    borderRadius: radio.md,
+    overflow: 'hidden',
+    paddingHorizontal: espacio.sm,
+  },
+  picker: { color: colores.texto },
+  detalleContexto: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.xs },
+  filaContexto: { flexDirection: 'row', alignItems: 'center', gap: espacio.sm, flexWrap: 'wrap' },
+  sinEpisodios: { ...tipografia.meta, color: colores.textoSuave, flex: 1 },
+  enlaceCrear: { ...tipografia.metaFuerte, color: colores.primario },
+
+  panel: { flex: 1 },
   // La pestaña activa participa del layout normal (nada de posiciones
   // absolutas: en Android recortaban el contenido). Las inactivas se
   // mantienen montadas pero fuera del layout para no perder lo escrito.
-  panelActivo: {
-    flex: 1,
-  },
-  panelOculto: {
-    display: 'none',
-  },
-  aviso: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  avisoTexto: {
-    color: colores.textoSuave,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
+  panelActivo: { flex: 1 },
+  panelOculto: { display: 'none' },
+
+  aviso: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espacio.xl },
+  avisoTexto: { ...tipografia.meta, color: colores.textoSuave, textAlign: 'center', fontStyle: 'italic' },
 });

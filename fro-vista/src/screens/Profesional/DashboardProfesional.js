@@ -137,12 +137,12 @@ export default function DashboardProfesional({ navigation }) {
 
       <TouchableOpacity
         style={styles.herramienta}
-        onPress={() => navigation.navigate('Trazabilidad')}
+        onPress={() => navigation.navigate('MiJornada')}
       >
-        <Text style={styles.herramientaIcono}>🔒</Text>
+        <Text style={styles.herramientaIcono}>📅</Text>
         <View style={styles.herramientaTexto}>
-          <Text style={styles.herramientaTitulo}>Trazabilidad del Documento</Text>
-          <Text style={styles.herramientaSub}>Inalterabilidad y marcas temporales.</Text>
+          <Text style={styles.herramientaTitulo}>Mi Jornada</Text>
+          <Text style={styles.herramientaSub}>Tus citas del día, con acceso directo a cada ficha.</Text>
         </View>
       </TouchableOpacity>
 

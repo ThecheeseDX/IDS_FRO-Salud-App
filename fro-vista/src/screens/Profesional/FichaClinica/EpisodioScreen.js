@@ -17,7 +17,8 @@ import { colores, espacio, piezas, tipografia } from '../../../theme';
 export default function EpisodioScreen({ route }) {
   // La ficha entrega el paciente en contexto; antes había que saberse de
   // memoria el identificador del episodio para poder consultarlo.
-  const { pacienteId } = route?.params || {};
+  const { pacienteId, nombrePaciente, episodioId: episodioDelContexto, onEpisodiosCambiaron } =
+    route?.params || {};
 
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
 
@@ -45,7 +46,9 @@ export default function EpisodioScreen({ route }) {
   };
 
   // ─ Estado para BUSCAR episodio ──────────────────────────────────────────
-  const [episodioId, setEpisodioId] = useState('');
+  const [episodioId, setEpisodioId] = useState(
+    episodioDelContexto ? String(episodioDelContexto) : ''
+  );
   const [episodio, setEpisodio] = useState(null);
   const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
 
@@ -53,11 +56,9 @@ export default function EpisodioScreen({ route }) {
   const [cargandoEvolucion, setCargandoEvolucion] = useState(false);
 
   // ─ Estado para CREAR episodio ───────────────────────────────────────────
-  const [nuevoEpisodio, setNuevoEpisodio] = useState({
-    motivo_consulta: '',
-    paciente_id: '',
-    profesional_id: ''
-  });
+  // Solo el motivo: el paciente lo pone el contexto de la ficha y el
+  // profesional sale de la sesión.
+  const [nuevoEpisodio, setNuevoEpisodio] = useState({ motivo_consulta: '' });
   const [cargandoCreacion, setCargandoCreacion] = useState(false);
 
   // ─ LECTURA: GET /api/clinica/episodio/:id ────────────────────────────────
@@ -105,20 +106,22 @@ export default function EpisodioScreen({ route }) {
   // ─ CREACIÓN: POST /api/clinica/episodio ──────────────────────────────────
   // Dispara: CREACION_EPISODIO_CLINICO en Bitacora_Auditoria
   const crearEpisodio = async () => {
-    const { motivo_consulta, paciente_id, profesional_id } = nuevoEpisodio;
-    if (!motivo_consulta || !paciente_id || !profesional_id) {
-      setAviso({ tono: 'error', titulo: 'Error', mensaje: 'Todos los campos son requeridos.' });
+    const { motivo_consulta } = nuevoEpisodio;
+    const paciente_id = pacienteId;
+    if (!motivo_consulta || !paciente_id) {
+      setAviso({ tono: 'info', titulo: 'Falta el motivo', mensaje: 'Escribe el motivo de consulta del nuevo episodio.' });
       return;
     }
     setCargandoCreacion(true);
     try {
+      // El profesional lo resuelve el servidor desde la sesión.
       const { data } = await apiClient.post('/clinica/episodio', {
         motivo_consulta,
-        paciente_id: parseInt(paciente_id),
-        profesional_id: parseInt(profesional_id)
+        paciente_id: parseInt(paciente_id, 10),
       });
-      setAviso({ tono: 'ok', titulo: 'Éxito', mensaje: data.mensaje });
-      setNuevoEpisodio({ motivo_consulta: '', paciente_id: '', profesional_id: '' });
+      if (onEpisodiosCambiaron) onEpisodiosCambiaron();
+      setAviso({ tono: 'ok', titulo: 'Episodio creado', mensaje: data.mensaje });
+      setNuevoEpisodio({ motivo_consulta: '' });
     } catch (error) {
       const err = error.response?.data;
       if (error.response?.status === 401) {
@@ -201,22 +204,9 @@ export default function EpisodioScreen({ route }) {
             value={nuevoEpisodio.motivo_consulta}
             onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, motivo_consulta: v })}
           />
-          <Text style={styles.label}>ID del paciente</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej: 7"
-            keyboardType="numeric"
-            value={nuevoEpisodio.paciente_id}
-            onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, paciente_id: v })}
-          />
-          <Text style={styles.label}>ID del profesional</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej: 3"
-            keyboardType="numeric"
-            value={nuevoEpisodio.profesional_id}
-            onChangeText={(v) => setNuevoEpisodio({ ...nuevoEpisodio, profesional_id: v })}
-          />
+          <Text style={styles.notaContexto}>
+            Se creará para {nombrePaciente || 'este paciente'} a tu nombre.
+          </Text>
           <TouchableOpacity
             style={[styles.boton, { backgroundColor: colores.exito }]}
             onPress={crearEpisodio}
@@ -310,6 +300,7 @@ const styles = StyleSheet.create({
     ...piezas.tarjeta,
     marginTop: 16,
   },
+  notaContexto: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.md },
   botonVerEpisodios: {
     ...piezas.botonSecundario,
     paddingVertical: espacio.md,

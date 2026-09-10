@@ -4,6 +4,8 @@ import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
+  TextInput,
+  Modal,
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
@@ -73,6 +75,10 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [versionesPorEvolucion, setVersionesPorEvolucion] = useState({});
   // Avisos de resultado con el diálogo de la app (Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
+  // CU38: marca horaria manual con justificación, para cuando el profesional
+  // olvidó marcar en su momento. Antes vivía en la pantalla de marcas
+  // temporales, que ahora solo muestra la jornada.
+  const [marcaManual, setMarcaManual] = useState(null);
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -157,6 +163,39 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       // Excepciones CU31: sin autoría (403), tope de versiones o registro
       // abierto (409), corrección vacía (400) y fallo de vinculación (500).
       setAviso({ tono: 'ok', titulo: 'Corrección no guardada', mensaje: respuesta?.mensaje || respuesta?.error || 'Reintenta el guardado.' });
+    }
+  };
+
+  const enviarMarcaManual = async () => {
+    if (!marcaManual?.fechaHora?.trim() || !marcaManual?.justificacion?.trim()) {
+      setAviso({
+        tono: 'info',
+        titulo: 'Faltan datos',
+        mensaje: 'Indica la fecha y hora de la marca y el motivo por el que se registra a mano.',
+      });
+      return;
+    }
+    const { tipo, citaId, fechaHora, justificacion } = marcaManual;
+    const cuerpo = {
+      marca_manual: fechaHora.trim(),
+      justificacion_manual: justificacion.trim(),
+    };
+    setMarcaManual(null);
+    try {
+      if (tipo === 'INICIO') {
+        const data = await iniciarAtencion(citaId, cuerpo);
+        setAviso({ tono: 'ok', titulo: 'Inicio registrado', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
+      } else {
+        const data = await finalizarAtencion(citaId, cuerpo);
+        setAviso({ tono: 'ok', titulo: 'Término registrado', mensaje: `Duración total: ${data.duracion_minutos} minutos.` });
+      }
+      cargarHistorial(true);
+    } catch (err) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo registrar',
+        mensaje: err.response?.data?.mensaje || 'Revisa el formato de la fecha e intenta nuevamente.',
+      });
     }
   };
 
@@ -573,6 +612,24 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     )}
                   </View>
 
+                  {/* CU38: marca horaria a mano cuando se olvidó marcar */}
+                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        setMarcaManual({
+                          tipo: estadoCita === 'CONFIRMADA' ? 'INICIO' : 'TERMINO',
+                          citaId: item.cita_id,
+                          fechaHora: new Date().toISOString(),
+                          justificacion: '',
+                        })
+                      }
+                    >
+                      <Text style={styles.enlaceMarcaManual}>
+                        🕗 Registrar {estadoCita === 'CONFIRMADA' ? 'inicio' : 'término'} manual justificado
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   {/* CU39/CU43: evidencia de la sesión */}
                   {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
                     <TouchableOpacity
@@ -798,6 +855,51 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         onCancelar={() => setCierreManualCita(null)}
       />
 
+      <Modal
+        visible={marcaManual !== null}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setMarcaManual(null)}
+      >
+        <View style={styles.veloManual}>
+          <View style={styles.cajaManual}>
+            <Text style={styles.tituloManual}>
+              Marca de {marcaManual?.tipo === 'INICIO' ? 'inicio' : 'término'} manual
+            </Text>
+            <Text style={styles.ayudaManual}>
+              Queda auditada como registro manual. Usa el formato
+              AAAA-MM-DDTHH:MM:SS, por ejemplo 2026-09-09T14:30:00.
+            </Text>
+            <TextInput
+              style={styles.campoManual}
+              value={marcaManual?.fechaHora || ''}
+              onChangeText={(v) => setMarcaManual((m) => ({ ...m, fechaHora: v }))}
+              autoCapitalize="none"
+              placeholder="Fecha y hora"
+              placeholderTextColor={colores.textoTenue}
+            />
+            <TextInput
+              style={[styles.campoManual, styles.campoManualAlto]}
+              value={marcaManual?.justificacion || ''}
+              onChangeText={(v) => setMarcaManual((m) => ({ ...m, justificacion: v }))}
+              multiline
+              textAlignVertical="top"
+              placeholder="Motivo por el que se registra a mano"
+              placeholderTextColor={colores.textoTenue}
+            />
+            <View style={styles.accionesManual}>
+              <TouchableOpacity style={styles.botonManualCancelar} onPress={() => setMarcaManual(null)}>
+                <Text style={styles.textoManualCancelar}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.botonManualConfirmar} onPress={enviarMarcaManual}>
+                <Text style={styles.textoManualConfirmar}>Registrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <DialogoAviso
         visible={aviso !== null}
         titulo={aviso?.titulo || ''}
@@ -1000,6 +1102,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 10,
   },
+  enlaceMarcaManual: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm },
+  veloManual: { flex: 1, backgroundColor: colores.velo, justifyContent: 'center', padding: espacio.xl },
+  cajaManual: { backgroundColor: colores.superficie, borderRadius: radio.xl, padding: espacio.xl, ...sombra.elevada },
+  tituloManual: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.sm },
+  ayudaManual: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.base },
+  campoManual: { ...piezas.campo, marginBottom: espacio.md },
+  campoManualAlto: { minHeight: 84, textAlignVertical: 'top' },
+  accionesManual: { flexDirection: 'row', gap: espacio.md, marginTop: espacio.sm },
+  botonManualCancelar: { flex: 1, paddingVertical: espacio.md, borderRadius: radio.md, borderWidth: 1.5, borderColor: colores.borde, alignItems: 'center' },
+  textoManualCancelar: { ...tipografia.cuerpoFuerte, color: colores.textoSuave },
+  botonManualConfirmar: { flex: 1, paddingVertical: espacio.md, borderRadius: radio.md, backgroundColor: colores.primario, alignItems: 'center' },
+  textoManualConfirmar: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   textoCertificada: { color: colores.exito, fontWeight: '600', fontSize: 13 },
   textoPendienteFirma: { color: colores.advertencia, fontSize: 13, marginBottom: 4 },
   cajaAjena: {

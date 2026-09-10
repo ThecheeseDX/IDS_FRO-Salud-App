@@ -412,13 +412,18 @@ CREATE TABLE Cita(
     -- hecha: el botón "Validar sesión" seguía apareciendo.
     sesion_certificada_en DATETIME NULL,
     certificacion_tipo VARCHAR(20) NULL,
+    -- Vincula la cita con el trabajo clínico que generó. Sin esto, ni la cita
+    -- sabía qué episodio produjo ni el episodio en qué cita ocurrió, y el
+    -- profesional tenía que teclear identificadores a mano.
+    episodio_clinico_id INT NULL,
     metadatos_teleconsulta JSON,
     paciente_id INT NOT NULL,
     profesional_id INT NOT NULL,
     sede_id INT NOT NULL,
     FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
-    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id)
+    FOREIGN KEY (sede_id) REFERENCES Sede(sede_id),
+    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)
 );
 
 CREATE TABLE Lista_Espera (

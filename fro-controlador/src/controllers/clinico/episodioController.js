@@ -37,13 +37,32 @@ exports.obtenerEpisodio = async (req, res) => {
 // POST /api/clinica/episodio
 // Creación de un episodio clínico
 exports.crearEpisodio = async (req, res) => {
-    const { motivo_consulta, paciente_id, profesional_id } = req.body;
+    const { motivo_consulta, paciente_id } = req.body;
 
-    if (!motivo_consulta || !paciente_id || !profesional_id) {
-        return res.status(400).json({ error: 'motivo_consulta, paciente_id y profesional_id son requeridos.' });
+    if (!motivo_consulta || !paciente_id) {
+        return res.status(400).json({ error: 'motivo_consulta y paciente_id son requeridos.' });
     }
 
     try {
+        // El profesional sale de la sesión, no del formulario: pedirlo a mano
+        // obligaba a que se supiera su propio identificador de memoria, y nada
+        // impedía crear el episodio a nombre de otro. Se acepta el del cuerpo
+        // solo si viene, por compatibilidad con clientes antiguos.
+        let profesional_id = req.body?.profesional_id;
+        if (!profesional_id) {
+            const [profesionales] = await pool.query(
+                'SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1',
+                [req.user?.usuario_id]
+            );
+            if (profesionales.length === 0) {
+                return res.status(403).json({
+                    error: 'SOLO_PROFESIONALES',
+                    mensaje: 'Tu cuenta no está acreditada como profesional.',
+                });
+            }
+            profesional_id = profesionales[0].profesional_id;
+        }
+
         // ejecutar_actualizacion(query_episodio)
         const [result] = await pool.query(
             `INSERT INTO Episodio_Clinico (motivo_consulta, paciente_id, profesional_id)

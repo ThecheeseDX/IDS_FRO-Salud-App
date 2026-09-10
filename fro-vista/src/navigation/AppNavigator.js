@@ -22,7 +22,7 @@ import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
 import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
-import TrazabilidadScreen from '../screens/Profesional/Trazabilidad/TrazabilidadScreen';
+import MiJornadaScreen from '../screens/Profesional/MiJornadaScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 // Pantallas — Comunes a todos los roles
@@ -139,11 +139,12 @@ export default function AppNavigator() {
             />
             {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
-            {/* Auditoría y seguridad del documento clínico */}
+            {/* Agenda del día: muestra y lleva a la ficha; ya no duplica las
+                acciones de marcar la atención, que viven en la ficha. */}
             <Stack.Screen
-              name="Trazabilidad"
-              component={TrazabilidadScreen}
-              options={{ title: 'Trazabilidad del Documento' }}
+              name="MiJornada"
+              component={MiJornadaScreen}
+              options={{ title: 'Mi Jornada' }}
             />
             <Stack.Screen
               name="GestionDisponibilidad"
