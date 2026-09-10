@@ -60,10 +60,14 @@ export default function FichaClinicaScreen({ route, navigation }) {
   const [episodios, setEpisodios] = useState([]);
   const [episodioActivo, setEpisodioActivo] = useState('');
   const [cargandoEpisodios, setCargandoEpisodios] = useState(false);
+  // Un fallo de consulta NO es lo mismo que no tener episodios: mostrarlos
+  // igual hacía creer que el paciente estaba vacío cuando el problema era otro.
+  const [errorEpisodios, setErrorEpisodios] = useState('');
 
   const cargarEpisodios = useCallback(async () => {
     if (!pacienteId) return;
     setCargandoEpisodios(true);
+    setErrorEpisodios('');
     try {
       const datos = await getHistorialPaciente(pacienteId);
       const lista = datos?.episodios || [];
@@ -78,6 +82,11 @@ export default function FichaClinicaScreen({ route, navigation }) {
       });
     } catch (error) {
       setEpisodios([]);
+      setErrorEpisodios(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          `No se pudieron cargar los episodios (${error.response?.status || 'sin respuesta del servidor'}).`
+      );
     } finally {
       setCargandoEpisodios(false);
     }
@@ -130,9 +139,16 @@ export default function FichaClinicaScreen({ route, navigation }) {
       {/* Contexto de trabajo: vale para todas las pestañas y siempre está a la
           vista, así no hay dudas sobre en qué episodio se está escribiendo. */}
       {pacienteId && (
-        <View style={styles.contexto}>
+        <View style={[styles.contexto, errorEpisodios && styles.contextoError]}>
           {cargandoEpisodios ? (
             <ActivityIndicator size="small" color={colores.primario} />
+          ) : errorEpisodios ? (
+            <View style={styles.filaContexto}>
+              <Text style={styles.errorContexto}>{errorEpisodios}</Text>
+              <TouchableOpacity onPress={cargarEpisodios} activeOpacity={interaccion.opacidadActiva}>
+                <Text style={styles.enlaceCrear}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
           ) : episodios.length === 0 ? (
             <View style={styles.filaContexto}>
               <Text style={styles.sinEpisodios}>
@@ -231,6 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: espacio.lg,
     paddingVertical: espacio.md,
   },
+  contextoError: { backgroundColor: colores.errorSuave, borderBottomColor: colores.errorBorde },
   etiquetaContexto: {
     ...tipografia.micro,
     color: colores.primario,
@@ -248,6 +265,7 @@ const styles = StyleSheet.create({
   detalleContexto: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.xs },
   filaContexto: { flexDirection: 'row', alignItems: 'center', gap: espacio.sm, flexWrap: 'wrap' },
   sinEpisodios: { ...tipografia.meta, color: colores.textoSuave, flex: 1 },
+  errorContexto: { ...tipografia.meta, color: colores.error, flex: 1 },
   enlaceCrear: { ...tipografia.metaFuerte, color: colores.primario },
 
   panel: { flex: 1 },

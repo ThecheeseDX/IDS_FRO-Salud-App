@@ -69,6 +69,8 @@ exports.listarCitasProfesional = async (req, res) => {
           c.fecha_hora_fin,
           c.checkin_profesional,
           c.estado,
+          -- Necesario para abrir la ficha del paciente desde la jornada.
+          c.paciente_id,
           COALESCE(
             NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno, u.apellido_materno)), ''),
             CONCAT('Paciente #', c.paciente_id)

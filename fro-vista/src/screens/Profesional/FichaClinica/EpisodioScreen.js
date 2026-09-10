@@ -39,7 +39,16 @@ export default function EpisodioScreen({ route }) {
       }));
       setEpisodiosDisponibles(lista);
     } catch (error) {
-      setAviso({ tono: 'error', titulo: 'No se pudo consultar', mensaje: 'No fue posible obtener los episodios de este paciente.' });
+      // El motivo real, no un texto genérico: distinguir un problema de
+      // permisos de uno de red cambia por completo qué hacer.
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo consultar',
+        mensaje:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          `No fue posible obtener los episodios (${error.response?.status || 'sin respuesta del servidor'}).`,
+      });
     } finally {
       setCargandoLista(false);
     }

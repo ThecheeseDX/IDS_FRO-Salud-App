@@ -75,7 +75,9 @@ exports.listarPacientesAsignados = async (req, res) => {
 exports.obtenerHistorialPaciente = async (req, res) => {
   try {
     const { pacienteId } = req.params;
-    const usuarioId = req.query.usuarioId || req.user?.usuario_id;
+    // El token manda: el parámetro de la URL solo sirve de respaldo para
+    // clientes antiguos, y nunca puede suplantar a la sesión.
+    const usuarioId = req.user?.usuario_id || req.query.usuarioId;
 
     // Modificado para validar asignación tanto por episodio como por cita vigente
     const [[asignacion]] = await db.query(
