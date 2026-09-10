@@ -41,6 +41,9 @@ async function obtenerContexto(connection, episodioId, usuarioId, bloquear = fal
        ON c.paciente_id = ec.paciente_id
       AND c.profesional_id = ec.profesional_id
       AND UPPER(REPLACE(TRIM(c.estado), ' ', '_')) = 'EN_CURSO'
+      -- El vinculo real manda; la coincidencia por paciente y profesional
+      -- queda solo para las citas anteriores a que existiera la columna.
+      AND (c.episodio_clinico_id = ec.episodio_clinico_id OR c.episodio_clinico_id IS NULL)
      WHERE ec.episodio_clinico_id = ?
        AND p.usuario_id = ?
      ORDER BY c.fecha_hora_inicio DESC

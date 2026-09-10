@@ -167,6 +167,12 @@ export const guardarIntervencion = async (episodioId, payload) => {
 // CU38 - MARCAS TEMPORALES DE LA PRESTACION
 // =========================================================================
 
+// Opción C: la atención que el profesional tiene abierta ahora mismo, o null.
+export const getAtencionEnCurso = async () => {
+  const response = await apiClient.get('/citas/atencion-en-curso');
+  return response.data;
+};
+
 export const getCitasMarcasTemporales = async () => {
   const response = await apiClient.get('/citas/marcas-temporales');
   return response.data;

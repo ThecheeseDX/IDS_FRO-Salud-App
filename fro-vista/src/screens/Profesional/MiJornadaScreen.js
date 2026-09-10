@@ -23,6 +23,7 @@ import EtiquetaEstado from '../../components/EtiquetaEstado';
 import { formatearFechaHora, formatearHora } from '../../utils/fechas';
 import { datosEstado } from '../../utils/estados';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
+import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
 function normalizar(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_');
@@ -93,7 +94,10 @@ export default function MiJornadaScreen({ navigation }) {
   }
 
   return (
-    <ScrollView
+    <View style={estilos.fondo}>
+      <BarraAtencionEnCurso navigation={navigation} />
+
+      <ScrollView
       style={estilos.fondo}
       contentContainerStyle={estilos.contenido}
       refreshControl={
@@ -150,6 +154,7 @@ export default function MiJornadaScreen({ navigation }) {
         })
       )}
     </ScrollView>
+    </View>
   );
 }
 

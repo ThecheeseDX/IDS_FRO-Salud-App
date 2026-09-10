@@ -12,6 +12,11 @@ router.get('/marcas-temporales',
   verifyToken, authorizeRoles(['Profesional']),
   marcasTemporalesController.listarCitasProfesional);
 
+// Alimenta la barra de "atencion en curso" que sigue al profesional por la app.
+router.get('/atencion-en-curso',
+  verifyToken, authorizeRoles(['Profesional']),
+  marcasTemporalesController.atencionEnCurso);
+
 router.post('/marcas-temporales/:cita_id/iniciar',
   verifyToken, authorizeRoles(['Profesional']),
   marcasTemporalesController.iniciarAtencion);

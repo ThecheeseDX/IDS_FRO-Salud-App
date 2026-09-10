@@ -38,7 +38,7 @@ const PALABRAS_SUBJETIVAS =
 
 const claveBorrador = (episodioId) => `cu40_borrador_${episodioId}`;
 
-export default function SesionClinicaScreen({ route }) {
+export default function SesionClinicaScreen({ route, navigation }) {
   const episodioId = route?.params?.episodioId ? String(route.params.episodioId) : '';
 
   const [aviso, setAviso] = useState(null);
@@ -75,6 +75,15 @@ export default function SesionClinicaScreen({ route }) {
   const objetivoSeleccionado = metas.find(
     (m) => String(m.objetivo_terapeutico_id) === String(avance.objetivo_terapeutico_id)
   );
+
+  // Avance de la sesión: alimenta las marcas de cada paso y el botón de
+  // "qué sigue". Antes no había forma de saber en qué punto se iba.
+  const yaFirmada = evolucion?.inalterable === 1;
+  const pasoUnoListo = Boolean(
+    evolucion?.tecnicas_aplicadas?.trim() && evolucion?.respuesta_fisiologica?.trim()
+  );
+  const pasoDosListo = metas.some((m) => Number(m.valor_actual || 0) > 0);
+  const pasoTresListo = yaFirmada;
 
   // ── Carga ────────────────────────────────────────────────────────────────
   const cargar = async () => {
@@ -317,9 +326,16 @@ export default function SesionClinicaScreen({ route }) {
         <Text style={estilos.vacioIcono}>📈</Text>
         <Text style={estilos.vacioTitulo}>Elige un episodio</Text>
         <Text style={estilos.vacioTexto}>
-          Selecciona arriba el episodio sobre el que vas a trabajar y aquí se
-          abrirá el registro de la sesión.
+          El registro de la sesión cuelga de un episodio: es el motivo de
+          consulta que agrupa el tratamiento.
         </Text>
+        <TouchableOpacity
+          style={estilos.botonVacio}
+          onPress={() => navigation.navigate('Episodio')}
+          activeOpacity={interaccion.opacidadActiva}
+        >
+          <Text style={estilos.botonVacioTexto}>Crear o elegir un episodio →</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -340,21 +356,43 @@ export default function SesionClinicaScreen({ route }) {
     );
   }
 
-  const yaFirmada = evolucion?.inalterable === 1;
 
   return (
     <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>
       {/* Estado de la sesión: dice si se puede escribir y por qué */}
       {contexto && (
-        <View style={[estilos.estado, editable ? estilos.estadoActivo : estilos.estadoInactivo]}>
-          <Text style={[estilos.estadoTexto, editable ? estilos.estadoTextoActivo : estilos.estadoTextoInactivo]}>
-            {contexto.mensaje_estado}
-          </Text>
-        </View>
+        editable ? (
+          <View style={[estilos.estado, estilos.estadoActivo]}>
+            <Text style={[estilos.estadoTexto, estilos.estadoTextoActivo]}>
+              ● Atención en curso · puedes registrar
+            </Text>
+          </View>
+        ) : (
+          // Sin atención iniciada no se puede escribir. Antes esto era un
+          // callejón sin salida: los campos quedaban bloqueados, el cierre
+          // pedía "guarda primero" y nada decía que faltaba iniciar la
+          // atención. Ahora se explica y se ofrece el camino.
+          <View style={[estilos.estado, estilos.estadoInactivo]}>
+            <Text style={[estilos.estadoTexto, estilos.estadoTextoInactivo]}>
+              Para registrar en esta sesión, primero inicia la atención
+            </Text>
+            <Text style={estilos.estadoAyuda}>
+              La hora de inicio queda auditada, así que se marca sobre la cita
+              concreta que vas a atender.
+            </Text>
+            <TouchableOpacity
+              style={estilos.botonGuia}
+              onPress={() => navigation.navigate('HistorialPaciente')}
+              activeOpacity={interaccion.opacidadActiva}
+            >
+              <Text style={estilos.botonGuiaTexto}>Ir a las citas del paciente →</Text>
+            </TouchableOpacity>
+          </View>
+        )
       )}
 
       {/* ── Paso 1 ── */}
-      <Text style={estilos.paso}>Paso 1 · Qué se hizo</Text>
+      <Text style={estilos.paso}>{pasoUnoListo ? "✓" : "1"} · Qué se hizo</Text>
       <View style={estilos.tarjeta}>
         <Text style={estilos.etiqueta}>Técnicas y ejercicios de {especialidad}</Text>
         <Text style={estilos.ayuda}>Técnica, dosificación, duración y tolerancia.</Text>
@@ -401,13 +439,21 @@ export default function SesionClinicaScreen({ route }) {
           >
             {guardando
               ? <ActivityIndicator color={colores.textoInverso} />
-              : <Text style={estilos.botonPrimarioTexto}>Guardar registro</Text>}
+              : <Text style={estilos.botonPrimarioTexto}>
+                  {pasoUnoListo ? 'Guardar cambios' : 'Guardar registro'}
+                </Text>}
           </TouchableOpacity>
+        )}
+
+        {pasoUnoListo && !pasoDosListo && (
+          <Text style={estilos.siguiente}>
+            ✓ Registro guardado. Sigue con el avance del objetivo, más abajo.
+          </Text>
         )}
       </View>
 
       {/* ── Paso 2 ── */}
-      <Text style={estilos.paso}>Paso 2 · Cómo va el objetivo</Text>
+      <Text style={estilos.paso}>{pasoDosListo ? "✓" : "2"} · Cómo va el objetivo</Text>
       <View style={estilos.tarjeta}>
         {cargandoMetas ? (
           <ActivityIndicator color={colores.primario} />
@@ -520,7 +566,7 @@ export default function SesionClinicaScreen({ route }) {
       </View>
 
       {/* ── Paso 3 ── */}
-      <Text style={estilos.paso}>Paso 3 · Cerrar la sesión</Text>
+      <Text style={estilos.paso}>{pasoTresListo ? "✓" : "3"} · Cerrar la sesión</Text>
       <View style={estilos.tarjeta}>
         {yaFirmada ? (
           <Text style={estilos.cerrado}>
@@ -586,6 +632,12 @@ const estilos = StyleSheet.create({
   vacioTitulo: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.xs },
   vacioTexto: { ...tipografia.meta, color: colores.textoSuave, textAlign: 'center' },
 
+  botonVacio: {
+    ...piezas.botonPrimario,
+    marginTop: espacio.lg,
+    paddingHorizontal: espacio.xl,
+  },
+  botonVacioTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   estado: { borderRadius: radio.md, padding: espacio.md, marginBottom: espacio.lg, borderWidth: 1 },
   estadoActivo: { backgroundColor: colores.exitoSuave, borderColor: colores.exitoBorde },
   estadoInactivo: { backgroundColor: colores.advertenciaSuave, borderColor: colores.advertenciaBorde },
@@ -599,6 +651,22 @@ const estilos = StyleSheet.create({
     color: colores.primario,
     marginBottom: espacio.sm,
     marginTop: espacio.sm,
+  },
+  estadoAyuda: { ...tipografia.meta, color: colores.advertencia, marginTop: espacio.xs, opacity: 0.9 },
+  botonGuia: {
+    marginTop: espacio.md,
+    paddingVertical: espacio.md,
+    paddingHorizontal: espacio.base,
+    borderRadius: radio.md,
+    backgroundColor: colores.advertencia,
+    alignItems: 'center',
+  },
+  botonGuiaTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
+  siguiente: {
+    ...tipografia.meta,
+    color: colores.exito,
+    marginTop: espacio.md,
+    textAlign: 'center',
   },
   tarjeta: { ...piezas.tarjeta, marginBottom: espacio.lg },
   etiqueta: { ...piezas.etiqueta },

@@ -28,6 +28,7 @@ import PautasScreen from './PautasScreen';
 import { getHistorialPaciente } from '../../../api/client';
 import { colores, espacio, radio, tipografia, interaccion } from '../../../theme';
 import { formatearFecha } from '../../../utils/fechas';
+import BarraAtencionEnCurso from '../../../components/BarraAtencionEnCurso';
 
 const TABS = [
   { key: 'historial', titulo: 'Historial',      icono: '📋', Componente: HistorialPacienteScreen },
@@ -49,16 +50,22 @@ const RUTA_A_TAB = {
 };
 
 export default function FichaClinicaScreen({ route, navigation }) {
-  const { pacienteId, nombrePaciente } = route?.params || {};
+  const { pacienteId, nombrePaciente, episodioId: episodioInicial, irASesion } =
+    route?.params || {};
 
-  const [tabActiva, setTabActiva] = useState('historial');
+  // Al llegar desde la barra de atención en curso se abre directo la sesión.
+  const [tabActiva, setTabActiva] = useState(irASesion ? 'sesion' : 'historial');
   // Las pestañas ya abiertas se mantienen montadas para no perder lo escrito.
-  const [visitadas, setVisitadas] = useState(() => new Set(['historial']));
+  const [visitadas, setVisitadas] = useState(
+    () => new Set([irASesion ? 'sesion' : 'historial'])
+  );
   const [paramsExtra, setParamsExtra] = useState({});
 
   // ── Episodio activo: el contexto que comparten todas las pestañas ────────
   const [episodios, setEpisodios] = useState([]);
-  const [episodioActivo, setEpisodioActivo] = useState('');
+  const [episodioActivo, setEpisodioActivo] = useState(
+    episodioInicial ? String(episodioInicial) : ''
+  );
   const [cargandoEpisodios, setCargandoEpisodios] = useState(false);
   // Un fallo de consulta NO es lo mismo que no tener episodios: mostrarlos
   // igual hacía creer que el paciente estaba vacío cuando el problema era otro.
@@ -134,6 +141,28 @@ export default function FichaClinicaScreen({ route, navigation }) {
 
   return (
     <View style={styles.contenedor}>
+      <BarraAtencionEnCurso
+        navigation={navigation}
+        recargarEn={tabActiva}
+        onAbrir={(atencion) => {
+          // Ya estamos en la ficha: si es el mismo paciente basta con abrir su
+          // sesión; si es otro, se navega a su ficha.
+          if (String(atencion.paciente_id) === String(pacienteId)) {
+            if (atencion.episodio_clinico_id) {
+              setEpisodioActivo(String(atencion.episodio_clinico_id));
+            }
+            abrirTab('sesion');
+          } else {
+            navigation.navigate('FichaClinica', {
+              pacienteId: atencion.paciente_id,
+              nombrePaciente: atencion.paciente,
+              episodioId: atencion.episodio_clinico_id ? String(atencion.episodio_clinico_id) : '',
+              irASesion: true,
+            });
+          }
+        }}
+      />
+
       <TabSelector tabs={TABS} tabActiva={tabActiva} onCambiarTab={abrirTab} />
 
       {/* Contexto de trabajo: vale para todas las pestañas y siempre está a la

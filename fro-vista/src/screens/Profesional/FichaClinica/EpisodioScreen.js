@@ -7,14 +7,14 @@ import apiClient, { getHistorialPaciente } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import DialogoAviso from '../../../components/DialogoAviso';
 import { formatearFecha } from '../../../utils/fechas';
-import { colores, espacio, piezas, tipografia } from '../../../theme';
+import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EpisodioScreen — CU13
 // El token JWT se inyecta automáticamente por el interceptor de client.js
 // Cada petición dispara auditarAccesoClinico en el backend
 // ─────────────────────────────────────────────────────────────────────────────
-export default function EpisodioScreen({ route }) {
+export default function EpisodioScreen({ route, navigation }) {
   // La ficha entrega el paciente en contexto; antes había que saberse de
   // memoria el identificador del episodio para poder consultarlo.
   const { pacienteId, nombrePaciente, episodioId: episodioDelContexto, onEpisodiosCambiaron } =
@@ -69,6 +69,9 @@ export default function EpisodioScreen({ route }) {
   // profesional sale de la sesión.
   const [nuevoEpisodio, setNuevoEpisodio] = useState({ motivo_consulta: '' });
   const [cargandoCreacion, setCargandoCreacion] = useState(false);
+  // Tras crear un episodio, la app dice cuál es el paso siguiente en vez
+  // de dejar al profesional adivinando dónde continuar.
+  const [recienCreado, setRecienCreado] = useState(null);
 
   // ─ LECTURA: GET /api/clinica/episodio/:id ────────────────────────────────
   // ─ LECTURA_EPISODIO_CLINICO en Bitacora_Auditoria
@@ -129,6 +132,10 @@ export default function EpisodioScreen({ route }) {
         paciente_id: parseInt(paciente_id, 10),
       });
       if (onEpisodiosCambiaron) onEpisodiosCambiaron();
+      setRecienCreado({
+        id: data.episodio_clinico_id,
+        motivo: motivo_consulta,
+      });
       setAviso({ tono: 'ok', titulo: 'Episodio creado', mensaje: data.mensaje });
       setNuevoEpisodio({ motivo_consulta: '' });
     } catch (error) {
@@ -216,6 +223,26 @@ export default function EpisodioScreen({ route }) {
           <Text style={styles.notaContexto}>
             Se creará para {nombrePaciente || 'este paciente'} a tu nombre.
           </Text>
+          {recienCreado && (
+            <View style={styles.guiaSiguiente}>
+              <Text style={styles.guiaTitulo}>
+                ✓ Episodio #{recienCreado.id} creado
+              </Text>
+              <Text style={styles.guiaTexto}>
+                Ya quedó seleccionado arriba. El paso siguiente es registrar la
+                sesión de hoy.
+              </Text>
+              <TouchableOpacity
+                style={styles.guiaBoton}
+                onPress={() =>
+                  navigation.navigate('SesionClinica', { episodioId: String(recienCreado.id) })
+                }
+              >
+                <Text style={styles.guiaBotonTexto}>Continuar a la sesión clínica →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[styles.boton, { backgroundColor: colores.exito }]}
             onPress={crearEpisodio}
@@ -309,6 +336,24 @@ const styles = StyleSheet.create({
     ...piezas.tarjeta,
     marginTop: 16,
   },
+  // Bloque de "qué sigue": aparece tras completar una acción.
+  guiaSiguiente: {
+    backgroundColor: colores.exitoSuave,
+    borderWidth: 1,
+    borderColor: colores.exitoBorde,
+    borderRadius: radio.md,
+    padding: espacio.base,
+    marginBottom: espacio.base,
+  },
+  guiaTitulo: { ...tipografia.cuerpoFuerte, color: colores.exito, marginBottom: espacio.xs },
+  guiaTexto: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.md },
+  guiaBoton: {
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  guiaBotonTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   notaContexto: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.md },
   botonVerEpisodios: {
     ...piezas.botonSecundario,

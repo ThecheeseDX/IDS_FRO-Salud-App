@@ -20,6 +20,7 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
+import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
 export default function DashboardProfesional({ navigation }) {
   const { userData, confirmarCierreSesion } = useContext(AuthContext);
@@ -173,6 +174,9 @@ export default function DashboardProfesional({ navigation }) {
 
   return (
     <View style={styles.pantalla}>
+      {/* Opción C: si hay una atención abierta, se ve y se retoma desde aquí. */}
+      <BarraAtencionEnCurso navigation={navigation} />
+
       <FlatList
         style={styles.container}
         contentContainerStyle={styles.content}

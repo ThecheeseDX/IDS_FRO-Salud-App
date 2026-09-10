@@ -108,6 +108,8 @@ export default function AnamnesisScreen({ route, navigation }) {
 
   // ─ Excepción 1: aviso de truncado 
   const [avisoTruncado, setAvisoTruncado] = useState('');
+  // Tras guardar, se indica el paso siguiente del flujo clínico.
+  const [guardadaOk, setGuardadaOk] = useState(false);
 
   const cargarFicha = async () => {
     setCargando(true);
@@ -164,6 +166,7 @@ export default function AnamnesisScreen({ route, navigation }) {
       setQuirurgicosTexto((data.antecedentes_quirurgicos || []).join(', '));
       setPatologicosTexto((data.antecedentes_patologicos || []).join(', '));
       setVersion(data.version);
+      setGuardadaOk(true);
 
       // CU77 — Excepción 4: si quedó un borrador local de una caída de red,
       // se ofrece recuperarlo.
@@ -282,6 +285,7 @@ export default function AnamnesisScreen({ route, navigation }) {
       }
 
       setVersion(data.version);
+      setGuardadaOk(true);
       await SecureStore.deleteItemAsync(claveBorrador(pacienteId)).catch?.(() => {});
       setAviso({ tono: 'ok', titulo: 'Éxito', mensaje: data.mensaje });
 
@@ -493,6 +497,22 @@ export default function AnamnesisScreen({ route, navigation }) {
         />
 
         {/* ─ Guardar */}
+        {guardadaOk && (
+          <View style={styles.guiaSiguiente}>
+            <Text style={styles.guiaTitulo}>✓ Anamnesis guardada</Text>
+            <Text style={styles.guiaTexto}>
+              Con la evaluación inicial lista, el paso siguiente es registrar la
+              sesión de hoy.
+            </Text>
+            <TouchableOpacity
+              style={styles.guiaBoton}
+              onPress={() => navigation.navigate('SesionClinica')}
+            >
+              <Text style={styles.guiaBotonTexto}>Ir a la sesión clínica →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.boton, guardando && styles.botonDeshabilitado]}
           onPress={guardar}
@@ -544,6 +564,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avisoSinEspecialidadTexto: { color: colores.error },
+  guiaSiguiente: {
+    backgroundColor: colores.exitoSuave,
+    borderWidth: 1,
+    borderColor: colores.exitoBorde,
+    borderRadius: radio.md,
+    padding: espacio.base,
+    marginTop: espacio.xl,
+  },
+  guiaTitulo: { ...tipografia.cuerpoFuerte, color: colores.exito, marginBottom: espacio.xs },
+  guiaTexto: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.md },
+  guiaBoton: {
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  guiaBotonTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   botonHistorialTriaje: {
     ...piezas.botonSecundario,
     paddingVertical: espacio.md,
