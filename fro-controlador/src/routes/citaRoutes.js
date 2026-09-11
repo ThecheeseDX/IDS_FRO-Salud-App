@@ -13,6 +13,11 @@ router.get('/marcas-temporales',
   marcasTemporalesController.listarCitasProfesional);
 
 // Alimenta la barra de "atencion en curso" que sigue al profesional por la app.
+// CU41 Exc.2 (D11): bandeja de sesiones derivadas a revisión.
+router.get('/sesiones-suspendidas',
+  verifyToken, authorizeRoles(['Administrador']),
+  evidenciaController.sesionesSuspendidas);
+
 router.get('/atencion-en-curso',
   verifyToken, authorizeRoles(['Profesional']),
   marcasTemporalesController.atencionEnCurso);

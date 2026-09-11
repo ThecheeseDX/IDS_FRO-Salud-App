@@ -185,10 +185,12 @@ exports.iniciarAtencion = async (req, res) => {
     // profesional a crearlo.
     let episodioVinculado = cita.episodio_clinico_id || null;
     if (!episodioVinculado) {
+      // D12: solo un episodio abierto puede recibir la atención.
       const [episodios] = await connection.execute(
         `SELECT episodio_clinico_id
            FROM Episodio_Clinico
           WHERE paciente_id = ? AND profesional_id = ?
+            AND (estado IS NULL OR UPPER(estado) <> 'CERRADO')
           ORDER BY episodio_clinico_id DESC
           LIMIT 1`,
         [cita.paciente_id, cita.profesional_id]

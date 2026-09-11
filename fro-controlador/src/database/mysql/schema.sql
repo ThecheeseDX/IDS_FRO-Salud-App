@@ -130,6 +130,8 @@ CREATE TABLE Profesional (
     calificacion_promedio DECIMAL(3,2) NOT NULL,
     foto_url VARCHAR(255) NOT NULL,
     tipo_sede ENUM('DOMICILIO', 'ONLINE', 'AMBOS') NOT NULL,
+    -- CU10: áreas de experticia declaradas por el profesional (texto libre).
+    areas_experticia VARCHAR(255) NULL,
     usuario_id INT NOT NULL,
     especialidad_id INT NOT NULL,
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
@@ -246,7 +248,8 @@ CREATE TABLE Episodio_Clinico (
     motivo_consulta VARCHAR(255) NOT NULL,
     fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     fecha_terminado TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    estado VARCHAR(255),
+    -- CU78: ABIERTO admite nuevos registros; CERRADO los rechaza (D12).
+    estado VARCHAR(255) DEFAULT 'ABIERTO',
     paciente_id INT,
     profesional_id INT,
     FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
@@ -380,23 +383,15 @@ CREATE TABLE Pauta_Cumplimiento(
     FOREIGN KEY (pauta_ejercicio_id) REFERENCES Pauta_Ejercicio(pauta_ejercicio_id)
 );
 
-CREATE TABLE Pauta_Material(
-    material_terapeutico_id INT,
-    pauta_tratamiento_id INT,
-    cantidad INT NOT NULL,
-    frecuencia VARCHAR(100) NOT NULL,
-    PRIMARY KEY (material_terapeutico_id, pauta_tratamiento_id),
-    FOREIGN KEY (material_terapeutico_id) REFERENCES Material_Terapeutico(material_terapeutico_id),
-    FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id)
-);
-
 CREATE TABLE Cita(
     cita_id INT PRIMARY KEY AUTO_INCREMENT,
     fecha_hora_inicio TIMESTAMP NOT NULL,
     fecha_hora_fin TIMESTAMP NOT NULL,
     checkin_profesional TIMESTAMP,
     checkin_paciente TIMESTAMP,
-    estado VARCHAR(20) NOT NULL DEFAULT 'AGENDADA',
+    -- RF20: AGENDADA, CONFIRMADA, EN_CURSO, REALIZADA, INASISTENCIA,
+    -- CANCELADA_PACIENTE y CANCELADA_PROFESIONAL (D2).
+    estado VARCHAR(30) NOT NULL DEFAULT 'AGENDADA',
     motivo_cancelacion VARCHAR(255),
     coordenadas_gps_paciente VARCHAR(100),
     coordenadas_gps_profesional VARCHAR(100),
@@ -412,6 +407,9 @@ CREATE TABLE Cita(
     -- hecha: el botón "Validar sesión" seguía apareciendo.
     sesion_certificada_en DATETIME NULL,
     certificacion_tipo VARCHAR(20) NULL,
+    -- CU41 Exc.2: la sesión suspendida queda derivada al Administrador (D11).
+    sesion_suspendida_en DATETIME NULL,
+    motivo_suspension JSON NULL,
     -- Vincula la cita con el trabajo clínico que generó. Sin esto, ni la cita
     -- sabía qué episodio produjo ni el episodio en qué cita ocurrió, y el
     -- profesional tenía que teclear identificadores a mano.

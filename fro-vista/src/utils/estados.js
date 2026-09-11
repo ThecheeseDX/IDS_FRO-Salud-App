@@ -14,6 +14,10 @@ export const ESTADOS = {
   AGENDADA:     { color: colores.primario,    etiqueta: 'Agendada',     orden: 2 },
   REALIZADA:    { color: colores.textoSuave,  etiqueta: 'Realizada',    orden: 3 },
   INASISTENCIA: { color: colores.error,       etiqueta: 'Inasistencia', orden: 4 },
+  // RF20: la cancelación distingue quién la hizo (D2). 'CANCELADA' a secas
+  // queda solo para citas anteriores a la separación.
+  CANCELADA_PACIENTE:    { color: colores.error, etiqueta: 'Cancelada por paciente',    orden: 5 },
+  CANCELADA_PROFESIONAL: { color: colores.error, etiqueta: 'Cancelada por profesional', orden: 5 },
   CANCELADA:    { color: colores.error,       etiqueta: 'Cancelada',    orden: 5 },
 
   // Pagos y bonos
@@ -47,6 +51,11 @@ export function datosEstado(estado) {
 
 /** Solo la etiqueta legible. */
 export const etiquetaEstado = (estado) => datosEstado(estado).etiqueta;
+
+/** Estados en los que la cita ya no admite acciones. */
+export const ESTADOS_TERMINALES = ['REALIZADA', 'INASISTENCIA', 'CANCELADA_PACIENTE', 'CANCELADA_PROFESIONAL', 'CANCELADA'];
+export const esEstadoTerminal = (estado) =>
+  ESTADOS_TERMINALES.includes(String(estado || '').trim().toUpperCase().replace(/\s+/g, '_'));
 
 /** En curso arriba, terminadas al final; dentro de cada grupo, por fecha. */
 export function ordenarCitas(lista) {

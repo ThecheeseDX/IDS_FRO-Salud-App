@@ -21,6 +21,8 @@ function validarRobustezContrasena(contrasena) {
   if (texto.length < 8) incumplidos.push('Mínimo 8 caracteres');
   if (!/[a-zA-Z]/.test(texto)) incumplidos.push('Al menos una letra');
   if (!/[0-9]/.test(texto)) incumplidos.push('Al menos un número');
+  // Documento 0, definición de Contraseña: "al menos un símbolo especial".
+  if (!/[^A-Za-z0-9\s]/.test(texto)) incumplidos.push('Al menos un símbolo (ej: . _ - ! @ #)');
 
   return { valida: incumplidos.length === 0, incumplidos };
 }

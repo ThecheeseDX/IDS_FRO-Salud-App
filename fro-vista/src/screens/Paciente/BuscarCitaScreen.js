@@ -369,6 +369,10 @@ export default function BuscarCitaScreen({ navigation, route }) {
                   {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
                 </Text>
                 <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
+                {/* CU10: catálogo público del profesional */}
+                {item.areas_experticia ? (
+                  <Text style={styles.detalle}>🎯  {item.areas_experticia}</Text>
+                ) : null}
                 <Text style={styles.detalle}>
                   📍  {item.tipo_sede === 'ONLINE'
                     ? 'Teleconsulta Online'

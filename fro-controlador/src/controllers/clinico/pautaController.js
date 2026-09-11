@@ -7,6 +7,7 @@
  */
 
 const pool = require('../../config/database');
+const { estaCerrado } = require('../../services/clinico/episodioService');
 
 const FRECUENCIAS_VALIDAS = ['DIARIA', 'SEMANAL'];
 
@@ -194,7 +195,7 @@ exports.crearPauta = async (req, res) => {
     // CU47 — Excepción 4: la pauta cuelga de un episodio clínico existente
     // que además debe pertenecer al profesional autenticado.
     const [episodios] = await connection.execute(
-      `SELECT ec.episodio_clinico_id
+      `SELECT ec.episodio_clinico_id, ec.estado
          FROM Episodio_Clinico ec
          JOIN Profesional p ON p.profesional_id = ec.profesional_id
         WHERE ec.episodio_clinico_id = ? AND p.usuario_id = ?
@@ -207,6 +208,15 @@ exports.crearPauta = async (req, res) => {
       return res.status(404).json({
         error: 'EPISODIO_NO_ENCONTRADO',
         mensaje: 'El episodio clínico no existe o no pertenece a tu cartera. Crea primero el episodio base.',
+      });
+    }
+
+    // CU78 Exc.3 (D12): un episodio cerrado no recibe pautas nuevas.
+    if (estaCerrado(episodios[0].estado)) {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'EPISODIO_CERRADO',
+        mensaje: 'Este episodio clínico está cerrado. Crea un episodio nuevo para prescribir una pauta.',
       });
     }
 

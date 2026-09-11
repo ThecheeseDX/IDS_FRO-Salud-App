@@ -158,6 +158,18 @@ export default function DashboardProfesional({ navigation }) {
         </View>
       </TouchableOpacity>
 
+      {/* CU10: catálogo público del profesional (foto, reseña, áreas, modalidad) */}
+      <TouchableOpacity
+        style={styles.herramienta}
+        onPress={() => navigation.navigate('MiPerfil')}
+      >
+        <Text style={styles.herramientaIcono}>🪪</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Mi perfil público</Text>
+          <Text style={styles.herramientaSub}>Foto, reseña, áreas de experticia y modalidad que ven los pacientes.</Text>
+        </View>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.herramienta}
         onPress={() => navigation.navigate('Seguridad')}

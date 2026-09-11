@@ -57,7 +57,9 @@ exports.buscarDisponibilidad = async (req, res) => {
           u.nombres, u.apellido_paterno, u.apellido_materno,
           e.nombre AS especialidad,
           s.sede_id, s.nombre AS sede_nombre,
-          pd.hora_inicio, pd.hora_fin, pd.modalidad
+          pd.hora_inicio, pd.hora_fin, pd.modalidad,
+          -- CU10: catálogo público del profesional
+          p.foto_url, p.reseña_curricular AS resena_curricular, p.areas_experticia
        FROM Profesional_Disponibilidad pd
        JOIN Profesional p  ON pd.profesional_id  = p.profesional_id
        JOIN Usuario     u  ON p.usuario_id        = u.usuario_id
@@ -102,7 +104,7 @@ exports.buscarDisponibilidad = async (req, res) => {
         const [ocupadas] = await pool.query(
           `SELECT cita_id FROM Cita
            WHERE profesional_id = ?
-             AND estado NOT IN ('CANCELADA')
+             AND estado NOT LIKE 'CANCELADA%'
              AND fecha_hora_inicio < ?
              AND fecha_hora_fin    > ?`,
           [fila.profesional_id, fechaHoraFin, fechaHoraInicio]
@@ -127,6 +129,9 @@ exports.buscarDisponibilidad = async (req, res) => {
             apellido_materno: fila.apellido_materno,
             especialidad:    fila.especialidad,
             tipo_sede:       modalidad,
+            foto_url:        fila.foto_url && fila.foto_url !== 'default.jpg' ? fila.foto_url : null,
+            resena_curricular: fila.resena_curricular || null,
+            areas_experticia: fila.areas_experticia || null,
             fecha,
             hora_inicio:     bloqueInicio,
             hora_fin:        bloqueFin,
@@ -160,7 +165,7 @@ exports.validarBloque = async (req, res) => {
     const [ocupadas] = await pool.query(
       `SELECT cita_id FROM Cita
        WHERE profesional_id = ?
-         AND estado NOT IN ('CANCELADA')
+         AND estado NOT LIKE 'CANCELADA%'
          AND fecha_hora_inicio < ?
          AND fecha_hora_fin    > ?`,
       [profesional_id, fechaHoraFin, fecha_hora_inicio]
@@ -249,7 +254,7 @@ exports.bloquearHorario = async (req, res) => {
     const [citasExistentes] = await connection.execute(
       `SELECT cita_id, estado FROM Cita
        WHERE profesional_id = ?
-         AND estado NOT IN ('CANCELADA')
+         AND estado NOT LIKE 'CANCELADA%'
          AND (
            (fecha_hora_inicio < ? AND fecha_hora_fin  > ?)
            OR
@@ -310,15 +315,27 @@ exports.bloquearHorario = async (req, res) => {
 //   CU20 — Transicionando máquina de estados de cita
 // ─────────────────────────────────────────────────────────────────────────────
 
+// RF20 / D2: siete estados. La cancelación distingue quién la ejecutó; el
+// evento CANCELAR se resuelve al estado según el rol del actor.
 const TRANSICIONES = {
-  AGENDADA:   { CONFIRMAR: 'CONFIRMADA', CANCELAR: 'CANCELADA' },
-  CONFIRMADA: { INICIAR: 'EN_CURSO',    CANCELAR: 'CANCELADA', REGISTRAR_INASISTENCIA: 'INASISTENCIA' },
+  AGENDADA:   { CONFIRMAR: 'CONFIRMADA', CANCELAR: 'CANCELAR' },
+  CONFIRMADA: { INICIAR: 'EN_CURSO',    CANCELAR: 'CANCELAR', REGISTRAR_INASISTENCIA: 'INASISTENCIA' },
   EN_CURSO:   { FINALIZAR: 'REALIZADA' },
 };
 
-const ESTADOS_TERMINALES = new Set(['REALIZADA', 'CANCELADA', 'INASISTENCIA']);
+// 'CANCELADA' a secas quedó de citas anteriores a la separación; sigue
+// siendo terminal para que nada la reabra.
+const ESTADOS_TERMINALES = new Set([
+  'REALIZADA', 'INASISTENCIA', 'CANCELADA_PACIENTE', 'CANCELADA_PROFESIONAL', 'CANCELADA',
+]);
 
-function evaluarMaquinaEstados(estadoActual, evento) {
+const esCancelada = (estado) => String(estado || '').startsWith('CANCELADA');
+
+function estadoCancelacion(rolActor) {
+  return rolActor === 'Paciente' ? 'CANCELADA_PACIENTE' : 'CANCELADA_PROFESIONAL';
+}
+
+function evaluarMaquinaEstados(estadoActual, evento, rolActor) {
   if (ESTADOS_TERMINALES.has(estadoActual)) {
     const err = new Error(
       `Acción no permitida: la cita ya se encuentra en estado terminal "${estadoActual}".`
@@ -336,7 +353,7 @@ function evaluarMaquinaEstados(estadoActual, evento) {
     throw err;
   }
 
-  return siguiente;
+  return siguiente === 'CANCELAR' ? estadoCancelacion(rolActor) : siguiente;
 }
 
 /**
@@ -417,7 +434,7 @@ exports.transicionarEstadoCita = async (req, res) => {
     }
 
     // 2. Evaluar máquina de estados
-    const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento);
+    const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento, rolActor);
 
     // CU18 — Excepción 1: el paciente solo puede cancelar dentro del plazo
     // reglamentario (parámetro editable por el administrador).
@@ -491,7 +508,7 @@ exports.transicionarEstadoCita = async (req, res) => {
     }
 
     // CU18 — al liberarse el bloque, avisar a la lista de espera.
-    if (nuevo_estado === 'CANCELADA') {
+    if (esCancelada(nuevo_estado)) {
       cupos_notificados = await notificarListaEspera(connection, id);
     }
 
@@ -610,7 +627,7 @@ exports.reprogramarCita = async (req, res) => {
       `SELECT cita_id FROM Cita
         WHERE profesional_id = ?
           AND cita_id <> ?
-          AND estado NOT IN ('CANCELADA')
+          AND estado NOT LIKE 'CANCELADA%'
           AND fecha_hora_inicio < ?
           AND fecha_hora_fin    > ?
         FOR UPDATE`,

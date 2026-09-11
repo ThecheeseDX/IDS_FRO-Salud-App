@@ -10,6 +10,7 @@
 const pool = require('../../config/database');
 const { cloudinary, cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
 const { leerParametroEntero } = require('../../services/agenda/agendaService');
+const { rechazarSiCerrado } = require('../../services/clinico/episodioService');
 
 // ── Taxonomía de categorías (CU34) ───────────────────────────────────────────
 const CATEGORIAS = [
@@ -24,7 +25,8 @@ const CATEGORIAS = [
 
 // ── Formatos (CU33 Excepción 2) ──────────────────────────────────────────────
 // Solo formatos clínicamente útiles; todo lo ejecutable queda fuera.
-const EXTENSIONES_PERMITIDAS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'gif', 'pdf', 'mp4', 'mov'];
+// RF33 (D5): se aceptan también documentos Word (DOCX).
+const EXTENSIONES_PERMITIDAS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'gif', 'pdf', 'docx', 'mp4', 'mov'];
 
 function obtenerIP(req) {
   return (
@@ -76,7 +78,7 @@ async function puedeAccederAPaciente(req, pacienteId) {
           OR p.paciente_id IN (
             SELECT c.paciente_id FROM Cita c
              INNER JOIN Profesional pr ON pr.profesional_id = c.profesional_id
-             WHERE pr.usuario_id = ? AND c.estado NOT IN ('CANCELADA')
+             WHERE pr.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
           )
         )
         LIMIT 1`,
@@ -156,6 +158,9 @@ exports.subirDocumento = async (req, res) => {
 
     const episodioId = req.body?.episodio_clinico_id || null;
 
+    // CU78 Exc.3 (D12): no se adjunta a un episodio cerrado.
+    if (await rechazarSiCerrado(pool, episodioId, res)) return;
+
     const [profesionales] = await pool.query(
       `SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1`,
       [req.user.usuario_id]
@@ -175,6 +180,9 @@ exports.subirDocumento = async (req, res) => {
         folder: `fro-salud/paciente-${pacienteId}`,
         use_filename: true,
         filename_override: nombreOriginal,
+        // Un DOCX no es imagen ni video: Cloudinary lo guarda tal cual ('raw').
+        // Con 'auto' a veces lo clasificaba mal y la URL no servía.
+        ...(extension === 'docx' ? { resource_type: 'raw' } : {}),
       });
     } catch (errorNube) {
       console.error('[subirDocumento] fallo Cloudinary:', errorNube.message);
@@ -355,6 +363,14 @@ exports.verDocumento = async (req, res) => {
     let visor = 'imagen';
     if (documento.formato === 'pdf') visor = 'pdf';
     else if (['mp4', 'mov'].includes(documento.formato)) visor = 'video';
+    // DOCX (D5): el teléfono no lo renderiza solo; se muestra con el visor de
+    // documentos de Google incrustado, que lee la URL pública del archivo.
+    else if (documento.formato === 'docx') visor = 'documento';
+
+    const urlVisor =
+      visor === 'documento'
+        ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(documento.url_publica)}`
+        : documento.url_publica;
 
     let paginasUrls = [];
     if (visor === 'pdf') {
@@ -394,7 +410,7 @@ exports.verDocumento = async (req, res) => {
     await auditar(req, 'VISUALIZACION_DOCUMENTO', { documento_id: id });
 
     const { public_id_cloud, ...publico } = documento;
-    res.json({ ok: true, documento: { ...publico, visor, paginas_urls: paginasUrls, url_descarga: urlDescarga } });
+    res.json({ ok: true, documento: { ...publico, visor, url_visor: urlVisor, paginas_urls: paginasUrls, url_descarga: urlDescarga } });
   } catch (error) {
     console.error('[verDocumento]', error);
     res.status(500).json({ error: 'Error interno al preparar el visor.' });

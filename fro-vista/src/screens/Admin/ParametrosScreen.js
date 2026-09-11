@@ -253,6 +253,14 @@ const aplicarRestriccion = async () => {
         </VistaConTeclado>
       )}
 
+      {/* CU41 Exc.2 (D11): sesiones derivadas por discrepancias multi-factor */}
+      <TouchableOpacity
+        style={styles.securityLink}
+        onPress={() => navigation.navigate('SesionesSuspendidas')}
+      >
+        <Text style={styles.securityLinkText}>⚠️ Sesiones suspendidas en revisión</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.securityLink}
         onPress={() => navigation.navigate('Seguridad')}

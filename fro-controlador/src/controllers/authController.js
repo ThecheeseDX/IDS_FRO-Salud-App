@@ -10,6 +10,32 @@ const {
     revocarTodasLasSesiones,
 } = require('../services/auth/seguridadService');
 
+// D4: la política de contraseña (8+, letra, número y símbolo) se exige
+// también al registrarse; antes el registro aceptaba "11111111".
+function rechazoPorContrasenaDebil(res, contrasena) {
+    const robustez = validarRobustezContrasena(contrasena);
+    if (robustez.valida) return false;
+    res.status(400).json({
+        error: 'CONTRASENA_DEBIL',
+        mensaje: 'La contraseña no cumple los requisitos de seguridad.',
+        requisitos: robustez.incumplidos,
+    });
+    return true;
+}
+
+// D7 / CU05 Exc.4: cada intento de acceso denegado deja rastro (RNF08).
+async function registrarLoginFallido(req, rut, motivo, usuarioId = null) {
+    try {
+        await pool.query(
+            `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
+             VALUES ('LOGIN_FALLIDO', 'Usuario', ?, ?, ?)`,
+            [req.ip || null, JSON.stringify({ rut, motivo }), usuarioId]
+        );
+    } catch (error) {
+        console.error('[login] No se pudo registrar el intento fallido:', error.message);
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Cuentas fantasma: un registro que nunca completó la verificación OTP deja
 // un Usuario inactivo que bloquea el RUT y el correo para siempre (la app no
@@ -87,6 +113,7 @@ exports.registrarPaciente = async (req, res) => {
     if (contrasena !== confirmar_contrasena) {
         return res.status(400).json({ error: 'Las contraseñas no coinciden.' });
     }
+    if (rechazoPorContrasenaDebil(res, contrasena)) return;
 
     const connection = await pool.getConnection();
 
@@ -200,6 +227,8 @@ exports.registrarProfesional = async (req, res) => {
         rut, nombres, apellido_paterno, apellido_materno, email, telefono, contrasena,
         num_registro_salud, especialidad_id, tipo_sede, resena_curricular, disponibilidad
     } = req.body;
+
+    if (rechazoPorContrasenaDebil(res, contrasena)) return;
 
     const connection = await pool.getConnection();
 
@@ -439,12 +468,14 @@ exports.login = async (req, res) => {
         const usuario = await UserModel.findByRutActive(rut);
 
         if (!usuario) {
+            await registrarLoginFallido(req, rut, 'USUARIO_INEXISTENTE_O_INACTIVO');
             return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
         }
 
         const contrasenaCorrecta = await comparePassword(contrasena, usuario.contrasena_hash);
 
         if (!contrasenaCorrecta) {
+            await registrarLoginFallido(req, rut, 'CONTRASENA_INCORRECTA', usuario.usuario_id);
             return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
         }
 

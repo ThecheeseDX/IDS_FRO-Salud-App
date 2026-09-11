@@ -456,6 +456,110 @@ const MIGRACIONES = [
       }
     },
   },
+  {
+    nombre: 'Cita.estado con cancelacion por actor (D2)',
+    descripcion: 'Amplia la columna y separa CANCELADA en CANCELADA_PACIENTE / CANCELADA_PROFESIONAL',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT COLUMN_TYPE AS tipo FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Cita' AND COLUMN_NAME = 'estado'`,
+        [baseDatos]
+      );
+      return String(filas[0]?.tipo || '').toLowerCase() === 'varchar(30)';
+    },
+    aplicar: async (conexion) => {
+      // 'CANCELADA_PROFESIONAL' tiene 21 caracteres: no cabía en VARCHAR(20).
+      await conexion.query(
+        `ALTER TABLE Cita MODIFY COLUMN estado VARCHAR(30) NOT NULL DEFAULT 'AGENDADA'`
+      );
+      // Las cancelaciones antiguas se reclasifican con el rol que quedó en la
+      // trazabilidad (CU22); sin rastro, se asume cancelada por el paciente.
+      await conexion.query(
+        `UPDATE Cita c
+            SET c.estado = CASE
+              WHEN EXISTS (
+                SELECT 1 FROM Bitacora_Auditoria b
+                 WHERE b.entidad_afectada = 'Cita'
+                   AND JSON_EXTRACT(b.datos_adicionales, '$.cita_id') = c.cita_id
+                   AND JSON_UNQUOTE(JSON_EXTRACT(b.datos_adicionales, '$.nuevo_estado')) = 'CANCELADA'
+                   AND JSON_UNQUOTE(JSON_EXTRACT(b.datos_adicionales, '$.rol_actor')) IN ('Profesional', 'Administrador')
+              ) THEN 'CANCELADA_PROFESIONAL'
+              ELSE 'CANCELADA_PACIENTE'
+            END
+          WHERE c.estado = 'CANCELADA'`
+      );
+    },
+  },
+  {
+    nombre: 'Cita: suspension de validacion multi-factor (D11)',
+    descripcion: 'Guarda cuando y por que se suspendio la certificacion, para derivarla al Administrador',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Cita' AND COLUMN_NAME = 'sesion_suspendida_en'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Cita
+           ADD COLUMN sesion_suspendida_en DATETIME NULL,
+           ADD COLUMN motivo_suspension JSON NULL`
+      );
+    },
+  },
+  {
+    nombre: 'Profesional.areas_experticia (CU10)',
+    descripcion: 'Areas de experticia del catalogo publico del profesional',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Profesional' AND COLUMN_NAME = 'areas_experticia'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Profesional ADD COLUMN areas_experticia VARCHAR(255) NULL`);
+    },
+  },
+  {
+    nombre: 'Episodio_Clinico.estado ABIERTO por defecto (D12)',
+    descripcion: 'Los episodios sin estado pasan a ABIERTO; los cerrados dejan de admitir registros',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT COLUMN_DEFAULT AS valor FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Episodio_Clinico' AND COLUMN_NAME = 'estado'`,
+        [baseDatos]
+      );
+      return String(filas[0]?.valor || '').toUpperCase() === 'ABIERTO';
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Episodio_Clinico ALTER COLUMN estado SET DEFAULT 'ABIERTO'`
+      );
+      await conexion.query(
+        `UPDATE Episodio_Clinico SET estado = 'ABIERTO'
+          WHERE estado IS NULL OR TRIM(estado) = ''`
+      );
+    },
+  },
+  {
+    nombre: 'Eliminar Pauta_Material (D8)',
+    descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Pauta_Material'`,
+        [baseDatos]
+      );
+      return filas.length === 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`DROP TABLE IF EXISTS Pauta_Material`);
+    },
+  },
 ];
 
 /**

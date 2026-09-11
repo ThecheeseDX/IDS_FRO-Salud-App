@@ -9,6 +9,7 @@
 const pool = require('../config/database');
 const { leerParametroEntero } = require('../services/agenda/agendaService');
 const { enviarCorreo } = require('../services/notifications/otpService');
+const { notificarUsuario } = require('../services/agenda/agendaService');
 
 const DECLARACION_CONFORMIDAD = {
   version: '1.0',
@@ -264,6 +265,94 @@ exports.resumenEvidencia = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  CU41 Exc.2 (D11) — Derivación al Administrador
+//  La sesión suspendida queda marcada en la cita y cada administrador recibe
+//  un aviso en la app y por correo con los datos de contacto de ambas partes,
+//  para que pueda resolver la discrepancia fuera del sistema.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SELECT_CONTACTOS_CITA = `
+  SELECT c.cita_id, c.fecha_hora_inicio, c.modalidad, c.sesion_suspendida_en, c.motivo_suspension,
+         c.sesion_certificada_en, c.certificacion_tipo,
+         CONCAT(up.nombres, ' ', up.apellido_paterno, ' ', up.apellido_materno) AS paciente_nombre,
+         up.rut AS paciente_rut, up.email AS paciente_email,
+         (SELECT GROUP_CONCAT(t.telefono SEPARATOR ' / ') FROM Usuario_Telefono t WHERE t.usuario_id = up.usuario_id) AS paciente_telefono,
+         CONCAT(uf.nombres, ' ', uf.apellido_paterno, ' ', uf.apellido_materno) AS profesional_nombre,
+         uf.rut AS profesional_rut, uf.email AS profesional_email,
+         (SELECT GROUP_CONCAT(t.telefono SEPARATOR ' / ') FROM Usuario_Telefono t WHERE t.usuario_id = uf.usuario_id) AS profesional_telefono,
+         e.nombre AS especialidad
+    FROM Cita c
+    JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+    JOIN Usuario up ON up.usuario_id = pa.usuario_id
+    JOIN Profesional pr ON pr.profesional_id = c.profesional_id
+    JOIN Usuario uf ON uf.usuario_id = pr.usuario_id
+    LEFT JOIN Especialidad e ON e.especialidad_id = pr.especialidad_id`;
+
+async function derivarAAdministracion(req, citaId, fallidos) {
+  const factores = fallidos.map((f) => f.factor);
+  await pool.query(
+    `UPDATE Cita SET sesion_suspendida_en = NOW(), motivo_suspension = ? WHERE cita_id = ?`,
+    [JSON.stringify({ factores, derivado_por: req.user?.usuario_id ?? null }), citaId]
+  );
+
+  const [[contactos]] = await pool.query(`${SELECT_CONTACTOS_CITA} WHERE c.cita_id = ? LIMIT 1`, [citaId]);
+  const [administradores] = await pool.query(
+    `SELECT u.usuario_id, u.email FROM Usuario u
+       JOIN Rol r ON r.rol_id = u.rol_id
+      WHERE r.nombre_rol = 'Administrador' AND u.cuenta_activo = TRUE`
+  );
+
+  const tel = (valor) => (valor ? `, ${valor}` : '');
+  const resumen =
+    `Sesión #${citaId} del ${formatearFechaHoraCL(contactos?.fecha_hora_inicio)} suspendida por discrepancias: ` +
+    `${factores.join('; ')}. Paciente: ${contactos?.paciente_nombre} (${contactos?.paciente_email}${tel(contactos?.paciente_telefono)}). ` +
+    `Profesional: ${contactos?.profesional_nombre} (${contactos?.profesional_email}${tel(contactos?.profesional_telefono)}).`;
+
+  const html =
+    `<div style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px;border:1px solid #e5e7eb;border-radius:8px;">
+       <h2 style="color:#004639">Sesión derivada a revisión</h2>
+       <p>La validación multi-factor de la sesión <b>#${citaId}</b> (${formatearFechaHoraCL(contactos?.fecha_hora_inicio)}) fue suspendida.</p>
+       <p><b>Discrepancias:</b></p><ul>${factores.map((f) => `<li>${f}</li>`).join('')}</ul>
+       <p><b>Paciente:</b> ${contactos?.paciente_nombre} · RUT ${contactos?.paciente_rut}<br>
+          ${contactos?.paciente_email}${contactos?.paciente_telefono ? ' · ' + contactos.paciente_telefono : ''}</p>
+       <p><b>Profesional:</b> ${contactos?.profesional_nombre} (${contactos?.especialidad || 'sin especialidad'}) · RUT ${contactos?.profesional_rut}<br>
+          ${contactos?.profesional_email}${contactos?.profesional_telefono ? ' · ' + contactos.profesional_telefono : ''}</p>
+       <p style="color:#475569">Revisa el caso en el panel de administración, sección "Sesiones suspendidas".</p>
+     </div>`;
+
+  for (const admin of administradores) {
+    await notificarUsuario(pool, admin.usuario_id, 'SESION_SUSPENDIDA', resumen);
+    // El correo es mejor esfuerzo: sin proveedor configurado, queda el aviso en la app.
+    enviarCorreo(admin.email, `Sesión #${citaId} derivada a revisión - Fro Salud`, html).catch((error) => {
+      console.error('[derivarAAdministracion] correo no enviado:', error.message);
+    });
+  }
+  return administradores.length;
+}
+
+/** GET /citas/sesiones-suspendidas — bandeja del Administrador (D11). */
+exports.sesionesSuspendidas = async (_req, res) => {
+  try {
+    const [filas] = await pool.query(
+      `${SELECT_CONTACTOS_CITA}
+        WHERE c.sesion_suspendida_en IS NOT NULL
+        ORDER BY (c.sesion_certificada_en IS NULL) DESC, c.sesion_suspendida_en DESC`
+    );
+    return res.status(200).json({
+      sesiones: filas.map((f) => ({
+        ...f,
+        motivo_suspension: parsearJSON(f.motivo_suspension),
+        // Si después se certificó (cierre manual), la derivación quedó resuelta.
+        resuelta: Boolean(f.sesion_certificada_en),
+      })),
+    });
+  } catch (error) {
+    console.error('[sesionesSuspendidas]', error);
+    return res.status(500).json({ error: 'No se pudo consultar las sesiones suspendidas.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  CU41 — Validación multi-factor de la sesión
 //  POST /citas/:id/validar-sesion   { confirmar, cierre_manual, justificacion }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -367,17 +456,25 @@ exports.validarSesion = async (req, res) => {
       });
     }
 
-    // Excepción 2: discrepancias críticas suspenden la validación.
+    // Excepción 2: discrepancias críticas suspenden la validación y el caso
+    // se deriva al Administrador (D11).
     if (fallidos.length > 0 && !cierreManual) {
       await auditar(req, 'SESION_SUSPENDIDA', {
         cita_id: Number(id), factores_fallidos: fallidos.map((f) => f.factor),
       });
+      let administradoresAvisados = 0;
+      try {
+        administradoresAvisados = await derivarAAdministracion(req, id, fallidos);
+      } catch (errorDerivacion) {
+        console.error('[validarSesion] derivación fallida:', errorDerivacion.message);
+      }
       return res.status(409).json({
         error: 'VALIDACION_SUSPENDIDA',
         certificada: false,
         factores,
+        administradores_avisados: administradoresAvisados,
         mensaje:
-          'Se detectaron discrepancias críticas entre los factores. La sesión quedó suspendida para revisión.',
+          'Se detectaron discrepancias críticas entre los factores. La sesión quedó suspendida y fue derivada al Administrador para su revisión.',
       });
     }
 

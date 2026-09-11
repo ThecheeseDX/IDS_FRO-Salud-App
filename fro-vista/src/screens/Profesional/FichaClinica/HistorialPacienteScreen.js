@@ -24,7 +24,7 @@ import DialogoAviso from '../../../components/DialogoAviso';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
-import { datosEstado, etiquetaEstado } from '../../../utils/estados';
+import { datosEstado, etiquetaEstado, esEstadoTerminal } from '../../../utils/estados';
 import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 
@@ -252,9 +252,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const modificarEstadoCita = async (citaId, estadoActual, evento, motivo) => {
     // Exclusión local preventiva para estados terminales
     const deEstado = (estadoActual || '').toUpperCase();
-    const estadosTerminales = ['REALIZADA', 'CANCELADA', 'INASISTENCIA'];
 
-    if (estadosTerminales.includes(deEstado)) {
+    if (esEstadoTerminal(deEstado)) {
       setAviso({ tono: 'info', titulo: "Acción no permitida", mensaje: "El Sistema bloquea la interacción debido a que la cita ya se encuentra en un estado terminal." });
       return;
     }
@@ -605,7 +604,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     )}
 
                     {/* MENSAJE SI LA CITA ESTÁ EN UN ESTADO FINAL O TERMINAL */}
-                    {['REALIZADA', 'CANCELADA', 'INASISTENCIA'].includes(estadoCita) && (
+                    {esEstadoTerminal(estadoCita) && (
                       <Text style={styles.textoTerminal}>🔒 Flujo concluido (Registro histórico cerrado)</Text>
                     )}
                   </View>

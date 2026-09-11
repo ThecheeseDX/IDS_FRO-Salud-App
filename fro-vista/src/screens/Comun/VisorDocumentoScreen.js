@@ -102,7 +102,9 @@ export default function VisorDocumentoScreen({ route }) {
     }
   };
 
-  const urlVisor = documento.url_publica;
+  // DOCX (D5) llega con url_visor apuntando al visor de Google; el resto usa
+  // la URL pública directa.
+  const urlVisor = documento.url_visor || documento.url_publica;
 
   return (
     <View style={estilos.contenedor}>
@@ -114,6 +116,7 @@ export default function VisorDocumentoScreen({ route }) {
           {documento.formato?.toUpperCase()} ·{' '}
           {formatearFecha(documento.fecha_carga)}
           {documento.visor === 'pdf' && documento.paginas ? ` · ${documento.paginas} página(s)` : ''}
+          {documento.visor === 'documento' ? ' · documento Word' : ''}
           {' '}· solo visualización
         </Text>
         <TouchableOpacity style={estilos.botonOriginal} onPress={abrirOriginal}>

@@ -7,6 +7,8 @@ import apiClient, { getHistorialPaciente } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import DialogoAviso from '../../../components/DialogoAviso';
 import { formatearFecha } from '../../../utils/fechas';
+import { textoLegible } from '../../../utils/estados';
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 import { colores, espacio, piezas, radio, tipografia } from '../../../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,6 +25,7 @@ export default function EpisodioScreen({ route, navigation }) {
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
 
   const [aviso, setAviso] = useState(null);
+  const [confirmacion, setConfirmacion] = useState(null);
 
   const [episodiosDisponibles, setEpisodiosDisponibles] = useState(null);
   const [cargandoLista, setCargandoLista] = useState(false);
@@ -35,7 +38,7 @@ export default function EpisodioScreen({ route, navigation }) {
         id: ep.episodio_clinico_id,
         titulo: `Episodio #${ep.episodio_clinico_id}`,
         detalle: ep.motivo_consulta || 'Sin motivo registrado',
-        nota: `${ep.estado || 'Sin estado'} · desde ${formatearFecha(ep.fecha_inicio)}`,
+        nota: `${textoLegible(ep.estado, 'Abierto')} · desde ${formatearFecha(ep.fecha_inicio)}`,
       }));
       setEpisodiosDisponibles(lista);
     } catch (error) {
@@ -112,6 +115,28 @@ export default function EpisodioScreen({ route, navigation }) {
       setAviso({ tono: 'error', titulo: 'Error', mensaje: err?.error || 'No se pudo iniciar la sesión clínica.' });
     } finally {
       setCargandoEvolucion(false);
+    }
+  };
+
+  // ─ CIERRE (D12 / CU78): PUT /api/clinica/episodio/:id { estado: 'CERRADO' }
+  // Un episodio cerrado deja de admitir sesiones, metas, pautas y documentos.
+  const [cerrando, setCerrando] = useState(false);
+  const episodioCerrado = String(episodio?.estado || '').toUpperCase() === 'CERRADO';
+
+  const cerrarEpisodio = async () => {
+    setCerrando(true);
+    try {
+      const { data } = await apiClient.put(`/clinica/episodio/${episodio.episodio_clinico_id}`, {
+        estado: 'CERRADO',
+      });
+      setEpisodio({ ...episodio, estado: 'CERRADO' });
+      if (onEpisodiosCambiaron) onEpisodiosCambiaron();
+      setAviso({ tono: 'ok', titulo: 'Episodio cerrado', mensaje: data.mensaje });
+    } catch (error) {
+      const err = error.response?.data;
+      setAviso({ tono: 'error', titulo: 'No se pudo cerrar', mensaje: err?.mensaje || err?.error || 'Intenta nuevamente.' });
+    } finally {
+      setCerrando(false);
     }
   };
 
@@ -192,19 +217,47 @@ export default function EpisodioScreen({ route, navigation }) {
             <View style={styles.resultado}>
               <Text style={styles.resultadoTitulo}>Episodio #{episodio.episodio_clinico_id}</Text>
               <Text style={styles.resultadoCampo}>Motivo: {episodio.motivo_consulta}</Text>
-              <Text style={styles.resultadoCampo}>Estado: {episodio.estado ?? 'Sin estado'}</Text>
+              <Text style={styles.resultadoCampo}>Estado: {textoLegible(episodio.estado, 'Abierto')}</Text>
               <Text style={styles.resultadoCampo}>Inicio: {formatearFecha(episodio.fecha_inicio)}</Text>
-              
-              {/* NUEVO BOTÓN PARA CREAR LA EVOLUCIÓN */}
-              <TouchableOpacity 
-                style={[styles.boton, { backgroundColor: colores.advertencia, marginTop: 15 }]} 
-                onPress={iniciarAtencion} 
-                disabled={cargandoEvolucion}
-              >
-                {cargandoEvolucion
-                  ? <ActivityIndicator color={colores.superficie} />
-                  : <Text style={styles.botonTexto}>+ Iniciar Nueva Atención</Text>}
-              </TouchableOpacity>
+              {episodioCerrado && (
+                <Text style={styles.resultadoCampo}>Cierre: {formatearFecha(episodio.fecha_terminado)}</Text>
+              )}
+
+              {episodioCerrado ? (
+                <Text style={styles.notaCerrado}>
+                  🔒 Episodio cerrado: no admite nuevas sesiones, metas, pautas ni documentos.
+                  Para seguir atendiendo este motivo, crea un episodio nuevo.
+                </Text>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.boton, { backgroundColor: colores.advertencia, marginTop: 15 }]}
+                    onPress={iniciarAtencion}
+                    disabled={cargandoEvolucion}
+                  >
+                    {cargandoEvolucion
+                      ? <ActivityIndicator color={colores.superficie} />
+                      : <Text style={styles.botonTexto}>+ Iniciar Nueva Atención</Text>}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.botonCerrar}
+                    onPress={() =>
+                      setConfirmacion({
+                        titulo: 'Cerrar episodio',
+                        mensaje: `El episodio #${episodio.episodio_clinico_id} quedará cerrado y no admitirá nuevos registros clínicos. ¿Confirmas el cierre?`,
+                        etiqueta: 'Cerrar episodio',
+                        accion: cerrarEpisodio,
+                      })
+                    }
+                    disabled={cerrando}
+                  >
+                    <Text style={styles.botonCerrarTexto}>
+                      {cerrando ? 'Cerrando…' : '🔒 Cerrar episodio (alta del tratamiento)'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
             </View>
           )}
@@ -273,6 +326,19 @@ export default function EpisodioScreen({ route, navigation }) {
             : undefined
         }
         onCerrar={() => setEpisodiosDisponibles(null)}
+      />
+      <DialogoConfirmacion
+        visible={confirmacion !== null}
+        titulo={confirmacion?.titulo || ''}
+        mensaje={confirmacion?.mensaje}
+        etiquetaConfirmar={confirmacion?.etiqueta || 'Confirmar'}
+        tono="peligro"
+        onConfirmar={() => {
+          const accion = confirmacion?.accion;
+          setConfirmacion(null);
+          if (accion) accion();
+        }}
+        onCancelar={() => setConfirmacion(null)}
       />
       <DialogoAviso
         visible={aviso !== null}
@@ -361,6 +427,21 @@ const styles = StyleSheet.create({
     marginBottom: espacio.md,
   },
   botonVerEpisodiosTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
+  botonCerrar: {
+    ...piezas.botonSecundario,
+    marginTop: espacio.md,
+    paddingVertical: espacio.md,
+    borderColor: colores.error,
+  },
+  botonCerrarTexto: { ...tipografia.cuerpoFuerte, color: colores.error },
+  notaCerrado: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    backgroundColor: colores.fondo,
+    borderRadius: radio.md,
+    padding: espacio.md,
+    marginTop: espacio.md,
+  },
   resultadoTitulo: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: 8 },
   resultadoCampo: { ...tipografia.cuerpo, color: colores.texto, marginBottom: 4 }
 });

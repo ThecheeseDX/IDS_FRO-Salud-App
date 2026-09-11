@@ -83,14 +83,35 @@ const RegisterScreen = ({ navigation }) => {
         setDisponibilidad(nuevosHorarios);
     };
 
+    // D4: misma política que el servidor (8+, letra, número y símbolo). Antes
+    // el registro aceptaba "11111111" sin ningún aviso.
+    const requisitosContrasena = (texto) => {
+        const faltan = [];
+        if (texto.length < 8) faltan.push('Mínimo 8 caracteres');
+        if (!/[a-zA-Z]/.test(texto)) faltan.push('Al menos una letra');
+        if (!/[0-9]/.test(texto)) faltan.push('Al menos un número');
+        if (!/[^A-Za-z0-9\s]/.test(texto)) faltan.push('Al menos un símbolo (ej: . _ - ! @ #)');
+        return faltan;
+    };
+
     const validarFormatosSintacticos = () => {
         let nuevosErrores = {};
         let esValido = true;
 
+        const faltantes = requisitosContrasena(formData.contrasena);
+        if (faltantes.length > 0) {
+            nuevosErrores.contrasena = true; esValido = false;
+            setAviso({
+                tono: 'error',
+                titulo: 'Contraseña insegura',
+                mensaje: 'La contraseña no cumple el formato exigido:\n• ' + faltantes.join('\n• '),
+            });
+        }
+
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             nuevosErrores.email = true; esValido = false;
         }
-        if (formData.contrasena !== formData.confirmar_contrasena) {
+        if (faltantes.length === 0 && formData.contrasena !== formData.confirmar_contrasena) {
             nuevosErrores.contrasena = true; nuevosErrores.confirmar_contrasena = true; esValido = false;
             setAviso({ tono: 'error', titulo: "Alerta de discrepancia", mensaje: "Las contraseñas no coinciden." });
         }
@@ -194,7 +215,18 @@ const RegisterScreen = ({ navigation }) => {
                 });
             }
         } catch (error) {
-            const msg = error.response ? error.response.data.error : "No se pudo conectar con el servidor.";
+            const respuesta = error.response?.data;
+            // D4: el servidor también valida la contraseña y devuelve los requisitos.
+            if (respuesta?.error === 'CONTRASENA_DEBIL') {
+                setErrores(prev => ({ ...prev, contrasena: true }));
+                setAviso({
+                    tono: 'error',
+                    titulo: 'Contraseña insegura',
+                    mensaje: respuesta.mensaje + '\n• ' + (respuesta.requisitos || []).join('\n• '),
+                });
+                return;
+            }
+            const msg = respuesta ? (respuesta.mensaje || respuesta.error) : "No se pudo conectar con el servidor.";
             setAviso({ tono: 'error', titulo: "Error del sistema", mensaje: msg });
         }
     };
@@ -251,7 +283,7 @@ const RegisterScreen = ({ navigation }) => {
                 </View>
                 <View style={styles.campo}>
                     <Text style={styles.label}>Contraseña</Text>
-                    <TextInput style={[styles.input, errores.contrasena && styles.inputError]} placeholder="Mínimo 8 caracteres" secureTextEntry value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
+                    <TextInput style={[styles.input, errores.contrasena && styles.inputError]} placeholder="8+ caracteres, letra, número y símbolo" secureTextEntry value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
                 </View>
                 <View style={styles.campo}>
                     <Text style={styles.label}>Confirmar contraseña</Text>

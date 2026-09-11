@@ -162,7 +162,12 @@ export default function DocumentosScreen({ route, navigation }) {
 
   const elegirDocumento = async () => {
     const resultado = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/*', 'video/mp4', 'video/quicktime'],
+      // RF33 (D5): también documentos Word.
+      type: [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/*', 'video/mp4', 'video/quicktime',
+      ],
       copyToCacheDirectory: true,
     });
     if (resultado.canceled || !resultado.assets?.length) return;

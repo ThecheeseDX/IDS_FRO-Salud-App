@@ -260,7 +260,7 @@ exports.resumenPagos = async (req, res) => {
          JOIN Usuario u ON u.usuario_id = prof.usuario_id
          LEFT JOIN Bono b ON b.cita_id = c.cita_id
          LEFT JOIN Financiador f ON f.financiador_id = b.financiador_id
-        WHERE pac.usuario_id = ? AND c.estado <> 'CANCELADA'
+        WHERE pac.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
         ORDER BY c.fecha_hora_inicio DESC`,
       [req.user.usuario_id]
     );
@@ -527,7 +527,7 @@ exports.cuadraturaCoberturas = async (req, res) => {
          FROM Cita c
          JOIN Profesional p ON p.profesional_id = c.profesional_id
          LEFT JOIN Bono b ON b.cita_id = c.cita_id
-        WHERE c.paciente_id = ? AND p.usuario_id = ? AND c.estado <> 'CANCELADA'
+        WHERE c.paciente_id = ? AND p.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
         ORDER BY c.fecha_hora_inicio DESC`,
       [paciente_id, req.user.usuario_id]
     );

@@ -1,4 +1,5 @@
 const pool = require('../../config/database');
+const { ESTADO_ABIERTO, ESTADO_CERRADO } = require('../../services/clinico/episodioService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTROLADOR: Episodio Clínico
@@ -64,10 +65,11 @@ exports.crearEpisodio = async (req, res) => {
         }
 
         // ejecutar_actualizacion(query_episodio)
+        // D12: todo episodio nace ABIERTO; se cierra explícitamente (CU37/CU78).
         const [result] = await pool.query(
-            `INSERT INTO Episodio_Clinico (motivo_consulta, paciente_id, profesional_id)
-             VALUES (?, ?, ?)`,
-            [motivo_consulta, paciente_id, profesional_id]
+            `INSERT INTO Episodio_Clinico (motivo_consulta, estado, paciente_id, profesional_id)
+             VALUES (?, ?, ?, ?)`,
+            [motivo_consulta, ESTADO_ABIERTO, paciente_id, profesional_id]
         );
 
         return res.status(201).json({
@@ -85,17 +87,43 @@ exports.crearEpisodio = async (req, res) => {
 // Modificación de un episodio clínico
 exports.actualizarEpisodio = async (req, res) => {
     const { episodio_id } = req.params;
-    const { motivo_consulta, estado, fecha_terminado } = req.body;
+    const { motivo_consulta, fecha_terminado } = req.body;
+    // D12: los únicos estados válidos son ABIERTO y CERRADO.
+    const estado = req.body?.estado ? String(req.body.estado).trim().toUpperCase() : null;
+    if (estado && ![ESTADO_ABIERTO, ESTADO_CERRADO].includes(estado)) {
+        return res.status(400).json({
+            error: 'ESTADO_INVALIDO',
+            mensaje: `El estado del episodio debe ser ${ESTADO_ABIERTO} o ${ESTADO_CERRADO}.`,
+        });
+    }
 
     try {
-        // ejecutar_actualizacion(query_episodio) → UPDATE Episodio SET..
+        // Solo el profesional dueño del episodio puede modificarlo.
+        const [[dueno]] = await pool.query(
+            `SELECT 1 AS ok FROM Episodio_Clinico ec
+               JOIN Profesional p ON p.profesional_id = ec.profesional_id
+              WHERE ec.episodio_clinico_id = ? AND p.usuario_id = ? LIMIT 1`,
+            [episodio_id, req.user?.usuario_id]
+        );
+        if (!dueno && req.user?.nombre_rol !== 'Administrador') {
+            return res.status(403).json({
+                error: 'EPISODIO_AJENO',
+                mensaje: 'Solo el profesional a cargo puede modificar este episodio.',
+            });
+        }
+
+        // Cerrar fija la fecha de término si no viene explícita.
+        const cierre = estado === ESTADO_CERRADO;
         const [result] = await pool.query(
             `UPDATE Episodio_Clinico
                 SET motivo_consulta = COALESCE(?, motivo_consulta),
                     estado          = COALESCE(?, estado),
-                    fecha_terminado = COALESCE(?, fecha_terminado)
+                    fecha_terminado = CASE
+                        WHEN ? IS NOT NULL THEN ?
+                        WHEN ? THEN NOW()
+                        ELSE fecha_terminado END
               WHERE episodio_clinico_id = ?`,
-            [motivo_consulta, estado, fecha_terminado, episodio_id]
+            [motivo_consulta, estado, fecha_terminado, fecha_terminado, cierre, episodio_id]
         );
 
         if (result.affectedRows === 0) {
@@ -104,7 +132,12 @@ exports.actualizarEpisodio = async (req, res) => {
 
         // return(filas_afectadas) → return(confirmacion_update)
         // → return(operacion_clinica_exitosa) → return(HTTP 200 OK y confirmacion_accion)
-        return res.status(200).json({ mensaje: 'Episodio clínico actualizado exitosamente.' });
+        return res.status(200).json({
+            mensaje: cierre
+                ? 'Episodio clínico cerrado. No admitirá nuevos registros.'
+                : 'Episodio clínico actualizado exitosamente.',
+            estado: estado || undefined,
+        });
 
     } catch (error) {
         console.error('[actualizarEpisodio]', error);

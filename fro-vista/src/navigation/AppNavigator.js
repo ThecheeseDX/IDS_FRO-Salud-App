@@ -23,8 +23,10 @@ import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
 import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
 import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
 import MiJornadaScreen from '../screens/Profesional/MiJornadaScreen';
+import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
+import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
 // Pantallas — Comunes a todos los roles
 import SeguridadScreen from '../screens/Comun/SeguridadScreen';
 import EvidenciaSesionScreen from '../screens/Comun/EvidenciaSesionScreen';
@@ -151,6 +153,8 @@ export default function AppNavigator() {
               component={GestionDisponibilidadScreen}
               options={{ title: 'Gestión de Agenda' }}
             />
+            {/* CU10: catálogo de perfil profesional */}
+            <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen name="FirmaConformidad" component={FirmaConformidadScreen} options={{ title: 'Firma de Conformidad' }} />
@@ -177,6 +181,8 @@ export default function AppNavigator() {
               }}
             />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
+            {/* CU41 Exc.2 (D11): sesiones derivadas a revisión */}
+            <Stack.Screen name="SesionesSuspendidas" component={SesionesSuspendidasScreen} options={{ title: 'Sesiones suspendidas' }} />
           </>
         ) : (
           // ── ESCENARIO E: Rol Desconocido ──
