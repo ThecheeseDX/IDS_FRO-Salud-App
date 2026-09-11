@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import client from "../../api/client";
 import VistaConTeclado from "../../components/VistaConTeclado";
 import { colores, radio, sombra } from '../../theme';
 import CodigoOTP from '../../components/CodigoOTP';
 import DialogoAviso from '../../components/DialogoAviso';
+import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OTPScreen
@@ -31,6 +31,7 @@ export default function OTPScreen({ route, navigation }) {
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
 
   const [aviso, setAviso] = useState(null);
+  const [confirmacion, setConfirmacion] = useState(null);
 
   const [digitos, setDigitos] = useState(Array(LARGO_OTP).fill(""));
   const [cargando, setCargando] = useState(false);
@@ -89,9 +90,13 @@ export default function OTPScreen({ route, navigation }) {
         codigo,
       });
 
-      Alert.alert("¡Listo!", data.mensaje, [
-        { text: "Iniciar sesión", onPress: () => navigation.replace("Login") },
-      ]);
+      setAviso({
+        tono: 'ok',
+        titulo: '¡Listo!',
+        mensaje: data.mensaje,
+        etiqueta: 'Iniciar sesión',
+        alCerrar: () => navigation.replace('Login'),
+      });
     } catch (err) {
       const respuesta = err.response?.data;
       const errorCodigo = respuesta?.error;
@@ -103,11 +108,11 @@ export default function OTPScreen({ route, navigation }) {
         inputs.current[0]?.focus();
       } else if (errorCodigo === "PERSISTENCIA_FALLIDA") {
         // Excepción 4: falla de escritura en servidor
-        Alert.alert(
-          "Error al activar cuenta",
-          "No se pudo activar tu cuenta. Por favor recarga la pantalla e intenta de nuevo.",
-          [{ text: "Entendido" }]
-        );
+        setAviso({
+          tono: 'error',
+          titulo: 'Error al activar cuenta',
+          mensaje: 'No se pudo activar tu cuenta. Recarga la pantalla e intenta de nuevo.',
+        });
       } else {
         setError("Ocurrió un error inesperado. Intenta de nuevo.");
       }
@@ -140,14 +145,16 @@ export default function OTPScreen({ route, navigation }) {
 
       // Excepción 1: falla del servicio de comunicaciones externo
       if (errorCodigo === "ENVIO_FALLIDO") {
-        Alert.alert(
-          "No se pudo enviar el código",
-          // El detalle dice qué revisar en la configuración del servidor.
-          respuesta?.detalle
+        // El detalle dice qué revisar en la configuración del servidor.
+        setConfirmacion({
+          tono: 'peligro',
+          titulo: 'No se pudo enviar el código',
+          mensaje: respuesta?.detalle
             ? `${respuesta.mensaje}\n\n${respuesta.detalle}`
-            : respuesta?.mensaje || "El servicio de correo no está disponible.",
-          [{ text: "Reintentar", onPress: reenviarCodigo }, { text: "Cancelar" }]
-        );
+            : respuesta?.mensaje || 'El servicio de correo no está disponible.',
+          etiqueta: 'Reintentar',
+          accion: reenviarCodigo,
+        });
       } else {
         setAviso({ tono: 'error', titulo: "Error", mensaje: "No se pudo reenviar el código. Intenta más tarde." });
       }
@@ -213,11 +220,27 @@ export default function OTPScreen({ route, navigation }) {
           )}
         </View>
       </View>
+    <DialogoConfirmacion
+      visible={confirmacion !== null}
+      titulo={confirmacion?.titulo || ''}
+      mensaje={confirmacion?.mensaje}
+      etiquetaConfirmar={confirmacion?.etiqueta || 'Confirmar'}
+      etiquetaCancelar={confirmacion?.etiquetaCancelar || 'Cancelar'}
+      tono={confirmacion?.tono || 'normal'}
+      onConfirmar={() => {
+        const accion = confirmacion?.accion;
+        setConfirmacion(null);
+        if (accion) accion();
+      }}
+      onCancelar={() => setConfirmacion(null)}
+    />
+
     <DialogoAviso
       visible={aviso !== null}
       titulo={aviso?.titulo || ''}
       mensaje={aviso?.mensaje}
       tono={aviso?.tono}
+      etiquetaCerrar={aviso?.etiqueta || 'Entendido'}
       onCerrar={() => {
         const seguir = aviso?.alCerrar;
         setAviso(null);

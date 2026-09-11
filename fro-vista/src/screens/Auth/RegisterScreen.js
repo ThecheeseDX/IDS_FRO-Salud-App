@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
@@ -7,10 +7,12 @@ import LogoFro from '../../components/LogoFro';
 import { validateRut } from '../../utils/validators';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
+import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
 const RegisterScreen = ({ navigation }) => {
     // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
     const [aviso, setAviso] = useState(null);
+    const [confirmacion, setConfirmacion] = useState(null);
     const [esProfesional, setEsProfesional] = useState(false);
     const [comunas, setComunas] = useState([]);
     const [especialidades, setEspecialidades] = useState([]);
@@ -143,14 +145,13 @@ const RegisterScreen = ({ navigation }) => {
                         mensajeDinamico;
                 }
 
-                Alert.alert(
-                    "Confirmación de Datos",
-                    mensajeDinamico,
-                    [
-                        { text: "Cancelar (Revisar)", style: "cancel" },
-                        { text: "Confirmar y Registrar", onPress: procesarRegistro }
-                    ]
-                );
+                setConfirmacion({
+                    titulo: 'Confirma tus datos',
+                    mensaje: mensajeDinamico,
+                    etiqueta: 'Confirmar y registrar',
+                    etiquetaCancelar: 'Revisar',
+                    accion: procesarRegistro,
+                });
             }
         } catch (error) {
             if (error.response && error.response.status === 409) {
@@ -382,6 +383,21 @@ const RegisterScreen = ({ navigation }) => {
                 <View style={styles.buttonContainer}>
                     <Button title={esProfesional ? "FINALIZAR ALTA MÉDICA" : "FINALIZAR REGISTRO PACIENTE"} onPress={confirmarCreacionCuenta} color={esProfesional ? colores.primario : colores.primario} />
                 </View>
+        <DialogoConfirmacion
+          visible={confirmacion !== null}
+          titulo={confirmacion?.titulo || ''}
+          mensaje={confirmacion?.mensaje}
+          etiquetaConfirmar={confirmacion?.etiqueta || 'Confirmar'}
+          etiquetaCancelar={confirmacion?.etiquetaCancelar || 'Cancelar'}
+          tono={confirmacion?.tono || 'normal'}
+          onConfirmar={() => {
+            const accion = confirmacion?.accion;
+            setConfirmacion(null);
+            if (accion) accion();
+          }}
+          onCancelar={() => setConfirmacion(null)}
+        />
+
         <DialogoAviso
           visible={aviso !== null}
           titulo={aviso?.titulo || ''}

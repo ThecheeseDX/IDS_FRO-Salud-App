@@ -5,7 +5,6 @@ import {
   Button,
   FlatList,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
@@ -21,6 +20,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFecha as fechaLegible } from '../../utils/fechas';
 import { colores, radio, espacio } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
+import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
 const DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -35,6 +35,8 @@ export default function BuscarCitaScreen({ navigation, route }) {
   // CU17: motivo pendiente mientras se muestra el diálogo
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
+  // Confirmaciones con el diálogo de la app (el Alert nativo no se estiliza).
+  const [confirmacion, setConfirmacion] = useState(null);
   const [pedirMotivoReprogramacion, setPedirMotivoReprogramacion] = useState(false);
 
   // ── CU14: filtros de búsqueda ─────────────────────────────────────────────
@@ -118,25 +120,21 @@ export default function BuscarCitaScreen({ navigation, route }) {
     // CU17: en modo reprogramación, el bloque elegido pasa a ser el nuevo
     // horario de la cita existente; se pide el motivo y se envía el cambio.
     if (reprogramacion) {
-      Alert.alert(
-        'Confirmar nuevo horario',
-        `¿Mover tu cita al bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fechaLegible(fecha)}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Continuar', onPress: () => setPedirMotivoReprogramacion(true) },
-        ]
-      );
+      setConfirmacion({
+        titulo: 'Confirmar nuevo horario',
+        mensaje: `¿Mover tu cita al bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fechaLegible(fecha)}, con ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
+        etiqueta: 'Continuar',
+        accion: () => setPedirMotivoReprogramacion(true),
+      });
       return;
     }
 
-    Alert.alert(
-      'Confirmar reserva',
-      `¿Deseas reservar el bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fechaLegible(fecha)}\ncon ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: ejecutarBloqueo },
-      ]
-    );
+    setConfirmacion({
+      titulo: 'Confirmar reserva',
+      mensaje: `¿Reservar el bloque ${hora_inicio.slice(0, 5)} – ${hora_fin.slice(0, 5)} del ${fechaLegible(fecha)}, con ${nombres} ${apellido_paterno} ${apellido_materno || ''}?`,
+      etiqueta: 'Reservar',
+      accion: ejecutarBloqueo,
+    });
   };
 
   // ── CU17: enviar la reprogramación con su motivo ──────────────────────────
@@ -153,11 +151,12 @@ export default function BuscarCitaScreen({ navigation, route }) {
         { fecha_hora_inicio, fecha_hora_fin, motivo }
       );
 
-      Alert.alert(
-        'Cita reprogramada',
-        data?.mensaje || 'Tu cita quedó en el nuevo horario.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      setAviso({
+        tono: 'ok',
+        titulo: 'Cita reprogramada',
+        mensaje: data?.mensaje || 'Tu cita quedó en el nuevo horario.',
+        alCerrar: () => navigation.goBack(),
+      });
     } catch (error) {
       const respuesta = error.response?.data;
       setAviso({ tono: 'error', titulo: 'No se pudo reprogramar', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
@@ -188,20 +187,16 @@ export default function BuscarCitaScreen({ navigation, route }) {
       });
 
       // Poscondición CU15: bloque reservado exclusivamente
-      Alert.alert(
-        '¡Reserva exitosa!',
-        `Tu cita quedó agendada para el ${fechaLegible(bloqueSeleccionado.fecha)} de ${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setBloqueSeleccionado(null);
-              setDisponibilidad([]);
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+      setAviso({
+        tono: 'ok',
+        titulo: '¡Reserva exitosa!',
+        mensaje: `Tu cita quedó agendada para el ${fechaLegible(bloqueSeleccionado.fecha)} de ${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}.`,
+        alCerrar: () => {
+          setBloqueSeleccionado(null);
+          setDisponibilidad([]);
+          navigation.goBack();
+        },
+      });
     } catch (error) {
       const err = error.response?.data;
 
@@ -213,15 +208,16 @@ export default function BuscarCitaScreen({ navigation, route }) {
 
       // CU15 — Excepción 4: colisión de reserva simultánea
       if (err?.error === 'BLOQUE_OCUPADO') {
-        Alert.alert('Horario no disponible', err.mensaje, [
-          {
-            text: 'Elegir otro horario',
-            onPress: () => {
-              setBloqueSeleccionado(null);
-              buscarDisponibilidad(); // refrescar la lista
-            },
+        setAviso({
+          tono: 'alerta',
+          titulo: 'Horario no disponible',
+          mensaje: err.mensaje,
+          etiqueta: 'Elegir otro horario',
+          alCerrar: () => {
+            setBloqueSeleccionado(null);
+            buscarDisponibilidad(); // refrescar la lista
           },
-        ]);
+        });
         return;
       }
 
@@ -417,11 +413,27 @@ export default function BuscarCitaScreen({ navigation, route }) {
         onConfirmar={ejecutarReprogramacion}
         onCancelar={() => setPedirMotivoReprogramacion(false)}
       />
+    <DialogoConfirmacion
+      visible={confirmacion !== null}
+      titulo={confirmacion?.titulo || ''}
+      mensaje={confirmacion?.mensaje}
+      etiquetaConfirmar={confirmacion?.etiqueta || 'Confirmar'}
+      etiquetaCancelar={confirmacion?.etiquetaCancelar || 'Cancelar'}
+      tono={confirmacion?.tono || 'normal'}
+      onConfirmar={() => {
+        const accion = confirmacion?.accion;
+        setConfirmacion(null);
+        if (accion) accion();
+      }}
+      onCancelar={() => setConfirmacion(null)}
+    />
+
     <DialogoAviso
       visible={aviso !== null}
       titulo={aviso?.titulo || ''}
       mensaje={aviso?.mensaje}
       tono={aviso?.tono}
+      etiquetaCerrar={aviso?.etiqueta || 'Entendido'}
       onCerrar={() => {
         const seguir = aviso?.alCerrar;
         setAviso(null);

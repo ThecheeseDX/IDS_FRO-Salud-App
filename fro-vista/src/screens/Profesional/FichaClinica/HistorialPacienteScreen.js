@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   RefreshControl,
 } from 'react-native';
 
@@ -27,6 +26,7 @@ import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
 import { datosEstado, etiquetaEstado } from '../../../utils/estados';
 import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 
 /**
  * Arma la dirección del paciente para mostrarla en pantalla. El servidor
@@ -75,6 +75,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [versionesPorEvolucion, setVersionesPorEvolucion] = useState({});
   // Avisos de resultado con el diálogo de la app (Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
+  const [confirmacion, setConfirmacion] = useState(null);
   // CU38: marca horaria manual con justificación, para cuando el profesional
   // olvidó marcar en su momento. Antes vivía en la pantalla de marcas
   // temporales, que ahora solo muestra la jornada.
@@ -226,25 +227,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
       // La atención comienza antes de su bloque horario: queda auditado.
       if (detalle?.error === 'INICIO_ANTICIPADO') {
-        Alert.alert(
-          'Inicio anticipado',
-          'La cita aún no alcanza su bloque horario. El inicio quedará auditado.',
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-              text: 'Confirmar inicio',
-              onPress: async () => {
-                try {
-                  const data = await iniciarAtencion(citaId, { confirmar_inicio_anticipado: true });
-                  setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
-                  cargarHistorial(false);
-                } catch (error) {
-                  setAviso({ tono: 'info', titulo: 'No fue posible iniciar', mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.' });
-                }
-              },
-            },
-          ]
-        );
+        setConfirmacion({
+          tono: 'peligro',
+          titulo: 'Inicio anticipado',
+          mensaje: 'La cita aún no alcanza su bloque horario. El inicio quedará auditado.',
+          etiqueta: 'Confirmar inicio',
+          accion: async () => {
+            try {
+              const data = await iniciarAtencion(citaId, { confirmar_inicio_anticipado: true });
+              setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
+              cargarHistorial(false);
+            } catch (error) {
+              setAviso({ tono: 'info', titulo: 'No fue posible iniciar', mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.' });
+            }
+          },
+        });
         return;
       }
 
@@ -296,11 +293,13 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         }
       } else {
         // EXCEPCIÓN 3: Latencia o pérdida de red
-        Alert.alert(
-          "Sincronización en curso",
-          "La latencia de red impide visualizar el cambio de estado de manera inmediata. Arrastre hacia abajo para refrescar.",
-          [{ text: "Refrescar Ahora", onPress: () => cargarHistorial(true) }]
-        );
+        setConfirmacion({
+          titulo: 'Sincronización en curso',
+          mensaje: 'La red está lenta y el cambio de estado aún no se ve. Refresca para volver a consultarlo.',
+          etiqueta: 'Refrescar ahora',
+          etiquetaCancelar: 'Más tarde',
+          accion: () => cargarHistorial(true),
+        });
       }
     }
   };
@@ -322,27 +321,26 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
       // Excepción 1: falta el término del paciente → cierre manual justificado.
       if (data.requiere_cierre_manual) {
-        Alert.alert(
-          'Falta la marca del paciente',
-          `${data.mensaje}\n\n${textoFactores(data.factores)}`,
-          [
-            { text: 'Volver', style: 'cancel' },
-            { text: 'Cierre manual', onPress: () => setCierreManualCita(citaId) },
-          ]
-        );
+        setConfirmacion({
+          tono: 'peligro',
+          titulo: 'Falta la marca del paciente',
+          mensaje: `${data.mensaje}\n\n${textoFactores(data.factores)}`,
+          etiqueta: 'Cierre manual',
+          etiquetaCancelar: 'Volver',
+          accion: () => setCierreManualCita(citaId),
+        });
         return;
       }
 
       // Excepción 3: el resumen se muestra y nada se persiste sin confirmar.
       if (data.resumen_pendiente) {
-        Alert.alert(
-          'Resumen de factores',
-          `${textoFactores(data.factores)}\n\n¿Confirmas la certificación de la sesión?`,
-          [
-            { text: 'Rechazar', style: 'cancel' },
-            { text: 'Confirmar', onPress: () => validarSesion(citaId, { confirmar: true }) },
-          ]
-        );
+        setConfirmacion({
+          titulo: 'Resumen de factores',
+          mensaje: `${textoFactores(data.factores)}\n\n¿Confirmas la certificación de la sesión?`,
+          etiqueta: 'Certificar sesión',
+          etiquetaCancelar: 'Rechazar',
+          accion: () => validarSesion(citaId, { confirmar: true }),
+        });
       }
     } catch (err) {
       const respuesta = err.response?.data;
@@ -899,6 +897,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           </View>
         </View>
       </Modal>
+
+      <DialogoConfirmacion
+        visible={confirmacion !== null}
+        titulo={confirmacion?.titulo || ''}
+        mensaje={confirmacion?.mensaje}
+        etiquetaConfirmar={confirmacion?.etiqueta || 'Confirmar'}
+        etiquetaCancelar={confirmacion?.etiquetaCancelar || 'Cancelar'}
+        tono={confirmacion?.tono || 'normal'}
+        onConfirmar={() => {
+          const accion = confirmacion?.accion;
+          setConfirmacion(null);
+          if (accion) accion();
+        }}
+        onCancelar={() => setConfirmacion(null)}
+      />
 
       <DialogoAviso
         visible={aviso !== null}

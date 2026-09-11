@@ -139,9 +139,12 @@ export default function PautasScreen({ route }) {
   };
 
   const actualizarEjercicio = (indice, campo, valor) => {
-    const nuevos = [...ejercicios];
-    nuevos[indice][campo] = valor;
-    setEjercicios(nuevos);
+    // Se copia también el ejercicio, no solo el arreglo: modificarlo en el
+    // sitio altera el objeto que React ya tenía y deja el estado anterior
+    // indistinguible del nuevo.
+    setEjercicios((previos) =>
+      previos.map((ejercicio, i) => (i === indice ? { ...ejercicio, [campo]: valor } : ejercicio))
+    );
   };
 
   const quitarEjercicio = (indice) => {
@@ -340,37 +343,54 @@ export default function PautasScreen({ route }) {
                 value={ejercicio.nombre_ejercicio}
                 onChangeText={(v) => actualizarEjercicio(indice, 'nombre_ejercicio', v)}
               />
-              <View style={estilos.filaFechas}>
-                <Text style={estilos.label}>Series</Text>
-                <TextInput
-                  style={[estilos.input, estilos.tercio]}
-                  placeholder="Ej: 3"
-                  keyboardType="numeric"
-                  value={ejercicio.series}
-                  onChangeText={(v) => actualizarEjercicio(indice, 'series', v.replace(/[^0-9]/g, ''))}
-                />
-                <Text style={estilos.label}>Repeticiones</Text>
-                <TextInput
-                  style={[estilos.input, estilos.tercio]}
-                  placeholder="Ej: 12"
-                  keyboardType="numeric"
-                  value={ejercicio.repeticiones}
-                  onChangeText={(v) => actualizarEjercicio(indice, 'repeticiones', v.replace(/[^0-9]/g, ''))}
-                />
-                <View style={[estilos.selector, estilos.tercio]}>
-                  <Picker
-                    selectedValue={ejercicio.frecuencia}
-                    onValueChange={(v) => actualizarEjercicio(indice, 'frecuencia', v)}
-                  >
-                    <Picker.Item label="Diaria" value="DIARIA" />
-                    <Picker.Item label="Semanal" value="SEMANAL" />
-                  </Picker>
+              {/* Cada campo con su etiqueta encima. Antes los cinco elementos
+                  compartían una sola fila: el desplegable quedaba de unos
+                  ochenta píxeles, sin etiqueta y con el texto cortado. */}
+              <View style={estilos.filaCampos}>
+                <View style={estilos.mitad}>
+                  <Text style={estilos.label}>Series</Text>
+                  <TextInput
+                    style={estilos.input}
+                    placeholder="Ej: 3"
+                    placeholderTextColor={colores.textoTenue}
+                    keyboardType="numeric"
+                    value={ejercicio.series}
+                    onChangeText={(v) => actualizarEjercicio(indice, 'series', v.replace(/[^0-9]/g, ''))}
+                  />
+                </View>
+                <View style={estilos.mitad}>
+                  <Text style={estilos.label}>Repeticiones</Text>
+                  <TextInput
+                    style={estilos.input}
+                    placeholder="Ej: 12"
+                    placeholderTextColor={colores.textoTenue}
+                    keyboardType="numeric"
+                    value={ejercicio.repeticiones}
+                    onChangeText={(v) => actualizarEjercicio(indice, 'repeticiones', v.replace(/[^0-9]/g, ''))}
+                  />
                 </View>
               </View>
+
+              <Text style={estilos.label}>Frecuencia</Text>
+              <View style={estilos.selector}>
+                <Picker
+                  selectedValue={ejercicio.frecuencia}
+                  onValueChange={(v) => actualizarEjercicio(indice, 'frecuencia', v)}
+                  dropdownIconColor={colores.primario}
+                  style={estilos.picker}
+                >
+                  <Picker.Item label="Diaria" value="DIARIA" />
+                  <Picker.Item label="Semanal" value="SEMANAL" />
+                </Picker>
+              </View>
+
+              <Text style={estilos.label}>Material de apoyo</Text>
               <View style={estilos.selector}>
                 <Picker
                   selectedValue={ejercicio.material_terapeutico_id}
                   onValueChange={(v) => actualizarEjercicio(indice, 'material_terapeutico_id', v)}
+                  dropdownIconColor={colores.primario}
+                  style={estilos.picker}
                 >
                   <Picker.Item label="Sin material de apoyo" value="" />
                   {materiales.map((material) => (
@@ -492,7 +512,9 @@ const estilos = StyleSheet.create({
     paddingHorizontal: espacio.sm,
     marginBottom: 8,
   },
-  filaFechas: { flexDirection: 'row', gap: 8 },
+  filaFechas: { flexDirection: 'row', gap: espacio.md },
+  filaCampos: { flexDirection: 'row', gap: espacio.md },
+  picker: { color: colores.texto },
   mitad: { flex: 1 },
   tercio: { flex: 1 },
 
