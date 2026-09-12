@@ -58,13 +58,15 @@ CU17 = dict(id='CU17', nombre='Gestionando reprogramación de cita', actores=['P
     1: dict(cortar='verificar_estado_reprogramable', lineas=[
         '! La cita ya esta realizada, cancelada, con inasistencia o en curso',
         'V --> A: deshabilitar_controles_de_edicion()',
-        'A -> V: volver_al_listado_y_elegir_cita_activa()']),
+        'A -> V: volver_al_listado_principal()'],
+        reanudar='seleccionar_cita_vigente'),
     2: dict(cortar='validar_anticipacion_minima', lineas=[
         '! Solicitud fuera del tiempo minimo de anticipacion configurado',
         f'{API} ->> {API}: revertir_transaccion()',
         f'{API} --> V_Agendamiento_Cita: return (HTTP 409 FUERA_DE_PLAZO)',
         'V_Agendamiento_Cita --> A: notificar_restriccion_temporal_y_denegar_calendario()',
-        'A ->> A: mantener_cita_original_o_contactar_a_soporte()']),
+        'A ->> A: gestionar_la_autorizacion_con_soporte_administrativo()'],
+        reanudar='seleccionar_cita_vigente'),
     3: dict(cortar='SELECT cita_id FROM Cita', lineas=[
         f'Cita --> {SQL}: return (1 cita tomada por otro proceso)',
         f'{SQL} --> {DAO}: return (resultado)',
@@ -78,11 +80,8 @@ CU17 = dict(id='CU17', nombre='Gestionando reprogramación de cita', actores=['P
     4: dict(cortar='INSERT INTO Notificacion (aviso de reprogramacion)', lineas=[
         *fallo_bd('Notificacion', 'servicio de notificaciones no disponible'),
         '! Falla el aviso tras guardar: la cita ya quedo reprogramada',
-        f'{API} ->> {API}: registrar_error_de_comunicacion()',
-        f'{API} ->> {API}: confirmar_transaccion()',
-        f'{API} --> V_Agendamiento_Cita: return (HTTP 200 OK: cita reprogramada, aviso pendiente)',
-        'V_Agendamiento_Cita --> A: mostrar_nueva_fecha_sin_confirmacion_de_aviso()',
-        'A -> V: verificar_en_proximas_consultas()']),
+        f'{API} ->> {API}: registrar_error_de_comunicacion()'],
+        reanudar='confirmar_transaccion'),
   })
 
 # ──────────────────────────── CU18 ────────────────────────────
@@ -130,7 +129,8 @@ CU18 = dict(id='CU18', nombre='Cancelando cita y liberando recursos', actores=['
         f'{API} ->> {API}: revertir_transaccion()',
         f'{API} --> V: return (HTTP 409 FUERA_DE_PLAZO)',
         'V --> A: informar_imposibilidad_de_cancelar_con_poca_antelacion()',
-        'A ->> A: desistir_o_contactar_al_centro()']),
+        'A ->> A: gestionar_la_anulacion_directamente_con_el_centro()'],
+        reanudar='solicitar_anulacion_de_cita'),
     2: dict(cortar='UPDATE Cita SET estado, motivo_cancelacion', lineas=[
         *fallo_bd('Cita'),
         '! Fallo de persistencia al actualizar la cita',
@@ -145,15 +145,15 @@ CU18 = dict(id='CU18', nombre='Cancelando cita y liberando recursos', actores=['
         'V --> A: mostrar_pantalla_incompleta()',
         'A -> V: refrescar_aplicacion()',
         f'V -> {API}: GET /citas/mis-citas',
-        f'{API} --> V: return (HTTP 200 OK: listado actualizado)',
-        'V --> A: mostrar_la_cita_como_cancelada()']),
+        f'{API} --> V: return (HTTP 200 OK: listado actualizado)'],
+        reanudar='mostrar_confirmacion_y_cronograma_actualizado'),
     4: dict(cortar='INSERT INTO Notificacion (cupo liberado)', lineas=[
         *fallo_bd('Notificacion', 'servicio de notificaciones no disponible'),
         '! Falla el aviso a la lista de espera: la cancelacion se mantiene',
         f'{API} ->> {API}: registrar_fallo_de_notificacion()',
         f'{API} ->> {API}: confirmar_transaccion()',
-        f'{API} --> V: return (HTTP 200 OK: cita cancelada, sin avisos enviados)',
-        'V --> A: mostrar_confirmacion_local_de_la_baja()']),
+        f'{API} --> V: return (HTTP 200 OK: cita cancelada, sin avisos enviados)'],
+        reanudar='mostrar_confirmacion_y_cronograma_actualizado'),
   })
 
 # ──────────────────────────── CU22 ────────────────────────────
@@ -200,7 +200,8 @@ CU22 = dict(id='CU22', nombre='Registrando trazabilidad de transiciones de agend
         f'{API} ->> {API}: omitir_la_modificacion_de_la_cita()',
         f'{API} --> V: return (HTTP 401: advertencia de seguridad)',
         'V --> A: mostrar_advertencia_y_cerrar_sesion()',
-        'A -> V: reiniciar_sesion_para_recuperar_credenciales()']),
+        'A -> V: reiniciar_sesion_para_recuperar_credenciales()'],
+        reanudar='ejecutar_cambio_de_estado_o_reprogramacion'),
     3: dict(cortar='exigir_justificacion_en_cancelacion_o_reprogramacion', lineas=[
         '! Campo de justificacion vacio en una cancelacion o reprogramacion',
         f'{API} ->> {API}: revertir_transaccion()',
@@ -261,7 +262,8 @@ CU76 = dict(id='CU76', nombre='Ejecutando transacciones en máquina de estados d
     2: dict(cortar='verificar_cita_propia_y_estado_no_terminal', lineas=[
         '! La cita ya posee un estado terminal',
         'V --> A: bloquear_modificaciones_y_mostrar_solo_lectura()',
-        'A ->> A: revisar_el_estado_registrado()']),
+        'A ->> A: revisar_el_estado_registrado()'],
+        reanudar='seleccionar_cita_en_historial_del_paciente'),
     3: dict(cortar='desplegar_acciones_de_transicion_habilitadas', lineas=[
         '! El paciente no se presenta a la atencion',
         'A -> V: registrar_inasistencia()',

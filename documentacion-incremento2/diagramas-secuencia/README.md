@@ -14,8 +14,9 @@ Notación (la misma de CU01/CU02 del Incremento 1):
 - SQL: se muestran la operación, la tabla y las columnas, sin marcadores «?» y sin la cláusula WHERE
   (`UPDATE Cita SET estado, motivo_cancelacion`). La tanda 1 se entregó antes de este acuerdo y
   conserva el formato con «?» y WHERE.
-- Nota amarilla = punto donde ocurre la excepción. Después de la nota va la respuesta
-  del sistema y la acción del actor; cuando la ficha dice que reintenta, el flujo se repite completo.
+- Nota amarilla = punto donde ocurre la excepción. Después de la nota van la respuesta del
+  sistema y la acción del actor, y **toda página de excepción retoma y completa el flujo
+  principal**: el diagrama siempre termina en el mismo mensaje final que su página Principal.
 
 ## Tandas
 
