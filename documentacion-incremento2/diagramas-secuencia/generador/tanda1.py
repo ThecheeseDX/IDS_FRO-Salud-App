@@ -53,7 +53,8 @@ CU06 = dict(id='CU06', nombre='Solicitando restablecimiento de credenciales', ac
     4: dict(cortar='SELECT usuario_id, email', lineas=[f'Usuario --> {SQL}: return (0 coincidencias)', f'{SQL} --> {DAO}: return (vacio)',
         f'{DAO} --> {API}: return (null)', '! Correo no registrado: se simula el despacho para evitar enumeracion de usuarios',
         f'{API} ->> {API}: omitir_envio_de_codigo()',
-        f'{API} --> {V}: return (HTTP 200 OK: si el correo existe se envio un codigo)', f'{V} --> A: mostrar_mensaje_codigo_enviado()']),
+        f'{API} --> {V}: return (HTTP 200 OK: si el correo existe se envio un codigo)', f'{V} --> A: mostrar_mensaje_codigo_enviado()'],
+        reanudar='ingresar_correo'),
   })
 
 # ───────────────────────────── CU07 ─────────────────────────────

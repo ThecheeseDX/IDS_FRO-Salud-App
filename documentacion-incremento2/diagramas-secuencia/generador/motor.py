@@ -1,7 +1,7 @@
 # Motor de diagramas de secuencia FRO Salud (estilo Incremento 1).
 # Entrada: definición de un CU (participantes, flujo principal, excepciones, actores).
 # Salida: un .drawio multipágina por CU y un SVG/PNG por página.
-import html, re, os, subprocess, glob
+import html, re, os, subprocess, glob, tempfile, shutil
 
 PASO = 50          # separación vertical entre mensajes
 ALTO_SELF = 30     # altura del bucle de auto-llamada
@@ -195,9 +195,14 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
         if png and chrome:
             ruta_html = ruta_svg[:-4] + ".html"
             open(ruta_html, "w").write(f'<html><body style="margin:0">{svg}</body></html>')
+            # Perfil temporal propio por captura: sin esto Chrome reutiliza una
+            # instancia viva y devuelve imagenes repetidas o en blanco.
+            perfil = tempfile.mkdtemp(prefix="chrome-captura-")
             subprocess.run([chrome, "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=2",
+                            f"--user-data-dir={perfil}", "--virtual-time-budget=4000", "--run-all-compositor-stages-before-draw",
                             f"--window-size={w:.0f},{h:.0f}", f"--screenshot={ruta_svg[:-4]}.png", f"file://{ruta_html}"],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            shutil.rmtree(perfil, ignore_errors=True)
             os.remove(ruta_html); os.remove(ruta_svg)
     ruta_drawio = os.path.join(carpeta, f"{cu['id']}.drawio")
     open(ruta_drawio, "w").write('<mxfile host="app.diagrams.net">' + "".join(diagramas) + '</mxfile>')
