@@ -37,7 +37,7 @@ Reglas de notación (las de CU01, CU02, CU20 y CU40 del Incremento 1):
 | 3 · Triaje y evaluación | CU27, CU23, CU24, CU77 | 19 | Entregada |
 | 4 · Pautas de ejercicio | CU46, CU47, CU48, CU49 | 20 | Entregada |
 | 5 · Evidencia de atención | CU39, CU41, CU42, CU43 | 40 | Entregada |
-| 6 · Documentos y versionado | CU31, CU33, CU34, CU35 | | Pendiente |
+| 6 · Documentos y versionado | CU31, CU33, CU34, CU35 | 29 | Entregada |
 | 7 · Bonos y copagos | CU66, CU67, CU69, CU71 | | Pendiente |
 | 8 · Episodio clínico | CU78 | | Pendiente |
 
