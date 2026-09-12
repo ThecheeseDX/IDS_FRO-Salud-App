@@ -6,7 +6,22 @@ actores, el juego completo se repite por actor (igual que en el Incremento 1).
 Junto a cada `.drawio` están los PNG de cada página, con el mismo nombre que
 usó el Incremento 1 (`CUxx-Principal Actor.png`, `CUxx-Excepción n Actor.png`).
 
-Notación (la misma de CU01/CU02 del Incremento 1):
+Reglas de notación (la misma de CU01/CU02 del Incremento 1):
+
+- **Las lifelines son las mismas en todas las páginas de un CU.** Si una tabla o un componente
+  aparece en una sola página (por ejemplo, la bitácora que solo se escribe en una excepción),
+  igual se dibuja en el flujo principal y en el resto de las excepciones, aunque ahí no reciba
+  mensajes.
+- **Ningún mensaje salta una lifeline.** La cadena es actor → vista → `C_API_REST` →
+  `C_Capa_de_Acceso_a_Datos` → `C_MYSQL` → tabla, y los componentes internos
+  (`C_Seguridad_JWT_BCrypt`, `C_API_Adapter`) y los servicios externos se llaman desde
+  `C_API_REST` y el adaptador, nunca directamente desde la vista o el actor.
+- **Solo se usan componentes del Diagrama de Componentes** del Incremento 1: Cliente Móvil
+  (las vistas `V_*`), API REST, API Adapter, Seguridad JWT/BCrypt, Capa de Acceso a Datos,
+  MySQL y las APIs externas (Brevo, Cloudinary, Transacciones, Bonos, OpenAI, Expo Push).
+- El generador verifica estas reglas y se detiene si alguna página las incumple.
+
+Detalle del dibujo:
 - Lifelines: Actor → `V_<Vista>` → `C_API_REST` → `C_Capa_de_Acceso_a_Datos` → `C_MYSQL` → una por tabla.
   Los servicios externos aparecen como `S_<Servicio>` (Brevo para correo, Cloudinary para archivos).
 - Flecha continua = llamada `nombre_en_snake_case(argumentos)`; punteada = retorno `return (...)`;

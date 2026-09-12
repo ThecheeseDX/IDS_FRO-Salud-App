@@ -37,8 +37,9 @@ def parsear(lineas, actor, vista=None):
         m = RE_MSG.match(ln)
         if not m: raise ValueError('línea inválida: ' + ln)
         de, op, a, texto = m.groups()
-        de = ACTOR_ID if de == 'A' else (VISTA_ID if (vista and de == 'V') else de)
-        a = ACTOR_ID if a == 'A' else (VISTA_ID if (vista and a == 'V') else a)
+        mapa = {'V': VISTA_ID} if isinstance(vista, str) else {k: f'__vista_{k}__' for k in (vista or {})}
+        de = ACTOR_ID if de == 'A' else mapa.get(de, de)
+        a = ACTOR_ID if a == 'A' else mapa.get(a, a)
         tipo = {'->': 'call', '-->': 'ret', '->>': 'self'}[op]
         msgs.append({'de': de, 'a': a, 'texto': texto.replace('{A_MAY}', actor.upper()).replace('{A}', actor), 'tipo': tipo, 'nota': nota})
         nota = None
@@ -48,11 +49,15 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     """Calcula layout y devuelve (celdas_drawio, svg)."""
     parts = [dict(p) for p in participantes]
     parts[0] = {'id': ACTOR_ID, 'nombre': actor, 'tipo': 'actor'}
-    if vista: parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
+    if isinstance(vista, str):
+        parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
+    elif vista:
+        for i, p in enumerate(parts):
+            if p['id'] in vista:
+                parts[i] = {'id': f"__vista_{p['id']}__", 'nombre': vista[p['id']], 'tipo': 'vista'}
     ids = [p['id'] for p in parts]
-    # solo participantes usados (excepto actor y vista, siempre presentes)
-    usados = {m['de'] for m in msgs} | {m['a'] for m in msgs}
-    parts = [p for i, p in enumerate(parts) if i < 2 or p['id'] in usados]
+    # Regla del equipo: si una tabla o componente aparece en alguna pagina del
+    # CU, aparece en TODAS, aunque en esa pagina no reciba mensajes.
     # posiciones x
     x = X_ACTOR
     for i, p in enumerate(parts):
@@ -165,6 +170,31 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     s.append('</svg>')
     return celdas, "\n".join(s), (ancho, alto)
 
+NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'controlador': 2.5, 'dao': 3, 'motor_sql': 4, 'tabla': 5}
+
+def nivel_de(part):
+    if part['tipo'] == 'actor': return NIVEL['actor']
+    if part['tipo'] == 'vista': return NIVEL['vista']
+    if part['tipo'] == 'tabla': return NIVEL['tabla']
+    nombre = part['nombre']
+    if nombre == 'C_API_REST': return NIVEL['api']
+    if nombre == 'C_Capa_de_Acceso_a_Datos': return NIVEL['dao']
+    if nombre == 'C_MYSQL': return NIVEL['motor_sql']
+    return NIVEL['controlador']
+
+def validar_pagina(nombre_pagina, parts, msgs, problemas):
+    """Comprueba que ningun mensaje salte una lifeline de la cadena."""
+    pos = {p['id']: nivel_de(p) for p in parts}
+    for m in msgs:
+        if m['de'] not in pos or m['a'] not in pos:
+            problemas.append(f"{nombre_pagina}: participante no declarado ({m['de']} -> {m['a']})"); continue
+        a, b = pos[m['de']], pos[m['a']]
+        if a == b: continue                      # auto-llamada o vista a vista
+        if abs(a - b) > 1.01:
+            problemas.append(f"{nombre_pagina}: salto de {m['de']} a {m['a']} · \"{m['texto'][:45]}\"")
+        elif abs(a - b) == 0.5 and NIVEL['api'] not in (a, b):
+            problemas.append(f"{nombre_pagina}: {m['de']} -> {m['a']} no pasa por C_API_REST")
+
 def generar_cu(cu, carpeta, chrome=None, png=True):
     """cu: dict(id, nombre, actores:[...], participantes:[...], principal:[líneas], excepciones:{n: dict(cortar, lineas, reanudar)})"""
     os.makedirs(carpeta, exist_ok=True)
@@ -187,8 +217,16 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
                 msgs += [dict(m) for m in base[indice(ex['reanudar']):]]
             paginas.append((f"{cu['id']} - Excepción {n}{suf}", f"{cu['id']}-Excepción {n}{suf}", msgs, actor, vista))
     diagramas = []
+    problemas = []
     for nombre_pag, archivo, msgs, actor, vista in paginas:
         celdas, svg, (w, h) = construir_pagina(nombre_pag, cu['participantes'], msgs, actor, vista)
+        parts = [dict(p) for p in cu['participantes']]
+        parts[0] = {'id': '__actor__', 'nombre': actor, 'tipo': 'actor'}
+        if isinstance(vista, str): parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
+        elif vista:
+            for i, p in enumerate(parts):
+                if p['id'] in vista: parts[i] = {'id': f"__vista_{p['id']}__", 'nombre': vista[p['id']], 'tipo': 'vista'}
+        validar_pagina(nombre_pag, parts, msgs, problemas)
         diagramas.append(f'<diagram name="{html.escape(nombre_pag)}" id="{re.sub(r"[^A-Za-z0-9]", "_", nombre_pag)}"><mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{w:.0f}" pageHeight="{h:.0f}" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/>{"".join(celdas)}</root></mxGraphModel></diagram>')
         ruta_svg = os.path.join(carpeta, archivo + ".svg")
         open(ruta_svg, "w").write(svg)
@@ -204,6 +242,8 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             shutil.rmtree(perfil, ignore_errors=True)
             os.remove(ruta_html); os.remove(ruta_svg)
+    if problemas:
+        raise ValueError(f"{cu['id']}: reglas de notacion incumplidas\n  - " + "\n  - ".join(dict.fromkeys(problemas)))
     ruta_drawio = os.path.join(carpeta, f"{cu['id']}.drawio")
     open(ruta_drawio, "w").write('<mxfile host="app.diagrams.net">' + "".join(diagramas) + '</mxfile>')
     return ruta_drawio, len(paginas)
