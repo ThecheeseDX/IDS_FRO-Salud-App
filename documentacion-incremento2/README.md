@@ -25,7 +25,15 @@ de la base de datos, así que en el Incremento 1 hay que quitarla de cuatro luga
 3. **Normalización**: eliminar esa misma línea en 1FN, 2FN y 3FN.
 4. **Modelo físico / diccionario de datos**: eliminar la tabla si aparece.
 
+## Árbol de navegación (carpeta `arbol-navegacion/`)
+
+| Archivo | Qué contiene |
+|---|---|
+| `Arbol de Navegacion Inc2.png` | Figura 5.1 en alta resolución, mismo estilo del Incremento 1 (celeste = interfaces, morado = funcionalidades). |
+| `Arbol de Navegacion Inc2.drawio` | Fuente editable en draw.io (app.diagrams.net). |
+| `Arbol de Navegacion Inc2 - tabla de vistas.md` | Texto de la sección y tabla Vista → CUs → Funcionalidad, con qué es nuevo respecto al Incremento 1. |
+| `generar_arbol.py` | Script que genera el .drawio y la imagen; si cambia una vista, se edita el árbol ahí y se vuelve a correr. |
+
 ## Pendiente
 
-- Árbol de navegación del Incremento 2.
 - Diagramas de secuencia, en el estilo de los `.drawio` del Incremento 1.
