@@ -18,9 +18,10 @@ def ancho_participante(p):
     return max(150, 8 * len(p["nombre"]) + 40)
 
 ACTOR_ID = '__actor__'
+VISTA_ID = '__vista__'
 RE_MSG = re.compile(r'^\s*(\S+)\s*(->>|-->|->)\s*(\S+)\s*:\s*(.*)$')
 
-def parsear(lineas, actor):
+def parsear(lineas, actor, vista=None):
     """Convierte líneas DSL en mensajes. Sintaxis:
        A -> V: texto      llamada (continua)
        V --> A: texto     retorno (punteada)
@@ -36,17 +37,18 @@ def parsear(lineas, actor):
         m = RE_MSG.match(ln)
         if not m: raise ValueError('línea inválida: ' + ln)
         de, op, a, texto = m.groups()
-        de = ACTOR_ID if de == 'A' else de
-        a = ACTOR_ID if a == 'A' else a
+        de = ACTOR_ID if de == 'A' else (VISTA_ID if (vista and de == 'V') else de)
+        a = ACTOR_ID if a == 'A' else (VISTA_ID if (vista and a == 'V') else a)
         tipo = {'->': 'call', '-->': 'ret', '->>': 'self'}[op]
-        msgs.append({'de': de, 'a': a, 'texto': texto.replace('{A}', actor), 'tipo': tipo, 'nota': nota})
+        msgs.append({'de': de, 'a': a, 'texto': texto.replace('{A_MAY}', actor.upper()).replace('{A}', actor), 'tipo': tipo, 'nota': nota})
         nota = None
     return msgs
 
-def construir_pagina(nombre_pagina, participantes, msgs, actor):
+def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     """Calcula layout y devuelve (celdas_drawio, svg)."""
     parts = [dict(p) for p in participantes]
     parts[0] = {'id': ACTOR_ID, 'nombre': actor, 'tipo': 'actor'}
+    if vista: parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
     ids = [p['id'] for p in parts]
     # solo participantes usados (excepto actor y vista, siempre presentes)
     usados = {m['de'] for m in msgs} | {m['a'] for m in msgs}
@@ -170,22 +172,23 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
     multi = len(cu['actores']) > 1
     for actor in cu['actores']:
         suf = f" {actor}" if multi else ""
-        principal = parsear(cu['principal'], actor)
-        paginas.append((f"{cu['id']} - Principal{suf}", f"{cu['id']}-Principal{suf}", principal, actor))
+        vista = cu.get('vistas', {}).get(actor)
+        principal = parsear(cu['principal'], actor, vista)
+        paginas.append((f"{cu['id']} - Principal{suf}", f"{cu['id']}-Principal{suf}", principal, actor, vista))
         for n, ex in sorted(cu['excepciones'].items()):
-            base = parsear(cu['principal'], actor)
+            base = parsear(cu['principal'], actor, vista)
             def indice(ref, desde_fin=False):
                 if isinstance(ref, int): return ref
                 for k, m in enumerate(base):
                     if m['texto'].startswith(ref): return k + 1 if desde_fin else k
                 raise ValueError(f"{cu['id']} exc {n}: no encuentro '{ref}'")
-            msgs = [dict(m) for m in base[:indice(ex['cortar'], True)]] + parsear(ex['lineas'], actor)
+            msgs = [dict(m) for m in base[:indice(ex['cortar'], True)]] + parsear(ex['lineas'], actor, vista)
             if ex.get('reanudar') is not None:
                 msgs += [dict(m) for m in base[indice(ex['reanudar']):]]
-            paginas.append((f"{cu['id']} - Excepción {n}{suf}", f"{cu['id']}-Excepción {n}{suf}", msgs, actor))
+            paginas.append((f"{cu['id']} - Excepción {n}{suf}", f"{cu['id']}-Excepción {n}{suf}", msgs, actor, vista))
     diagramas = []
-    for nombre_pag, archivo, msgs, actor in paginas:
-        celdas, svg, (w, h) = construir_pagina(nombre_pag, cu['participantes'], msgs, actor)
+    for nombre_pag, archivo, msgs, actor, vista in paginas:
+        celdas, svg, (w, h) = construir_pagina(nombre_pag, cu['participantes'], msgs, actor, vista)
         diagramas.append(f'<diagram name="{html.escape(nombre_pag)}" id="{re.sub(r"[^A-Za-z0-9]", "_", nombre_pag)}"><mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{w:.0f}" pageHeight="{h:.0f}" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/>{"".join(celdas)}</root></mxGraphModel></diagram>')
         ruta_svg = os.path.join(carpeta, archivo + ".svg")
         open(ruta_svg, "w").write(svg)

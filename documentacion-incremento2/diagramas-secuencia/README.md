@@ -11,6 +11,9 @@ Notación (la misma de CU01/CU02 del Incremento 1):
   Los servicios externos aparecen como `S_<Servicio>` (Brevo para correo, Cloudinary para archivos).
 - Flecha continua = llamada `nombre_en_snake_case(argumentos)`; punteada = retorno `return (...)`;
   bucle = operación interna del componente.
+- SQL: se muestran la operación, la tabla y las columnas, sin marcadores «?» y sin la cláusula WHERE
+  (`UPDATE Cita SET estado, motivo_cancelacion`). La tanda 1 se entregó antes de este acuerdo y
+  conserva el formato con «?» y WHERE.
 - Nota amarilla = punto donde ocurre la excepción. Después de la nota va la respuesta
   del sistema y la acción del actor; cuando la ficha dice que reintenta, el flujo se repite completo.
 
@@ -19,7 +22,7 @@ Notación (la misma de CU01/CU02 del Incremento 1):
 | Tanda | CUs | Páginas | Estado |
 |---|---|---|---|
 | 1 · Cuenta, seguridad y perfil | CU06, CU07, CU08, CU09, CU10, CU79 | 72 | Entregada |
-| 2 · Gestión de citas | CU17, CU18, CU22, CU76 | | Pendiente |
+| 2 · Gestión de citas | CU17, CU18, CU22, CU76 | 35 | Entregada |
 | 3 · Triaje y evaluación | CU23, CU24, CU27, CU77 | | Pendiente |
 | 4 · Pautas de ejercicio | CU46, CU47, CU48, CU49 | | Pendiente |
 | 5 · Evidencia de atención | CU39, CU41, CU42, CU43 | | Pendiente |
@@ -30,7 +33,7 @@ Notación (la misma de CU01/CU02 del Incremento 1):
 ## Cómo se generan
 
 `generador/motor.py` convierte una descripción corta de cada CU (participantes,
-mensajes del flujo principal, excepciones) en el `.drawio` y los PNG. Cada tanda
-es un archivo `tandaN.py`. Para regenerar: `python3 generador/tanda1.py`
+mensajes del flujo principal, excepciones) en el `.drawio` y los PNG. Cada tanda es un archivo `tandaN.py`
+y `comun.py` reúne los participantes y los atajos de SQL compartidos. Para regenerar: `python3 generador/tanda1.py`
 (necesita Python 3 y el Chromium headless de Playwright para los PNG; sin él
 solo produce el `.drawio`).
