@@ -183,17 +183,33 @@ def nivel_de(part):
     return NIVEL['controlador']
 
 def validar_pagina(nombre_pagina, parts, msgs, problemas):
-    """Comprueba que ningun mensaje salte una lifeline de la cadena."""
+    """Reglas del equipo: orden de lifelines, sin saltos, y toda llamada vuelve
+    por el mismo camino (disciplina de pila, como en CU20/CU40)."""
     pos = {p['id']: nivel_de(p) for p in parts}
+    niveles = [nivel_de(p) for p in parts]
+    if niveles != sorted(niveles):
+        problemas.append(f"{nombre_pagina}: orden de lifelines incorrecto (actor, vistas, controladores, capa de datos, MySQL, tablas)")
+    pila = []
     for m in msgs:
-        if m['de'] not in pos or m['a'] not in pos:
-            problemas.append(f"{nombre_pagina}: participante no declarado ({m['de']} -> {m['a']})"); continue
-        a, b = pos[m['de']], pos[m['a']]
-        if a == b: continue                      # auto-llamada o vista a vista
-        if abs(a - b) > 1.01:
-            problemas.append(f"{nombre_pagina}: salto de {m['de']} a {m['a']} · \"{m['texto'][:45]}\"")
-        elif abs(a - b) == 0.5 and NIVEL['api'] not in (a, b):
-            problemas.append(f"{nombre_pagina}: {m['de']} -> {m['a']} no pasa por C_API_REST")
+        de, a = m['de'], m['a']
+        if de not in pos or a not in pos:
+            problemas.append(f"{nombre_pagina}: participante no declarado ({de} -> {a})"); continue
+        if de == a: continue
+        na, nb = pos[de], pos[a]
+        if abs(na - nb) > 1.01:
+            problemas.append(f"{nombre_pagina}: salto de {de} a {a} · \"{m['texto'][:45]}\"")
+        elif abs(na - nb) == 0.5 and NIVEL['api'] not in (na, nb):
+            problemas.append(f"{nombre_pagina}: {de} -> {a} no pasa por C_API_REST")
+        if m['tipo'] == 'call':
+            pila.append((de, a))
+        elif m['tipo'] == 'ret':
+            if pila and pila[-1] == (a, de):
+                pila.pop()
+            else:
+                esperado = f"{pila[-1][1]} --> {pila[-1][0]}" if pila else "ninguno (pila vacia)"
+                problemas.append(f"{nombre_pagina}: retorno {de} --> {a} \"{m['texto'][:40]}\" no responde a la ultima llamada; se esperaba {esperado}")
+    if pila:
+        problemas.append(f"{nombre_pagina}: quedan llamadas sin retorno: " + ", ".join(f"{x} -> {y}" for x, y in pila))
 
 def generar_cu(cu, carpeta, chrome=None, png=True):
     """cu: dict(id, nombre, actores:[...], participantes:[...], principal:[líneas], excepciones:{n: dict(cortar, lineas, reanudar)})"""

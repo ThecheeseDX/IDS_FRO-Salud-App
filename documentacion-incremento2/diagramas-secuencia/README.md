@@ -6,32 +6,27 @@ actores, el juego completo se repite por actor (igual que en el Incremento 1).
 Junto a cada `.drawio` están los PNG de cada página, con el mismo nombre que
 usó el Incremento 1 (`CUxx-Principal Actor.png`, `CUxx-Excepción n Actor.png`).
 
-Reglas de notación (la misma de CU01/CU02 del Incremento 1):
+Reglas de notación (las de CU01, CU02, CU20 y CU40 del Incremento 1):
 
-- **Las lifelines son las mismas en todas las páginas de un CU.** Si una tabla o un componente
-  aparece en una sola página (por ejemplo, la bitácora que solo se escribe en una excepción),
-  igual se dibuja en el flujo principal y en el resto de las excepciones, aunque ahí no reciba
-  mensajes.
-- **Ningún mensaje salta una lifeline.** La cadena es actor → vista → `C_API_REST` →
-  `C_Capa_de_Acceso_a_Datos` → `C_MYSQL` → tabla, y los componentes internos
-  (`C_Seguridad_JWT_BCrypt`, `C_API_Adapter`) y los servicios externos se llaman desde
-  `C_API_REST` y el adaptador, nunca directamente desde la vista o el actor.
-- **Solo se usan componentes del Diagrama de Componentes** del Incremento 1: Cliente Móvil
-  (las vistas `V_*`), API REST, API Adapter, Seguridad JWT/BCrypt, Capa de Acceso a Datos,
-  MySQL y las APIs externas (Brevo, Cloudinary, Transacciones, Bonos, OpenAI, Expo Push).
-- El generador verifica estas reglas y se detiene si alguna página las incumple.
-
-Detalle del dibujo:
-- Lifelines: Actor → `V_<Vista>` → `C_API_REST` → `C_Capa_de_Acceso_a_Datos` → `C_MYSQL` → una por tabla.
-  Los servicios externos aparecen como `S_<Servicio>` (Brevo para correo, Cloudinary para archivos).
+- **Orden de las lifelines:** actor, vista, `C_API_REST` y los demás controladores
+  (`C_Seguridad_JWT_BCrypt`, `C_API_Adapter` y las APIs externas), `C_Capa_de_Acceso_a_Datos`,
+  `C_MYSQL` y, al final a la derecha, las tablas.
+- **Ida y vuelta completa.** Cada llamada baja peldaño a peldaño (actor → vista → API REST →
+  capa de datos → MySQL → tabla) y la respuesta vuelve por el mismo camino, una flecha por
+  componente. Ningún mensaje salta una lifeline ni llega directo al actor.
+- **Las lifelines son las mismas en todas las páginas de un CU.** Si una tabla o componente
+  aparece en una sola excepción, igual se dibuja en el flujo principal y en el resto.
+- **Solo componentes del Diagrama de Componentes** del Incremento 1. Los servicios externos
+  (Brevo, Cloudinary) se llaman desde `C_API_REST` a través de `C_API_Adapter`.
+- **Toda página de excepción retoma y completa el flujo principal** y termina en el mismo
+  mensaje final que su página Principal.
+- **SQL** sin marcadores «?» ni WHERE: solo operación, tabla y columnas
+  (`UPDATE Cita SET estado, motivo_cancelacion`). Aplica a las tres tandas.
 - Flecha continua = llamada `nombre_en_snake_case(argumentos)`; punteada = retorno `return (...)`;
-  bucle = operación interna del componente.
-- SQL: se muestran la operación, la tabla y las columnas, sin marcadores «?» y sin la cláusula WHERE
-  (`UPDATE Cita SET estado, motivo_cancelacion`). La tanda 1 se entregó antes de este acuerdo y
-  conserva el formato con «?» y WHERE.
-- Nota amarilla = punto donde ocurre la excepción. Después de la nota van la respuesta del
-  sistema y la acción del actor, y **toda página de excepción retoma y completa el flujo
-  principal**: el diagrama siempre termina en el mismo mensaje final que su página Principal.
+  bucle = operación interna. Nota amarilla = punto donde ocurre la excepción. Las transacciones
+  se muestran como `abrir_transaccion` / `confirmar_transaccion` / `revertir_transaccion`
+  que llegan hasta `C_MYSQL` (BEGIN, COMMIT, ROLLBACK).
+- El generador verifica todas estas reglas y se detiene si alguna página las incumple.
 
 ## Tandas
 
