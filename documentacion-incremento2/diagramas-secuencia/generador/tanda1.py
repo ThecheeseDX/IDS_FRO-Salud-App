@@ -211,7 +211,7 @@ CU10 = dict(id='CU10', nombre='Administrando catálogo de perfil profesional', a
     f'{API} -> {DAO}: actualizar_perfil(usuario_id, datos)',
     *upd('Profesional', 'UPDATE Profesional SET resena_curricular = ?, areas_experticia = ?, tipo_sede = ? WHERE usuario_id = ?'),
     f'{DAO} --> {API}: return (Exito_Persistencia)',
-    f'{API} -> {DAO}: registrar_auditoria(PERFIL_PROFESIONAL_ACTUALIZADO, usuario_id, ip)',
+    f'{API} -> {DAO}: registrar_auditoria(ACTUALIZACION_PERFIL_PROFESIONAL, usuario_id, ip)',
     *ins('Bitacora_Auditoria', 'INSERT INTO Bitacora_Auditoria VALUES (...)'),
     f'{DAO} --> {API}: return (Exito_Persistencia)',
     f'{API} --> {V}: return (HTTP 200 OK: perfil actualizado)',
