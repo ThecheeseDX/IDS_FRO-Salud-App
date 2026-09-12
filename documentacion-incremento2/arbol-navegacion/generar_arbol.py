@@ -96,7 +96,8 @@ def colocar(n, x0, y):
         aristas.append([(cx, yy + FH/2), (ax, yy + FH/2)])
     bus_y = (fy + filas * (FH + 12) + 12) if n["funcs"] else (y + H + 44)
     cy = bus_y + 30
-    x = x0
+    total = sum(h["_w"] for h in n["hijos"]) + GAP_X * (len(n["hijos"]) - 1)
+    x = x0 + (n["_w"] - total) / 2
     for h in n["hijos"]:
         colocar(h, x, cy)
         hx = h["_cx"]
