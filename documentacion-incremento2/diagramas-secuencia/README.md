@@ -17,7 +17,10 @@ Reglas de notación (las de CU01, CU02, CU20 y CU40 del Incremento 1):
 - **Las lifelines son las mismas en todas las páginas de un CU.** Si una tabla o componente
   aparece en una sola excepción, igual se dibuja en el flujo principal y en el resto.
 - **Solo componentes del Diagrama de Componentes** del Incremento 1. Los servicios externos
-  (Brevo, Cloudinary) se llaman desde `C_API_REST` a través de `C_API_Adapter`.
+  (Brevo, Cloudinary, Transacciones, Bonos Electrónicos) se llaman desde `C_API_REST` a través de
+  `C_API_Adapter` y se dibujan en la última columna, a la derecha de las tablas, como en el CU68
+  del Incremento 1. Los casos de uso que nacen en el servidor (CU69) no llevan actor ni vista: su
+  primera lifeline es `C_API_REST`.
 - **Toda página de excepción retoma y completa el flujo principal** y termina en el mismo
   mensaje final que su página Principal.
 - **SQL** sin marcadores «?» ni WHERE: solo operación, tabla y columnas
@@ -38,8 +41,8 @@ Reglas de notación (las de CU01, CU02, CU20 y CU40 del Incremento 1):
 | 4 · Pautas de ejercicio | CU46, CU47, CU48, CU49 | 20 | Entregada |
 | 5 · Evidencia de atención | CU39, CU41, CU42, CU43 | 40 | Entregada |
 | 6 · Documentos y versionado | CU31, CU33, CU34, CU35 | 29 | Entregada |
-| 7 · Bonos y copagos | CU66, CU67, CU69, CU71 | | Pendiente |
-| 8 · Episodio clínico | CU78 | | Pendiente |
+| 7 · Bonos, copagos e integración externa | CU66, CU67, CU69, CU71 | 19 | Entregada |
+| 8 · Episodio clínico | CU78 | 5 | Entregada |
 
 ## Cómo se generan
 
@@ -48,3 +51,5 @@ mensajes del flujo principal, excepciones) en el `.drawio` y los PNG. Cada tanda
 y `comun.py` reúne los participantes y los atajos de SQL compartidos. Para regenerar: `python3 generador/tanda1.py`
 (necesita Python 3 y el Chromium headless de Playwright para los PNG; sin él
 solo produce el `.drawio`).
+
+**Total entregado: 31 casos de uso, 239 páginas.**

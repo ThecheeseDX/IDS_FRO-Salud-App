@@ -8,7 +8,7 @@ VREC, VSEG = 'V_Recuperar_Contrasena', 'V_Seguridad_Cuenta'
 # ──────────────────────────── CU06 ────────────────────────────
 CU06 = dict(id='CU06', nombre='Solicitando restablecimiento de credenciales', actores=TRES,
   vistas={r: VREC for r in TRES},
-  participantes=[ACTOR, VISTA, *capa(ADP, BREVO), *T('Usuario')],
+  participantes=[ACTOR, VISTA, *capa(ADP), *T('Usuario'), *ext(BREVO)],
   principal=[
     'A -> V: acceder_a_olvide_mi_contrasena()',
     'V --> A: desplegar_formulario_de_correo()',
@@ -40,7 +40,7 @@ CU06 = dict(id='CU06', nombre='Solicitando restablecimiento de credenciales', ac
 # ──────────────────────────── CU07 ────────────────────────────
 CU07 = dict(id='CU07', nombre='Ejecutando cambio de contraseña', actores=TRES,
   vistas={r: VREC for r in TRES},
-  participantes=[ACTOR, VISTA, *capa(SEG, ADP, BREVO), *T('Usuario', 'Sesion_Usuario', 'Bitacora_Auditoria')],
+  participantes=[ACTOR, VISTA, *capa(SEG, ADP), *T('Usuario', 'Sesion_Usuario', 'Bitacora_Auditoria'), *ext(BREVO)],
   principal=[
     'A -> V: ingresar_codigo_otp(codigo)',
     'V ->> V: validar_mascara_numerica(codigo)',
@@ -157,7 +157,7 @@ CU09 = dict(id='CU09', nombre='Configurando privacidad de datos de contacto', ac
 # ──────────────────────────── CU10 ────────────────────────────
 CU10 = dict(id='CU10', nombre='Administrando catálogo de perfil profesional', actores=['Profesional'],
   vistas={'Profesional': 'V_Mi_Perfil_Publico'},
-  participantes=[ACTOR, VISTA, *capa(ADP, CLOUD), *T('Profesional', 'Bitacora_Auditoria')],
+  participantes=[ACTOR, VISTA, *capa(ADP), *T('Profesional', 'Bitacora_Auditoria'), *ext(CLOUD)],
   principal=[
     'A -> V: abrir_mi_perfil_publico()',
     f'V -> {API}: GET /profesionales/mi-perfil',

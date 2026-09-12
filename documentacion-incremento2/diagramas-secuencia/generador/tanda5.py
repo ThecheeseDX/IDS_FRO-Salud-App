@@ -61,7 +61,7 @@ CU39 = dict(id='CU39', nombre='Validando presencialidad mediante coordenadas GPS
 # ──────────────────────────── CU41 ────────────────────────────
 CU41 = dict(id='CU41', nombre='Validando sesión mediante protocolo multi-factor', actores=['Profesional', 'Administrador'],
   vistas={'Profesional': VAGENDA, 'Administrador': VAGENDA},
-  participantes=[ACTOR, VISTA, *capa(ADP, BREVO), *T('Cita', 'Parametro_Global', 'Usuario', 'Notificacion', 'Bitacora_Auditoria')],
+  participantes=[ACTOR, VISTA, *capa(ADP), *T('Cita', 'Parametro_Global', 'Usuario', 'Notificacion', 'Bitacora_Auditoria'), *ext(BREVO)],
   principal=[
     'A -> V: ejecutar_validar_sesion(cita_id)',
     f'V -> {API}: POST /citas/:id/validar-sesion',
@@ -118,7 +118,7 @@ CU41 = dict(id='CU41', nombre='Validando sesión mediante protocolo multi-factor
 # ──────────────────────────── CU42 ────────────────────────────
 CU42 = dict(id='CU42', nombre='Capturando firma manuscrita de conformidad', actores=['Profesional', 'Paciente'],
   vistas={'Profesional': VFIRMA, 'Paciente': VFIRMA},
-  participantes=[ACTOR, VISTA, *capa(ADP, BREVO), *T('Cita', 'Bitacora_Auditoria')],
+  participantes=[ACTOR, VISTA, *capa(ADP), *T('Cita', 'Bitacora_Auditoria'), *ext(BREVO)],
   principal=[
     'A -> V: habilitar_la_interfaz_de_captura_de_firma(cita_id)',
     'V ->> V: verificar_la_interfaz_tactil_del_terminal()',

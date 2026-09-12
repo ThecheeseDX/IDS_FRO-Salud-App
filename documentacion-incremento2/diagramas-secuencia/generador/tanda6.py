@@ -66,7 +66,7 @@ CU31 = dict(id='CU31', nombre='Gestionando versionado de correcciones auditadas'
 # ──────────────────────────── CU33 ────────────────────────────
 CU33 = dict(id='CU33', nombre='Almacenando archivos en repositorio multimedia', actores=['Profesional'],
   vistas={'Profesional': VDOCS},
-  participantes=[ACTOR, VISTA, *capa(ADP, CLOUD), *T('Parametro_Global', 'Profesional', 'Documento_Clinico', 'Bitacora_Auditoria')],
+  participantes=[ACTOR, VISTA, *capa(ADP), *T('Parametro_Global', 'Profesional', 'Documento_Clinico', 'Bitacora_Auditoria'), *ext(CLOUD)],
   principal=[
     'A -> V: seleccionar_documento_del_dispositivo(archivo)',
     'V ->> V: verificar_el_tamano_contra_el_limite_parametrizado()',

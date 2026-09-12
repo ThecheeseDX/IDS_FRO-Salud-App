@@ -48,7 +48,8 @@ def parsear(lineas, actor, vista=None):
 def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     """Calcula layout y devuelve (celdas_drawio, svg)."""
     parts = [dict(p) for p in participantes]
-    parts[0] = {'id': ACTOR_ID, 'nombre': actor, 'tipo': 'actor'}
+    if parts[0]['tipo'] == 'actor':
+        parts[0] = {'id': ACTOR_ID, 'nombre': actor, 'tipo': 'actor'}
     if isinstance(vista, str):
         parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
     elif vista:
@@ -170,12 +171,13 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     s.append('</svg>')
     return celdas, "\n".join(s), (ancho, alto)
 
-NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'controlador': 2.5, 'dao': 3, 'motor_sql': 4, 'tabla': 5}
+NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'controlador': 2.5, 'dao': 3, 'motor_sql': 4, 'tabla': 5, 'externo': 6}
 
 def nivel_de(part):
     if part['tipo'] == 'actor': return NIVEL['actor']
     if part['tipo'] == 'vista': return NIVEL['vista']
     if part['tipo'] == 'tabla': return NIVEL['tabla']
+    if part['tipo'] == 'externo': return NIVEL['externo']
     nombre = part['nombre']
     if nombre == 'C_API_REST': return NIVEL['api']
     if nombre == 'C_Capa_de_Acceso_a_Datos': return NIVEL['dao']
@@ -196,10 +198,13 @@ def validar_pagina(nombre_pagina, parts, msgs, problemas):
             problemas.append(f"{nombre_pagina}: participante no declarado ({de} -> {a})"); continue
         if de == a: continue
         na, nb = pos[de], pos[a]
-        if abs(na - nb) > 1.01:
+        nombres = {p['id']: p['nombre'] for p in parts}
+        if NIVEL['externo'] in (na, nb):
+            otro = nombres[de] if nb == NIVEL['externo'] else nombres[a]
+            if otro != 'C_API_Adapter':
+                problemas.append(f"{nombre_pagina}: {de} -> {a} no pasa por C_API_Adapter")
+        elif abs(na - nb) > 1.01:
             problemas.append(f"{nombre_pagina}: salto de {de} a {a} · \"{m['texto'][:45]}\"")
-        elif abs(na - nb) == 0.5 and NIVEL['api'] not in (na, nb):
-            problemas.append(f"{nombre_pagina}: {de} -> {a} no pasa por C_API_REST")
         if m['tipo'] == 'call':
             pila.append((de, a))
         elif m['tipo'] == 'ret':
@@ -237,7 +242,8 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
     for nombre_pag, archivo, msgs, actor, vista in paginas:
         celdas, svg, (w, h) = construir_pagina(nombre_pag, cu['participantes'], msgs, actor, vista)
         parts = [dict(p) for p in cu['participantes']]
-        parts[0] = {'id': '__actor__', 'nombre': actor, 'tipo': 'actor'}
+        if parts[0]['tipo'] == 'actor':
+            parts[0] = {'id': '__actor__', 'nombre': actor, 'tipo': 'actor'}
         if isinstance(vista, str): parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
         elif vista:
             for i, p in enumerate(parts):

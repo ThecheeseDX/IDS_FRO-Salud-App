@@ -21,6 +21,10 @@ def capa(*controladores):
     """C_API_REST, los controladores internos indicados, la capa de datos y MySQL."""
     return [P(API), *[P(c) for c in controladores], P(DAO), P(SQL)]
 
+def ext(*servicios):
+    """Servicios externos: van al final, a la derecha de las tablas (ver CU68)."""
+    return [P(s, 'externo') for s in servicios]
+
 def T(*tablas): return [P(t, 'tabla') for t in tablas]
 
 # ── tramos de la capa de datos (DAO -> MySQL -> tabla -> MySQL -> DAO) ──
