@@ -35,7 +35,7 @@ Reglas de notación (las de CU01, CU02, CU20 y CU40 del Incremento 1):
 | 1 · Cuenta, seguridad y perfil | CU06, CU07, CU08, CU09, CU10, CU79 | 72 | Entregada |
 | 2 · Gestión de citas | CU17, CU18, CU22, CU76 | 35 | Entregada |
 | 3 · Triaje y evaluación | CU27, CU23, CU24, CU77 | 19 | Entregada |
-| 4 · Pautas de ejercicio | CU46, CU47, CU48, CU49 | | Pendiente |
+| 4 · Pautas de ejercicio | CU46, CU47, CU48, CU49 | 20 | Entregada |
 | 5 · Evidencia de atención | CU39, CU41, CU42, CU43 | | Pendiente |
 | 6 · Documentos y versionado | CU31, CU33, CU34, CU35 | | Pendiente |
 | 7 · Bonos y copagos | CU66, CU67, CU69, CU71 | | Pendiente |
