@@ -10,6 +10,11 @@ RAMA="parte-3-agenda-citas"
 BASE_SUGERIDA="origin/parte-2-cuenta-seguridad"
 FORK="https://github.com/ThecheeseDX/IDS_FRO-Salud-App.git"
 
+# Si bajaste este script dentro del repositorio, que no aparezca como archivo suelto.
+NOMBRE_SCRIPT="$(basename "$0")"
+mkdir -p .git/info
+grep -qxF "$NOMBRE_SCRIPT" .git/info/exclude 2>/dev/null || echo "$NOMBRE_SCRIPT" >> .git/info/exclude
+
 git fetch origin --quiet
 git remote get-url fork >/dev/null 2>&1 || git remote add fork "$FORK"
 git fetch fork --quiet
