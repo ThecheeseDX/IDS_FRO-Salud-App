@@ -562,29 +562,76 @@ exports.solicitarRecuperacion = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CU07 — EJECUTAR CAMBIO DE CONTRASEÑA
-// POST /api/auth/recuperar/confirmar   { email, codigo, nueva_contrasena }
+// Paso 1: POST /api/auth/recuperar/verificar   { email, codigo }
+// Paso 2: POST /api/auth/recuperar/confirmar   { email, codigo, nueva_contrasena }
+// Con sesión iniciada: /api/auth/cambio-contrasena/verificar|confirmar (sin email)
 // ─────────────────────────────────────────────────────────────────────────────
+
+const CODIGO_INVALIDO = {
+    status: 400,
+    cuerpo: { error: 'CODIGO_INVALIDO', mensaje: 'El código no es válido. Revisa e intenta de nuevo.' }
+};
+
+// Excepción 4 (CU07): la clave anterior sigue vigente porque se revierte todo.
+const FALLO_PERSISTENCIA = {
+    status: 500,
+    cuerpo: {
+        error: 'PERSISTENCIA_FALLIDA',
+        mensaje: 'No se pudo completar el cambio: se interrumpió la comunicación con el servidor de datos. Tu contraseña anterior sigue vigente; intenta nuevamente en unos momentos.'
+    }
+};
+
+async function buscarUsuarioConOTP(columna, valor) {
+    const [usuarios] = await pool.query(
+        `SELECT usuario_id, email, otp_codigo, otp_expiracion
+           FROM Usuario WHERE ${columna} = ? LIMIT 1`,
+        [valor]
+    );
+    return usuarios[0] || null;
+}
+
+/**
+ * Excepción 2 (CU07): el código no coincide con el registro activo o expiró.
+ * Devuelve null si el código sirve; si no, la respuesta de rechazo. Un usuario
+ * inexistente recibe el mismo rechazo genérico, para no revelar cuentas.
+ */
+function rechazoDeCodigo(usuario, codigo) {
+    const codigoLimpio = String(codigo || '').trim();
+    if (!usuario || !usuario.otp_codigo || !/^\d{6}$/.test(codigoLimpio)) {
+        return CODIGO_INVALIDO;
+    }
+    if (!usuario.otp_expiracion || new Date() > new Date(usuario.otp_expiracion)) {
+        return {
+            status: 400,
+            cuerpo: { error: 'CODIGO_INVALIDO', mensaje: 'El código expiró. Solicita uno nuevo.' }
+        };
+    }
+    return usuario.otp_codigo === codigoLimpio ? null : CODIGO_INVALIDO;
+}
+
+/** Deja rastro del fallo; si la base sigue caída, al menos queda en consola. */
+async function registrarFalloPersistencia(contexto, usuarioId, error) {
+    const detalle = error.code || error.message;
+    console.error(`[CU07] Fallo de persistencia (${contexto}), usuario ${usuarioId ?? 'sin identificar'}:`, detalle);
+    try {
+        await pool.query(
+            `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, datos_adicionales, usuario_id)
+             VALUES ('CAMBIO_CONTRASENA_FALLIDO', 'Usuario', ?, ?)`,
+            [JSON.stringify({ contexto, error: detalle }), usuarioId ?? null]
+        );
+    } catch (errorBitacora) {
+        console.error('[CU07] Tampoco se pudo escribir el fallo en la bitácora:', errorBitacora.code || errorBitacora.message);
+    }
+}
 
 /**
  * Valida OTP + robustez y aplica el cambio. Devuelve {status, cuerpo}.
- * Se usa desde el flujo público (con email) y el autenticado (con usuario_id).
+ * El servidor vuelve a revisar el código aunque la app ya lo haya verificado:
+ * el paso 1 solo habilita el formulario, no autoriza el cambio por sí mismo.
  */
-async function ejecutarCambioContrasena(usuario, codigo, nuevaContrasena) {
-    // Excepción 2 (CU07): código incorrecto o expirado.
-    const codigoLimpio = String(codigo || '').trim();
-    const expirado = !usuario.otp_expiracion || new Date() > new Date(usuario.otp_expiracion);
-
-    if (!usuario.otp_codigo || usuario.otp_codigo !== codigoLimpio || expirado) {
-        return {
-            status: 400,
-            cuerpo: {
-                error: 'CODIGO_INVALIDO',
-                mensaje: expirado && usuario.otp_codigo
-                    ? 'El código expiró. Solicita uno nuevo.'
-                    : 'El código no es válido. Revisa e intenta de nuevo.'
-            }
-        };
-    }
+async function ejecutarCambioContrasena(usuario, codigo, nuevaContrasena, ip) {
+    const rechazo = rechazoDeCodigo(usuario, codigo);
+    if (rechazo) return rechazo;
 
     // Excepción 3 (CU07): política de robustez, con requisitos detallados.
     const robustez = validarRobustezContrasena(nuevaContrasena);
@@ -601,25 +648,34 @@ async function ejecutarCambioContrasena(usuario, codigo, nuevaContrasena) {
 
     const contrasena_hash = await bcrypt.hash(nuevaContrasena, 10);
 
-    await pool.query(
-        `UPDATE Usuario
-            SET contrasena_hash = ?, otp_codigo = NULL, otp_expiracion = NULL
-          WHERE usuario_id = ?`,
-        [contrasena_hash, usuario.usuario_id]
-    );
-
-    // CU08: un cambio de contraseña cierra las sesiones de TODOS los
-    // dispositivos; quien tenga la clave nueva vuelve a entrar.
-    await revocarTodasLasSesiones(pool, usuario.usuario_id);
-
+    // Clave nueva, cierre de sesiones (CU08) y bitácora van en una transacción:
+    // si la conexión se corta a mitad, no queda la clave cambiada con las
+    // sesiones antiguas abiertas ni un cambio sin auditar.
+    let conexion;
     try {
-        await pool.query(
-            `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, usuario_id)
-             VALUES ('CAMBIO_CONTRASENA', 'Usuario', ?)`,
-            [usuario.usuario_id]
+        conexion = await pool.getConnection();
+        await conexion.beginTransaction();
+
+        await conexion.query(
+            `UPDATE Usuario
+                SET contrasena_hash = ?, otp_codigo = NULL, otp_expiracion = NULL
+              WHERE usuario_id = ?`,
+            [contrasena_hash, usuario.usuario_id]
         );
-    } catch (errorBitacora) {
-        console.error('[cambioContrasena] Sin registro en bitácora:', errorBitacora.message);
+        await revocarTodasLasSesiones(conexion, usuario.usuario_id);
+        await conexion.query(
+            `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, usuario_id)
+             VALUES ('CAMBIO_CONTRASENA', 'Usuario', ?, ?)`,
+            [ip || null, usuario.usuario_id]
+        );
+
+        await conexion.commit();
+    } catch (error) {
+        if (conexion) await conexion.rollback().catch(() => {});
+        await registrarFalloPersistencia('guardado', usuario.usuario_id, error);
+        return FALLO_PERSISTENCIA;
+    } finally {
+        if (conexion) conexion.release();
     }
 
     return {
@@ -630,30 +686,30 @@ async function ejecutarCambioContrasena(usuario, codigo, nuevaContrasena) {
     };
 }
 
+exports.verificarCodigoRecuperacion = async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    try {
+        const rechazo = rechazoDeCodigo(await buscarUsuarioConOTP('email', email), req.body?.codigo);
+        if (rechazo) return res.status(rechazo.status).json(rechazo.cuerpo);
+        return res.status(200).json({ mensaje: 'Código verificado.' });
+    } catch (error) {
+        console.error('[verificarCodigoRecuperacion]', error);
+        return res.status(500).json({ error: 'Error interno del servidor.', mensaje: 'No se pudo verificar el código. Intenta nuevamente.' });
+    }
+};
+
 exports.confirmarRecuperacion = async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const { codigo, nueva_contrasena } = req.body || {};
 
     try {
-        const [usuarios] = await pool.query(
-            `SELECT usuario_id, email, otp_codigo, otp_expiracion
-               FROM Usuario WHERE email = ? LIMIT 1`,
-            [email]
-        );
-
-        // Mismo mensaje genérico que un código inválido: no revela cuentas.
-        if (usuarios.length === 0) {
-            return res.status(400).json({
-                error: 'CODIGO_INVALIDO',
-                mensaje: 'El código no es válido. Revisa e intenta de nuevo.'
-            });
-        }
-
-        const resultado = await ejecutarCambioContrasena(usuarios[0], codigo, nueva_contrasena);
+        const usuario = await buscarUsuarioConOTP('email', email);
+        const resultado = await ejecutarCambioContrasena(usuario, codigo, nueva_contrasena, req.ip);
         return res.status(resultado.status).json(resultado.cuerpo);
     } catch (error) {
-        console.error('[confirmarRecuperacion]', error);
-        return res.status(500).json({ error: 'Error interno del servidor.' });
+        // Lo único que puede fallar aquí es leer la base: misma Excepción 4.
+        await registrarFalloPersistencia('recuperacion', null, error);
+        return res.status(FALLO_PERSISTENCIA.status).json(FALLO_PERSISTENCIA.cuerpo);
     }
 };
 
@@ -681,23 +737,35 @@ exports.solicitarCambioContrasena = async (req, res) => {
     }
 };
 
-exports.confirmarCambioContrasena = async (req, res) => {
-    const { codigo, nueva_contrasena } = req.body || {};
+exports.verificarCodigoCambioContrasena = async (req, res) => {
     try {
-        const [usuarios] = await pool.query(
-            `SELECT usuario_id, email, otp_codigo, otp_expiracion
-               FROM Usuario WHERE usuario_id = ? LIMIT 1`,
-            [req.user.usuario_id]
-        );
-        if (usuarios.length === 0) {
+        const usuario = await buscarUsuarioConOTP('usuario_id', req.user.usuario_id);
+        if (!usuario) {
             return res.status(404).json({ error: 'Usuario no encontrado.' });
         }
 
-        const resultado = await ejecutarCambioContrasena(usuarios[0], codigo, nueva_contrasena);
+        const rechazo = rechazoDeCodigo(usuario, req.body?.codigo);
+        if (rechazo) return res.status(rechazo.status).json(rechazo.cuerpo);
+        return res.status(200).json({ mensaje: 'Código verificado.' });
+    } catch (error) {
+        console.error('[verificarCodigoCambioContrasena]', error);
+        return res.status(500).json({ error: 'Error interno del servidor.', mensaje: 'No se pudo verificar el código. Intenta nuevamente.' });
+    }
+};
+
+exports.confirmarCambioContrasena = async (req, res) => {
+    const { codigo, nueva_contrasena } = req.body || {};
+    try {
+        const usuario = await buscarUsuarioConOTP('usuario_id', req.user.usuario_id);
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
+        const resultado = await ejecutarCambioContrasena(usuario, codigo, nueva_contrasena, req.ip);
         return res.status(resultado.status).json(resultado.cuerpo);
     } catch (error) {
-        console.error('[confirmarCambioContrasena]', error);
-        return res.status(500).json({ error: 'Error interno del servidor.' });
+        await registrarFalloPersistencia('cambio con sesion', req.user.usuario_id, error);
+        return res.status(FALLO_PERSISTENCIA.status).json(FALLO_PERSISTENCIA.cuerpo);
     }
 };
 

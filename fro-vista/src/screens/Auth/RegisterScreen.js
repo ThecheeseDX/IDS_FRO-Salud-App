@@ -5,6 +5,7 @@ import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import LogoFro from '../../components/LogoFro';
 import { validateRut } from '../../utils/validators';
+import { requisitosIncumplidos } from '../../utils/contrasena';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
@@ -83,22 +84,13 @@ const RegisterScreen = ({ navigation }) => {
         setDisponibilidad(nuevosHorarios);
     };
 
-    // D4: misma política que el servidor (8+, letra, número y símbolo). Antes
-    // el registro aceptaba "11111111" sin ningún aviso.
-    const requisitosContrasena = (texto) => {
-        const faltan = [];
-        if (texto.length < 8) faltan.push('Mínimo 8 caracteres');
-        if (!/[a-zA-Z]/.test(texto)) faltan.push('Al menos una letra');
-        if (!/[0-9]/.test(texto)) faltan.push('Al menos un número');
-        if (!/[^A-Za-z0-9\s]/.test(texto)) faltan.push('Al menos un símbolo (ej: . _ - ! @ #)');
-        return faltan;
-    };
-
     const validarFormatosSintacticos = () => {
         let nuevosErrores = {};
         let esValido = true;
 
-        const faltantes = requisitosContrasena(formData.contrasena);
+        // D4: misma política que el servidor (8+, letra, número y símbolo). Antes
+        // el registro aceptaba "11111111" sin ningún aviso.
+        const faltantes = requisitosIncumplidos(formData.contrasena);
         if (faltantes.length > 0) {
             nuevosErrores.contrasena = true; esValido = false;
             setAviso({

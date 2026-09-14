@@ -32,11 +32,20 @@ const verifyToken = async (req, res, next) => {
 
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ 
-                error: 'La sesión ha expirado. Por favor, inicie sesión nuevamente.' 
+            return res.status(401).json({
+                error: 'La sesión ha expirado. Por favor, inicie sesión nuevamente.'
             });
         }
-        return res.status(401).json({ 
+        // Si lo que falló fue consultar la sesión en la base (no el token),
+        // responder 401 hacía que la app cerrara la sesión por una caída de red.
+        if (error.name !== 'JsonWebTokenError' && error.name !== 'NotBeforeError') {
+            console.error('[verifyToken] No se pudo validar la sesión:', error.code || error.message);
+            return res.status(503).json({
+                error: 'SERVICIO_NO_DISPONIBLE',
+                mensaje: 'No se pudo comunicar con el servidor de datos. Intenta nuevamente en unos momentos.'
+            });
+        }
+        return res.status(401).json({
             error: 'Token de seguridad inválido o corrupto.' 
         });
     }

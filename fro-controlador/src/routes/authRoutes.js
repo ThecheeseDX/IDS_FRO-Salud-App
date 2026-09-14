@@ -24,10 +24,12 @@ router.post('/otp/verificar', authController.verificarOTP);
 
 // ── CU06/CU07 — Recuperación de contraseña (flujo público) ──
 router.post('/recuperar/solicitar', authController.solicitarRecuperacion);
+router.post('/recuperar/verificar', authController.verificarCodigoRecuperacion);
 router.post('/recuperar/confirmar', authController.confirmarRecuperacion);
 
 // ── CU07 — Cambio de contraseña desde adentro de la app ──
 router.post('/cambio-contrasena/solicitar', verifyToken, authController.solicitarCambioContrasena);
+router.post('/cambio-contrasena/verificar', verifyToken, authController.verificarCodigoCambioContrasena);
 router.post('/cambio-contrasena/confirmar', verifyToken, authController.confirmarCambioContrasena);
 
 // ── CU08 — Sesiones activas por dispositivo ──

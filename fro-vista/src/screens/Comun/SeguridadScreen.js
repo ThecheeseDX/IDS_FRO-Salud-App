@@ -9,7 +9,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -20,7 +19,7 @@ import {
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import VistaConTeclado from '../../components/VistaConTeclado';
-import CodigoOTP from '../../components/CodigoOTP';
+import CambioContrasenaOTP from '../../components/CambioContrasenaOTP';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, radio } from '../../theme';
@@ -41,11 +40,7 @@ export default function SeguridadScreen() {
   // ── CU07: cambio de contraseña ─────────────────────────────────────────────
   const [cambioActivo, setCambioActivo] = useState(false);
   const [destinoOTP, setDestinoOTP] = useState('');
-  const [codigo, setCodigo] = useState('');
-  const [nuevaContrasena, setNuevaContrasena] = useState('');
-  const [confirmar, setConfirmar] = useState('');
   const [procesandoCambio, setProcesandoCambio] = useState(false);
-  const [erroresCambio, setErroresCambio] = useState([]);
 
   // ── CU09: privacidad (solo pacientes) ──────────────────────────────────────
   const [privacidad, setPrivacidad] = useState(null);
@@ -105,50 +100,18 @@ export default function SeguridadScreen() {
   };
 
   // ── CU07: cambio de contraseña con OTP ─────────────────────────────────────
+  const solicitarCodigoCambio = async () => {
+    const { data } = await apiClient.post('/auth/cambio-contrasena/solicitar');
+    setDestinoOTP(data?.destino || 'tu correo');
+  };
+
   const iniciarCambio = async () => {
     setProcesandoCambio(true);
-    setErroresCambio([]);
     try {
-      const { data } = await apiClient.post('/auth/cambio-contrasena/solicitar');
-      setDestinoOTP(data?.destino || 'tu correo');
+      await solicitarCodigoCambio();
       setCambioActivo(true);
     } catch {
       setAviso({ tono: 'error', titulo: 'Error', mensaje: 'No se pudo enviar el código. Intenta nuevamente.' });
-    } finally {
-      setProcesandoCambio(false);
-    }
-  };
-
-  const confirmarCambio = async () => {
-    setErroresCambio([]);
-    if (!/^\d{6}$/.test(codigo.trim())) {
-      setErroresCambio(['El código son los 6 dígitos que llegaron a tu correo.']);
-      return;
-    }
-    if (nuevaContrasena !== confirmar) {
-      setErroresCambio(['Las contraseñas no coinciden.']);
-      return;
-    }
-
-    setProcesandoCambio(true);
-    try {
-      const { data } = await apiClient.post('/auth/cambio-contrasena/confirmar', {
-        codigo: codigo.trim(),
-        nueva_contrasena: nuevaContrasena,
-      });
-      setAviso({
-        tono: 'ok',
-        titulo: 'Contraseña actualizada',
-        mensaje: data?.mensaje || 'Vuelve a iniciar sesión.',
-        alCerrar: logoutSession,
-      });
-    } catch (err) {
-      const respuesta = err.response?.data;
-      if (respuesta?.error === 'CONTRASENA_DEBIL') {
-        setErroresCambio([respuesta.mensaje, ...(respuesta.requisitos || [])]);
-      } else {
-        setErroresCambio([respuesta?.mensaje || 'No se pudo cambiar la contraseña.']);
-      }
     } finally {
       setProcesandoCambio(false);
     }
@@ -238,42 +201,29 @@ export default function SeguridadScreen() {
         </TouchableOpacity>
       ) : (
         <View style={estilos.tarjetaCambio}>
-          <Text style={estilos.ayudaSeccion}>
-            Enviamos un código a {destinoOTP}. Escríbelo junto a tu contraseña nueva.
-          </Text>
-          <CodigoOTP valor={codigo} onCambiar={setCodigo} />
-          <TextInput
-            style={estilos.input}
-            placeholder="Contraseña nueva"
-            secureTextEntry
-            value={nuevaContrasena}
-            onChangeText={setNuevaContrasena}
+          <CambioContrasenaOTP
+            destino={destinoOTP}
+            verificarCodigo={(codigo) =>
+              apiClient.post('/auth/cambio-contrasena/verificar', { codigo })
+            }
+            confirmarContrasena={async (codigo, nuevaContrasena) => {
+              const { data } = await apiClient.post('/auth/cambio-contrasena/confirmar', {
+                codigo,
+                nueva_contrasena: nuevaContrasena,
+              });
+              return data;
+            }}
+            reenviarCodigo={solicitarCodigoCambio}
+            onExito={(data) =>
+              setAviso({
+                tono: 'ok',
+                titulo: 'Contraseña actualizada',
+                mensaje: data?.mensaje || 'Vuelve a iniciar sesión.',
+                alCerrar: logoutSession,
+              })
+            }
           />
-          <TextInput
-            style={estilos.input}
-            placeholder="Confirmar contraseña nueva"
-            secureTextEntry
-            value={confirmar}
-            onChangeText={setConfirmar}
-          />
-          <Text style={estilos.ayudaSeccion}>Mínimo 8 caracteres, con letras y números.</Text>
-
-          {erroresCambio.map((mensaje) => (
-            <Text key={mensaje} style={estilos.textoError}>• {mensaje}</Text>
-          ))}
-
-          <TouchableOpacity
-            style={[estilos.botonPrimario, procesandoCambio && estilos.deshabilitado]}
-            onPress={confirmarCambio}
-            disabled={procesandoCambio}
-          >
-            {procesandoCambio ? (
-              <ActivityIndicator color={colores.superficie} />
-            ) : (
-              <Text style={estilos.botonPrimarioTexto}>Confirmar cambio</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setCambioActivo(false)} disabled={procesandoCambio}>
+          <TouchableOpacity onPress={() => setCambioActivo(false)}>
             <Text style={estilos.enlace}>Cancelar</Text>
           </TouchableOpacity>
         </View>
@@ -384,16 +334,6 @@ const estilos = StyleSheet.create({
   botonCerrarTexto: { color: colores.error, fontWeight: 'bold', fontSize: 13 },
 
   tarjetaCambio: { backgroundColor: colores.superficie, borderRadius: radio.md, borderWidth: 1, borderColor: colores.borde, padding: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: colores.bordeCampo,
-    backgroundColor: colores.fondo,
-    borderRadius: radio.md,
-    padding: 12,
-    marginBottom: 10,
-    fontSize: 15,
-  },
-  textoError: { color: colores.error, fontSize: 13, marginBottom: 4 },
 
   botonPrimario: {
     backgroundColor: colores.primario,

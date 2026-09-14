@@ -1,36 +1,35 @@
 // Ruta: fro-vista/src/screens/Auth/RecuperarContrasenaScreen.js
 //
-// CU06 + CU07: recuperación de contraseña olvidada en dos pasos.
-// Paso 1: se pide el correo y se envía un código OTP.
-// Paso 2: código + contraseña nueva; el servidor valida robustez y expiración.
+// CU06 + CU07: recuperación de contraseña olvidada.
+// Paso 1 (CU06): se pide el correo y se envía un código OTP.
+// Paso 2 (CU07): se verifica el código y recién entonces se pide la
+// contraseña nueva (ver CambioContrasenaOTP).
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { colores, radio, sombra } from '../../theme';
-import CodigoOTP from '../../components/CodigoOTP';
+import CambioContrasenaOTP from '../../components/CambioContrasenaOTP';
 import DialogoAviso from '../../components/DialogoAviso';
+
+const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RecuperarContrasenaScreen({ navigation }) {
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
   const [paso, setPaso] = useState(1);
   const [email, setEmail] = useState('');
-  const [codigo, setCodigo] = useState('');
-  const [nuevaContrasena, setNuevaContrasena] = useState('');
-  const [confirmar, setConfirmar] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
-  const [requisitos, setRequisitos] = useState([]);
+
+  const correo = email.trim().toLowerCase();
 
   // ── Paso 1: solicitar el código ────────────────────────────────────────────
   const solicitarCodigo = async () => {
-    const correo = email.trim().toLowerCase();
-
     // CU06 — Excepción 3: formato inválido se bloquea antes de enviar.
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    if (!FORMATO_CORREO.test(correo)) {
       setError('Ingresa un correo electrónico válido.');
       return;
     }
@@ -44,48 +43,6 @@ export default function RecuperarContrasenaScreen({ navigation }) {
     } catch (err) {
       const respuesta = err.response?.data;
       setError(respuesta?.mensaje || 'No se pudo procesar la solicitud. Revisa tu conexión.');
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // ── Paso 2: confirmar código y contraseña nueva ────────────────────────────
-  const cambiarContrasena = async () => {
-    setRequisitos([]);
-    setError('');
-
-    // CU07 — Excepción 1: el código es numérico de 6 dígitos.
-    if (!/^\d{6}$/.test(codigo.trim())) {
-      setError('El código son los 6 dígitos que llegaron a tu correo.');
-      return;
-    }
-    if (nuevaContrasena !== confirmar) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
-
-    setCargando(true);
-    try {
-      const { data } = await apiClient.post('/auth/recuperar/confirmar', {
-        email: email.trim().toLowerCase(),
-        codigo: codigo.trim(),
-        nueva_contrasena: nuevaContrasena,
-      });
-      setAviso({
-        tono: 'ok',
-        titulo: 'Contraseña actualizada',
-        mensaje: data?.mensaje || 'Ya puedes iniciar sesión.',
-        alCerrar: () => navigation.replace('Login'),
-      });
-    } catch (err) {
-      const respuesta = err.response?.data;
-      // CU07 — Excepción 3: se muestran los requisitos incumplidos.
-      if (respuesta?.error === 'CONTRASENA_DEBIL') {
-        setRequisitos(respuesta.requisitos || []);
-        setError(respuesta.mensaje);
-      } else {
-        setError(respuesta?.mensaje || 'No se pudo cambiar la contraseña. Intenta nuevamente.');
-      }
     } finally {
       setCargando(false);
     }
@@ -110,56 +67,45 @@ export default function RecuperarContrasenaScreen({ navigation }) {
               onChangeText={setEmail}
               editable={!cargando}
             />
+
+            {error ? <Text style={estilos.error}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[estilos.boton, cargando && estilos.botonDeshabilitado]}
+              onPress={solicitarCodigo}
+              disabled={cargando}
+            >
+              {cargando ? (
+                <ActivityIndicator color={colores.superficie} />
+              ) : (
+                <Text style={estilos.botonTexto}>Enviar código</Text>
+              )}
+            </TouchableOpacity>
           </>
         ) : (
-          <>
-            <Text style={estilos.subtitulo}>
-              Escribe el código que llegó a {email.trim()} y tu contraseña nueva.
-            </Text>
-            <CodigoOTP valor={codigo} onCambiar={setCodigo} editable={!cargando} />
-            <TextInput
-              style={estilos.input}
-              placeholder="Contraseña nueva"
-              secureTextEntry
-              value={nuevaContrasena}
-              onChangeText={setNuevaContrasena}
-              editable={!cargando}
-            />
-            <TextInput
-              style={estilos.input}
-              placeholder="Confirmar contraseña nueva"
-              secureTextEntry
-              value={confirmar}
-              onChangeText={setConfirmar}
-              editable={!cargando}
-            />
-            <Text style={estilos.ayuda}>Mínimo 8 caracteres, con letras y números.</Text>
-          </>
-        )}
-
-        {error ? <Text style={estilos.error}>{error}</Text> : null}
-        {requisitos.map((requisito) => (
-          <Text key={requisito} style={estilos.error}>• {requisito}</Text>
-        ))}
-
-        <TouchableOpacity
-          style={[estilos.boton, cargando && estilos.botonDeshabilitado]}
-          onPress={paso === 1 ? solicitarCodigo : cambiarContrasena}
-          disabled={cargando}
-        >
-          {cargando ? (
-            <ActivityIndicator color={colores.superficie} />
-          ) : (
-            <Text style={estilos.botonTexto}>
-              {paso === 1 ? 'Enviar código' : 'Cambiar contraseña'}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {paso === 2 && (
-          <TouchableOpacity onPress={solicitarCodigo} disabled={cargando}>
-            <Text style={estilos.enlace}>Reenviar código</Text>
-          </TouchableOpacity>
+          <CambioContrasenaOTP
+            destino={correo}
+            verificarCodigo={(codigo) =>
+              apiClient.post('/auth/recuperar/verificar', { email: correo, codigo })
+            }
+            confirmarContrasena={async (codigo, nuevaContrasena) => {
+              const { data } = await apiClient.post('/auth/recuperar/confirmar', {
+                email: correo,
+                codigo,
+                nueva_contrasena: nuevaContrasena,
+              });
+              return data;
+            }}
+            reenviarCodigo={() => apiClient.post('/auth/recuperar/solicitar', { email: correo })}
+            onExito={(data) =>
+              setAviso({
+                tono: 'ok',
+                titulo: 'Contraseña actualizada',
+                mensaje: data?.mensaje || 'Ya puedes iniciar sesión.',
+                alCerrar: () => navigation.replace('Login'),
+              })
+            }
+          />
         )}
 
         <TouchableOpacity onPress={() => navigation.goBack()} disabled={cargando}>
@@ -201,7 +147,6 @@ const estilos = StyleSheet.create({
     marginBottom: 12,
     fontSize: 15,
   },
-  ayuda: { color: colores.textoTenue, fontSize: 13, marginBottom: 4 },
   error: { color: colores.error, marginTop: 4, fontSize: 13 },
   boton: {
     backgroundColor: colores.primario,
