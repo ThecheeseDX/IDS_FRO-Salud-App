@@ -5,6 +5,7 @@ const UserModel = require('../models/userModel');
 const { comparePassword } = require('../utils/encriptar_bcrypt');
 const { crearOTP, validarOTP, enviarPorEmail, explicarErrorSMTP } = require('../services/notifications/otpService');
 const {
+    DURACION_SESION_HORAS,
     validarRobustezContrasena,
     crearSesion,
     revocarTodasLasSesiones,
@@ -495,7 +496,7 @@ exports.login = async (req, res) => {
             jti
         };
 
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: `${DURACION_SESION_HORAS}h` });
 
         res.status(200).json({
             mensaje: 'Autenticación exitosa.',
@@ -779,8 +780,9 @@ exports.listarSesiones = async (req, res) => {
             `SELECT sesion_usuario_id, dispositivo, ip_origen, momento_inicio, jti
                FROM Sesion_Usuario
               WHERE usuario_id = ? AND activa = TRUE
+                AND momento_inicio > NOW() - INTERVAL ? HOUR
               ORDER BY momento_inicio DESC`,
-            [req.user.usuario_id]
+            [req.user.usuario_id, DURACION_SESION_HORAS]
         );
 
         return res.status(200).json({
@@ -794,30 +796,39 @@ exports.listarSesiones = async (req, res) => {
             })),
         });
     } catch (error) {
+        // Excepción 2 (CU08): no se pudo recuperar la lista de sesiones.
         console.error('[listarSesiones]', error);
-        return res.status(500).json({ error: 'No se pudo obtener la lista de sesiones.' });
+        return res.status(500).json({
+            error: 'SESIONES_NO_DISPONIBLES',
+            mensaje: 'Información de dispositivos no disponible momentáneamente.'
+        });
     }
 };
 
 exports.cerrarSesion = async (req, res) => {
     const { id } = req.params;
     try {
-        // El WHERE por usuario impide cerrar sesiones ajenas.
+        // El WHERE por usuario impide cerrar sesiones ajenas, y solo alcanza a
+        // sesiones vigentes: activas y con el token dentro de su duración.
+        // Antes bastaba con que la fila existiera; como mysql2 cuenta las filas
+        // encontradas (no las modificadas), revocar una sesión ya cerrada
+        // respondía éxito.
         const [resultado] = await pool.query(
             `UPDATE Sesion_Usuario SET activa = FALSE
-              WHERE sesion_usuario_id = ? AND usuario_id = ?`,
-            [id, req.user.usuario_id]
+              WHERE sesion_usuario_id = ? AND usuario_id = ? AND activa = TRUE
+                AND momento_inicio > NOW() - INTERVAL ? HOUR`,
+            [id, req.user.usuario_id, DURACION_SESION_HORAS]
         );
 
-        // Excepción 3 (CU08): la sesión ya no existía o había expirado.
+        // Excepción 3 (CU08): la sesión ya fue cerrada o su token expiró.
         if (resultado.affectedRows === 0) {
-            return res.status(404).json({
-                error: 'SESION_NO_ENCONTRADA',
-                mensaje: 'Esa sesión ya no está activa.'
+            return res.status(409).json({
+                error: 'SESION_NO_ACTIVA',
+                mensaje: 'La sesión seleccionada ya no está activa.'
             });
         }
 
-        return res.status(200).json({ mensaje: 'Sesión cerrada. Ese dispositivo perdió el acceso.' });
+        return res.status(200).json({ mensaje: 'Sesión revocada exitosamente.' });
     } catch (error) {
         console.error('[cerrarSesion]', error);
         return res.status(500).json({ error: 'No se pudo cerrar la sesión.' });

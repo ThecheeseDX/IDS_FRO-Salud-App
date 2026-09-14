@@ -32,6 +32,13 @@ function validarRobustezContrasena(contrasena) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Vida del Token de Acceso. La fila de Sesion_Usuario no se apaga sola al
+ * vencer el token, así que las consultas de sesiones usan este mismo plazo
+ * para no tratar como activa una sesión cuyo token ya expiró.
+ */
+const DURACION_SESION_HORAS = 8;
+
+/**
  * Crea el registro de sesión y devuelve su identificador para el JWT.
  *
  * Cada instalación de la app manda un dispositivo_id estable. Volver a entrar
@@ -90,6 +97,7 @@ async function revocarTodasLasSesiones(conexion, usuario_id) {
 }
 
 module.exports = {
+  DURACION_SESION_HORAS,
   validarRobustezContrasena,
   crearSesion,
   sesionVigente,

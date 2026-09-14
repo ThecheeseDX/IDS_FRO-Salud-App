@@ -1,5 +1,5 @@
 // Ruta: fro-vista/src/navigation/AppNavigator.js
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -35,11 +35,35 @@ import DocumentosScreen from '../screens/Comun/DocumentosScreen';
 import VisorDocumentoScreen from '../screens/Comun/VisorDocumentoScreen';
 import { colores, tipografia } from '../theme';
 import LogoFro from '../components/LogoFro';
+import DialogoAviso from '../components/DialogoAviso';
 
 const Stack = createNativeStackNavigator();
 
+// Acciones que llevan a una pantalla por su nombre: si ningún navegador las
+// atiende es porque la ruta no está registrada (error de ruteo).
+const ACCIONES_DE_RUTEO = ['NAVIGATE', 'NAVIGATE_DEPRECATED', 'PUSH', 'REPLACE', 'JUMP_TO'];
+
 export default function AppNavigator() {
   const { userToken, userData, isLoading } = useContext(AuthContext);
+
+  // CU08 — Excepción 1: un enlace a una ruta que no existe para el rol no
+  // hacía nada (React Navigation solo lo anota en consola). Ahora se avisa
+  // del error y "Recargar aplicación" vuelve a montar la navegación desde la
+  // pantalla inicial del rol.
+  const [errorNavegacion, setErrorNavegacion] = useState(null);
+  const [recargas, setRecargas] = useState(0);
+
+  const alFallarNavegacion = (accion) => {
+    if (!ACCIONES_DE_RUTEO.includes(accion.type)) {
+      console.warn('[navegacion] Acción no atendida:', accion.type);
+      return;
+    }
+    const destino = accion.payload?.name;
+    console.warn('[navegacion] Ruta no disponible:', destino);
+    setErrorNavegacion(
+      destino === 'Seguridad' ? 'los ajustes de seguridad de tu cuenta' : 'la sección solicitada'
+    );
+  };
 
   if (isLoading) {
     return (
@@ -50,7 +74,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer key={recargas} onUnhandledAction={alFallarNavegacion}>
       <Stack.Navigator
         screenOptions={{
           // Cabecera clara: el verde de marca es acento, no fondo de toda la
@@ -191,6 +215,17 @@ export default function AppNavigator() {
           </>
         )}
       </Stack.Navigator>
+      <DialogoAviso
+        visible={errorNavegacion !== null}
+        titulo="Error de navegación"
+        mensaje={`No se pudo abrir ${errorNavegacion}. Recarga la aplicación para restablecer el acceso.`}
+        tono="error"
+        etiquetaCerrar="Recargar aplicación"
+        onCerrar={() => {
+          setErrorNavegacion(null);
+          setRecargas((n) => n + 1);
+        }}
+      />
     </NavigationContainer>
   );
 }

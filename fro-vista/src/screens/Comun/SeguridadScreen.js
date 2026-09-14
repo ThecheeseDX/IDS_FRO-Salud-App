@@ -80,6 +80,11 @@ export default function SeguridadScreen() {
   const [sesionPorCerrar, setSesionPorCerrar] = useState(null);
   const confirmarCierre = (sesion) => setSesionPorCerrar(sesion);
 
+  const quitarDeLaLista = (sesion) =>
+    setSesiones((actuales) =>
+      actuales.filter((s) => s.sesion_usuario_id !== sesion.sesion_usuario_id)
+    );
+
   const cerrarSesion = async (sesion) => {
     setCerrandoId(sesion.sesion_usuario_id);
     try {
@@ -88,11 +93,26 @@ export default function SeguridadScreen() {
         logoutSession();
         return;
       }
-      await cargarSesiones();
+      quitarDeLaLista(sesion);
+      setAviso({
+        tono: 'ok',
+        titulo: 'Sesión revocada exitosamente',
+        mensaje: `${sesion.dispositivo || 'El dispositivo'} perdió el acceso a tu cuenta.`,
+      });
     } catch (err) {
       const respuesta = err.response?.data;
-      // CU08 — Excepción 3: la sesión ya había expirado; se refresca la lista.
-      setAviso({ tono: 'alerta', titulo: 'Aviso', mensaje: respuesta?.mensaje || 'No se pudo cerrar la sesión.' });
+      if (respuesta?.error === 'SESION_NO_ACTIVA') {
+        // CU08 — Excepción 3: se cerró en otro dispositivo o su token expiró
+        // mientras se veía la lista. Se quita y se refresca el resto.
+        quitarDeLaLista(sesion);
+        setAviso({
+          tono: 'alerta',
+          titulo: 'La sesión seleccionada ya no está activa',
+          mensaje: 'Ese dispositivo ya había cerrado su sesión o su acceso expiró. Actualizamos la lista.',
+        });
+      } else {
+        setAviso({ tono: 'alerta', titulo: 'Aviso', mensaje: respuesta?.mensaje || 'No se pudo cerrar la sesión.' });
+      }
       await cargarSesiones();
     } finally {
       setCerrandoId(null);
@@ -150,12 +170,16 @@ export default function SeguridadScreen() {
       {cargandoSesiones ? (
         <ActivityIndicator size="large" color={colores.primario} style={estilos.cargando} />
       ) : errorSesiones ? (
-        <View style={estilos.avisoError}>
-          <Text style={estilos.avisoErrorTexto}>
-            No se pudo obtener la lista de sesiones en este momento.
+        // CU08 — Excepción 2: advertencia con actualización manual.
+        <View style={estilos.avisoAdvertencia}>
+          <Text style={estilos.avisoAdvertenciaTitulo}>
+            ⚠️ Información de dispositivos no disponible momentáneamente
           </Text>
-          <TouchableOpacity onPress={cargarSesiones}>
-            <Text style={estilos.enlace}>Reintentar</Text>
+          <Text style={estilos.avisoAdvertenciaTexto}>
+            No pudimos obtener tus sesiones activas. Presiona "Actualizar" para intentarlo de nuevo.
+          </Text>
+          <TouchableOpacity style={estilos.botonActualizar} onPress={cargarSesiones}>
+            <Text style={estilos.botonActualizarTexto}>Actualizar</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -177,7 +201,7 @@ export default function SeguridadScreen() {
               disabled={cerrandoId === sesion.sesion_usuario_id}
             >
               <Text style={estilos.botonCerrarTexto}>
-                {cerrandoId === sesion.sesion_usuario_id ? '…' : 'Cerrar'}
+                {cerrandoId === sesion.sesion_usuario_id ? '…' : 'Revocar Acceso'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -270,13 +294,13 @@ export default function SeguridadScreen() {
       )}
       <DialogoConfirmacion
         visible={sesionPorCerrar !== null}
-        titulo={sesionPorCerrar?.actual ? 'Cerrar esta sesión' : 'Cerrar sesión remota'}
+        titulo={sesionPorCerrar?.actual ? 'Cerrar esta sesión' : 'Revocar acceso remoto'}
         mensaje={
           sesionPorCerrar?.actual
             ? 'Es la sesión de este dispositivo: tendrás que iniciar sesión de nuevo.'
-            : 'Ese dispositivo perderá el acceso de inmediato.'
+            : `${sesionPorCerrar?.dispositivo || 'Ese dispositivo'} perderá el acceso de inmediato.`
         }
-        etiquetaConfirmar="Cerrar sesión"
+        etiquetaConfirmar={sesionPorCerrar?.actual ? 'Cerrar sesión' : 'Revocar Acceso'}
         tono="peligro"
         onConfirmar={() => {
           const sesion = sesionPorCerrar;
@@ -307,8 +331,24 @@ const estilos = StyleSheet.create({
   ayudaSeccion: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
   cargando: { marginVertical: 12 },
 
-  avisoError: { backgroundColor: colores.errorSuave, borderRadius: radio.md, padding: 14 },
-  avisoErrorTexto: { color: colores.error, marginBottom: 6 },
+  avisoAdvertencia: {
+    backgroundColor: colores.advertenciaSuave,
+    borderWidth: 1,
+    borderColor: colores.advertenciaBorde,
+    borderRadius: radio.md,
+    padding: 14,
+  },
+  avisoAdvertenciaTitulo: { color: colores.advertencia, fontWeight: 'bold', marginBottom: 4 },
+  avisoAdvertenciaTexto: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
+  botonActualizar: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colores.advertencia,
+    borderRadius: radio.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  botonActualizarTexto: { color: colores.advertencia, fontWeight: 'bold' },
 
   tarjetaSesion: {
     flexDirection: 'row',
