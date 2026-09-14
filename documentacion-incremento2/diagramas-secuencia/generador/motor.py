@@ -171,7 +171,7 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     s.append('</svg>')
     return celdas, "\n".join(s), (ancho, alto)
 
-NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'controlador': 2.5, 'dao': 3, 'motor_sql': 4, 'tabla': 5, 'externo': 6}
+NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'controlador': 2.5, 'dao': 3, 'motor_sql': 4, 'externo': 2.6, 'tabla': 5}
 
 def nivel_de(part):
     if part['tipo'] == 'actor': return NIVEL['actor']

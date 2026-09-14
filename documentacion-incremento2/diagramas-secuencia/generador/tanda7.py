@@ -9,7 +9,7 @@ BONOS, PASARELA = 'C_API_Bonos_Electronicos', 'C_API_Transacciones'
 # ──────────────────────────── CU66 ────────────────────────────
 CU66 = dict(id='CU66', nombre='Registrando y validando bonos de cobertura', actores=['Paciente'],
   vistas={'Paciente': VPAGOS},
-  participantes=[ACTOR, VISTA, *capa(ADP), *T('Cita', 'Financiador', 'Parametro_Global', 'Bono', 'Bitacora_Auditoria'), *ext(BONOS)],
+  participantes=[ACTOR, VISTA, *capa(ADP, BONOS), *T('Cita', 'Financiador', 'Parametro_Global', 'Bono', 'Bitacora_Auditoria')],
   principal=[
     'A -> V: seleccionar_financiador_e_ingresar_folio(financiador_id, folio)',
     'V ->> V: validar_el_formato_del_folio()',
@@ -62,7 +62,7 @@ CU66 = dict(id='CU66', nombre='Registrando y validando bonos de cobertura', acto
 # ──────────────────────────── CU67 ────────────────────────────
 CU67 = dict(id='CU67', nombre='Registrando transacciones y copagos', actores=['Paciente'],
   vistas={'Paciente': VPAGOS},
-  participantes=[ACTOR, VISTA, *capa(ADP), *T('Cita', 'Parametro_Global', 'Bono', 'Transaccion', 'Paquete_Sesiones', 'Bitacora_Auditoria'), *ext(PASARELA)],
+  participantes=[ACTOR, VISTA, *capa(ADP, PASARELA), *T('Cita', 'Parametro_Global', 'Bono', 'Transaccion', 'Paquete_Sesiones', 'Bitacora_Auditoria')],
   principal=[
     'A -> V: iniciar_el_pago_de_la_cita(cita_id)',
     f'V -> {API}: GET /pagos/resumen',
@@ -127,7 +127,7 @@ CU67 = dict(id='CU67', nombre='Registrando transacciones y copagos', actores=['P
 # CU del sistema: no hay actor, el flujo nace en C_API_REST (igual que el CU68
 # del Incremento 1) y el Proveedor Externo es la ultima lifeline.
 CU69 = dict(id='CU69', nombre='Registrando en bitácora de transacciones externas', actores=['Proveedor Externo'],
-  participantes=[*capa(ADP), *T('Bitacora_Auditoria'), *ext('Proveedor_Externo')],
+  participantes=[*capa(ADP, 'Proveedor_Externo'), *T('Bitacora_Auditoria')],
   principal=[
     f'{API} -> {ADP}: solicitar_transaccion_externa(proveedor, operacion, payload)',
     f'{ADP} ->> {ADP}: capturar_metadatos_e_iniciar_el_cronometro()',
@@ -169,7 +169,7 @@ CU69 = dict(id='CU69', nombre='Registrando en bitácora de transacciones externa
         f'{DAO} --> {ADP}: return (alerta enviada)'],
         reanudar='return (payload interno transformado)'),
   })
-CU69['participantes'] = [*capa(ADP), *T('Bitacora_Auditoria', 'Notificacion'), *ext('Proveedor_Externo')]
+CU69['participantes'] = [*capa(ADP, 'Proveedor_Externo'), *T('Bitacora_Auditoria', 'Notificacion')]
 
 # ──────────────────────────── CU71 ────────────────────────────
 CU71 = dict(id='CU71', nombre='Sincronizando y validando sesiones bonificables', actores=['Profesional'],

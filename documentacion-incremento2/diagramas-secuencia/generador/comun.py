@@ -17,13 +17,15 @@ SEG, ADP = 'C_Seguridad_JWT_BCrypt', 'C_API_Adapter'
 BREVO, CLOUD = 'C_API_Brevo', 'C_API_Cloudinary'
 TRES = ['Paciente', 'Profesional', 'Administrador']
 
-def capa(*controladores):
-    """C_API_REST, los controladores internos indicados, la capa de datos y MySQL."""
-    return [P(API), *[P(c) for c in controladores], P(DAO), P(SQL)]
+EXTERNOS = {BREVO, CLOUD, 'C_API_Transacciones', 'C_API_Bonos_Electronicos', 'Proveedor_Externo'}
 
-def ext(*servicios):
-    """Servicios externos: van al final, a la derecha de las tablas (ver CU68)."""
-    return [P(s, 'externo') for s in servicios]
+def capa(*controladores):
+    """C_API_REST, los controladores y las APIs externas, la capa de datos y MySQL.
+
+    El orden del equipo es: actor, vistas, controladores (incluidas las APIs
+    externas, que cuelgan del adaptador), capa de acceso a datos, MySQL y, al
+    final, las tablas."""
+    return [P(API), *[P(c, 'externo' if c in EXTERNOS else 'comp') for c in controladores], P(DAO), P(SQL)]
 
 def T(*tablas): return [P(t, 'tabla') for t in tablas]
 

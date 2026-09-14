@@ -16,11 +16,11 @@ Reglas de notación (las de CU01, CU02, CU20 y CU40 del Incremento 1):
   componente. Ningún mensaje salta una lifeline ni llega directo al actor.
 - **Las lifelines son las mismas en todas las páginas de un CU.** Si una tabla o componente
   aparece en una sola excepción, igual se dibuja en el flujo principal y en el resto.
-- **Solo componentes del Diagrama de Componentes** del Incremento 1. Los servicios externos
-  (Brevo, Cloudinary, Transacciones, Bonos Electrónicos) se llaman desde `C_API_REST` a través de
-  `C_API_Adapter` y se dibujan en la última columna, a la derecha de las tablas, como en el CU68
-  del Incremento 1. Los casos de uso que nacen en el servidor (CU69) no llevan actor ni vista: su
-  primera lifeline es `C_API_REST`.
+- **Solo componentes del Diagrama de Componentes** del Incremento 1. Las APIs externas
+  (Brevo, Cloudinary, Transacciones, Bonos Electrónicos) son controladores: van junto a
+  `C_API_REST` y `C_API_Adapter`, **antes** de la capa de acceso a datos, y solo el adaptador
+  habla con ellas. Las tablas cierran el diagrama por la derecha. Los casos de uso que nacen en
+  el servidor (CU69) no llevan actor ni vista: su primera lifeline es `C_API_REST`.
 - **Toda página de excepción retoma y completa el flujo principal** y termina en el mismo
   mensaje final que su página Principal.
 - **SQL** sin marcadores «?» ni WHERE: solo operación, tabla y columnas
