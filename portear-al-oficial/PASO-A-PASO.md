@@ -79,6 +79,10 @@ curl -sO https://raw.githubusercontent.com/ThecheeseDX/IDS_FRO-Salud-App/main/po
 bash parte-2-cuenta-seguridad.sh
 ```
 
+> En Windows con PowerShell este comando falla, porque `bash` no viene con el
+> sistema. Salta a la sección **Si estás en Windows (PowerShell)** más abajo:
+> es la misma idea, cambia solo la forma de llamarlo.
+
 Verás la lista de archivos preparados y, al final, los comandos que siguen.
 El script no hace el commit: eso es tuyo.
 
@@ -109,6 +113,44 @@ base de datos y la navegación de la aplicación. **Cada uno empieza cuando el
 Pull Request anterior ya está mezclado.** Si tu turno llega antes de que
 mezclen el anterior, el script te avisa y arma tu rama sobre la anterior igual,
 pero es más simple esperar.
+
+## Si estás en Windows (PowerShell)
+
+Windows no trae `bash`, pero **Git sí lo instala**. Hay dos formas, ambas
+funcionan.
+
+**Forma 1: seguir en PowerShell y llamar a bash por su ruta.** Es una sola
+línea, con el nombre de tu script al final:
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" parte-1-base.sh
+```
+
+Si responde que no encuentra el archivo, es que Git quedó instalado en otra
+carpeta. Esta línea lo busca sola:
+
+```powershell
+$bash = Join-Path (Split-Path (Split-Path (Get-Command git).Source)) "bin\bash.exe"; & $bash parte-1-base.sh
+```
+
+**Forma 2: usar Git Bash.** En el Explorador de Windows, abre la carpeta del
+repositorio, haz clic derecho en un espacio vacío y elige **Git Bash Here**. En
+Windows 11 puede estar dentro de *Mostrar más opciones*. Se abre una ventana
+negra ya ubicada en la carpeta correcta, y ahí sí funciona:
+
+```bash
+bash parte-1-base.sh
+```
+
+**Ojo con la descarga en PowerShell.** El comando `curl -sO` del paso 2 es de
+Mac y Linux. En PowerShell usa este:
+
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ThecheeseDX/IDS_FRO-Salud-App/main/portear-al-oficial/parte-1-base.sh" -OutFile "parte-1-base.sh"
+```
+
+Cambia el nombre del archivo por el de tu parte. Los comandos de `git` del resto
+de la guía son iguales en Windows, Mac y Linux.
 
 ## Si algo sale mal
 
