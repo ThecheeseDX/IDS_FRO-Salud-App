@@ -15,9 +15,9 @@ NOMBRE_SCRIPT="$(basename "$0")"
 mkdir -p .git/info
 grep -qxF "$NOMBRE_SCRIPT" .git/info/exclude 2>/dev/null || echo "$NOMBRE_SCRIPT" >> .git/info/exclude
 
-git fetch origin --quiet
+git -c gc.auto=0 fetch origin --quiet
 git remote get-url fork >/dev/null 2>&1 || git remote add fork "$FORK"
-git fetch fork --quiet
+git -c gc.auto=0 fetch fork --quiet
 
 # Si la parte anterior aún no está subida, se parte desde main.
 if ! git rev-parse --verify --quiet "$BASE_SUGERIDA" >/dev/null; then BASE_SUGERIDA="origin/main"; fi
