@@ -170,6 +170,30 @@ Usa un token: en GitHub, `Settings` → `Developer settings` →
 `Personal access tokens` → `Tokens (classic)` → `Generate new token`, marca
 `repo`, y pega ese token cuando te pida la contraseña.
 
+**Windows pregunta `Unlink of file ... failed. Should I try again? (y/n)` en bucle:**
+algo tiene abierto el repositorio y git no puede reorganizar sus archivos
+internos. Responde `n` y presiona Enter hasta que vuelva la terminal, y después:
+
+1. Cierra **GitHub Desktop** por completo, incluido el ícono junto al reloj.
+2. Cierra **Visual Studio Code** y cualquier editor con la carpeta abierta.
+3. Si la carpeta está dentro de `Documentos` y usas **OneDrive**, pausa la
+   sincronización desde el ícono de la nube, o mueve el repositorio a una ruta
+   fuera de OneDrive, por ejemplo `C:\Dev\`.
+4. Revisa si la rama quedó a medio crear y, si existe, bórrala:
+
+```bash
+git checkout main
+```
+
+```bash
+git branch -D parte-5-pautas-documentos-evidencia
+```
+
+5. Vuelve a bajar tu script (se corrigió para que esto no ocurra) y ejecútalo de
+   nuevo.
+
+Si insiste, reinicia el computador: eso libera cualquier bloqueo pendiente.
+
 **No tienes permiso para subir la rama:** todavía no eres colaborador del
 repositorio oficial. Pídele a Nicolás que te agregue.
 
