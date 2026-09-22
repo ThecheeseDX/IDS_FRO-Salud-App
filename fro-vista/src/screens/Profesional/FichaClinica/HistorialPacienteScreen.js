@@ -1,6 +1,6 @@
 // Ruta: fro-vista/src/screens/Profesional/FichaClinica/HistorialPacienteScreen.js
 
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -48,8 +48,13 @@ function textoDireccion(paciente) {
 }
 
 export default function HistorialPacienteScreen({ route, navigation }) {
-  const { pacienteId, nombrePaciente } = route.params;
+  const { pacienteId, nombrePaciente, resaltarCitaId, resaltarEn } = route.params;
   const { userData } = useContext(AuthContext);
+
+  // La sesión clínica manda aquí con "Finalizar sesión": hay que dejar la cita
+  // en curso a la vista y señalada, en vez de hacer buscarla entre todas.
+  const refScroll = useRef(null);
+  const posicionCitas = useRef({});
 
   const [historial, setHistorial] = useState([]);
   const [episodios, setEpisodios] = useState([]);
@@ -399,6 +404,26 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
+  // Al llegar desde la sesión, la cita acaba de cambiar de estado: se recarga
+  // para que el botón de finalizar aparezca con el estado real.
+  useEffect(() => {
+    if (!resaltarCitaId) return;
+    cargarHistorial(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resaltarCitaId, resaltarEn]);
+
+  useEffect(() => {
+    if (!resaltarCitaId || historial.length === 0) return;
+    // Un turno de reloj para que las tarjetas ya hayan medido su posición.
+    const t = setTimeout(() => {
+      const y = posicionCitas.current[resaltarCitaId];
+      if (y !== undefined) {
+        refScroll.current?.scrollTo({ y: Math.max(y - 16, 0), animated: true });
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [resaltarCitaId, resaltarEn, historial.length]);
+
   // El historial se parte en dos: lo que todavía tiene acción (por confirmar,
   // iniciar o finalizar) y lo ya cerrado, que se consulta pero no estorba.
   const citasActivas = historial.filter((c) => !esEstadoTerminal(c.estado));
@@ -410,8 +435,23 @@ export default function HistorialPacienteScreen({ route, navigation }) {
               // Normalizamos el estado actual a mayúsculas para las comparaciones visuales
               const estadoCita = (item.estado || '').toUpperCase();
 
+              // La marca se apaga sola en cuanto la atención queda finalizada.
+              const resaltada =
+                String(item.cita_id) === String(resaltarCitaId) && !esEstadoTerminal(estadoCita);
+
               return (
-                <View key={item.cita_id} style={styles.card}>
+                <View
+                  key={item.cita_id}
+                  style={[styles.card, resaltada && styles.cardResaltada]}
+                  onLayout={(e) => {
+                    posicionCitas.current[item.cita_id] = e.nativeEvent.layout.y;
+                  }}
+                >
+                  {resaltada && (
+                    <Text style={styles.avisoResaltada}>
+                      👇 Esta es la sesión que estás atendiendo
+                    </Text>
+                  )}
                   <Text style={styles.fecha}>
                     {formatearFecha(item.fecha_hora_inicio)}
                   </Text>
@@ -611,6 +651,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
   return (
     <ScrollView 
+      ref={refScroll}
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => cargarHistorial(true)} colors={[colores.primario]} />
@@ -766,7 +807,35 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                 <Text>Motivo: {item.motivo_consulta}</Text>
                 <Text>Estado: {item.estado ? etiquetaEstado(item.estado) : 'No informado'}</Text>
                 <Text>Inicio: {formatearFecha(item.fecha_inicio)}</Text>
-                <Text>Término: {formatearFecha(item.fecha_terminado)}</Text>
+                <Text>
+                  Término:{' '}
+                  {item.fecha_terminado
+                    ? formatearFecha(item.fecha_terminado)
+                    : 'En curso · el episodio sigue abierto'}
+                </Text>
+
+                {/* Las metas del episodio, que son las que dan el porcentaje de
+                    avance de cada evolución. */}
+                {(item.metas || []).length === 0 ? (
+                  <Text style={styles.metaEpisodioVacia}>
+                    Sin metas definidas en este episodio
+                  </Text>
+                ) : (
+                  item.metas.map((meta) => {
+                    const pct = Math.min(
+                      100,
+                      Math.round(
+                        (Number(meta.valor_actual || 0) / Number(meta.meta_valor || 1)) * 100
+                      )
+                    );
+                    return (
+                      <Text key={meta.objetivo_terapeutico_id} style={styles.metaEpisodio}>
+                        🎯 {meta.descripcion}: {Number(meta.valor_actual)} de{' '}
+                        {Number(meta.meta_valor)} {meta.unidad} · {pct}%
+                      </Text>
+                    );
+                  })
+                )}
               </View>
             ))
           )}
@@ -785,9 +854,14 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                 </Text>
                 <Text>Episodio: #{item.episodio_clinico_id}</Text>
                 <Text>Motivo episodio: {item.motivo_consulta}</Text>
+                {/* El porcentaje sale de las metas del episodio. Si el episodio
+                    no tiene metas, no hay nada que medir: decirlo es más claro
+                    que mostrar "No informado%". */}
                 <Text>
-                  Porcentaje objetivo:{' '}
-                  {item.porcentaje_objetivo ?? 'No informado'}%
+                  Avance de las metas:{' '}
+                  {item.porcentaje_objetivo === null || item.porcentaje_objetivo === undefined
+                    ? 'sin metas medidas en este episodio'
+                    : `${item.porcentaje_objetivo}%`}
                 </Text>
                 <Text>
                   Respuesta fisiológica:{' '}
@@ -1148,6 +1222,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 13,
     marginTop: 10,
+  },
+  metaEpisodio: { ...tipografia.meta, color: colores.primario, marginTop: espacio.xs },
+  metaEpisodioVacia: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.xs },
+  cardResaltada: {
+    borderWidth: 2,
+    borderColor: colores.exito,
+    backgroundColor: colores.exitoSuave,
+  },
+  avisoResaltada: {
+    color: colores.exito,
+    fontWeight: 'bold',
+    marginBottom: 6,
   },
   cabeceraAntiguas: {
     marginTop: espacio.sm,

@@ -247,7 +247,9 @@ CREATE TABLE Episodio_Clinico (
     episodio_clinico_id INT PRIMARY KEY AUTO_INCREMENT,
     motivo_consulta VARCHAR(255) NOT NULL,
     fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    fecha_terminado TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    -- Queda NULL mientras el episodio siga abierto: con CURRENT_TIMESTAMP todos
+    -- los episodios "terminaban" en el mismo instante en que se creaban.
+    fecha_terminado TIMESTAMP NULL DEFAULT NULL,
     -- CU78: ABIERTO admite nuevos registros; CERRADO los rechaza (D12).
     estado VARCHAR(255) DEFAULT 'ABIERTO',
     paciente_id INT,

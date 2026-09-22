@@ -194,6 +194,32 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       [usuarioId, pacienteId]
     );
 
+    // Las metas viven en el episodio y el avance de la evolución se calcula con
+    // ellas: si el historial no las muestra, el porcentaje no se puede verificar
+    // contra nada. Se adjuntan a su episodio.
+    const [metas] = await db.query(
+      `
+      SELECT
+        ot.objetivo_terapeutico_id,
+        ot.descripcion,
+        ot.meta_valor,
+        ot.valor_actual,
+        ot.unidad,
+        ot.episodio_clinico_id
+      FROM Objetivo_Terapeutico ot
+      JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = ot.episodio_clinico_id
+      WHERE ec.paciente_id = ?
+      ORDER BY ot.objetivo_terapeutico_id
+      `,
+      [pacienteId]
+    );
+
+    for (const episodio of episodios) {
+      episodio.metas = metas.filter(
+        (m) => m.episodio_clinico_id === episodio.episodio_clinico_id
+      );
+    }
+
     const [evoluciones] = await db.query(
       `
       SELECT

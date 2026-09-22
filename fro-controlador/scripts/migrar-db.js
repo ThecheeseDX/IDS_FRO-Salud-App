@@ -546,6 +546,31 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Episodio_Clinico.fecha_terminado sin valor por defecto (CU78)',
+    descripcion: 'El episodio abierto no tiene fecha de termino: antes nacia terminado en el mismo instante',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT IS_NULLABLE AS nulos FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Episodio_Clinico' AND COLUMN_NAME = 'fecha_terminado'`,
+        [baseDatos]
+      );
+      return String(filas[0]?.nulos || '').toUpperCase() === 'YES';
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Episodio_Clinico
+           MODIFY COLUMN fecha_terminado TIMESTAMP NULL DEFAULT NULL`
+      );
+      // Los episodios ya creados arrastran una fecha de termino falsa (la de su
+      // creacion). Solo los cerrados tienen un termino real.
+      await conexion.query(
+        `UPDATE Episodio_Clinico
+            SET fecha_terminado = NULL
+          WHERE UPPER(TRIM(COALESCE(estado, ''))) <> 'CERRADO'`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

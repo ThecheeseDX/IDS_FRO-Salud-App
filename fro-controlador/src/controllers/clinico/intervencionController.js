@@ -1,5 +1,5 @@
 const pool = require('../../config/database');
-const { rechazarSiCerrado, estaCerrado } = require('../../services/clinico/episodioService');
+const { rechazarSiCerrado, estaCerrado, porcentajeObjetivosEpisodio } = require('../../services/clinico/episodioService');
 
 const PATRON_ALERTA_PRIORITARIA =
   /\b(dolor\s+(intenso|severo|insoportable)|dificultad\s+respiratoria|p[eé]rdida\s+de\s+conciencia|desmayo|convulsi[oó]n|deterioro\s+(grave|severo)|signos?\s+vitales?\s+inestables?)\b/i;
@@ -259,23 +259,30 @@ exports.guardarIntervencion = async (req, res) => {
 
     let evolucionId;
 
+    // El avance de las metas del episodio viaja con la evolución: son la misma
+    // sesión. Sin esto el historial mostraba "Porcentaje objetivo: No informado%"
+    // aunque las metas estuvieran medidas.
+    const porcentajeObjetivo = await porcentajeObjetivosEpisodio(connection, episodio_id);
+
     if (existentes.length > 0 && existentes[0].inalterable !== 1) {
       evolucionId = existentes[0].evolucion_clinica_id;
       await connection.execute(
         `UPDATE Evolucion_Clinica
          SET tecnicas_aplicadas = ?,
-             respuesta_fisiologica = ?
+             respuesta_fisiologica = ?,
+             porcentaje_objetivo = COALESCE(?, porcentaje_objetivo)
          WHERE evolucion_clinica_id = ?`,
-        [tecnicasAplicadas, respuestaFisiologica, evolucionId]
+        [tecnicasAplicadas, respuestaFisiologica, porcentajeObjetivo, evolucionId]
       );
     } else {
       const [resultado] = await connection.execute(
         `INSERT INTO Evolucion_Clinica
-          (tecnicas_aplicadas, respuesta_fisiologica, episodio_clinico_id, profesional_id)
-         VALUES (?, ?, ?, ?)`,
+          (tecnicas_aplicadas, respuesta_fisiologica, porcentaje_objetivo, episodio_clinico_id, profesional_id)
+         VALUES (?, ?, ?, ?, ?)`,
         [
           tecnicasAplicadas,
           respuestaFisiologica,
+          porcentajeObjetivo,
           episodio_id,
           contexto.profesional_id
         ]

@@ -67,6 +67,12 @@ export default function SesionClinicaScreen({ route, navigation }) {
   const [firmando, setFirmando] = useState(false);
 
   const editable = contexto?.editable === true;
+  // El episodio de otro profesional y el episodio cerrado se consultan, pero no
+  // reciben registros. La cabecera de la ficha ya avisa de lo primero.
+  const deOtroProfesional = contexto?.de_otro_profesional === true;
+  const episodioCerrado =
+    String(contexto?.estado_episodio || '').trim().toUpperCase() === 'CERRADO';
+  const puedeDefinirMetas = Boolean(contexto) && !deOtroProfesional && !episodioCerrado;
   const especialidad = contexto?.especialidad || 'General';
   const posibleDeterioro = useMemo(
     () => PATRON_ALERTA_PRIORITARIA.test(`${tecnicas} ${respuesta}`),
@@ -366,24 +372,13 @@ export default function SesionClinicaScreen({ route, navigation }) {
   return (
     <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>
       {/* Estado de la sesión: dice si se puede escribir y por qué */}
-      {contexto && (
+      {/* CU28: del episodio ajeno avisa la cabecera de la ficha, que se ve en
+          todas las pestañas; repetirlo aquí era el mismo mensaje dos veces. */}
+      {contexto && !deOtroProfesional && (
         editable ? (
           <View style={[estilos.estado, estilos.estadoActivo]}>
             <Text style={[estilos.estadoTexto, estilos.estadoTextoActivo]}>
               ● Atención en curso · puedes registrar
-            </Text>
-          </View>
-        ) : contexto.de_otro_profesional ? (
-          // CU28: la ficha muestra la trayectoria completa del paciente. Un
-          // episodio de otro profesional se consulta, pero no se escribe.
-          <View style={[estilos.estado, estilos.estadoAjeno]}>
-            <Text style={[estilos.estadoTexto, estilos.estadoTextoAjeno]}>
-              Episodio de {contexto.profesional_responsable}
-            </Text>
-            <Text style={estilos.estadoAyuda}>
-              Puedes consultarlo para dar continuidad al tratamiento, pero solo
-              su profesional registra en él. Para registrar tu atención, elige
-              un episodio tuyo en la pestaña Episodios.
             </Text>
           </View>
         ) : (
@@ -546,6 +541,17 @@ export default function SesionClinicaScreen({ route, navigation }) {
         )}
       </View>
 
+      {/* Una meta es un registro del episodio: solo su profesional la define, y
+          solo mientras el episodio siga abierto (CU28 / CU78 Exc.3). */}
+      {!puedeDefinirMetas ? (
+        <View style={estilos.tarjeta}>
+          <Text style={estilos.ayuda}>
+            {deOtroProfesional
+              ? `Las metas de este episodio las define ${contexto?.profesional_responsable}. Para fijar las tuyas, trabaja en un episodio propio.`
+              : 'Este episodio está cerrado: no admite metas nuevas. Crea un episodio nuevo para continuar el tratamiento.'}
+          </Text>
+        </View>
+      ) : (
       <View style={estilos.tarjeta}>
         <Text style={estilos.etiqueta}>Definir una meta nueva</Text>
         <TextInput
@@ -583,6 +589,7 @@ export default function SesionClinicaScreen({ route, navigation }) {
           </Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* ── Paso 3 ── */}
       <Text style={estilos.paso}>{pasoTresListo ? "✓" : "3"} · Cerrar la sesión</Text>
@@ -612,6 +619,25 @@ export default function SesionClinicaScreen({ route, navigation }) {
                 : <Text style={estilos.botonPrimarioTexto}>🔒 Cerrar y firmar</Text>}
             </TouchableOpacity>
           </>
+        )}
+
+        {/* Firmar sella el registro clínico; la ATENCIÓN se cierra sobre la
+            cita, en el historial. Había que buscarla a mano entre las citas:
+            este atajo lleva directo a ella y la deja señalada. */}
+        {editable && contexto?.cita_id && (
+          <TouchableOpacity
+            style={estilos.botonFinalizar}
+            onPress={() =>
+              navigation.navigate('HistorialPaciente', {
+                resaltarCitaId: contexto.cita_id,
+                // Fuerza el reenvío aunque se pulse dos veces sobre la misma cita.
+                resaltarEn: Date.now(),
+              })
+            }
+            activeOpacity={interaccion.opacidadActiva}
+          >
+            <Text style={estilos.botonFinalizarTexto}>✅ Finalizar sesión</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -663,8 +689,6 @@ const estilos = StyleSheet.create({
   estadoTexto: { ...tipografia.metaFuerte },
   estadoTextoActivo: { color: colores.exito },
   estadoTextoInactivo: { color: colores.advertencia },
-  estadoAjeno: { backgroundColor: colores.infoSuave, borderColor: colores.infoBorde },
-  estadoTextoAjeno: { color: colores.info },
 
   // El rótulo de paso es lo que hace visible el orden de la sesión.
   paso: {
@@ -730,6 +754,14 @@ const estilos = StyleSheet.create({
   botonSecundario: { ...piezas.botonSecundario, paddingVertical: espacio.md },
   botonSecundarioTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
   botonFirmar: { ...piezas.botonPrimario, backgroundColor: colores.secundario, marginTop: espacio.sm },
+  botonFinalizar: {
+    marginTop: espacio.base,
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
+    paddingVertical: espacio.base,
+    alignItems: 'center',
+  },
+  botonFinalizarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   deshabilitado: { opacity: interaccion.opacidadDeshabilitada },
 
   cerrado: { ...tipografia.meta, color: colores.textoSuave, lineHeight: 20 },

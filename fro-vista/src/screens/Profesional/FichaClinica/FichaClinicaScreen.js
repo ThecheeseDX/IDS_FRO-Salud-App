@@ -25,7 +25,9 @@ import AnamnesisScreen from './AnamnesisScreen';
 import EpisodioScreen from './EpisodioScreen';
 import SesionClinicaScreen from './SesionClinicaScreen';
 import PautasScreen from './PautasScreen';
-import { getHistorialPaciente } from '../../../api/client';
+import apiClient, { getHistorialPaciente } from '../../../api/client';
+import DialogoAviso from '../../../components/DialogoAviso';
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 import { colores, espacio, radio, tipografia, interaccion } from '../../../theme';
 import { formatearFecha } from '../../../utils/fechas';
 import BarraAtencionEnCurso from '../../../components/BarraAtencionEnCurso';
@@ -99,6 +101,40 @@ export default function FichaClinicaScreen({ route, navigation }) {
       setCargandoEpisodios(false);
     }
   }, [pacienteId]);
+
+  // CU78 (D12): cerrar el episodio es el alta del tratamiento. El botón vivía
+  // dentro de la pestaña Episodios y solo aparecía después de teclear el número
+  // del episodio y pulsar "Consultar": nadie lo encontraba. Va donde se ve el
+  // episodio activo, que es donde se trabaja.
+  const [cerrando, setCerrando] = useState(false);
+  const [confirmacion, setConfirmacion] = useState(null);
+  const [aviso, setAviso] = useState(null);
+
+  const cerrarEpisodio = async (episodio) => {
+    setCerrando(true);
+    try {
+      const { data } = await apiClient.put(`/clinica/episodio/${episodio.episodio_clinico_id}`, {
+        estado: 'CERRADO',
+      });
+      await cargarEpisodios();
+      setAviso({
+        tono: 'ok',
+        titulo: 'Episodio cerrado',
+        mensaje: data?.mensaje || 'El episodio quedó cerrado y no admitirá nuevos registros.',
+      });
+    } catch (error) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo cerrar',
+        mensaje:
+          error.response?.data?.mensaje ||
+          error.response?.data?.error ||
+          'Intenta nuevamente.',
+      });
+    } finally {
+      setCerrando(false);
+    }
+  };
 
   useEffect(() => {
     cargarEpisodios();
@@ -214,10 +250,33 @@ export default function FichaClinicaScreen({ route, navigation }) {
                 </Picker>
               </View>
               {episodioElegido && (
-                <Text style={styles.detalleContexto}>
-                  {episodioElegido.estado || 'Sin estado'} · desde{' '}
-                  {formatearFecha(episodioElegido.fecha_inicio)}
-                </Text>
+                <View style={styles.filaContexto}>
+                  <Text style={styles.detalleContexto}>
+                    {episodioElegido.estado || 'Sin estado'} · desde{' '}
+                    {formatearFecha(episodioElegido.fecha_inicio)}
+                  </Text>
+                  {episodioElegido.es_propio &&
+                    String(episodioElegido.estado || '').toUpperCase() !== 'CERRADO' && (
+                      <TouchableOpacity
+                        disabled={cerrando}
+                        activeOpacity={interaccion.opacidadActiva}
+                        onPress={() =>
+                          setConfirmacion({
+                            titulo: 'Cerrar el episodio',
+                            mensaje:
+                              `Vas a cerrar el episodio #${episodioElegido.episodio_clinico_id} (${episodioElegido.motivo_consulta || 'sin motivo'}). ` +
+                              'Dejará de admitir sesiones, metas, pautas y documentos. Lo que venga después necesita un episodio nuevo.',
+                            etiqueta: 'Cerrar episodio',
+                            accion: () => cerrarEpisodio(episodioElegido),
+                          })
+                        }
+                      >
+                        <Text style={styles.enlaceCrear}>
+                          {cerrando ? 'Cerrando…' : '🔒 Cerrar episodio'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                </View>
               )}
               {/* CU28: los episodios de otros profesionales se consultan, no se
                   editan. El aviso va en la cabecera para que valga en todas las
@@ -280,6 +339,28 @@ export default function FichaClinicaScreen({ route, navigation }) {
           );
         })}
       </View>
+
+      <DialogoConfirmacion
+        visible={confirmacion !== null}
+        titulo={confirmacion?.titulo || ''}
+        mensaje={confirmacion?.mensaje}
+        etiquetaConfirmar={confirmacion?.etiqueta || 'Confirmar'}
+        tono="peligro"
+        onConfirmar={() => {
+          const accion = confirmacion?.accion;
+          setConfirmacion(null);
+          if (accion) accion();
+        }}
+        onCancelar={() => setConfirmacion(null)}
+      />
+
+      <DialogoAviso
+        visible={aviso !== null}
+        titulo={aviso?.titulo || ''}
+        mensaje={aviso?.mensaje}
+        tono={aviso?.tono}
+        onCerrar={() => setAviso(null)}
+      />
     </View>
   );
 }
