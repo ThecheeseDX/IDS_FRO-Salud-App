@@ -219,6 +219,20 @@ export default function FichaClinicaScreen({ route, navigation }) {
                   {formatearFecha(episodioElegido.fecha_inicio)}
                 </Text>
               )}
+              {/* CU28: los episodios de otros profesionales se consultan, no se
+                  editan. El aviso va en la cabecera para que valga en todas las
+                  pestañas, no solo en la sesión clínica. */}
+              {episodioElegido && !episodioElegido.es_propio && (
+                <View style={styles.avisoLectura}>
+                  <Text style={styles.avisoLecturaTexto}>
+                    🔒 Solo lectura · episodio creado por {episodioElegido.profesional_responsable}
+                  </Text>
+                  <Text style={styles.avisoLecturaAyuda}>
+                    Puedes consultarlo para dar continuidad al tratamiento. Para registrar tu
+                    atención, elige un episodio tuyo o crea uno en la pestaña Episodios.
+                  </Text>
+                </View>
+              )}
             </>
           )}
         </View>
@@ -297,6 +311,16 @@ const styles = StyleSheet.create({
   picker: { color: colores.texto },
   detalleContexto: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.xs },
   filaContexto: { flexDirection: 'row', alignItems: 'center', gap: espacio.sm, flexWrap: 'wrap' },
+  avisoLectura: {
+    marginTop: espacio.sm,
+    padding: espacio.sm,
+    borderRadius: radio.md,
+    backgroundColor: colores.infoSuave,
+    borderWidth: 1,
+    borderColor: colores.infoBorde,
+  },
+  avisoLecturaTexto: { ...tipografia.metaFuerte, color: colores.info },
+  avisoLecturaAyuda: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
   sinEpisodios: { ...tipografia.meta, color: colores.textoSuave, flex: 1 },
   errorContexto: { ...tipografia.meta, color: colores.error, flex: 1 },
   enlaceCrear: { ...tipografia.metaFuerte, color: colores.primario },

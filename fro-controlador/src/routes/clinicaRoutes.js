@@ -87,6 +87,11 @@ router.put('/intervenciones/:episodio_id',
 );
 
 // CU16
+router.get('/disponibilidad/bloqueos',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+    disponibilidadController.listarBloqueos
+);
+
 router.post('/disponibilidad/restringir',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']),
     disponibilidadController.restringirDisponibilidad

@@ -80,6 +80,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   // olvidó marcar en su momento. Antes vivía en la pantalla de marcas
   // temporales, que ahora solo muestra la jornada.
   const [marcaManual, setMarcaManual] = useState(null);
+  const [verAntiguas, setVerAntiguas] = useState(false);
 
   const cargarHistorial = async (isRefresh = false) => {
     try {
@@ -398,6 +399,216 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
+  // El historial se parte en dos: lo que todavía tiene acción (por confirmar,
+  // iniciar o finalizar) y lo ya cerrado, que se consulta pero no estorba.
+  const citasActivas = historial.filter((c) => !esEstadoTerminal(c.estado));
+  const citasAntiguas = historial.filter((c) => esEstadoTerminal(c.estado));
+
+  // Una sola tarjeta de cita, reutilizada por las citas activas y por el
+  // desplegable de anteriores.
+  const renderCita = (item) => {
+              // Normalizamos el estado actual a mayúsculas para las comparaciones visuales
+              const estadoCita = (item.estado || '').toUpperCase();
+
+              return (
+                <View key={item.cita_id} style={styles.card}>
+                  <Text style={styles.fecha}>
+                    {formatearFecha(item.fecha_hora_inicio)}
+                  </Text>
+                  <Text style={{ fontWeight: 'bold', color: colores.texto }}>
+                    Estado: <Text style={[styles.estadoTexto, { color: datosEstado(item.estado).color }]}>{etiquetaEstado(item.estado)}</Text>
+                  </Text>
+                  <Text>Profesional: {item.profesional}</Text>
+                  <Text>Especialidad: {item.especialidad}</Text>
+                  <Text>Modalidad: {iconoModalidad(item.modalidad)} {etiquetaModalidad(item.modalidad)}</Text>
+
+                  {Number(item.es_propia) !== 1 ? (
+                    // Cita con otro profesional: se ve para tener la agenda
+                    // completa del paciente, pero la gestiona ese profesional.
+                    <View style={styles.cajaAjena}>
+                      <Text style={styles.textoAjena}>
+                        🔒 Bloqueado: esta hora es con otro profesional ({item.especialidad}).
+                        Solo ese profesional puede confirmarla, iniciarla o cancelarla.
+                      </Text>
+                    </View>
+                  ) : (
+                  <>
+                  {/* PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
+                  <View style={styles.containerAcciones}>
+                    
+                    {/* ACCIONES SI LA CITA ESTÁ AGENDADA */}
+                    {estadoCita === 'AGENDADA' && (
+                      <>
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CONFIRMAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>👍 Confirmar</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: colores.error }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {/* ACCIONES SI LA CITA ESTÁ CONFIRMADA */}
+                    {estadoCita === 'CONFIRMADA' && (
+                      <>
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: colores.primario }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'REGISTRAR_INASISTENCIA')}
+                        >
+                          <Text style={styles.textoBotonAccion}>🤷‍♂️ Ausente</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                          style={[styles.botonAccion, { backgroundColor: colores.error }]}
+                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
+                        >
+                          <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {/* ACCIONES SI LA CITA ESTÁ EN CURSO */}
+                    {estadoCita === 'EN_CURSO' && (
+                      <TouchableOpacity 
+                        style={[styles.botonAccion, { backgroundColor: colores.exito, marginHorizontal: 0 }]}
+                        onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
+                      >
+                        <Text style={styles.textoBotonAccion}>✅ Finalizar Atención</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* MENSAJE SI LA CITA ESTÁ EN UN ESTADO FINAL O TERMINAL */}
+                    {esEstadoTerminal(estadoCita) && (
+                      <Text style={styles.textoTerminal}>🔒 Flujo concluido (Registro histórico cerrado)</Text>
+                    )}
+                  </View>
+
+                  {/* CU38 Excepción 2: esta marca es SOLO para cuando la hora
+                      automática del servidor no es utilizable. El inicio antes
+                      del bloque horario (Excepción 1) se hace con "Iniciar",
+                      que pide confirmar y queda auditado. */}
+                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        setMarcaManual({
+                          tipo: estadoCita === 'CONFIRMADA' ? 'INICIO' : 'TERMINO',
+                          citaId: item.cita_id,
+                          fechaHora: new Date().toISOString(),
+                          justificacion: '',
+                        })
+                      }
+                    >
+                      <Text style={styles.enlaceMarcaManual}>
+                        🕗 ¿La hora automática falló? Registrar{' '}
+                        {estadoCita === 'CONFIRMADA' ? 'inicio' : 'término'} manual justificado
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* CU39/CU43: evidencia de la sesión */}
+                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('EvidenciaSesion', {
+                          citaId: item.cita_id,
+                          modalidad: item.modalidad,
+                        })
+                      }
+                    >
+                      <Text style={styles.enlaceEvidencia}>🛰️ Evidencia de sesión</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* CU41 + CU42: cierre certificado de sesiones realizadas */}
+                  {estadoCita === 'REALIZADA' && (
+                    <View style={styles.filaCierre}>
+                      {item.sesion_certificada_en ? (
+                        // Ya certificada: se resume, y el detalle con fecha y
+                        // hora se consulta al tocar.
+                        <TouchableOpacity
+                          onPress={() =>
+                            setAviso({
+                              tono: 'ok',
+                              titulo: 'Sesión verificada',
+                              mensaje:
+                                `Validada el ${formatearFecha(item.sesion_certificada_en)}.` +
+                                (item.certificacion_tipo === 'MANUAL'
+                                  ? '\n\nSe cerró con justificación manual porque faltaba la marca de término del paciente.'
+                                  : '\n\nTodos los factores del protocolo multi-factor coincidieron.'),
+                            })
+                          }
+                        >
+                          <Text style={styles.textoCertificada}>✅ Sesión verificada</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity onPress={() => validarSesion(item.cita_id)}>
+                          <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
+                        </TouchableOpacity>
+                      )}
+                      {item.firma_tipo === 'FIRMA' ? (
+                        // Firmada: se resume igual que la validación.
+                        <TouchableOpacity
+                          onPress={() =>
+                            setAviso({
+                              tono: 'ok',
+                              titulo: 'Firma verificada',
+                              mensaje: `El paciente firmó su conformidad el ${formatearFecha(item.firma_momento)}.`,
+                            })
+                          }
+                        >
+                          <Text style={styles.textoCertificada}>✅ Firma verificada</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View>
+                          {item.firma_tipo === 'RECHAZO' && (
+                            <Text style={styles.textoPendienteFirma}>
+                              ⛔ Firma rechazada el {formatearFecha(item.firma_momento)}
+                            </Text>
+                          )}
+                          {item.firma_tipo === 'CONFORMIDAD_POR_CORREO' && (
+                            <Text style={styles.textoPendienteFirma}>
+                              📧 Enviada por correo el {formatearFecha(item.firma_momento)}
+                            </Text>
+                          )}
+                          <TouchableOpacity
+                            onPress={() =>
+                              navigation.navigate('FirmaConformidad', {
+                                citaId: item.cita_id,
+                                nombrePaciente,
+                              })
+                            }
+                          >
+                            <Text style={styles.enlaceEvidencia}>✍️ Firma de conformidad</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* CU22: historial de cambios de la cita para auditoría */}
+                  <TouchableOpacity onPress={() => verTrazabilidad(item.cita_id)}>
+                    <Text style={styles.enlaceTrazabilidad}>📜 Ver trazabilidad de la cita</Text>
+                  </TouchableOpacity>
+                  </>
+                  )}
+                </View>
+              );
+  };
+
   return (
     <ScrollView 
       style={styles.container}
@@ -515,207 +726,31 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
           <Text style={styles.seccionTitulo}>Atenciones / Citas</Text>
 
-          {historial.length === 0 ? (
-            <Text style={styles.sinResultados}>Sin atenciones registradas</Text>
+          {citasActivas.length === 0 ? (
+            <Text style={styles.sinResultados}>
+              {historial.length === 0
+                ? 'Sin atenciones registradas'
+                : 'Sin citas por atender. Las anteriores están más abajo.'}
+            </Text>
           ) : (
-            historial.map((item) => {
-              // Normalizamos el estado actual a mayúsculas para las comparaciones visuales
-              const estadoCita = (item.estado || '').toUpperCase();
+            citasActivas.map(renderCita)
+          )}
 
-              return (
-                <View key={item.cita_id} style={styles.card}>
-                  <Text style={styles.fecha}>
-                    {formatearFecha(item.fecha_hora_inicio)}
-                  </Text>
-                  <Text style={{ fontWeight: 'bold', color: colores.texto }}>
-                    Estado: <Text style={[styles.estadoTexto, { color: datosEstado(item.estado).color }]}>{etiquetaEstado(item.estado)}</Text>
-                  </Text>
-                  <Text>Profesional: {item.profesional}</Text>
-                  <Text>Especialidad: {item.especialidad}</Text>
-                  <Text>Modalidad: {iconoModalidad(item.modalidad)} {etiquetaModalidad(item.modalidad)}</Text>
-
-                  {Number(item.es_propia) !== 1 ? (
-                    // Cita con otro profesional: se ve para tener la agenda
-                    // completa del paciente, pero la gestiona ese profesional.
-                    <View style={styles.cajaAjena}>
-                      <Text style={styles.textoAjena}>
-                        🔒 Bloqueado: esta hora es con otro profesional ({item.especialidad}).
-                        Solo ese profesional puede confirmarla, iniciarla o cancelarla.
-                      </Text>
-                    </View>
-                  ) : (
-                  <>
-                  {/* PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
-                  <View style={styles.containerAcciones}>
-                    
-                    {/* ACCIONES SI LA CITA ESTÁ AGENDADA */}
-                    {estadoCita === 'AGENDADA' && (
-                      <>
-                        <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
-                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CONFIRMAR')}
-                        >
-                          <Text style={styles.textoBotonAccion}>👍 Confirmar</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.error }]}
-                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
-                        >
-                          <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-
-                    {/* ACCIONES SI LA CITA ESTÁ CONFIRMADA */}
-                    {estadoCita === 'CONFIRMADA' && (
-                      <>
-                        <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.primario }]}
-                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
-                        >
-                          <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
-                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'REGISTRAR_INASISTENCIA')}
-                        >
-                          <Text style={styles.textoBotonAccion}>🤷‍♂️ Ausente</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.error }]}
-                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CANCELAR')}
-                        >
-                          <Text style={styles.textoBotonAccion}>❌ Cancelar</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-
-                    {/* ACCIONES SI LA CITA ESTÁ EN CURSO */}
-                    {estadoCita === 'EN_CURSO' && (
-                      <TouchableOpacity 
-                        style={[styles.botonAccion, { backgroundColor: colores.exito, marginHorizontal: 0 }]}
-                        onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
-                      >
-                        <Text style={styles.textoBotonAccion}>✅ Finalizar Atención</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    {/* MENSAJE SI LA CITA ESTÁ EN UN ESTADO FINAL O TERMINAL */}
-                    {esEstadoTerminal(estadoCita) && (
-                      <Text style={styles.textoTerminal}>🔒 Flujo concluido (Registro histórico cerrado)</Text>
-                    )}
-                  </View>
-
-                  {/* CU38: marca horaria a mano cuando se olvidó marcar */}
-                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
-                    <TouchableOpacity
-                      onPress={() =>
-                        setMarcaManual({
-                          tipo: estadoCita === 'CONFIRMADA' ? 'INICIO' : 'TERMINO',
-                          citaId: item.cita_id,
-                          fechaHora: new Date().toISOString(),
-                          justificacion: '',
-                        })
-                      }
-                    >
-                      <Text style={styles.enlaceMarcaManual}>
-                        🕗 Registrar {estadoCita === 'CONFIRMADA' ? 'inicio' : 'término'} manual justificado
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* CU39/CU43: evidencia de la sesión */}
-                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && (
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate('EvidenciaSesion', {
-                          citaId: item.cita_id,
-                          modalidad: item.modalidad,
-                        })
-                      }
-                    >
-                      <Text style={styles.enlaceEvidencia}>🛰️ Evidencia de sesión</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* CU41 + CU42: cierre certificado de sesiones realizadas */}
-                  {estadoCita === 'REALIZADA' && (
-                    <View style={styles.filaCierre}>
-                      {item.sesion_certificada_en ? (
-                        // Ya certificada: se resume, y el detalle con fecha y
-                        // hora se consulta al tocar.
-                        <TouchableOpacity
-                          onPress={() =>
-                            setAviso({
-                              tono: 'ok',
-                              titulo: 'Sesión verificada',
-                              mensaje:
-                                `Validada el ${formatearFecha(item.sesion_certificada_en)}.` +
-                                (item.certificacion_tipo === 'MANUAL'
-                                  ? '\n\nSe cerró con justificación manual porque faltaba la marca de término del paciente.'
-                                  : '\n\nTodos los factores del protocolo multi-factor coincidieron.'),
-                            })
-                          }
-                        >
-                          <Text style={styles.textoCertificada}>✅ Sesión verificada</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity onPress={() => validarSesion(item.cita_id)}>
-                          <Text style={styles.enlaceEvidencia}>🔏 Validar sesión</Text>
-                        </TouchableOpacity>
-                      )}
-                      {item.firma_tipo === 'FIRMA' ? (
-                        // Firmada: se resume igual que la validación.
-                        <TouchableOpacity
-                          onPress={() =>
-                            setAviso({
-                              tono: 'ok',
-                              titulo: 'Firma verificada',
-                              mensaje: `El paciente firmó su conformidad el ${formatearFecha(item.firma_momento)}.`,
-                            })
-                          }
-                        >
-                          <Text style={styles.textoCertificada}>✅ Firma verificada</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View>
-                          {item.firma_tipo === 'RECHAZO' && (
-                            <Text style={styles.textoPendienteFirma}>
-                              ⛔ Firma rechazada el {formatearFecha(item.firma_momento)}
-                            </Text>
-                          )}
-                          {item.firma_tipo === 'CONFORMIDAD_POR_CORREO' && (
-                            <Text style={styles.textoPendienteFirma}>
-                              📧 Enviada por correo el {formatearFecha(item.firma_momento)}
-                            </Text>
-                          )}
-                          <TouchableOpacity
-                            onPress={() =>
-                              navigation.navigate('FirmaConformidad', {
-                                citaId: item.cita_id,
-                                nombrePaciente,
-                              })
-                            }
-                          >
-                            <Text style={styles.enlaceEvidencia}>✍️ Firma de conformidad</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  )}
-
-                  {/* CU22: historial de cambios de la cita para auditoría */}
-                  <TouchableOpacity onPress={() => verTrazabilidad(item.cita_id)}>
-                    <Text style={styles.enlaceTrazabilidad}>📜 Ver trazabilidad de la cita</Text>
-                  </TouchableOpacity>
-                  </>
-                  )}
-                </View>
-              );
-            })
+          {/* Las citas ya cerradas (realizadas, inasistencias y canceladas) no
+              deben llenar la vista: quedan plegadas, disponibles al abrirlas. */}
+          {citasAntiguas.length > 0 && (
+            <>
+              <TouchableOpacity
+                style={styles.cabeceraAntiguas}
+                onPress={() => setVerAntiguas((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.enlaceAntiguas}>
+                  {verAntiguas ? '▾' : '▸'} Citas anteriores ({citasAntiguas.length})
+                </Text>
+              </TouchableOpacity>
+              {verAntiguas && citasAntiguas.map(renderCita)}
+            </>
           )}
 
           <Text style={styles.seccionTitulo}>Episodios Clínicos</Text>
@@ -1114,6 +1149,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 10,
   },
+  cabeceraAntiguas: {
+    marginTop: espacio.sm,
+    paddingVertical: espacio.sm,
+    borderTopWidth: 1,
+    borderTopColor: colores.bordeSuave,
+  },
+  enlaceAntiguas: { ...tipografia.metaFuerte, color: colores.primario },
   enlaceMarcaManual: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm },
   veloManual: { flex: 1, backgroundColor: colores.velo, justifyContent: 'center', padding: espacio.xl },
   cajaManual: { backgroundColor: colores.superficie, borderRadius: radio.xl, padding: espacio.xl, ...sombra.elevada },

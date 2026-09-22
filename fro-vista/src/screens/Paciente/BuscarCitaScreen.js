@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
+  Image,
   View,
   Text,
   Button,
@@ -18,7 +19,7 @@ import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // El formateador local de arriba arma AAAA-MM-DD para el servidor; este es para mostrar.
 import { formatearFecha as fechaLegible } from '../../utils/fechas';
-import { colores, radio, espacio } from '../../theme';
+import { colores, radio, espacio, tipografia } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
@@ -365,10 +366,25 @@ export default function BuscarCitaScreen({ navigation, route }) {
                 style={[styles.card, estaSeleccionado && styles.cardSeleccionada]}
                 onPress={() => seleccionarBloque(item)}
               >
-                <Text style={styles.nombre}>
-                  {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
-                </Text>
-                <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
+                {/* CU10: la foto del perfil público ayuda a reconocer al
+                    profesional antes de reservar. Sin foto, sus iniciales. */}
+                <View style={styles.cabeceraProfesional}>
+                  {item.foto_url ? (
+                    <Image source={{ uri: item.foto_url }} style={styles.foto} />
+                  ) : (
+                    <View style={[styles.foto, styles.fotoVacia]}>
+                      <Text style={styles.iniciales}>
+                        {`${item.nombres?.[0] || ''}${item.apellido_paterno?.[0] || ''}`.toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.datosProfesional}>
+                    <Text style={styles.nombre}>
+                      {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
+                    </Text>
+                    <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
+                  </View>
+                </View>
                 {/* CU10: catálogo público del profesional */}
                 {item.areas_experticia ? (
                   <Text style={styles.detalle}>🎯  {item.areas_experticia}</Text>
@@ -547,6 +563,11 @@ const styles = StyleSheet.create({
     color: colores.primario,
     marginBottom: 6,
   },
+  cabeceraProfesional: { flexDirection: 'row', alignItems: 'center', gap: espacio.sm },
+  datosProfesional: { flex: 1 },
+  foto: { width: 48, height: 48, borderRadius: 24, backgroundColor: colores.primarioSuave },
+  fotoVacia: { justifyContent: 'center', alignItems: 'center' },
+  iniciales: { ...tipografia.cuerpoFuerte, color: colores.primario },
   detalle: {
     fontSize: 15,
     color: colores.textoSuave,
