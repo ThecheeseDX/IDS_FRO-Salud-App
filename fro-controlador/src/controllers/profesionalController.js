@@ -170,18 +170,28 @@ exports.obtenerHistorialPaciente = async (req, res) => {
     const [episodios] = await db.query(
       `
       SELECT
-        episodio_clinico_id,
-        motivo_consulta,
-        fecha_inicio,
-        fecha_terminado,
-        estado,
-        paciente_id,
-        profesional_id
-      FROM Episodio_Clinico
-      WHERE paciente_id = ?
-      ORDER BY fecha_inicio DESC
+        ec.episodio_clinico_id,
+        ec.motivo_consulta,
+        ec.fecha_inicio,
+        ec.fecha_terminado,
+        ec.estado,
+        ec.paciente_id,
+        ec.profesional_id,
+        -- Mismo criterio que las citas: los episodios de OTROS profesionales se
+        -- listan para ver la trayectoria completa (CU28), pero marcados, porque
+        -- solo su responsable puede registrar en ellos.
+        (pr.usuario_id = ?) AS es_propio,
+        COALESCE(
+          NULLIF(TRIM(CONCAT_WS(' ', pu.nombres, pu.apellido_paterno, pu.apellido_materno)), ''),
+          CONCAT('Profesional #', ec.profesional_id)
+        ) AS profesional_responsable
+      FROM Episodio_Clinico ec
+      JOIN Profesional pr ON pr.profesional_id = ec.profesional_id
+      LEFT JOIN Usuario pu ON pu.usuario_id = pr.usuario_id
+      WHERE ec.paciente_id = ?
+      ORDER BY ec.fecha_inicio DESC
       `,
-      [pacienteId]
+      [usuarioId, pacienteId]
     );
 
     const [evoluciones] = await db.query(

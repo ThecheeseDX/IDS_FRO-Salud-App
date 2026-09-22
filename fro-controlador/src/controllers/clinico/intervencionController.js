@@ -16,7 +16,7 @@ function estadoEnCurso(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_') === 'EN_CURSO';
 }
 
-async function obtenerContexto(connection, episodioId, usuarioId, bloquear = false) {
+async function obtenerContexto(connection, episodioId, usuarioId, bloquear = false, soloDelProfesional = true) {
   const [filas] = await connection.execute(
     `SELECT
         ec.episodio_clinico_id,
@@ -25,6 +25,10 @@ async function obtenerContexto(connection, episodioId, usuarioId, bloquear = fal
         ec.paciente_id,
         ec.profesional_id,
         p.usuario_id AS profesional_usuario_id,
+        COALESCE(
+          NULLIF(TRIM(CONCAT_WS(' ', pu.nombres, pu.apellido_paterno, pu.apellido_materno)), ''),
+          CONCAT('Profesional #', ec.profesional_id)
+        ) AS profesional_responsable,
         COALESCE(e.nombre, 'General') AS especialidad,
         COALESCE(
           NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno, u.apellido_materno)), ''),
@@ -36,6 +40,7 @@ async function obtenerContexto(connection, episodioId, usuarioId, bloquear = fal
         c.fecha_hora_fin
      FROM Episodio_Clinico ec
      JOIN Profesional p ON p.profesional_id = ec.profesional_id
+     LEFT JOIN Usuario pu ON pu.usuario_id = p.usuario_id
      LEFT JOIN Especialidad e ON e.especialidad_id = p.especialidad_id
      JOIN Paciente pa ON pa.paciente_id = ec.paciente_id
      LEFT JOIN Usuario u ON u.usuario_id = pa.usuario_id
@@ -47,13 +52,34 @@ async function obtenerContexto(connection, episodioId, usuarioId, bloquear = fal
       -- queda solo para las citas anteriores a que existiera la columna.
       AND (c.episodio_clinico_id = ec.episodio_clinico_id OR c.episodio_clinico_id IS NULL)
      WHERE ec.episodio_clinico_id = ?
-       AND p.usuario_id = ?
+       ${soloDelProfesional ? 'AND p.usuario_id = ?' : ''}
      ORDER BY c.fecha_hora_inicio DESC
      LIMIT 1${bloquear ? ' FOR UPDATE' : ''}`,
-    [episodioId, usuarioId]
+    soloDelProfesional ? [episodioId, usuarioId] : [episodioId]
   );
 
   return filas[0] || null;
+}
+
+/**
+ * CU28: el profesional vinculado al paciente ve su trayectoria completa. El
+ * vínculo es el mismo de la nómina (CU11): un episodio propio o una cita con él.
+ */
+async function profesionalVinculadoAlPaciente(connection, pacienteId, usuarioId) {
+  const [filas] = await connection.execute(
+    `SELECT 1 AS vinculado
+       FROM Episodio_Clinico ec
+       JOIN Profesional p ON p.profesional_id = ec.profesional_id
+      WHERE ec.paciente_id = ? AND p.usuario_id = ?
+      UNION
+     SELECT 1 AS vinculado
+       FROM Cita c
+       JOIN Profesional p ON p.profesional_id = c.profesional_id
+      WHERE c.paciente_id = ? AND p.usuario_id = ?
+      LIMIT 1`,
+    [pacienteId, usuarioId, pacienteId, usuarioId]
+  );
+  return filas.length > 0;
 }
 
 exports.listarSesiones = async (req, res) => {
@@ -100,17 +126,32 @@ exports.obtenerIntervencion = async (req, res) => {
   const { episodio_id } = req.params;
 
   try {
-    const contexto = await obtenerContexto(
+    let contexto = await obtenerContexto(
       pool,
       episodio_id,
       req.user.usuario_id
     );
+    let deOtroProfesional = false;
 
+    // CU28: la ficha muestra la trayectoria completa del paciente, con lo de
+    // otros profesionales en modo bloqueado. Antes esto respondía 403 y la app
+    // lo mostraba como una falla del servicio.
     if (!contexto) {
-      return res.status(403).json({
-        error: 'EPISODIO_NO_ASIGNADO',
-        mensaje: 'El episodio no pertenece al profesional autenticado.'
-      });
+      const ajeno = await obtenerContexto(pool, episodio_id, req.user.usuario_id, false, false);
+      if (!ajeno) {
+        return res.status(404).json({
+          error: 'EPISODIO_NO_ENCONTRADO',
+          mensaje: 'El episodio clínico no existe.'
+        });
+      }
+      if (!(await profesionalVinculadoAlPaciente(pool, ajeno.paciente_id, req.user.usuario_id))) {
+        return res.status(403).json({
+          error: 'EPISODIO_NO_ASIGNADO',
+          mensaje: 'No estás vinculado a este paciente.'
+        });
+      }
+      contexto = ajeno;
+      deOtroProfesional = true;
     }
 
     const [evoluciones] = await pool.execute(
@@ -127,16 +168,20 @@ exports.obtenerIntervencion = async (req, res) => {
       [episodio_id, contexto.profesional_id]
     );
 
-    const editable = Boolean(contexto.cita_id) && estadoEnCurso(contexto.estado_cita);
+    const editable =
+      !deOtroProfesional && Boolean(contexto.cita_id) && estadoEnCurso(contexto.estado_cita);
     const ultimaEvolucion = evoluciones[0] || null;
 
     return res.status(200).json({
       contexto: {
         ...contexto,
         editable,
-        mensaje_estado: editable
-          ? 'Sesión clínica en curso.'
-          : 'La sesión no está EN CURSO. Los campos se muestran en modo de solo lectura.'
+        de_otro_profesional: deOtroProfesional,
+        mensaje_estado: deOtroProfesional
+          ? `Este episodio lo lleva ${contexto.profesional_responsable}. Puedes consultarlo, pero solo su profesional registra en él.`
+          : editable
+            ? 'Sesión clínica en curso.'
+            : 'La sesión no está EN CURSO. Los campos se muestran en modo de solo lectura.'
       },
       evolucion:
         editable && ultimaEvolucion?.inalterable === 1

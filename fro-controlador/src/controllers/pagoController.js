@@ -235,6 +235,15 @@ exports.registrarBono = async (req, res) => {
       copago: resultado.datos.copago,
     });
   } catch (error) {
+    // El folio es único en todo el sistema: un mismo bono no puede cubrir dos
+    // citas. Sin esto, reutilizar un folio de prueba caía en "error interno".
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        error: 'FOLIO_YA_REGISTRADO',
+        mensaje:
+          'Ese folio ya está registrado en otra cita. Cada bono cubre una sola atención: usa el folio que te entregó tu institución para esta cita.',
+      });
+    }
     console.error('[registrarBono]', error);
     return res.status(500).json({ error: 'Error interno al registrar el bono.' });
   }

@@ -48,7 +48,7 @@ export default function SesionClinicaScreen({ route, navigation }) {
   const [contexto, setContexto] = useState(null);
   const [evolucion, setEvolucion] = useState(null);
   const [cargando, setCargando] = useState(false);
-  const [errorCarga, setErrorCarga] = useState(false);
+  const [errorCarga, setErrorCarga] = useState(null);
 
   // ── 1. Qué se hizo ───────────────────────────────────────────────────────
   const [tecnicas, setTecnicas] = useState('');
@@ -89,7 +89,7 @@ export default function SesionClinicaScreen({ route, navigation }) {
   const cargar = async () => {
     if (!episodioId) return;
     setCargando(true);
-    setErrorCarga(false);
+    setErrorCarga(null);
     try {
       const datos = await getIntervencion(episodioId);
       setContexto(datos.contexto);
@@ -109,7 +109,13 @@ export default function SesionClinicaScreen({ route, navigation }) {
       }
       await cargarMetas();
     } catch (error) {
-      setErrorCarga(true);
+      // Distinguir el motivo real evita el "servicio no disponible" genérico.
+      setErrorCarga(
+        error.response?.data?.mensaje ||
+          (error.response
+            ? `No se pudo cargar la sesión de este episodio (${error.response.status}).`
+            : 'Sin conexión con el servidor. Revisa tu red e inténtalo de nuevo.')
+      );
     } finally {
       setCargando(false);
     }
@@ -351,7 +357,7 @@ export default function SesionClinicaScreen({ route, navigation }) {
   if (errorCarga) {
     return (
       <View style={estilos.centrado}>
-        <ErrorRetry mensaje="No se pudo cargar la sesión de este episodio." onRetry={cargar} />
+        <ErrorRetry mensaje={errorCarga} onRetry={cargar} />
       </View>
     );
   }
@@ -365,6 +371,19 @@ export default function SesionClinicaScreen({ route, navigation }) {
           <View style={[estilos.estado, estilos.estadoActivo]}>
             <Text style={[estilos.estadoTexto, estilos.estadoTextoActivo]}>
               ● Atención en curso · puedes registrar
+            </Text>
+          </View>
+        ) : contexto.de_otro_profesional ? (
+          // CU28: la ficha muestra la trayectoria completa del paciente. Un
+          // episodio de otro profesional se consulta, pero no se escribe.
+          <View style={[estilos.estado, estilos.estadoAjeno]}>
+            <Text style={[estilos.estadoTexto, estilos.estadoTextoAjeno]}>
+              Episodio de {contexto.profesional_responsable}
+            </Text>
+            <Text style={estilos.estadoAyuda}>
+              Puedes consultarlo para dar continuidad al tratamiento, pero solo
+              su profesional registra en él. Para registrar tu atención, elige
+              un episodio tuyo en la pestaña Episodios.
             </Text>
           </View>
         ) : (
@@ -644,6 +663,8 @@ const estilos = StyleSheet.create({
   estadoTexto: { ...tipografia.metaFuerte },
   estadoTextoActivo: { color: colores.exito },
   estadoTextoInactivo: { color: colores.advertencia },
+  estadoAjeno: { backgroundColor: colores.infoSuave, borderColor: colores.infoBorde },
+  estadoTextoAjeno: { color: colores.info },
 
   // El rótulo de paso es lo que hace visible el orden de la sesión.
   paso: {

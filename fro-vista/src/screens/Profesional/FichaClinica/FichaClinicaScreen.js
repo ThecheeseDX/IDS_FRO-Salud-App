@@ -79,13 +79,14 @@ export default function FichaClinicaScreen({ route, navigation }) {
       const datos = await getHistorialPaciente(pacienteId);
       const lista = datos?.episodios || [];
       setEpisodios(lista);
-      // Se preselecciona el más reciente: es casi siempre sobre el que se
-      // trabaja, y así la ficha queda utilizable sin tocar nada.
+      // Se preselecciona el más reciente PROPIO: en los de otros profesionales
+      // no se puede registrar (CU28), así que abrir ahí sería un callejón.
       setEpisodioActivo((actual) => {
         if (actual && lista.some((e) => String(e.episodio_clinico_id) === String(actual))) {
           return actual;
         }
-        return lista.length > 0 ? String(lista[0].episodio_clinico_id) : '';
+        const propio = lista.find((e) => e.es_propio) || lista[0];
+        return propio ? String(propio.episodio_clinico_id) : '';
       });
     } catch (error) {
       setEpisodios([]);
@@ -203,7 +204,10 @@ export default function FichaClinicaScreen({ route, navigation }) {
                   {episodios.map((e) => (
                     <Picker.Item
                       key={e.episodio_clinico_id}
-                      label={`#${e.episodio_clinico_id} · ${e.motivo_consulta || 'Sin motivo'}`}
+                      label={
+                        `#${e.episodio_clinico_id} · ${e.motivo_consulta || 'Sin motivo'}` +
+                        (e.es_propio ? '' : ` · de ${e.profesional_responsable} (solo consulta)`)
+                      }
                       value={String(e.episodio_clinico_id)}
                     />
                   ))}
