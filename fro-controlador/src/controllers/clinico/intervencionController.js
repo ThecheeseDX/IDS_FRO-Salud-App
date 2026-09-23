@@ -82,6 +82,31 @@ async function profesionalVinculadoAlPaciente(connection, pacienteId, usuarioId)
   return filas.length > 0;
 }
 
+/**
+ * La atención EN CURSO de este profesional con el paciente, sin importar a qué
+ * episodio esté atada. Al iniciar la atención (CU38) la cita se amarra al
+ * episodio abierto más reciente; si el paciente llega por un motivo nuevo hay
+ * que poder pasarla al episodio nuevo, o la sesión queda sin dónde registrarse.
+ */
+async function atencionEnCursoDelPaciente(connection, pacienteId, profesionalId) {
+  const [filas] = await connection.execute(
+    `SELECT
+        c.cita_id,
+        c.episodio_clinico_id,
+        c.fecha_hora_inicio,
+        ec.motivo_consulta AS motivo_episodio
+       FROM Cita c
+       LEFT JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = c.episodio_clinico_id
+      WHERE c.paciente_id = ?
+        AND c.profesional_id = ?
+        AND UPPER(REPLACE(TRIM(c.estado), ' ', '_')) = 'EN_CURSO'
+      ORDER BY c.fecha_hora_inicio DESC
+      LIMIT 1`,
+    [pacienteId, profesionalId]
+  );
+  return filas[0] || null;
+}
+
 exports.listarSesiones = async (req, res) => {
   try {
     const [sesiones] = await pool.execute(
@@ -172,11 +197,27 @@ exports.obtenerIntervencion = async (req, res) => {
       !deOtroProfesional && Boolean(contexto.cita_id) && estadoEnCurso(contexto.estado_cita);
     const ultimaEvolucion = evoluciones[0] || null;
 
+    // Si la atención en curso está registrada en OTRO episodio del mismo
+    // profesional, la app lo dice y ofrece trasladarla: antes el episodio nuevo
+    // simplemente no dejaba escribir y no había ninguna explicación.
+    let atencionOtroEpisodio = null;
+    if (!editable && !deOtroProfesional) {
+      const atencion = await atencionEnCursoDelPaciente(
+        pool,
+        contexto.paciente_id,
+        contexto.profesional_id
+      );
+      if (atencion && String(atencion.episodio_clinico_id) !== String(episodio_id)) {
+        atencionOtroEpisodio = atencion;
+      }
+    }
+
     return res.status(200).json({
       contexto: {
         ...contexto,
         editable,
         de_otro_profesional: deOtroProfesional,
+        atencion_otro_episodio: atencionOtroEpisodio,
         mensaje_estado: deOtroProfesional
           ? `Este episodio lo lleva ${contexto.profesional_responsable}. Puedes consultarlo, pero solo su profesional registra en él.`
           : editable
@@ -325,6 +366,106 @@ exports.guardarIntervencion = async (req, res) => {
     return res.status(500).json({
       error: 'ERROR_GUARDAR_INTERVENCION',
       mensaje: 'No fue posible guardar la intervención clínica.'
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * PUT /api/clinica/intervenciones/:episodio_id/atencion
+ *
+ * Pasa la atención EN CURSO a este episodio. Es el caso del paciente que llega
+ * por un motivo nuevo: el profesional crea el episodio y traslada la sesión que
+ * está atendiendo, en vez de quedar bloqueado en el episodio anterior. Queda en
+ * la bitácora con el episodio de origen y el de destino.
+ */
+exports.trasladarAtencion = async (req, res) => {
+  const { episodio_id } = req.params;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const contexto = await obtenerContexto(
+      connection,
+      episodio_id,
+      req.user.usuario_id,
+      true
+    );
+
+    if (!contexto) {
+      await connection.rollback();
+      return res.status(403).json({
+        error: 'EPISODIO_NO_ASIGNADO',
+        mensaje: 'Solo el profesional a cargo del episodio puede atender en él.'
+      });
+    }
+
+    if (estaCerrado(contexto.estado_episodio)) {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'EPISODIO_CERRADO',
+        mensaje: 'Este episodio está cerrado. Crea uno nuevo para atender este motivo.'
+      });
+    }
+
+    const atencion = await atencionEnCursoDelPaciente(
+      connection,
+      contexto.paciente_id,
+      contexto.profesional_id
+    );
+
+    if (!atencion) {
+      await connection.rollback();
+      return res.status(409).json({
+        error: 'SIN_ATENCION_EN_CURSO',
+        mensaje: 'No tienes una atención en curso con este paciente. Inicia la atención desde la cita del historial.'
+      });
+    }
+
+    if (String(atencion.episodio_clinico_id) === String(episodio_id)) {
+      await connection.rollback();
+      return res.status(200).json({
+        mensaje: 'La atención ya está registrada en este episodio.',
+        cita_id: atencion.cita_id
+      });
+    }
+
+    await connection.execute(
+      `UPDATE Cita SET episodio_clinico_id = ? WHERE cita_id = ?`,
+      [episodio_id, atencion.cita_id]
+    );
+
+    await connection.execute(
+      `INSERT INTO Bitacora_Auditoria
+        (accion, entidad_afectada, ip_origen, usuario_id, datos_adicionales)
+       VALUES (?, 'Cita', ?, ?, ?)`,
+      [
+        'TRASLADAR_ATENCION_A_EPISODIO',
+        obtenerIP(req),
+        req.user.usuario_id,
+        JSON.stringify({
+          cita_id: atencion.cita_id,
+          episodio_origen: atencion.episodio_clinico_id,
+          episodio_destino: Number(episodio_id)
+        })
+      ]
+    );
+
+    await connection.commit();
+
+    return res.status(200).json({
+      mensaje: 'La atención en curso quedó registrada en este episodio.',
+      cita_id: atencion.cita_id,
+      episodio_clinico_id: Number(episodio_id)
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('[trasladarAtencion CU40]', error);
+    return res.status(500).json({
+      error: 'ERROR_TRASLADAR_ATENCION',
+      mensaje: 'No fue posible mover la atención a este episodio.'
     });
   } finally {
     connection.release();

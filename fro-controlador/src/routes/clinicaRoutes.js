@@ -85,6 +85,12 @@ router.put('/intervenciones/:episodio_id',
     verifyToken, authorizeRoles(['Profesional']),
     intervencionController.guardarIntervencion
 );
+// El paciente llega por un motivo nuevo: la atención en curso se traslada al
+// episodio nuevo en vez de quedar atada al anterior.
+router.put('/intervenciones/:episodio_id/atencion',
+    verifyToken, authorizeRoles(['Profesional']),
+    intervencionController.trasladarAtencion
+);
 
 // CU16
 router.get('/disponibilidad/bloqueos',

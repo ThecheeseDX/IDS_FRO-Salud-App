@@ -163,6 +163,13 @@ export const guardarIntervencion = async (episodioId, payload) => {
   return response.data;
 };
 
+// Pasa la atención en curso a otro episodio del mismo profesional: el paciente
+// llegó por un motivo nuevo y la sesión se registra en el episodio nuevo.
+export const trasladarAtencion = async (episodioId) => {
+  const response = await apiClient.put(`/clinica/intervenciones/${episodioId}/atencion`);
+  return response.data;
+};
+
 // =========================================================================
 // CU38 - MARCAS TEMPORALES DE LA PRESTACION
 // =========================================================================

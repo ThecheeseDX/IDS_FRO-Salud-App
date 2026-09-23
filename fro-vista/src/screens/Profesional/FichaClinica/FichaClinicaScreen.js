@@ -73,7 +73,9 @@ export default function FichaClinicaScreen({ route, navigation }) {
   // igual hacía creer que el paciente estaba vacío cuando el problema era otro.
   const [errorEpisodios, setErrorEpisodios] = useState('');
 
-  const cargarEpisodios = useCallback(async () => {
+  // El episodio recién creado pasa a ser el activo: el aviso decía "ya quedó
+  // seleccionado arriba" y no era cierto, así que había que buscarlo a mano.
+  const cargarEpisodios = useCallback(async (dejarActivo) => {
     if (!pacienteId) return;
     setCargandoEpisodios(true);
     setErrorEpisodios('');
@@ -84,6 +86,9 @@ export default function FichaClinicaScreen({ route, navigation }) {
       // Se preselecciona el más reciente PROPIO: en los de otros profesionales
       // no se puede registrar (CU28), así que abrir ahí sería un callejón.
       setEpisodioActivo((actual) => {
+        if (dejarActivo && lista.some((e) => String(e.episodio_clinico_id) === String(dejarActivo))) {
+          return String(dejarActivo);
+        }
         if (actual && lista.some((e) => String(e.episodio_clinico_id) === String(actual))) {
           return actual;
         }
@@ -211,7 +216,7 @@ export default function FichaClinicaScreen({ route, navigation }) {
           ) : errorEpisodios ? (
             <View style={styles.filaContexto}>
               <Text style={styles.errorContexto}>{errorEpisodios}</Text>
-              <TouchableOpacity onPress={cargarEpisodios} activeOpacity={interaccion.opacidadActiva}>
+              <TouchableOpacity onPress={() => cargarEpisodios()} activeOpacity={interaccion.opacidadActiva}>
                 <Text style={styles.enlaceCrear}>Reintentar</Text>
               </TouchableOpacity>
             </View>

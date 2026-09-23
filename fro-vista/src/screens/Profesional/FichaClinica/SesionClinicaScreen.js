@@ -21,7 +21,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import * as SecureStore from 'expo-secure-store';
 
-import apiClient, { getIntervencion, guardarIntervencion } from '../../../api/client';
+import apiClient, { getIntervencion, guardarIntervencion, trasladarAtencion } from '../../../api/client';
 import VistaConTeclado from '../../../components/VistaConTeclado';
 import ErrorRetry from '../../../components/ErrorRetry';
 import DialogoAviso from '../../../components/DialogoAviso';
@@ -65,6 +65,7 @@ export default function SesionClinicaScreen({ route, navigation }) {
 
   // ── 3. Cierre ────────────────────────────────────────────────────────────
   const [firmando, setFirmando] = useState(false);
+  const [trasladando, setTrasladando] = useState(false);
 
   const editable = contexto?.editable === true;
   // El episodio de otro profesional y el episodio cerrado se consultan, pero no
@@ -73,6 +74,8 @@ export default function SesionClinicaScreen({ route, navigation }) {
   const episodioCerrado =
     String(contexto?.estado_episodio || '').trim().toUpperCase() === 'CERRADO';
   const puedeDefinirMetas = Boolean(contexto) && !deOtroProfesional && !episodioCerrado;
+  // Atención en curso amarrada a otro episodio propio: se puede traer aquí.
+  const atencionOtroEpisodio = contexto?.atencion_otro_episodio || null;
   const especialidad = contexto?.especialidad || 'General';
   const posibleDeterioro = useMemo(
     () => PATRON_ALERTA_PRIORITARIA.test(`${tecnicas} ${respuesta}`),
@@ -298,6 +301,31 @@ export default function SesionClinicaScreen({ route, navigation }) {
     }
   };
 
+  // ── Traer la atención en curso a este episodio ───────────────────────────
+  const moverAtencionAqui = async () => {
+    setTrasladando(true);
+    try {
+      const datos = await trasladarAtencion(episodioId);
+      setAviso({
+        tono: 'ok',
+        titulo: 'Atención trasladada',
+        mensaje: datos.mensaje || 'Ya puedes registrar la sesión en este episodio.',
+      });
+      await cargar();
+    } catch (error) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo trasladar',
+        mensaje:
+          error.response?.data?.mensaje ||
+          error.response?.data?.error ||
+          'Intenta nuevamente.',
+      });
+    } finally {
+      setTrasladando(false);
+    }
+  };
+
   // ── 3. Cerrar y firmar ───────────────────────────────────────────────────
   // Antes esto vivía en Trazabilidad y había que teclear el número del
   // registro que uno acababa de escribir.
@@ -387,20 +415,50 @@ export default function SesionClinicaScreen({ route, navigation }) {
           // pedía "guarda primero" y nada decía que faltaba iniciar la
           // atención. Ahora se explica y se ofrece el camino.
           <View style={[estilos.estado, estilos.estadoInactivo]}>
-            <Text style={[estilos.estadoTexto, estilos.estadoTextoInactivo]}>
-              Para registrar en esta sesión, primero inicia la atención
-            </Text>
-            <Text style={estilos.estadoAyuda}>
-              La hora de inicio queda auditada, así que se marca sobre la cita
-              concreta que vas a atender.
-            </Text>
-            <TouchableOpacity
-              style={estilos.botonGuia}
-              onPress={() => navigation.navigate('HistorialPaciente')}
-              activeOpacity={interaccion.opacidadActiva}
-            >
-              <Text style={estilos.botonGuiaTexto}>Ir a las citas del paciente →</Text>
-            </TouchableOpacity>
+            {atencionOtroEpisodio && !episodioCerrado ? (
+              // El paciente llegó por un motivo nuevo: la atención se inició
+              // sobre el episodio anterior y hay que traerla a este.
+              <>
+                <Text style={[estilos.estadoTexto, estilos.estadoTextoInactivo]}>
+                  Tu atención en curso está registrada en el episodio #
+                  {atencionOtroEpisodio.episodio_clinico_id}
+                </Text>
+                <Text style={estilos.estadoAyuda}>
+                  {atencionOtroEpisodio.motivo_episodio
+                    ? `Ese episodio es por "${atencionOtroEpisodio.motivo_episodio}". `
+                    : ''}
+                  Si el paciente viene por un motivo distinto, pasa la sesión de hoy
+                  a este episodio: el traslado queda auditado.
+                </Text>
+                <TouchableOpacity
+                  style={[estilos.botonGuia, trasladando && estilos.deshabilitado]}
+                  onPress={moverAtencionAqui}
+                  disabled={trasladando}
+                  activeOpacity={interaccion.opacidadActiva}
+                >
+                  <Text style={estilos.botonGuiaTexto}>
+                    {trasladando ? 'Trasladando…' : 'Atender esta sesión en este episodio →'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={[estilos.estadoTexto, estilos.estadoTextoInactivo]}>
+                  Para registrar en esta sesión, primero inicia la atención
+                </Text>
+                <Text style={estilos.estadoAyuda}>
+                  La hora de inicio queda auditada, así que se marca sobre la cita
+                  concreta que vas a atender.
+                </Text>
+                <TouchableOpacity
+                  style={estilos.botonGuia}
+                  onPress={() => navigation.navigate('HistorialPaciente')}
+                  activeOpacity={interaccion.opacidadActiva}
+                >
+                  <Text style={estilos.botonGuiaTexto}>Ir a las citas del paciente →</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         )
       )}

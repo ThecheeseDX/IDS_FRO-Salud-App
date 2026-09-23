@@ -156,7 +156,9 @@ export default function EpisodioScreen({ route, navigation }) {
         motivo_consulta,
         paciente_id: parseInt(paciente_id, 10),
       });
-      if (onEpisodiosCambiaron) onEpisodiosCambiaron();
+      // Con el identificador, la cabecera de la ficha deja activo el episodio
+      // nuevo en vez de mantener el anterior.
+      if (onEpisodiosCambiaron) onEpisodiosCambiaron(data.episodio_clinico_id);
       setRecienCreado({
         id: data.episodio_clinico_id,
         motivo: motivo_consulta,
@@ -283,7 +285,8 @@ export default function EpisodioScreen({ route, navigation }) {
               </Text>
               <Text style={styles.guiaTexto}>
                 Ya quedó seleccionado arriba. El paso siguiente es registrar la
-                sesión de hoy.
+                sesión de hoy. Si estás atendiendo al paciente ahora, la sesión
+                clínica te ofrecerá pasar esa atención a este episodio.
               </Text>
               <TouchableOpacity
                 style={styles.guiaBoton}
