@@ -235,6 +235,24 @@ export default function DashboardPaciente({ navigation }) {
               <Text style={styles.menuChevron}>›</Text>
             </TouchableOpacity>
 
+            {/* CU60: solicitudes de soporte y su seguimiento */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('Soporte')}
+              activeOpacity={interaccion.opacidadActiva}
+            >
+              <View style={styles.menuIconoCaja}>
+                <Text style={styles.menuIcon}>🎫</Text>
+              </View>
+              <View style={styles.menuTexto}>
+                <Text style={styles.menuTitle}>Ayuda y Soporte</Text>
+                <Text style={styles.menuSubtitle}>
+                  Reporta un problema y sigue el estado de tus solicitudes.
+                </Text>
+              </View>
+              <Text style={styles.menuChevron}>›</Text>
+            </TouchableOpacity>
+
             {/* CU07/CU08/CU09: seguridad de la cuenta */}
             <TouchableOpacity
               style={styles.menuBtn}

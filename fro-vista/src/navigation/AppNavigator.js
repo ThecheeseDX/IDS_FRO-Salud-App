@@ -32,8 +32,12 @@ import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
 import PalabrasRestringidasScreen from '../screens/Admin/PalabrasRestringidasScreen';
 import ModeracionResenasScreen from '../screens/Admin/ModeracionResenasScreen';
+import PanelAdminScreen from '../screens/Admin/PanelAdminScreen';
+import BandejaSoporteScreen from '../screens/Admin/BandejaSoporteScreen';
+import ReportesScreen from '../screens/Admin/ReportesScreen';
 // Pantallas — Comunes a los tres roles
 import CentroNotificacionesScreen from '../screens/Comun/CentroNotificacionesScreen';
+import SoporteScreen from '../screens/Comun/SoporteScreen';
 import ConversacionesScreen from '../screens/Comun/ConversacionesScreen';
 import ChatClinicoScreen from '../screens/Comun/ChatClinicoScreen';
 import CampanaNotificaciones from '../components/CampanaNotificaciones';
@@ -180,6 +184,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
             {/* CU53: bandeja y conversación cifrada */}
             <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
+            {/* CU60: solicitudes de soporte y su seguimiento */}
+            <Stack.Screen name="Soporte" component={SoporteScreen} options={{ title: 'Soporte' }} />
             <Stack.Screen name="ChatClinico" component={ChatClinicoScreen} options={{ title: 'Mensajes' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             {/* CU35: el paciente consulta su repositorio con el visor embebido */}
@@ -226,6 +232,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
             {/* CU53: bandeja y conversación cifrada */}
             <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
+            {/* CU60: solicitudes de soporte y su seguimiento */}
+            <Stack.Screen name="Soporte" component={SoporteScreen} options={{ title: 'Soporte' }} />
             <Stack.Screen name="ChatClinico" component={ChatClinicoScreen} options={{ title: 'Mensajes' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
@@ -237,9 +245,11 @@ export default function AppNavigator() {
         ) : userData?.rol === 'Administrador' ? (
           // ── ESCENARIO D: Administrador Autenticado (CU59) ──
           <>
+            {/* CU64: el panel de indicadores es lo primero que ve el
+                administrador. Parámetros pasa a ser una herramienta más. */}
             <Stack.Screen
-              name="ParametrosScreen"
-              component={ParametrosScreen}
+              name="PanelAdmin"
+              component={PanelAdminScreen}
               options={({ navigation }) => ({
                 headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
@@ -262,6 +272,11 @@ export default function AppNavigator() {
             <Stack.Screen name="PalabrasRestringidas" component={PalabrasRestringidasScreen} options={{ title: 'Términos restringidos' }} />
             {/* CU56: moderación de testimonios públicos */}
             <Stack.Screen name="ModeracionResenas" component={ModeracionResenasScreen} options={{ title: 'Testimonios' }} />
+            <Stack.Screen name="Parametros" component={ParametrosScreen} options={{ title: 'Parámetros Globales' }} />
+            {/* CU61: bandeja de tickets enrutados al operador */}
+            <Stack.Screen name="BandejaSoporte" component={BandejaSoporteScreen} options={{ title: 'Soporte' }} />
+            {/* CU63: informes operativos exportables */}
+            <Stack.Screen name="Reportes" component={ReportesScreen} options={{ title: 'Informes' }} />
           </>
         ) : (
           // ── ESCENARIO E: Rol Desconocido ──

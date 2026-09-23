@@ -212,6 +212,17 @@ export default function DashboardProfesional({ navigation }) {
 
       <TouchableOpacity
         style={styles.herramienta}
+        onPress={() => navigation.navigate('Soporte')}
+      >
+        <Text style={styles.herramientaIcono}>🎫</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Ayuda y Soporte</Text>
+          <Text style={styles.herramientaSub}>Reporta un problema y sigue tus solicitudes.</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.herramienta}
         onPress={() => navigation.navigate('Conversaciones')}
       >
         <Text style={styles.herramientaIcono}>💬</Text>

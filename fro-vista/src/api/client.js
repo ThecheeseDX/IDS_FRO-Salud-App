@@ -424,4 +424,87 @@ export const moderarResena = async (evaluacionId, decision, motivo) => {
   return response.data;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU60 / CU61 — Soporte técnico
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getCategoriasSoporte = async () => {
+  const response = await apiClient.get('/soporte/categorias');
+  return response.data;
+};
+
+export const getMisTickets = async () => {
+  const response = await apiClient.get('/soporte/mis-tickets');
+  return response.data;
+};
+
+/** El adjunto es opcional; cuando viene, se manda como formulario multiparte. */
+export const crearTicketSoporte = async ({ categoria, descripcion, adjunto }) => {
+  if (!adjunto) {
+    const response = await apiClient.post('/soporte/tickets', { categoria, descripcion });
+    return response.data;
+  }
+  const formulario = new FormData();
+  formulario.append('categoria', categoria);
+  formulario.append('descripcion', descripcion);
+  formulario.append('adjunto', {
+    uri: adjunto.uri,
+    name: adjunto.nombre || `soporte-${Date.now()}.jpg`,
+    type: adjunto.tipo || 'image/jpeg',
+  });
+  const response = await apiClient.post('/soporte/tickets', formulario, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const getBandejaSoporte = async ({ estado = '', soloMios = false } = {}) => {
+  const response = await apiClient.get('/soporte/bandeja', {
+    params: { estado, solo_mios: soloMios ? 1 : 0 },
+  });
+  return response.data;
+};
+
+export const actualizarTicketSoporte = async (id, payload) => {
+  const response = await apiClient.put(`/soporte/tickets/${id}`, payload);
+  return response.data;
+};
+
+export const getMisAreasSoporte = async () => {
+  const response = await apiClient.get('/soporte/areas');
+  return response.data;
+};
+
+export const guardarMisAreasSoporte = async (areas) => {
+  const response = await apiClient.put('/soporte/areas', { areas });
+  return response.data;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU63 / CU64 — Panel de gestión e informes
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getKPIs = async ({ desde, hasta } = {}) => {
+  const params = {};
+  if (desde) params.desde = desde;
+  if (hasta) params.hasta = hasta;
+  const response = await apiClient.get('/gestion/kpis', { params });
+  return response.data;
+};
+
+export const getTiposDeInforme = async () => {
+  const response = await apiClient.get('/gestion/informes');
+  return response.data;
+};
+
+/** URL absoluta del informe: la descarga la hace expo-file-system con el token. */
+export const urlInforme = (tipo, { desde, hasta, formato, tomo }) => {
+  const parametros = new URLSearchParams();
+  if (desde) parametros.append('desde', desde);
+  if (hasta) parametros.append('hasta', hasta);
+  if (formato) parametros.append('formato', formato);
+  if (tomo) parametros.append('tomo', String(tomo));
+  return `${apiClient.defaults.baseURL}/gestion/informes/${tipo}?${parametros.toString()}`;
+};
+
 export default apiClient;

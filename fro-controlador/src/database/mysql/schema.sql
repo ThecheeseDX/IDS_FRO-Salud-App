@@ -88,8 +88,25 @@ CREATE TABLE Ticket_Soporte (
     estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
     momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     momento_resuelto TIMESTAMP,
+    -- CU61: a qué operador quedó enrutado y cuándo. Sin operador para el área,
+    -- queda NULL: es la bandeja de supervisión general.
+    asignado_a INT NULL,
+    momento_enrutamiento TIMESTAMP NULL,
+    -- CU60: evidencia opcional (captura de pantalla) alojada en Cloudinary.
+    adjunto_url VARCHAR(500) NULL,
+    resolucion VARCHAR(500) NULL,
     usuario_id INT NOT NULL,
-    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id) 
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (asignado_a) REFERENCES Usuario(usuario_id)
+);
+
+-- CU61: qué áreas atiende cada operador de soporte. El enrutamiento cruza la
+-- etiqueta del ticket con esta tabla.
+CREATE TABLE Area_Soporte_Operador (
+    usuario_id INT NOT NULL,
+    categoria VARCHAR(50) NOT NULL,
+    PRIMARY KEY (usuario_id, categoria),
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
 );
 
 CREATE TABLE Bitacora_Auditoria (

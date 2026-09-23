@@ -996,6 +996,69 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Ticket_Soporte con enrutamiento y adjunto (CU60/CU61)',
+    descripcion: 'Operador asignado, momento de enrutamiento, adjunto y resolucion',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Ticket_Soporte'
+            AND COLUMN_NAME = 'asignado_a'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Ticket_Soporte
+           ADD COLUMN asignado_a INT NULL AFTER momento_resuelto,
+           ADD COLUMN momento_enrutamiento TIMESTAMP NULL AFTER asignado_a,
+           ADD COLUMN adjunto_url VARCHAR(500) NULL AFTER momento_enrutamiento,
+           ADD COLUMN resolucion VARCHAR(500) NULL AFTER adjunto_url,
+           ADD CONSTRAINT fk_ticket_operador
+               FOREIGN KEY (asignado_a) REFERENCES Usuario(usuario_id)`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Area_Soporte_Operador (CU61)',
+    descripcion: 'Areas que atiende cada operador; sin operador, el ticket va a supervision general',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Area_Soporte_Operador'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Area_Soporte_Operador (
+            usuario_id INT NOT NULL,
+            categoria VARCHAR(50) NOT NULL,
+            PRIMARY KEY (usuario_id, categoria),
+            FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de soporte y reportes (CU60/CU63)',
+    descripcion: 'Limite del adjunto de un ticket y tope de filas por tomo de informe',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'MAX_ADJUNTO_TICKET_MB' LIMIT 1`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('MAX_ADJUNTO_TICKET_MB', '5', 'Peso maximo en MB de la imagen que se adjunta a un ticket de soporte.', 1),
+         ('MAX_FILAS_POR_TOMO_INFORME', '2000', 'Filas por tomo al exportar un informe; sobre eso se divide en partes.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {
