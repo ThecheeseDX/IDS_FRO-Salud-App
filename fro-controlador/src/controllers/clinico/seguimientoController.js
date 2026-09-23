@@ -19,6 +19,11 @@ const {
   umbralesVigentes,
 } = require('../../services/clinico/alertaClinicaService');
 const { leerParametroEntero } = require('../../services/agenda/agendaService');
+const {
+  calcularAdherencia,
+  actualizarIndicador,
+  serieAdherencia,
+} = require('../../services/clinico/adherenciaService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Ayudas comunes
@@ -504,5 +509,133 @@ exports.revisarAlerta = async (req, res) => {
   } catch (error) {
     console.error('[revisarAlerta CU50]', error);
     return res.status(500).json({ error: 'No se pudo marcar la alerta.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU44 / CU45 — Índice de adherencia y panel de progreso
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PATRON_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * GET /api/clinica/mi-progreso?desde=&hasta=   (Paciente)
+ *
+ * Todo lo que alimenta el panel del CU45 en una sola llamada: adherencia,
+ * curva de síntomas y recuento de asistencia. De paso recalcula el índice
+ * (CU44), que es justo lo que el caso de uso pide al navegar al perfil.
+ */
+exports.miProgreso = async (req, res) => {
+  const desde = PATRON_FECHA.test(String(req.query?.desde || '')) ? req.query.desde : null;
+  const hasta = PATRON_FECHA.test(String(req.query?.hasta || '')) ? req.query.hasta : null;
+
+  // Excepción 3 del CU45: un rango al revés no se consulta, se corrige.
+  if (desde && hasta && desde > hasta) {
+    return res.status(400).json({
+      error: 'RANGO_INVALIDO',
+      mensaje: 'La fecha de inicio no puede ser posterior a la de término.',
+    });
+  }
+
+  try {
+    const pacienteId = await pacienteDeUsuario(req.user.usuario_id);
+    if (!pacienteId) {
+      return res.status(404).json({ error: 'No se encontró tu registro de paciente.' });
+    }
+
+    // CU44: el índice se recalcula al entrar al panel. Si el teléfono se quedó
+    // sin señal antes (Excepción 3 del CU44), el dato quedó en el servidor y
+    // aparece ahora.
+    const adherencia = await actualizarIndicador(pool, pacienteId);
+
+    const [serie, rango] = await Promise.all([
+      serieAdherencia(pool, pacienteId, { desde, hasta }).catch(() => []),
+      desde || hasta
+        ? calcularAdherencia(pool, pacienteId, { desde, hasta }).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
+    const [sintomas] = await pool.query(
+      `SELECT reporte_sintoma_id, nivel_dolor, limitacion_funcional, comentario, momento_registro
+         FROM Reporte_Sintoma
+        WHERE paciente_id = ?
+          AND (? IS NULL OR DATE(momento_registro) >= ?)
+          AND (? IS NULL OR DATE(momento_registro) <= ?)
+        ORDER BY momento_registro ASC`,
+      [pacienteId, desde, desde, hasta, hasta]
+    );
+
+    const [[asistencia]] = await pool.query(
+      `SELECT
+          SUM(CASE WHEN estado = 'REALIZADA' THEN 1 ELSE 0 END)      AS realizadas,
+          SUM(CASE WHEN estado = 'INASISTENCIA' THEN 1 ELSE 0 END)   AS inasistencias,
+          SUM(CASE WHEN estado LIKE 'CANCELADA%' THEN 1 ELSE 0 END)  AS canceladas,
+          SUM(CASE WHEN estado IN ('AGENDADA','CONFIRMADA') AND fecha_hora_inicio > NOW()
+                   THEN 1 ELSE 0 END)                                 AS proximas,
+          COUNT(*)                                                    AS total
+         FROM Cita
+        WHERE paciente_id = ?
+          AND (? IS NULL OR DATE(fecha_hora_inicio) >= ?)
+          AND (? IS NULL OR DATE(fecha_hora_inicio) <= ?)`,
+      [pacienteId, desde, desde, hasta, hasta]
+    );
+
+    // Excepción 1 del CU45: sin historial se devuelve la vista introductoria.
+    const [[historico]] = await pool.query(
+      `SELECT COUNT(*) AS citas FROM Cita WHERE paciente_id = ?`,
+      [pacienteId]
+    );
+
+    return res.status(200).json({
+      hay_historial: Number(historico.citas) > 0 || sintomas.length > 0,
+      adherencia: {
+        ...adherencia,
+        // Cuando se pidió un rango, el porcentaje de ese tramo va aparte del
+        // global: son dos preguntas distintas.
+        porcentaje_rango: rango ? rango.porcentaje : null,
+      },
+      serie_adherencia: serie,
+      sintomas,
+      asistencia: {
+        realizadas: Number(asistencia?.realizadas || 0),
+        inasistencias: Number(asistencia?.inasistencias || 0),
+        canceladas: Number(asistencia?.canceladas || 0),
+        proximas: Number(asistencia?.proximas || 0),
+        total: Number(asistencia?.total || 0),
+      },
+      rango: { desde, hasta },
+    });
+  } catch (error) {
+    console.error('[miProgreso CU45]', error);
+    return res.status(500).json({
+      error: 'ERROR_PROGRESO',
+      mensaje: 'No se pudo cargar tu progreso. Vuelve a intentarlo.',
+    });
+  }
+};
+
+/**
+ * GET /api/clinica/pacientes/:pacienteId/adherencia   (Profesional)
+ *
+ * El mismo indicador, desde la ficha: el profesional necesita ver el
+ * compromiso del paciente junto al resto de su seguimiento.
+ */
+exports.adherenciaDePaciente = async (req, res) => {
+  const { pacienteId } = req.params;
+  try {
+    if (
+      req.user?.nombre_rol !== 'Administrador' &&
+      !(await profesionalTratante(req.user.usuario_id, pacienteId))
+    ) {
+      return res.status(403).json({ error: 'PACIENTE_NO_ASIGNADO' });
+    }
+
+    const adherencia = await actualizarIndicador(pool, pacienteId);
+    const serie = await serieAdherencia(pool, pacienteId, {}).catch(() => []);
+
+    return res.status(200).json({ adherencia, serie_adherencia: serie });
+  } catch (error) {
+    console.error('[adherenciaDePaciente CU44]', error);
+    return res.status(500).json({ error: 'No se pudo calcular la adherencia.' });
   }
 };

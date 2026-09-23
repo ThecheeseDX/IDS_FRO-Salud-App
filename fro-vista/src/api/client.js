@@ -334,4 +334,21 @@ export const revisarAlertaClinica = async (alertaId) => {
   return response.data;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU44 / CU45 — Adherencia y panel de progreso
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getMiProgreso = async ({ desde, hasta } = {}) => {
+  const params = {};
+  if (desde) params.desde = desde;
+  if (hasta) params.hasta = hasta;
+  const response = await apiClient.get('/clinica/mi-progreso', { params });
+  return response.data;
+};
+
+export const getAdherenciaDePaciente = async (pacienteId) => {
+  const response = await apiClient.get(`/clinica/pacientes/${pacienteId}/adherencia`);
+  return response.data;
+};
+
 export default apiClient;

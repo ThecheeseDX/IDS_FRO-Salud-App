@@ -16,6 +16,7 @@ import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
 import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
 import MisPautasScreen from '../screens/Paciente/MisPautasScreen';
 import MiSeguimientoScreen from '../screens/Paciente/MiSeguimientoScreen';
+import MiProgresoScreen from '../screens/Paciente/MiProgresoScreen';
 import TriajeScreen from '../screens/Paciente/TriajeScreen';
 import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
@@ -159,6 +160,8 @@ export default function AppNavigator() {
             <Stack.Screen name="MisPautas" component={MisPautasScreen} options={{ title: 'Mis Ejercicios' }} />
             {/* CU50: reporte de evolución del paciente */}
             <Stack.Screen name="MiSeguimiento" component={MiSeguimientoScreen} options={{ title: 'Mi Seguimiento' }} />
+            {/* CU45: panel gráfico de progreso */}
+            <Stack.Screen name="MiProgreso" component={MiProgresoScreen} options={{ title: 'Mi Progreso' }} />
             <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />

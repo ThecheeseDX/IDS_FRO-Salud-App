@@ -98,13 +98,20 @@ async function crearAlerta(conexion, { pacienteId, tipo, severidad, motivo, dato
       [pacienteId]
     );
 
+    // El texto del aviso depende de qué levantó la bandera: no es lo mismo un
+    // reporte de síntomas que una pauta que el paciente dejó de cumplir.
+    const encabezado =
+      tipo === 'ADHERENCIA_BAJA'
+        ? `${paciente?.nombre || 'Un paciente'} está dejando de cumplir su pauta`
+        : `${paciente?.nombre || 'Un paciente'} reportó un deterioro`;
+
     const tratantes = await profesionalesDelPaciente(conexion, pacienteId);
     for (const tratante of tratantes) {
       await notificarUsuario(
         conexion,
         tratante.usuario_id,
         'ALERTA_DETERIORO',
-        `${paciente?.nombre || 'Un paciente'} reportó un deterioro: ${motivo}.`,
+        `${encabezado}: ${motivo}.`,
         {
           datos: { pantalla: 'DashboardProfesional', paciente_id: Number(pacienteId) },
           correo: {

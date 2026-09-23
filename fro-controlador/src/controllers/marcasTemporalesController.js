@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { actualizarIndicador } = require('../services/clinico/adherenciaService');
 const { descontarSesionPaquete } = require('../services/agenda/agendaService');
 
 function obtenerIP(req) {
@@ -358,6 +359,10 @@ exports.finalizarAtencion = async (req, res) => {
     });
 
     await connection.commit();
+
+    // CU44: cerrar la atención es uno de los eventos que refrescan los
+    // indicadores del paciente. Fuera de la transacción y sin esperar.
+    actualizarIndicador(pool, cita.paciente_id).catch(() => {});
 
     return res.status(200).json({
       mensaje: 'Atencion finalizada correctamente.',

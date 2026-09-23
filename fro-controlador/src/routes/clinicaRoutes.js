@@ -127,6 +127,16 @@ router.post('/alertas/:id/revisar',
     seguimientoController.revisarAlerta
 );
 
+// ── CU44/CU45 — Indice de adherencia y panel de progreso
+router.get('/mi-progreso',
+    verifyToken, authorizeRoles(['Paciente']),
+    seguimientoController.miProgreso
+);
+router.get('/pacientes/:pacienteId/adherencia',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+    seguimientoController.adherenciaDePaciente
+);
+
 // CU16
 router.get('/disponibilidad/bloqueos',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']),

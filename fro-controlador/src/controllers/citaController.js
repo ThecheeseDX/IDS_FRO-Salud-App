@@ -9,6 +9,7 @@ const {
   ofrecerCupoListaEspera,
 } = require('../services/agenda/agendaService');
 const { cerrarSolicitudPorApp } = require('../services/agenda/confirmacionService');
+const { actualizarIndicador } = require('../services/clinico/adherenciaService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //   CU14 — Buscar disponibilidad
@@ -630,6 +631,13 @@ exports.transicionarEstadoCita = async (req, res) => {
     }
 
     await connection.commit();
+
+    // CU44: el cierre de una sesión es uno de los eventos que actualizan los
+    // indicadores del paciente. Va fuera de la transacción y sin esperar: el
+    // cambio de estado no puede depender de un cálculo de métricas.
+    if (nuevo_estado === 'REALIZADA' || nuevo_estado === 'INASISTENCIA') {
+      actualizarIndicador(pool, cita.paciente_id).catch(() => {});
+    }
 
     return res.status(200).json({
       mensaje: 'Estado de cita actualizado correctamente.',

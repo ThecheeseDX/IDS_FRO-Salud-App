@@ -145,6 +145,24 @@ export default function DashboardPaciente({ navigation }) {
               <Text style={styles.menuChevron}>›</Text>
             </TouchableOpacity>
 
+            {/* CU45: panel gráfico con adherencia, síntomas y asistencia */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('MiProgreso')}
+              activeOpacity={interaccion.opacidadActiva}
+            >
+              <View style={styles.menuIconoCaja}>
+                <Text style={styles.menuIcon}>📊</Text>
+              </View>
+              <View style={styles.menuTexto}>
+                <Text style={styles.menuTitle}>Mi Progreso</Text>
+                <Text style={styles.menuSubtitle}>
+                  Tu evolución en gráficos: dolor, cumplimiento de ejercicios y sesiones.
+                </Text>
+              </View>
+              <Text style={styles.menuChevron}>›</Text>
+            </TouchableOpacity>
+
             {/* CU50: reporte de evolución entre sesiones */}
             <TouchableOpacity
               style={styles.menuBtn}

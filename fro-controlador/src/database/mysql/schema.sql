@@ -265,6 +265,20 @@ CREATE TABLE Reporte_Preclinico (
     FOREIGN KEY (especialidad_sugerida_id) REFERENCES Especialidad(especialidad_id)
 );
 
+-- CU44: índice de adherencia del paciente, una foto por día. La serie de
+-- filas es la que dibuja la curva del panel de progreso (CU45).
+CREATE TABLE Indicador_Adherencia (
+    indicador_adherencia_id INT PRIMARY KEY AUTO_INCREMENT,
+    fecha DATE NOT NULL,
+    porcentaje TINYINT NOT NULL,
+    tareas_programadas INT NOT NULL,
+    tareas_cumplidas INT NOT NULL,
+    momento_calculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    paciente_id INT NOT NULL,
+    UNIQUE KEY uq_adherencia_dia (paciente_id, fecha),
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id)
+);
+
 -- CU50: reporte de evolución que el paciente envía entre sesiones. clave_envio
 -- es del cliente: si el teléfono reintenta el mismo envío, no se duplica.
 CREATE TABLE Reporte_Sintoma (

@@ -858,6 +858,50 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Tabla Indicador_Adherencia (CU44)',
+    descripcion: 'Indice de adherencia por dia, base de la curva de progreso del paciente',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Indicador_Adherencia'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Indicador_Adherencia (
+            indicador_adherencia_id INT PRIMARY KEY AUTO_INCREMENT,
+            fecha DATE NOT NULL,
+            porcentaje TINYINT NOT NULL,
+            tareas_programadas INT NOT NULL,
+            tareas_cumplidas INT NOT NULL,
+            momento_calculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            paciente_id INT NOT NULL,
+            UNIQUE KEY uq_adherencia_dia (paciente_id, fecha),
+            FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de adherencia (CU44)',
+    descripcion: 'Umbral de adherencia critica y minimo de tareas para alertar',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'UMBRAL_ADHERENCIA_CRITICA' LIMIT 1`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('UMBRAL_ADHERENCIA_CRITICA', '50', 'Porcentaje de adherencia bajo el cual se levanta una bandera roja al profesional.', 1),
+         ('MINIMO_TAREAS_PARA_ALERTA_ADHERENCIA', '5', 'Tareas programadas minimas antes de poder alertar por adherencia baja.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

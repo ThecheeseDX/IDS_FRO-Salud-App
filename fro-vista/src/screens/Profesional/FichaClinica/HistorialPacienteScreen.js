@@ -13,7 +13,11 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import { getReportePreclinico, getSintomasDePaciente } from '../../../api/client';
+import {
+  getReportePreclinico,
+  getSintomasDePaciente,
+  getAdherenciaDePaciente,
+} from '../../../api/client';
 import apiClient, {
   finalizarAtencion,
   getHistorialPaciente,
@@ -65,6 +69,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [preclinico, setPreclinico] = useState(null);
   const [errorPreclinico, setErrorPreclinico] = useState(false);
   const [seguimiento, setSeguimiento] = useState([]);
+  // CU44: índice de adherencia del paciente, calculado por el servidor.
+  const [adherencia, setAdherencia] = useState(null);
   const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -426,6 +432,12 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       setSeguimiento(reportes || []);
     } catch {
       setSeguimiento([]);
+    }
+    try {
+      const datos = await getAdherenciaDePaciente(pacienteId);
+      setAdherencia(datos?.adherencia || null);
+    } catch {
+      setAdherencia(null);
     }
   }, [pacienteId]);
 
@@ -805,6 +817,34 @@ export default function HistorialPacienteScreen({ route, navigation }) {
               </>
             )}
           </View>
+
+          {/* ── CU44: compromiso del paciente con su pauta de ejercicios ── */}
+          {adherencia && adherencia.porcentaje !== null && adherencia.porcentaje !== undefined && (
+            <View style={styles.tarjetaAdherencia}>
+              <Text style={styles.tituloSeguimiento}>
+                🏋️ Adherencia a la pauta: {adherencia.porcentaje}%
+              </Text>
+              <Text style={styles.lineaSeguimiento}>
+                Cumplió {adherencia.cumplidas} de {adherencia.programadas} tareas programadas.
+              </Text>
+              <View style={styles.barraAdherencia}>
+                <View
+                  style={[
+                    styles.barraAdherenciaLlena,
+                    {
+                      width: `${adherencia.porcentaje}%`,
+                      backgroundColor:
+                        adherencia.porcentaje >= 80
+                          ? colores.exito
+                          : adherencia.porcentaje >= 50
+                            ? colores.advertencia
+                            : colores.error,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          )}
 
           {/* ── CU50: cómo ha reportado el paciente su evolución ── */}
           {seguimiento.length > 0 && (
@@ -1357,6 +1397,17 @@ const styles = StyleSheet.create({
   sinBanderas: { ...tipografia.meta, color: colores.exito },
   sugerenciaPreclinico: { ...tipografia.meta, color: colores.secundarioFuerte, marginTop: espacio.sm },
   momentoPreclinico: { ...tipografia.micro, color: colores.textoTenue, marginTop: espacio.sm },
+
+  // CU44 — el índice de adherencia, con la misma barra que ve el paciente.
+  tarjetaAdherencia: { ...piezas.tarjeta, marginBottom: espacio.base },
+  barraAdherencia: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colores.superficieSuave,
+    overflow: 'hidden',
+    marginTop: espacio.sm,
+  },
+  barraAdherenciaLlena: { height: '100%', borderRadius: 4 },
 
   // CU50 — reportes de evolución enviados por el paciente.
   tarjetaSeguimiento: { ...piezas.tarjeta, marginBottom: espacio.base },
