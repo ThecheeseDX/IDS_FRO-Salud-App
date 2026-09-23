@@ -379,8 +379,52 @@ async function perfilDeUsuario(usuarioId) {
   if (!perfil) return null;
   // 'default.jpg' es el marcador del registro: no es una URL utilizable.
   if (perfil.foto_url === 'default.jpg') perfil.foto_url = null;
+
+  // CU10/CU14: comunas donde atiende a domicilio. Sin ninguna declarada el
+  // profesional aparece en todas, para no dejar fuera a quien ya estaba
+  // registrado antes de que existiera esta pantalla.
+  const [comunas] = await db.query(
+    `SELECT c.comuna_id, c.nombre
+       FROM Profesional_Comuna pc
+       JOIN Comuna c ON c.comuna_id = pc.comuna_id
+      WHERE pc.profesional_id = ?
+      ORDER BY c.nombre`,
+    [perfil.profesional_id]
+  );
+  perfil.comunas = comunas;
   return perfil;
 }
+
+/**
+ * Reemplaza las comunas de atención del profesional. Se usa al editar el perfil
+ * y al registrarse: la lista que llega es la lista final, no un agregado.
+ */
+async function guardarComunasProfesional(conexion, profesionalId, comunas) {
+  const ids = [...new Set(
+    (Array.isArray(comunas) ? comunas : [])
+      .map((valor) => Number(valor))
+      .filter((valor) => Number.isInteger(valor) && valor > 0)
+  )];
+
+  await conexion.query('DELETE FROM Profesional_Comuna WHERE profesional_id = ?', [profesionalId]);
+  if (ids.length === 0) return [];
+
+  // Solo comunas que existen: un identificador inventado reventaría la clave
+  // foránea y tumbaría el guardado completo del perfil.
+  const [validas] = await conexion.query(
+    `SELECT comuna_id FROM Comuna WHERE comuna_id IN (${ids.map(() => '?').join(',')})`,
+    ids
+  );
+  for (const fila of validas) {
+    await conexion.query(
+      'INSERT INTO Profesional_Comuna (profesional_id, comuna_id) VALUES (?, ?)',
+      [profesionalId, fila.comuna_id]
+    );
+  }
+  return validas.map((f) => f.comuna_id);
+}
+
+exports.guardarComunasProfesional = guardarComunasProfesional;
 
 async function auditarPerfil(req, accion, datos) {
   try {
@@ -449,8 +493,29 @@ exports.actualizarMiPerfil = async (req, res) => {
     if (resultado.affectedRows === 0) {
       return res.status(404).json({ error: 'No se encontró tu perfil profesional.' });
     }
-    await auditarPerfil(req, 'ACTUALIZACION_PERFIL_PROFESIONAL', { modalidad, largo_resena: resena.length });
-    return res.status(200).json({ mensaje: 'Perfil actualizado. Los pacientes ya ven la información nueva.' });
+
+    // CU14: las comunas de atención se envían como lista completa. Solo se
+    // tocan si el cuerpo las trae, para no borrarlas desde un cliente antiguo.
+    let comunasGuardadas = null;
+    if (Array.isArray(req.body?.comunas)) {
+      const [[fila]] = await db.query(
+        'SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1',
+        [req.user.usuario_id]
+      );
+      if (fila) {
+        comunasGuardadas = await guardarComunasProfesional(db, fila.profesional_id, req.body.comunas);
+      }
+    }
+
+    await auditarPerfil(req, 'ACTUALIZACION_PERFIL_PROFESIONAL', {
+      modalidad,
+      largo_resena: resena.length,
+      comunas: comunasGuardadas,
+    });
+    return res.status(200).json({
+      mensaje: 'Perfil actualizado. Los pacientes ya ven la información nueva.',
+      comunas: comunasGuardadas,
+    });
   } catch (error) {
     console.error('[actualizarMiPerfil]', error);
     // CU10 Exc.6: fallo de persistencia.

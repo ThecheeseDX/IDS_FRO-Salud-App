@@ -226,7 +226,9 @@ exports.validarProfesional = async (req, res) => {
 exports.registrarProfesional = async (req, res) => {
     const {
         rut, nombres, apellido_paterno, apellido_materno, email, telefono, contrasena,
-        num_registro_salud, especialidad_id, tipo_sede, resena_curricular, disponibilidad
+        num_registro_salud, especialidad_id, tipo_sede, resena_curricular, disponibilidad,
+        // CU14: comunas en las que el profesional atiende a domicilio.
+        comunas
     } = req.body;
 
     if (rechazoPorContrasenaDebil(res, contrasena)) return;
@@ -265,6 +267,26 @@ exports.registrarProfesional = async (req, res) => {
             [num_registro_salud, resena_curricular, 0.00, 'default.jpg', tipo_sede, usuario_id, especialidad_id]
         );
         const profesional_id = profResult.insertId;
+
+        // Las comunas de atención se guardan con el mismo criterio que el perfil:
+        // la lista que llega es la definitiva, y las inexistentes se descartan.
+        const comunasPedidas = [...new Set(
+            (Array.isArray(comunas) ? comunas : [])
+                .map((valor) => Number(valor))
+                .filter((valor) => Number.isInteger(valor) && valor > 0)
+        )];
+        if (comunasPedidas.length > 0) {
+            const [comunasValidas] = await connection.query(
+                `SELECT comuna_id FROM Comuna WHERE comuna_id IN (${comunasPedidas.map(() => '?').join(',')})`,
+                comunasPedidas
+            );
+            for (const fila of comunasValidas) {
+                await connection.execute(
+                    `INSERT INTO Profesional_Comuna (profesional_id, comuna_id) VALUES (?, ?)`,
+                    [profesional_id, fila.comuna_id]
+                );
+            }
+        }
 
         if (disponibilidad && disponibilidad.length > 0) {
             const MODALIDADES_VALIDAS = ['DOMICILIO', 'ONLINE', 'AMBOS'];

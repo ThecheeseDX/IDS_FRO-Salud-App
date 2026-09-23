@@ -571,6 +571,29 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Tabla Profesional_Comuna (CU10/CU14)',
+    descripcion: 'Comunas en las que atiende cada profesional, para filtrar la busqueda del paciente',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Profesional_Comuna'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Profesional_Comuna (
+            profesional_id INT NOT NULL,
+            comuna_id INT NOT NULL,
+            PRIMARY KEY (profesional_id, comuna_id),
+            FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+            FOREIGN KEY (comuna_id) REFERENCES Comuna(comuna_id)
+         )`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

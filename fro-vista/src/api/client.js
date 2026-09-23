@@ -180,8 +180,20 @@ export const getAtencionEnCurso = async () => {
   return response.data;
 };
 
-export const getCitasMarcasTemporales = async () => {
-  const response = await apiClient.get('/citas/marcas-temporales');
+// Sin rango devuelve toda la agenda; con desde/hasta (AAAA-MM-DD) solo esa
+// franja, que es lo que necesita la jornada por día.
+export const getCitasMarcasTemporales = async (rango = {}) => {
+  const params = {};
+  if (rango.desde && rango.hasta) {
+    params.desde = rango.desde;
+    params.hasta = rango.hasta;
+  }
+  const response = await apiClient.get('/citas/marcas-temporales', { params });
+  return response.data;
+};
+
+export const getComunas = async () => {
+  const response = await apiClient.get('/auth/comunas');
   return response.data;
 };
 

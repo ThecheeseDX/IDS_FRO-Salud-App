@@ -19,6 +19,8 @@ const RegisterScreen = ({ navigation }) => {
     const [especialidades, setEspecialidades] = useState([]);
     const [errores, setErrores] = useState({});
     const [disponibilidad, setDisponibilidad] = useState([]);
+    // CU14: comunas donde el profesional atiende a domicilio (puede ser más de una).
+    const [comunasAtencion, setComunasAtencion] = useState([]);
 
     const [formData, setFormData] = useState({
         rut: '', nombres: '', apellido_paterno: '', apellido_materno: '', email: '', telefono: '', contrasena: '', confirmar_contrasena: '',
@@ -123,6 +125,16 @@ const RegisterScreen = ({ navigation }) => {
                 setAviso({ tono: 'error', titulo: "Agenda Vacía", mensaje: "Debe agregar al menos un bloque horario." }); 
                 esValido = false; 
             }
+            // Quien atiende a domicilio tiene que decir dónde: el paciente solo
+            // ve a los profesionales que llegan a su comuna.
+            if (['DOMICILIO', 'AMBOS'].includes(formData.tipo_sede) && comunasAtencion.length === 0) {
+                setAviso({
+                    tono: 'error',
+                    titulo: 'Faltan las comunas',
+                    mensaje: 'Elige al menos una comuna de atención a domicilio: los pacientes buscan por su comuna.',
+                });
+                esValido = false;
+            }
         }
 
         setErrores(nuevosErrores);
@@ -188,7 +200,7 @@ const RegisterScreen = ({ navigation }) => {
         try {
             let response;
             if (esProfesional) {
-                const payloadProfesional = { ...formData, disponibilidad };
+                const payloadProfesional = { ...formData, disponibilidad, comunas: comunasAtencion };
                 response = await apiClient.post('/auth/registrar-profesional', payloadProfesional);
             } else {
                 response = await apiClient.post('/auth/registrar', formData);
@@ -359,6 +371,39 @@ const RegisterScreen = ({ navigation }) => {
                             </Picker>
                         </View>
 
+                        {['DOMICILIO', 'AMBOS'].includes(formData.tipo_sede) && (
+                            <View style={styles.campo}>
+                                <Text style={styles.label}>Comunas donde atenderás a domicilio</Text>
+                                <View style={styles.comunasFila}>
+                                    {comunas.map((c) => {
+                                        const elegida = comunasAtencion.includes(c.comuna_id);
+                                        return (
+                                            <TouchableOpacity
+                                                key={c.comuna_id.toString()}
+                                                style={[styles.comunaChip, elegida && styles.comunaChipElegida]}
+                                                onPress={() =>
+                                                    setComunasAtencion((previas) =>
+                                                        previas.includes(c.comuna_id)
+                                                            ? previas.filter((id) => id !== c.comuna_id)
+                                                            : [...previas, c.comuna_id]
+                                                    )
+                                                }
+                                            >
+                                                <Text style={[styles.comunaChipTexto, elegida && styles.comunaChipTextoElegida]}>
+                                                    {elegida ? '✓ ' : ''}{c.nombre}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                                <Text style={styles.ayudaComunas}>
+                                    Puedes elegir varias. Los pacientes solo verán tus horas a domicilio
+                                    si viven en una de ellas; las teleconsultas no dependen de la comuna.
+                                    Después puedes cambiarlas en Mi Perfil.
+                                </Text>
+                            </View>
+                        )}
+
                         <View style={styles.campo}>
                             <Text style={styles.label}>Reseña curricular</Text>
                             <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} placeholder="Breve descripción de tu experiencia" multiline numberOfLines={3} value={formData.resena_curricular} onChangeText={(v) => handleChange('resena_curricular', v)} />
@@ -466,6 +511,19 @@ const styles = StyleSheet.create({
     campo: { marginBottom: espacio.base },
     campoMitad: { flex: 1, marginBottom: espacio.base },
     label: { ...piezas.etiqueta },
+    comunasFila: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.sm },
+    comunaChip: {
+        paddingVertical: espacio.sm,
+        paddingHorizontal: espacio.md,
+        borderRadius: radio.completo,
+        borderWidth: 1,
+        borderColor: colores.bordeCampo,
+        backgroundColor: colores.superficie,
+    },
+    comunaChipElegida: { borderColor: colores.primario, backgroundColor: colores.primarioSuave },
+    comunaChipTexto: { ...tipografia.meta, color: colores.textoSuave },
+    comunaChipTextoElegida: { color: colores.primario, fontWeight: '700' },
+    ayudaComunas: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.sm },
     subHeader: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginTop: espacio.md, marginBottom: espacio.sm },
 
     // alignItems al final: el botón queda a la altura del campo, no de su etiqueta.

@@ -157,6 +157,17 @@ CREATE TABLE Profesional_Disponibilidad (
     FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );
 
+-- CU10/CU14: comunas en las que el profesional atiende a domicilio. Un
+-- profesional puede cubrir varias; el buscador del paciente usa esto para no
+-- ofrecer horas a domicilio de quien no llega a su comuna.
+CREATE TABLE Profesional_Comuna (
+    profesional_id INT NOT NULL,
+    comuna_id INT NOT NULL,
+    PRIMARY KEY (profesional_id, comuna_id),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+    FOREIGN KEY (comuna_id) REFERENCES Comuna(comuna_id)
+);
+
 CREATE TABLE Contacto_Emergencia (
     contacto_emergencia_id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,

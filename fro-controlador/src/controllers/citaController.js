@@ -42,6 +42,9 @@ function aTextoSQL(fecha) {
 
 exports.buscarDisponibilidad = async (req, res) => {
   const { especialidad_id, tipo_sede, fecha } = req.query;
+  // Búsqueda por nombre del profesional: opcional, se suma a los filtros de
+  // siempre en vez de reemplazarlos.
+  const nombreBuscado = String(req.query?.nombre || '').trim();
 
   if (!especialidad_id || !tipo_sede || !fecha) {
     return res.status(400).json({ error: 'Debe indicar especialidad, modalidad y fecha.' });
@@ -51,6 +54,25 @@ exports.buscarDisponibilidad = async (req, res) => {
     const fechaObj  = new Date(`${fecha}T00:00:00`);
     const diaSemana = fechaObj.getDay() === 0 ? 7 : fechaObj.getDay();
 
+    // CU14: la atención a domicilio depende de dónde vive el paciente. Se toma
+    // la comuna de su cuenta; una teleconsulta no depende del lugar, así que
+    // ese filtro solo se aplica a los bloques a domicilio.
+    let comunaPaciente = null;
+    const [[fichaPaciente]] = await pool.query(
+      `SELECT pa.comuna_id, c.nombre
+         FROM Paciente pa
+         LEFT JOIN Comuna c ON c.comuna_id = pa.comuna_id
+        WHERE pa.usuario_id = ? LIMIT 1`,
+      [req.user?.usuario_id ?? null]
+    );
+    if (fichaPaciente?.comuna_id) {
+      comunaPaciente = { comuna_id: fichaPaciente.comuna_id, nombre: fichaPaciente.nombre };
+    }
+
+    const condicionNombre = nombreBuscado
+      ? `AND CONCAT_WS(' ', u.nombres, u.apellido_paterno, u.apellido_materno) LIKE ?`
+      : '';
+
     const [filas] = await pool.query(
       `SELECT
           p.profesional_id,
@@ -59,7 +81,17 @@ exports.buscarDisponibilidad = async (req, res) => {
           s.sede_id, s.nombre AS sede_nombre,
           pd.hora_inicio, pd.hora_fin, pd.modalidad,
           -- CU10: catálogo público del profesional
-          p.foto_url, p.reseña_curricular AS resena_curricular, p.areas_experticia
+          p.foto_url, p.reseña_curricular AS resena_curricular, p.areas_experticia,
+          -- CU14: comunas declaradas y si cubren la del paciente. Sin comunas
+          -- declaradas se entiende que atiende en cualquiera.
+          (SELECT GROUP_CONCAT(c2.nombre ORDER BY c2.nombre SEPARATOR ', ')
+             FROM Profesional_Comuna pc2
+             JOIN Comuna c2 ON c2.comuna_id = pc2.comuna_id
+            WHERE pc2.profesional_id = p.profesional_id) AS comunas_atencion,
+          (SELECT COUNT(*) FROM Profesional_Comuna pc3
+            WHERE pc3.profesional_id = p.profesional_id) AS total_comunas,
+          (SELECT COUNT(*) FROM Profesional_Comuna pc4
+            WHERE pc4.profesional_id = p.profesional_id AND pc4.comuna_id = ?) AS cubre_comuna
        FROM Profesional_Disponibilidad pd
        JOIN Profesional p  ON pd.profesional_id  = p.profesional_id
        JOIN Usuario     u  ON p.usuario_id        = u.usuario_id
@@ -67,11 +99,16 @@ exports.buscarDisponibilidad = async (req, res) => {
        JOIN Sede         s ON s.estado_sede        = 1
        WHERE p.especialidad_id = ?
          AND pd.dia_semana     = ?
-         AND u.cuenta_activo   = TRUE`,
-      [especialidad_id, diaSemana]
+         AND u.cuenta_activo   = TRUE
+         ${condicionNombre}`,
+      nombreBuscado
+        ? [comunaPaciente?.comuna_id ?? 0, especialidad_id, diaSemana, `%${nombreBuscado}%`]
+        : [comunaPaciente?.comuna_id ?? 0, especialidad_id, diaSemana]
     );
 
     const disponibilidad = [];
+    // Para poder explicar en pantalla por qué no salió nadie.
+    let descartadosPorComuna = 0;
 
     for (const fila of filas) {
       // La modalidad la define cada bloque horario del profesional.
@@ -88,6 +125,19 @@ exports.buscarDisponibilidad = async (req, res) => {
       // y él buscó una específica, la cita queda en la que él pidió.
       const modalidad =
         modalidadBloque === 'AMBOS' && tipo_sede !== 'AMBOS' ? tipo_sede : modalidadBloque;
+
+      // El profesional que declaró comunas solo aparece para las suyas, y solo
+      // cuando la hora implica ir al domicilio del paciente.
+      const implicaDomicilio = modalidad === 'DOMICILIO' || modalidad === 'AMBOS';
+      if (
+        implicaDomicilio &&
+        Number(fila.total_comunas) > 0 &&
+        comunaPaciente &&
+        Number(fila.cubre_comuna) === 0
+      ) {
+        descartadosPorComuna++;
+        continue;
+      }
 
       const horaInicio  = String(fila.hora_inicio).slice(0, 5);
       const horaFin     = String(fila.hora_fin).slice(0, 5);
@@ -132,6 +182,7 @@ exports.buscarDisponibilidad = async (req, res) => {
             foto_url:        fila.foto_url && fila.foto_url !== 'default.jpg' ? fila.foto_url : null,
             resena_curricular: fila.resena_curricular || null,
             areas_experticia: fila.areas_experticia || null,
+            comunas_atencion: fila.comunas_atencion || null,
             fecha,
             hora_inicio:     bloqueInicio,
             hora_fin:        bloqueFin,
@@ -141,7 +192,14 @@ exports.buscarDisponibilidad = async (req, res) => {
       }
     }
 
-    return res.status(200).json({ data: disponibilidad });
+    return res.status(200).json({
+      data: disponibilidad,
+      filtro: {
+        comuna_paciente: comunaPaciente?.nombre || null,
+        nombre: nombreBuscado || null,
+        descartados_por_comuna: descartadosPorComuna,
+      },
+    });
   } catch (error) {
     console.error('[buscarDisponibilidad]', error);
     return res.status(500).json({ error: 'Error interno al buscar disponibilidad.' });

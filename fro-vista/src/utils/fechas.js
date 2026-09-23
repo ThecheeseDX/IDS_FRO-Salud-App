@@ -85,6 +85,17 @@ function partes({ fecha, esInstante }) {
   };
 }
 
+/**
+ * "2026-09-22": el día calendario chileno al que pertenece el valor. Sirve para
+ * agrupar citas por día sin que el huso del teléfono las corra de fecha.
+ */
+export function claveDia(valor) {
+  const v = interpretar(valor);
+  if (!v) return null;
+  const p = partes(v);
+  return `${p.anio}-${p.mes}-${p.dia}`;
+}
+
 /** "05/09/2026" */
 export function formatearFecha(valor, respaldo = 'Fecha no informada') {
   const v = interpretar(valor);

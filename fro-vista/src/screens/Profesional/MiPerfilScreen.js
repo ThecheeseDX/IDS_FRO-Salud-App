@@ -18,7 +18,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 
-import apiClient from '../../api/client';
+import apiClient, { getComunas } from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import ErrorRetry from '../../components/ErrorRetry';
 import DialogoAviso from '../../components/DialogoAviso';
@@ -41,6 +41,10 @@ export default function MiPerfilScreen() {
   const [guardando, setGuardando] = useState(false);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [erroresCampo, setErroresCampo] = useState({});
+  // CU14: comunas donde atiende a domicilio. Sin ninguna elegida aparece en
+  // todas, así que conviene decirlo en pantalla.
+  const [comunas, setComunas] = useState([]);
+  const [comunasElegidas, setComunasElegidas] = useState([]);
 
   const cargar = async () => {
     setError('');
@@ -50,6 +54,13 @@ export default function MiPerfilScreen() {
       setResena(data.resena_curricular || '');
       setAreas(data.areas_experticia || '');
       setModalidad(data.tipo_sede || 'DOMICILIO');
+      setComunasElegidas((data.comunas || []).map((c) => c.comuna_id));
+      try {
+        setComunas(await getComunas());
+      } catch {
+        // El catálogo de comunas es secundario: el resto del perfil sigue útil.
+        setComunas([]);
+      }
     } catch (err) {
       // CU10 Exc.1: el módulo no carga.
       setError(err.response?.data?.error || 'No se pudo cargar tu perfil. Revisa tu conexión.');
@@ -78,6 +89,7 @@ export default function MiPerfilScreen() {
         resena_curricular: resena,
         areas_experticia: areas,
         tipo_sede: modalidad,
+        comunas: comunasElegidas,
       });
       setAviso({ tono: 'ok', titulo: 'Perfil actualizado', mensaje: data.mensaje });
     } catch (err) {
@@ -219,6 +231,43 @@ export default function MiPerfilScreen() {
         Cada bloque de tu jornada puede tener su propia modalidad; esta es la que se muestra como general.
       </Text>
 
+      {/* Comunas de atención a domicilio */}
+      <Text style={estilos.etiqueta}>Comunas donde atiendes a domicilio</Text>
+      {comunas.length === 0 ? (
+        <Text style={estilos.ayuda}>No se pudo cargar el listado de comunas.</Text>
+      ) : (
+        <>
+          <View style={estilos.comunas}>
+            {comunas.map((comuna) => {
+              const elegida = comunasElegidas.includes(comuna.comuna_id);
+              return (
+                <TouchableOpacity
+                  key={comuna.comuna_id}
+                  style={[estilos.comuna, elegida && estilos.comunaElegida]}
+                  onPress={() =>
+                    setComunasElegidas((previas) =>
+                      previas.includes(comuna.comuna_id)
+                        ? previas.filter((id) => id !== comuna.comuna_id)
+                        : [...previas, comuna.comuna_id]
+                    )
+                  }
+                  activeOpacity={interaccion.opacidadActiva}
+                >
+                  <Text style={[estilos.comunaTexto, elegida && estilos.comunaTextoElegida]}>
+                    {elegida ? '✓ ' : ''}{comuna.nombre}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={estilos.ayuda}>
+            {comunasElegidas.length === 0
+              ? 'Sin comunas elegidas apareces en las búsquedas de todas las comunas. Elige las tuyas para que solo te vean los pacientes a los que puedes llegar.'
+              : `Elegidas: ${comunasElegidas.length}. Los pacientes de otras comunas no verán tus horas a domicilio; las teleconsultas no dependen de la comuna.`}
+          </Text>
+        </>
+      )}
+
       <TouchableOpacity
         style={[estilos.botonGuardar, guardando && estilos.botonDeshabilitado]}
         onPress={guardar}
@@ -264,6 +313,19 @@ const estilos = StyleSheet.create({
   contadorError: { color: colores.error },
   ayuda: { ...tipografia.meta, color: colores.textoTenue, marginTop: 4 },
   textoError: { ...tipografia.meta, color: colores.error, marginTop: 4 },
+
+  comunas: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.sm, marginTop: espacio.sm },
+  comuna: {
+    paddingVertical: espacio.sm,
+    paddingHorizontal: espacio.md,
+    borderRadius: radio.completo,
+    borderWidth: 1,
+    borderColor: colores.bordeCampo,
+    backgroundColor: colores.superficie,
+  },
+  comunaElegida: { borderColor: colores.primario, backgroundColor: colores.primarioSuave },
+  comunaTexto: { ...tipografia.meta, color: colores.textoSuave },
+  comunaTextoElegida: { color: colores.primario, fontWeight: '700' },
 
   botonGuardar: { ...piezas.botonPrimario, alignItems: 'center', marginTop: espacio.xl },
   botonDeshabilitado: { opacity: 0.6 },

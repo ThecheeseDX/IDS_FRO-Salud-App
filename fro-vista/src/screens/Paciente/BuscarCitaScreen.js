@@ -9,6 +9,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,7 +50,10 @@ export default function BuscarCitaScreen({ navigation, route }) {
   const [tipoSede, setTipoSede] = useState('ONLINE');
   const [fechaSeleccionada, setFechaSeleccionada] = useState('');
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [nombreProfesional, setNombreProfesional] = useState('');
   const [disponibilidad, setDisponibilidad] = useState([]);
+  // Lo que el servidor aplicó: comuna del paciente y cuántos quedaron fuera.
+  const [filtroAplicado, setFiltroAplicado] = useState(null);
   const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
   const [errorEspecialidades, setErrorEspecialidades] = useState(false);
 
@@ -98,9 +102,12 @@ export default function BuscarCitaScreen({ navigation, route }) {
           especialidad_id: especialidadId,
           tipo_sede: tipoSede,
           fecha: fechaSeleccionada,
+          // Filtro adicional: se suma a especialidad, modalidad y fecha.
+          ...(nombreProfesional.trim() ? { nombre: nombreProfesional.trim() } : {}),
         },
       });
       setDisponibilidad(response.data.data || []);
+      setFiltroAplicado(response.data.filtro || null);
       // Excepción 2 se muestra visualmente cuando disponibilidad.length === 0
     } catch (error) {
       setAviso({ tono: 'error', titulo: 'Error', mensaje: error.response?.data?.error || 'No se pudo obtener la disponibilidad.' });
@@ -333,6 +340,19 @@ export default function BuscarCitaScreen({ navigation, route }) {
         />
       )}
 
+      <Text style={styles.label}>Profesional (opcional)</Text>
+      <TextInput
+        style={styles.campoNombre}
+        placeholder="Buscar por nombre o apellido"
+        placeholderTextColor={colores.textoTenue}
+        value={nombreProfesional}
+        onChangeText={setNombreProfesional}
+        autoCorrect={false}
+      />
+      <Text style={styles.ayudaFiltro}>
+        Déjalo vacío para ver a todos los profesionales de la especialidad.
+      </Text>
+
       <TouchableOpacity
         style={[styles.btnBuscar, cargandoBusqueda && styles.btnDeshabilitado]}
         onPress={buscarDisponibilidad}
@@ -352,8 +372,17 @@ export default function BuscarCitaScreen({ navigation, route }) {
             No hay profesionales disponibles para los filtros seleccionados.
           </Text>
           <Text style={styles.sinResultadosHint}>
-            Prueba cambiando la fecha, la especialidad o la modalidad.
+            Prueba cambiando la fecha, la especialidad o la modalidad
+            {nombreProfesional.trim() ? ', o borra el nombre del profesional' : ''}.
           </Text>
+          {filtroAplicado?.descartados_por_comuna > 0 && (
+            <Text style={styles.sinResultadosHint}>
+              {filtroAplicado.descartados_por_comuna} hora(s) quedaron fuera porque
+              esos profesionales no atienden a domicilio en
+              {filtroAplicado.comuna_paciente ? ` ${filtroAplicado.comuna_paciente}` : ' tu comuna'}.
+              Puedes buscarlas como teleconsulta.
+            </Text>
+          )}
         </View>
       )}
 
@@ -361,6 +390,11 @@ export default function BuscarCitaScreen({ navigation, route }) {
       {disponibilidad.length > 0 && (
         <>
           <Text style={styles.subtitulo}>Selecciona un bloque horario</Text>
+          {filtroAplicado?.comuna_paciente && tipoSede !== 'ONLINE' && (
+            <Text style={styles.ayudaFiltro}>
+              Atención a domicilio en {filtroAplicado.comuna_paciente}, la comuna de tu cuenta.
+            </Text>
+          )}
           {disponibilidad.map((item, index) => {
             const estaSeleccionado =
               bloqueSeleccionado?.profesional_id === item.profesional_id &&
@@ -406,6 +440,9 @@ export default function BuscarCitaScreen({ navigation, route }) {
                         ? 'Online o a Domicilio (a elección)'
                         : 'Atención Domiciliaria'}
                   </Text>
+                  {item.comunas_atencion && item.tipo_sede !== 'ONLINE' ? (
+                    <Text style={styles.detalle}>🗺️  Atiende en: {item.comunas_atencion}</Text>
+                  ) : null}
                   <Text style={styles.detalle}>📅  {fechaLegible(item.fecha)}</Text>
                   <Text style={styles.bloque}>
                     🕐  {item.hora_inicio.slice(0, 5)} – {item.hora_fin.slice(0, 5)}
@@ -543,6 +580,22 @@ const styles = StyleSheet.create({
   fechaBtnText: {
     color: colores.texto,
     fontSize: 15,
+  },
+  campoNombre: {
+    backgroundColor: colores.superficie,
+    borderWidth: 1,
+    borderColor: colores.bordeCampo,
+    borderRadius: radio.xl,
+    paddingVertical: 14,
+    paddingHorizontal: espacio.lg,
+    fontSize: 15,
+    color: colores.texto,
+  },
+  ayudaFiltro: {
+    ...tipografia.meta,
+    color: colores.textoTenue,
+    marginTop: espacio.xs,
+    marginBottom: espacio.md,
   },
   btnBuscar: {
     backgroundColor: colores.primario,
