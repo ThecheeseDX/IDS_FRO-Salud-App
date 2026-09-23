@@ -29,8 +29,11 @@ import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
+import PalabrasRestringidasScreen from '../screens/Admin/PalabrasRestringidasScreen';
 // Pantallas — Comunes a los tres roles
 import CentroNotificacionesScreen from '../screens/Comun/CentroNotificacionesScreen';
+import ConversacionesScreen from '../screens/Comun/ConversacionesScreen';
+import ChatClinicoScreen from '../screens/Comun/ChatClinicoScreen';
 import CampanaNotificaciones from '../components/CampanaNotificaciones';
 import { escucharToques } from '../utils/push';
 // Pantallas — Comunes a todos los roles
@@ -171,6 +174,9 @@ export default function AppNavigator() {
               options={{ title: 'Buscar y Agendar Cita' }}
             />
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
+            {/* CU53: bandeja y conversación cifrada */}
+            <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
+            <Stack.Screen name="ChatClinico" component={ChatClinicoScreen} options={{ title: 'Mensajes' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             {/* CU35: el paciente consulta su repositorio con el visor embebido */}
             <Stack.Screen name="Documentos" component={DocumentosScreen} options={{ title: 'Mis Documentos' }} />
@@ -214,6 +220,9 @@ export default function AppNavigator() {
             {/* CU10: catálogo de perfil profesional */}
             <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
+            {/* CU53: bandeja y conversación cifrada */}
+            <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
+            <Stack.Screen name="ChatClinico" component={ChatClinicoScreen} options={{ title: 'Mensajes' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen name="FirmaConformidad" component={FirmaConformidadScreen} options={{ title: 'Firma de Conformidad' }} />
@@ -245,6 +254,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             {/* CU41 Exc.2 (D11): sesiones derivadas a revisión */}
             <Stack.Screen name="SesionesSuspendidas" component={SesionesSuspendidasScreen} options={{ title: 'Sesiones suspendidas' }} />
+            {/* CU57: diccionario de términos restringidos */}
+            <Stack.Screen name="PalabrasRestringidas" component={PalabrasRestringidasScreen} options={{ title: 'Términos restringidos' }} />
           </>
         ) : (
           // ── ESCENARIO E: Rol Desconocido ──

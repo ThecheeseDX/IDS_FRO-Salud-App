@@ -261,6 +261,14 @@ const aplicarRestriccion = async () => {
         <Text style={styles.securityLinkText}>⚠️ Sesiones suspendidas en revisión</Text>
       </TouchableOpacity>
 
+      {/* CU57: diccionario que alimenta el filtro del chat clínico */}
+      <TouchableOpacity
+        style={styles.securityLink}
+        onPress={() => navigation.navigate('PalabrasRestringidas')}
+      >
+        <Text style={styles.securityLinkText}>🚫 Términos restringidos del chat</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.securityLink}
         onPress={() => navigation.navigate('Seguridad')}

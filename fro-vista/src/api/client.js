@@ -351,4 +351,45 @@ export const getAdherenciaDePaciente = async (pacienteId) => {
   return response.data;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU53 / CU57 — Mensajería clínica y diccionario de términos restringidos
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getMisConversaciones = async () => {
+  const response = await apiClient.get('/clinica/mis-conversaciones');
+  return response.data;
+};
+
+export const getMensajes = async (episodioId, desdeId = 0) => {
+  const response = await apiClient.get(`/clinica/episodio/${episodioId}/mensajes`, {
+    params: { desde_id: desdeId },
+  });
+  return response.data;
+};
+
+export const enviarMensajeClinico = async (episodioId, contenido) => {
+  const response = await apiClient.post(`/clinica/episodio/${episodioId}/mensajes`, { contenido });
+  return response.data;
+};
+
+export const getPalabrasRestringidas = async () => {
+  const response = await apiClient.get('/parametros/palabras-restringidas');
+  return response.data;
+};
+
+export const agregarPalabraRestringida = async (termino, categoria) => {
+  const response = await apiClient.post('/parametros/palabras-restringidas', { termino, categoria });
+  return response.data;
+};
+
+export const alternarPalabraRestringida = async (id, activa) => {
+  const response = await apiClient.put(`/parametros/palabras-restringidas/${id}`, { activa });
+  return response.data;
+};
+
+export const eliminarPalabraRestringida = async (id) => {
+  const response = await apiClient.delete(`/parametros/palabras-restringidas/${id}`);
+  return response.data;
+};
+
 export default apiClient;

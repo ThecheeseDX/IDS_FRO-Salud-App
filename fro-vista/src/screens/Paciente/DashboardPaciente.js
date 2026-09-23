@@ -145,6 +145,24 @@ export default function DashboardPaciente({ navigation }) {
               <Text style={styles.menuChevron}>›</Text>
             </TouchableOpacity>
 
+            {/* CU53: canal directo con el profesional tratante */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('Conversaciones')}
+              activeOpacity={interaccion.opacidadActiva}
+            >
+              <View style={styles.menuIconoCaja}>
+                <Text style={styles.menuIcon}>💬</Text>
+              </View>
+              <View style={styles.menuTexto}>
+                <Text style={styles.menuTitle}>Mensajes</Text>
+                <Text style={styles.menuSubtitle}>
+                  Escríbele a tu profesional. La conversación viaja cifrada.
+                </Text>
+              </View>
+              <Text style={styles.menuChevron}>›</Text>
+            </TouchableOpacity>
+
             {/* CU45: panel gráfico con adherencia, síntomas y asistencia */}
             <TouchableOpacity
               style={styles.menuBtn}

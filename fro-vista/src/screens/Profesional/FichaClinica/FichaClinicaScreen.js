@@ -260,6 +260,20 @@ export default function FichaClinicaScreen({ route, navigation }) {
                     {episodioElegido.estado || 'Sin estado'} · desde{' '}
                     {formatearFecha(episodioElegido.fecha_inicio)}
                   </Text>
+                  {/* CU53: el chat cuelga del episodio, así que se abre desde
+                      el episodio que está activo en la ficha. */}
+                  <TouchableOpacity
+                    activeOpacity={interaccion.opacidadActiva}
+                    onPress={() =>
+                      navigation.navigate('ChatClinico', {
+                        episodioId: episodioElegido.episodio_clinico_id,
+                        nombreOtro: nombrePaciente,
+                      })
+                    }
+                  >
+                    <Text style={styles.enlaceCrear}>💬 Mensajes</Text>
+                  </TouchableOpacity>
+
                   {/* es_propio llega como 0 o 1 desde la base. Sin convertirlo a
                       booleano, el 0 se cuela como texto suelto dentro de la vista
                       y React Native corta la pantalla con "Text strings must be

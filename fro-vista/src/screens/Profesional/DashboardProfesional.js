@@ -212,6 +212,17 @@ export default function DashboardProfesional({ navigation }) {
 
       <TouchableOpacity
         style={styles.herramienta}
+        onPress={() => navigation.navigate('Conversaciones')}
+      >
+        <Text style={styles.herramientaIcono}>💬</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Mensajes</Text>
+          <Text style={styles.herramientaSub}>Canal cifrado con tus pacientes, por episodio.</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.herramienta}
         onPress={() => navigation.navigate('GestionDisponibilidad')}
       >
         <Text style={styles.herramientaIcono}>📅</Text>

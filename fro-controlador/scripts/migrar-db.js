@@ -902,6 +902,69 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Mensaje_Chat con remitente y lectura (CU53)',
+    descripcion: 'Quien escribe cada mensaje del chat clinico y si la otra parte ya lo leyo',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Mensaje_Chat'
+            AND COLUMN_NAME = 'remitente_usuario_id'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      // La tabla nunca se uso: si hubiera filas antiguas no tendrian remitente,
+      // asi que se limpian antes de exigir la columna.
+      await conexion.query(`DELETE FROM Mensaje_Chat`);
+      await conexion.query(
+        `ALTER TABLE Mensaje_Chat
+           ADD COLUMN remitente_usuario_id INT NOT NULL AFTER momento_envio,
+           ADD COLUMN leido BOOLEAN NOT NULL DEFAULT FALSE AFTER remitente_usuario_id,
+           ADD KEY idx_chat_episodio (episodio_clinico_id, mensaje_id),
+           ADD CONSTRAINT fk_chat_remitente
+               FOREIGN KEY (remitente_usuario_id) REFERENCES Usuario(usuario_id)`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Palabra_Restringida (CU57)',
+    descripcion: 'Diccionario de terminos no permitidos, con siembra inicial',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Palabra_Restringida'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Palabra_Restringida (
+            palabra_restringida_id INT PRIMARY KEY AUTO_INCREMENT,
+            termino VARCHAR(80) NOT NULL UNIQUE,
+            categoria VARCHAR(40) NOT NULL DEFAULT 'GENERAL',
+            activa BOOLEAN NOT NULL DEFAULT TRUE,
+            momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            administrador_id INT NULL,
+            FOREIGN KEY (administrador_id) REFERENCES Usuario(usuario_id)
+         )`
+      );
+      // Siembra minima para que el filtro exista desde el primer arranque. El
+      // administrador la edita desde su panel; son terminos de ejemplo, no una
+      // lista definitiva.
+      await conexion.query(
+        `INSERT INTO Palabra_Restringida (termino, categoria, administrador_id) VALUES
+         ('idiota', 'OFENSA', 1),
+         ('estupido', 'OFENSA', 1),
+         ('imbecil', 'OFENSA', 1),
+         ('tarado', 'OFENSA', 1),
+         ('charlatan', 'DESCALIFICACION', 1),
+         ('curandero', 'DESCALIFICACION', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

@@ -48,6 +48,9 @@ app.get('/api/health', (req, res) => {
  */
 app.get('/api/diagnostico', (req, res) => {
     const definida = (clave) => Boolean(process.env[clave]);
+    // CU53: si la clave del chat no está configurada, el servidor la deriva del
+    // JWT_SECRET. Funciona, pero conviene saberlo.
+    const { estadoClave } = require('./services/clinico/cifradoService');
 
     const ahora = new Date();
     const p = (n) => String(n).padStart(2, '0');
@@ -87,6 +90,10 @@ app.get('/api/diagnostico', (req, res) => {
                 definida('CLOUDINARY_API_KEY') &&
                 definida('CLOUDINARY_API_SECRET'),
         },
+        // CU53: el chat clínico se guarda cifrado. Sin CLAVE_CIFRADO_CHAT la
+        // clave se deriva del JWT_SECRET: funciona, pero si ese secreto cambia
+        // los mensajes ya guardados dejan de poder leerse.
+        mensajeria_cifrada: estadoClave(),
     });
 });
 

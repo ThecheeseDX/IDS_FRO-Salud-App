@@ -450,11 +450,30 @@ CREATE TABLE Objetivo_Terapeutico (
 
 CREATE TABLE Mensaje_Chat (
     mensaje_id INT PRIMARY KEY AUTO_INCREMENT,
+    -- CU53: el texto se guarda cifrado (AES-256-GCM). La base nunca ve el
+    -- contenido legible; el descifrado ocurre al servirlo a quien participa.
     contenido_cifrado TEXT NOT NULL,
     bloqueado BOOLEAN DEFAULT FALSE,
     momento_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Quién escribió y si la otra parte ya lo leyó.
+    remitente_usuario_id INT NOT NULL,
+    leido BOOLEAN NOT NULL DEFAULT FALSE,
     episodio_clinico_id INT NOT NULL,
-    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)   
+    KEY idx_chat_episodio (episodio_clinico_id, mensaje_id),
+    FOREIGN KEY (remitente_usuario_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)
+);
+
+-- CU57: diccionario central de términos no permitidos, administrado por el
+-- Administrador. Bloquea mensajes del chat y, más adelante, reseñas públicas.
+CREATE TABLE Palabra_Restringida (
+    palabra_restringida_id INT PRIMARY KEY AUTO_INCREMENT,
+    termino VARCHAR(80) NOT NULL UNIQUE,
+    categoria VARCHAR(40) NOT NULL DEFAULT 'GENERAL',
+    activa BOOLEAN NOT NULL DEFAULT TRUE,
+    momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    administrador_id INT NULL,
+    FOREIGN KEY (administrador_id) REFERENCES Usuario(usuario_id)
 );
 
 CREATE TABLE Material_Terapeutico(

@@ -20,6 +20,7 @@ const pautaController = require('../controllers/clinico/pautaController');
 // CU23/CU24/CU27/CU77: triaje automatizado y plantillas de evaluación
 const triajeController = require('../controllers/clinico/triajeController');
 const seguimientoController = require('../controllers/clinico/seguimientoController');
+const chatController = require('../controllers/clinico/chatController');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CU29 — Anamnesis / Ficha Clínica
@@ -135,6 +136,20 @@ router.get('/mi-progreso',
 router.get('/pacientes/:pacienteId/adherencia',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']),
     seguimientoController.adherenciaDePaciente
+);
+
+// ── CU53/CU57 — Mensajería clínica cifrada
+router.get('/mis-conversaciones',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.misConversaciones
+);
+router.get('/episodio/:episodio_id/mensajes',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.listarMensajes
+);
+router.post('/episodio/:episodio_id/mensajes',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.enviarMensaje
 );
 
 // CU16
