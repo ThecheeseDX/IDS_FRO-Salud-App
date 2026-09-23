@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from 'rea
 import { Picker } from '@react-native-picker/picker';
 import apiClient from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
-import LogoFro from '../../components/LogoFro';
+import LogoMarca from '../../components/LogoMarca';
 import { validateRut } from '../../utils/validators';
 import { requisitosIncumplidos } from '../../utils/contrasena';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
@@ -238,7 +238,7 @@ const RegisterScreen = ({ navigation }) => {
     return (
         <VistaConTeclado style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
                 <View style={styles.cabecera}>
-                    <LogoFro tamano="md" />
+                    <LogoMarca tamano="md" />
                     <Text style={styles.title}>
                         {esProfesional ? 'Alta de profesional' : 'Crear cuenta'}
                     </Text>
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     },
 
     // Rótulo de sección: mayúsculas pequeñas, sin la franja gris de antes.
-    // Título de sección: verde de marca, con una barra que lo ancla a la
+    // Título de sección: azul de marca, con una barra que lo ancla a la
     // izquierda en vez del rótulo gris apagado de antes.
     sectionHeader: {
         ...tipografia.subtitulo,

@@ -175,7 +175,7 @@ export default function DashboardPaciente({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colores.fondo },
 
-  // La cabecera ya no es un bloque verde: el color de marca se reserva para
+  // La cabecera ya no es un bloque de color: el azul de marca se reserva para
   // los acentos y el saludo respira sobre fondo claro.
   header: {
     paddingHorizontal: espacio.lg,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   content: { padding: espacio.lg, paddingTop: espacio.xs, paddingBottom: espacio.sm },
 
 
-  // Fila: ícono en pastilla verde, texto a la izquierda, chevron al final.
+  // Fila: ícono en pastilla de marca, texto a la izquierda, chevron al final.
   menuBtn: {
     ...piezas.tarjeta,
     flexDirection: 'row',

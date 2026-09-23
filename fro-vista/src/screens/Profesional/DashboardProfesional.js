@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   card: { ...piezas.tarjeta, marginBottom: espacio.md },
   nombre: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.xs },
   dato: { ...tipografia.meta, color: colores.textoSuave },
-  // Botón delineado: el texto va en verde, no en blanco (quedaba invisible).
+  // Botón delineado: el texto va en el azul de marca, no en blanco (quedaba invisible).
   boton: { ...piezas.botonSecundario, marginTop: espacio.md, paddingVertical: espacio.md },
   botonSecundarioTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
 
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginTop: espacio.sm,
   },
 
-  // Herramientas: mismas fichas que el resto, con el ícono en pastilla verde.
+  // Herramientas: mismas fichas que el resto, con el ícono en pastilla de marca.
   herramienta: {
     ...piezas.tarjeta,
     flexDirection: 'row',

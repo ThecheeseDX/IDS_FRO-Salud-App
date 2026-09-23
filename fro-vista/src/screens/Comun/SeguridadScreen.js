@@ -272,7 +272,7 @@ export default function SeguridadScreen() {
                   value={privacidad.mostrar_direccion}
                   onValueChange={(v) => cambiarPreferencia('mostrar_direccion', v)}
                   disabled={guardandoPrivacidad}
-                  trackColor={{ false: colores.borde, true: colores.verde[300] }}
+                  trackColor={{ false: colores.borde, true: colores.azul[300] }}
                   thumbColor={privacidad.mostrar_direccion ? colores.primario : colores.superficie}
                   ios_backgroundColor={colores.borde}
                 />
@@ -283,7 +283,7 @@ export default function SeguridadScreen() {
                   value={privacidad.mostrar_telefono}
                   onValueChange={(v) => cambiarPreferencia('mostrar_telefono', v)}
                   disabled={guardandoPrivacidad}
-                  trackColor={{ false: colores.borde, true: colores.verde[300] }}
+                  trackColor={{ false: colores.borde, true: colores.azul[300] }}
                   thumbColor={privacidad.mostrar_telefono ? colores.primario : colores.superficie}
                   ios_backgroundColor={colores.borde}
                 />

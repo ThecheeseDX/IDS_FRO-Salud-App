@@ -15,7 +15,7 @@ import { validateRut } from '../../utils/validators';
 import apiClient from '../../api/client';
 import { Platform } from 'react-native';
 import VistaConTeclado from '../../components/VistaConTeclado';
-import LogoFro from '../../components/LogoFro';
+import LogoMarca from '../../components/LogoMarca';
 import { obtenerDispositivoId, nombreDispositivo } from '../../utils/dispositivo';
 import { colores, espacio, radio, sombra, tipografia, piezas } from '../../theme';
 
@@ -93,7 +93,10 @@ export default function LoginScreen({ navigation }) {
   return (
     <VistaConTeclado style={styles.fondo} contentContainerStyle={styles.container}>
       <View style={styles.headerContainer}>
-        <LogoFro tamano="lg" conNombre />
+        {/* El logotipo ya trae el isotipo dentro (la "O" de PUNTO): repetirlo
+            encima lo duplicaba. El isotipo solo queda para el ícono de la app
+            y la pantalla de carga, donde no cabe la marca completa. */}
+        <LogoMarca tamano="lg" conNombre />
         <Text style={styles.subtitle}>Portal de acceso seguro</Text>
       </View>
 
@@ -169,7 +172,12 @@ const styles = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: colores.superficie },
   container: { flexGrow: 1, justifyContent: 'center', padding: espacio.xl },
   headerContainer: { alignItems: 'center', marginBottom: espacio.xxxl },
-  subtitle: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.md },
+  subtitle: {
+    ...tipografia.meta,
+    color: colores.textoSuave,
+    marginTop: espacio.base,
+    letterSpacing: 1.2,
+  },
 
   formContainer: {
     backgroundColor: colores.superficie,

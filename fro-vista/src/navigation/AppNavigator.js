@@ -34,7 +34,7 @@ import FirmaConformidadScreen from '../screens/Profesional/FirmaConformidadScree
 import DocumentosScreen from '../screens/Comun/DocumentosScreen';
 import VisorDocumentoScreen from '../screens/Comun/VisorDocumentoScreen';
 import { colores, tipografia } from '../theme';
-import LogoFro from '../components/LogoFro';
+import LogoMarca from '../components/LogoMarca';
 import DialogoAviso from '../components/DialogoAviso';
 
 const Stack = createNativeStackNavigator();
@@ -77,11 +77,9 @@ export default function AppNavigator() {
     <NavigationContainer key={recargas} onUnhandledAction={alFallarNavegacion}>
       <Stack.Navigator
         screenOptions={{
-          // Cabecera clara: el verde de marca es acento, no fondo de toda la
-          // interfaz. Se separa del contenido con una línea fina en vez de
-          // una sombra dura.
-          // Cabecera verde de marca en toda la app. Las pantallas de inicio de
-          // cada rol son la excepción: ahí va el logo sobre fondo claro.
+          // Cabecera en el azul de marca en toda la app. Las pantallas de
+          // inicio de cada rol son la excepción: ahí va el logo sobre fondo
+          // claro, separado del contenido por una línea fina.
           headerStyle: { backgroundColor: colores.primario },
           headerShadowVisible: false,
           headerTintColor: colores.textoInverso,
@@ -117,7 +115,7 @@ export default function AppNavigator() {
               name="DashboardPaciente"
               component={DashboardPaciente}
               options={{
-                headerTitle: () => <LogoFro tamano="sm" />,
+                headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
                   backgroundColor: colores.superficie,
                   borderBottomWidth: 1,
@@ -152,7 +150,7 @@ export default function AppNavigator() {
               name="DashboardProfesional"
               component={DashboardProfesional}
               options={{
-                headerTitle: () => <LogoFro tamano="sm" />,
+                headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
                   backgroundColor: colores.superficie,
                   borderBottomWidth: 1,
@@ -193,7 +191,7 @@ export default function AppNavigator() {
               name="ParametrosScreen"
               component={ParametrosScreen}
               options={{
-                headerTitle: () => <LogoFro tamano="sm" />,
+                headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
                   backgroundColor: colores.superficie,
                   borderBottomWidth: 1,

@@ -811,7 +811,9 @@ const estilos = StyleSheet.create({
   botonPrimarioTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   botonSecundario: { ...piezas.botonSecundario, paddingVertical: espacio.md },
   botonSecundarioTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
-  botonFirmar: { ...piezas.botonPrimario, backgroundColor: colores.secundario, marginTop: espacio.sm },
+  // El sello de la firma usa el café de la marca, en su tono oscuro para
+  // que el texto blanco encima se lea.
+  botonFirmar: { ...piezas.botonPrimario, backgroundColor: colores.secundarioFuerte, marginTop: espacio.sm },
   botonFinalizar: {
     marginTop: espacio.base,
     backgroundColor: colores.exito,

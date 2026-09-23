@@ -1,4 +1,4 @@
-# Guía de Instalación y Despliegue - FRO Salud (Incremento 1)
+# Guía de Instalación y Despliegue - Punto Paz Salud (Incremento 1)
 
 > ### ⚡ ¿Solo quieres probar la app?
 > Ya no hace falta instalar MySQL ni levantar el backend: **están en la nube**.
@@ -10,7 +10,7 @@
 > (backend + base de datos en tu propio computador), por ejemplo para
 > desarrollar el servidor.
 
-Esta guía detalla los pasos necesarios para instalar, configurar y ejecutar el entorno de desarrollo local de la aplicación FRO Salud (Vista y Controlador).
+Esta guía detalla los pasos necesarios para instalar, configurar y ejecutar el entorno de desarrollo local de la aplicación Punto Paz Salud (Vista y Controlador).
 
 [Video guía de instalación del Sistema](https://drive.google.com/file/d/1eLFtI8UtEgKLBEWcWh41RKkWUYzGCzV2/view?usp=sharing)
 
@@ -56,7 +56,7 @@ Para configurar este servicio localmente, siga estos pasos:
 
 4. En el buscador de la cuenta de Google, escriba "Contraseñas de aplicación" y seleccione la opción.
 
-5. Cree una nueva aplicación ingresando un nombre (ej. FRO Salud App) y presione Crear.
+5. Cree una nueva aplicación ingresando un nombre (ej. Punto Paz Salud App) y presione Crear.
 
 6. Google le entregará una clave segura de 16 caracteres (ej: abcd efgh ijkl mnop). Cópiela.
 

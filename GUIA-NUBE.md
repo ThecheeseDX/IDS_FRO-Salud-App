@@ -1,4 +1,4 @@
-# Guía de la nube — FRO Salud
+# Guía de la nube — Punto Paz Salud
 
 Hasta ahora, para probar la app cada uno necesitaba levantar el backend y MySQL
 en su propio computador, y andar cambiando la IP a mano. Con la nube eso se

@@ -1,7 +1,7 @@
 {
   "name": "fro-controlador",
   "version": "1.0.0",
-  "description": "API REST de FRO Salud (Express + MySQL)",
+  "description": "API REST de Punto Paz Salud (Express + MySQL)",
   "main": "server.js",
   "engines": {
     "node": ">=20"
