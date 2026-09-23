@@ -201,6 +201,9 @@ exports.buscarDisponibilidad = async (req, res) => {
             resena_curricular: fila.resena_curricular || null,
             areas_experticia: fila.areas_experticia || null,
             comunas_atencion: fila.comunas_atencion || null,
+            // CU58: calificación y cantidad de evaluaciones del profesional.
+            calificacion: Number(fila.calificacion_promedio) || 0,
+            total_evaluaciones: Number(fila.total_evaluaciones) || 0,
             fecha,
             hora_inicio:     bloqueInicio,
             hora_fin:        bloqueFin,
@@ -230,6 +233,9 @@ exports.buscarDisponibilidad = async (req, res) => {
             resena_curricular: fila.resena_curricular || null,
             areas_experticia: fila.areas_experticia || null,
             comunas_atencion: fila.comunas_atencion || null,
+            // CU58: calificación y cantidad de evaluaciones del profesional.
+            calificacion: Number(fila.calificacion_promedio) || 0,
+            total_evaluaciones: Number(fila.total_evaluaciones) || 0,
             fecha,
             hora_inicio:     bloqueInicio,
             hora_fin:        bloqueFin,

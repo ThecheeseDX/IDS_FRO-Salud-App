@@ -35,6 +35,7 @@ const TIPOS = {
   CUPO_CEDIDO:            { titulo: 'El cupo pasó al siguiente',     pantalla: 'MisCitas' },
   LISTA_ESPERA_INSCRITO:  { titulo: 'Estás en la lista de espera',   pantalla: 'MisCitas' },
   MENSAJE_CLINICO:        { titulo: 'Mensaje nuevo',                 pantalla: 'ChatClinico' },
+  TESTIMONIO_PUBLICADO:   { titulo: 'Tienes un testimonio nuevo',  pantalla: 'MiPerfil' },
   ALERTA_DETERIORO:       { titulo: 'Bandera roja de un paciente',  pantalla: 'DashboardProfesional' },
   SESION_SUSPENDIDA:      { titulo: 'Sesión derivada a revisión',    pantalla: 'SesionesSuspendidas' },
   PAUTA_ASIGNADA:         { titulo: 'Tienes ejercicios nuevos',      pantalla: 'MisPautas' },

@@ -17,6 +17,7 @@ import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
 import MisPautasScreen from '../screens/Paciente/MisPautasScreen';
 import MiSeguimientoScreen from '../screens/Paciente/MiSeguimientoScreen';
 import MiProgresoScreen from '../screens/Paciente/MiProgresoScreen';
+import ResenasProfesionalScreen from '../screens/Paciente/ResenasProfesionalScreen';
 import TriajeScreen from '../screens/Paciente/TriajeScreen';
 import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
@@ -30,6 +31,7 @@ import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
 import PalabrasRestringidasScreen from '../screens/Admin/PalabrasRestringidasScreen';
+import ModeracionResenasScreen from '../screens/Admin/ModeracionResenasScreen';
 // Pantallas — Comunes a los tres roles
 import CentroNotificacionesScreen from '../screens/Comun/CentroNotificacionesScreen';
 import ConversacionesScreen from '../screens/Comun/ConversacionesScreen';
@@ -165,6 +167,8 @@ export default function AppNavigator() {
             <Stack.Screen name="MiSeguimiento" component={MiSeguimientoScreen} options={{ title: 'Mi Seguimiento' }} />
             {/* CU45: panel gráfico de progreso */}
             <Stack.Screen name="MiProgreso" component={MiProgresoScreen} options={{ title: 'Mi Progreso' }} />
+            {/* CU58: calificación y testimonios de un profesional */}
+            <Stack.Screen name="ResenasProfesional" component={ResenasProfesionalScreen} options={{ title: 'Evaluaciones' }} />
             <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
@@ -256,6 +260,8 @@ export default function AppNavigator() {
             <Stack.Screen name="SesionesSuspendidas" component={SesionesSuspendidasScreen} options={{ title: 'Sesiones suspendidas' }} />
             {/* CU57: diccionario de términos restringidos */}
             <Stack.Screen name="PalabrasRestringidas" component={PalabrasRestringidasScreen} options={{ title: 'Términos restringidos' }} />
+            {/* CU56: moderación de testimonios públicos */}
+            <Stack.Screen name="ModeracionResenas" component={ModeracionResenasScreen} options={{ title: 'Testimonios' }} />
           </>
         ) : (
           // ── ESCENARIO E: Rol Desconocido ──

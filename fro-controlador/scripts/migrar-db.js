@@ -965,6 +965,37 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Evaluacion_Satisfaccion con moderacion (CU55/CU56)',
+    descripcion: 'Estado de moderacion con causal y responsable, en vez de un booleano',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Evaluacion_Satisfaccion'
+            AND COLUMN_NAME = 'motivo_rechazo'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Evaluacion_Satisfaccion
+           MODIFY COLUMN estado_moderacion VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+           ADD COLUMN motivo_rechazo VARCHAR(255) NULL AFTER estado_moderacion,
+           ADD COLUMN moderador_id INT NULL AFTER motivo_rechazo,
+           ADD COLUMN momento_moderacion TIMESTAMP NULL AFTER moderador_id,
+           ADD CONSTRAINT fk_evaluacion_moderador
+               FOREIGN KEY (moderador_id) REFERENCES Usuario(usuario_id)`
+      );
+      // El booleano anterior queda como '0'/'1' al cambiar de tipo: se
+      // normaliza a los estados nuevos.
+      await conexion.query(
+        `UPDATE Evaluacion_Satisfaccion
+            SET estado_moderacion = CASE WHEN estado_moderacion = '1' THEN 'APROBADA' ELSE 'PENDIENTE' END
+          WHERE estado_moderacion IN ('0', '1')`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

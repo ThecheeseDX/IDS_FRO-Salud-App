@@ -8,6 +8,7 @@ const evidenciaController = require('../controllers/evidenciaController');
 const marcasTemporalesController = require('../controllers/marcasTemporalesController');
 const confirmacionController = require('../controllers/confirmacionController');
 const listaEsperaController = require('../controllers/listaEsperaController');
+const evaluacionController = require('../controllers/evaluacionController');
 
 // CU38 - Marcas temporales de la prestacion
 router.get('/marcas-temporales',
@@ -87,6 +88,17 @@ router.post('/:id/lista-espera',
 router.delete('/:id/lista-espera',
   verifyToken, authorizeRoles(['Paciente']),
   listaEsperaController.salir);
+
+// ── CU55 — Evaluación de satisfacción post-sesión
+// La puede enviar el paciente desde su teléfono o el profesional entregándole
+// el suyo al cerrar la sesión: el controlador verifica que sean de esa cita.
+router.get('/evaluaciones/pendientes',
+  verifyToken, authorizeRoles(['Paciente']),
+  evaluacionController.pendientesDeEvaluar);
+
+router.post('/:id/evaluacion',
+  verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+  evaluacionController.registrarEvaluacion);
 
 // ── CU20 — Listado de citas por rol
 router.get('/mis-citas',

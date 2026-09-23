@@ -261,6 +261,14 @@ const aplicarRestriccion = async () => {
         <Text style={styles.securityLinkText}>⚠️ Sesiones suspendidas en revisión</Text>
       </TouchableOpacity>
 
+      {/* CU56: testimonios de pacientes a la espera de revisión */}
+      <TouchableOpacity
+        style={styles.securityLink}
+        onPress={() => navigation.navigate('ModeracionResenas')}
+      >
+        <Text style={styles.securityLinkText}>📝 Moderar testimonios de pacientes</Text>
+      </TouchableOpacity>
+
       {/* CU57: diccionario que alimenta el filtro del chat clínico */}
       <TouchableOpacity
         style={styles.securityLink}

@@ -17,6 +17,8 @@ import {
 } from 'react-native';
 
 import apiClient, {
+  getEvaluacionesPendientes,
+  registrarEvaluacion,
   getConfirmacionesPendientes,
   pedirNuevaSolicitudConfirmacion,
   getMisListasEspera,
@@ -32,6 +34,7 @@ import { ordenarCitas } from '../../utils/estados';
 import { colores, espacio, radio, sombra, tipografia, piezas, interaccion } from '../../theme';
 import EtiquetaEstado from '../../components/EtiquetaEstado';
 import DialogoAviso from '../../components/DialogoAviso';
+import DialogoEvaluacion from '../../components/DialogoEvaluacion';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
@@ -50,6 +53,10 @@ export default function MisCitasScreen({ navigation }) {
   // CU19: bloques ocupados en los que el paciente está esperando su turno.
   const [listasEspera, setListasEspera] = useState([]);
   const [tomandoCupo, setTomandoCupo] = useState(null);
+  // CU55: atenciones cerradas que todavía no se evalúan.
+  const [porEvaluar, setPorEvaluar] = useState([]);
+  const [evaluando, setEvaluando] = useState(null);
+  const [enviandoEvaluacion, setEnviandoEvaluacion] = useState(false);
 
   const cargarCitas = useCallback(async (esRefresco = false) => {
     if (esRefresco) {
@@ -65,12 +72,14 @@ export default function MisCitasScreen({ navigation }) {
 
       // CU21 y CU19 viajan junto con las citas: son parte de la misma vista.
       // Si alguno falla, las citas se muestran igual.
-      const [confirmaciones, listas] = await Promise.all([
+      const [confirmaciones, listas, evaluaciones] = await Promise.all([
         getConfirmacionesPendientes().catch(() => ({ pendientes: [] })),
         getMisListasEspera().catch(() => ({ listas: [] })),
+        getEvaluacionesPendientes().catch(() => ({ pendientes: [] })),
       ]);
       setPorConfirmar(confirmaciones.pendientes || []);
       setListasEspera(listas.listas || []);
+      setPorEvaluar(evaluaciones.pendientes || []);
     } catch (error) {
       console.error('ERROR MIS CITAS:', error?.response?.data || error.message);
       setErrorRed(true);
@@ -211,6 +220,30 @@ export default function MisCitasScreen({ navigation }) {
     }
   };
 
+  // ── CU55: calificar una atención ya cerrada ───────────────────────────
+  const enviarEvaluacion = async ({ puntuacion, resena }) => {
+    if (!evaluando) return;
+    setEnviandoEvaluacion(true);
+    try {
+      const datos = await registrarEvaluacion(evaluando.cita_id, { puntuacion, resena });
+      setEvaluando(null);
+      setAviso({
+        tono: datos.resena_bloqueada ? 'alerta' : 'ok',
+        titulo: '¡Gracias!',
+        mensaje: datos.mensaje,
+      });
+      await cargarCitas(true);
+    } catch (error) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo evaluar',
+        mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.',
+      });
+    } finally {
+      setEnviandoEvaluacion(false);
+    }
+  };
+
   const renderCita = ({ item }) => {
     const puedeCancelar = ESTADOS_CANCELABLES.includes(item.estado);
     const cancelando = cancelandoId === item.cita_id;
@@ -334,7 +367,32 @@ export default function MisCitasScreen({ navigation }) {
           />
         }
         ListHeaderComponent={
-          listasEspera.length > 0 ? (
+          <>
+            {/* CU55 — Excepción 2: si el formulario no alcanzó a mostrarse al
+                cerrar la sesión, queda este acceso directo. */}
+            {porEvaluar.length > 0 && (
+              <View style={styles.bloqueEvaluar}>
+                <Text style={styles.esperaTitulo}>Califica tu atención</Text>
+                {porEvaluar.map((cita) => (
+                  <View key={cita.cita_id} style={styles.tarjetaEvaluar}>
+                    <Text style={styles.esperaFecha}>
+                      {formatearFecha(cita.fecha_hora_inicio)} · {cita.profesional}
+                    </Text>
+                    <Text style={styles.esperaDato}>
+                      Tu opinión ayuda a otros pacientes a elegir.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.botonEvaluar}
+                      onPress={() => setEvaluando(cita)}
+                      activeOpacity={interaccion.opacidadActiva}
+                    >
+                      <Text style={styles.botonEvaluarTexto}>★ Calificar</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+            {listasEspera.length > 0 ? (
             <View style={styles.bloqueEspera}>
               <Text style={styles.esperaTitulo}>En lista de espera</Text>
               {listasEspera.map((lista) => {
@@ -376,7 +434,8 @@ export default function MisCitasScreen({ navigation }) {
                 );
               })}
             </View>
-          ) : null
+            ) : null}
+          </>
         }
         ListEmptyComponent={
           <View style={styles.vacio}>
@@ -411,6 +470,13 @@ export default function MisCitasScreen({ navigation }) {
         onConfirmar={(motivo) => cancelarCita(citaPorCancelar, motivo)}
         onCancelar={() => setCitaPorCancelar(null)}
       />
+    <DialogoEvaluacion
+      visible={evaluando !== null}
+      profesional={evaluando?.profesional}
+      enviando={enviandoEvaluacion}
+      onEnviar={enviarEvaluacion}
+      onCancelar={() => setEvaluando(null)}
+    />
     <DialogoAviso
       visible={aviso !== null}
       titulo={aviso?.titulo || ''}
@@ -505,6 +571,24 @@ const styles = StyleSheet.create({
   },
   botonConfirmarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   enlaceReenviar: { ...tipografia.metaFuerte, color: colores.secundario, marginTop: espacio.sm },
+
+  // CU55 — atenciones cerradas pendientes de calificar.
+  bloqueEvaluar: { marginBottom: espacio.lg },
+  tarjetaEvaluar: {
+    ...piezas.tarjeta,
+    marginBottom: espacio.md,
+    backgroundColor: colores.secundarioSuave,
+    borderColor: colores.secundarioBorde,
+  },
+  botonEvaluar: {
+    marginTop: espacio.sm,
+    borderWidth: 1.5,
+    borderColor: colores.secundarioFuerte,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  botonEvaluarTexto: { ...tipografia.cuerpoFuerte, color: colores.secundarioFuerte },
 
   // CU19 — los bloques que el paciente está esperando.
   bloqueEspera: { marginBottom: espacio.lg },

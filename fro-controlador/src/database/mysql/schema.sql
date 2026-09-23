@@ -77,7 +77,8 @@ CREATE TABLE Solicitud_Confirmacion (
     respuesta VARCHAR(20) NULL,
     canal_respuesta VARCHAR(20) NULL,
     cita_id INT NOT NULL UNIQUE,
-    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
+    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id),
+    FOREIGN KEY (moderador_id) REFERENCES Usuario(usuario_id)
 );
 
 CREATE TABLE Ticket_Soporte (
@@ -584,7 +585,13 @@ CREATE TABLE Evaluacion_Satisfaccion(
     evaluacion_satisfaccion_id INT PRIMARY KEY AUTO_INCREMENT,
     puntuacion TINYINT NOT NULL,
     resena VARCHAR(300),
-    estado_moderacion BOOLEAN DEFAULT FALSE,
+    -- CU56: la nota cuenta siempre para el promedio; lo que se modera es el
+    -- TEXTO. PENDIENTE no se publica, APROBADA sí, RECHAZADA queda oculta con
+    -- su causal (borrado lógico: la fila no se borra, deja de ser visible).
+    estado_moderacion VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    motivo_rechazo VARCHAR(255) NULL,
+    moderador_id INT NULL,
+    momento_moderacion TIMESTAMP NULL,
     momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     cita_id INT NOT NULL UNIQUE,
     FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)

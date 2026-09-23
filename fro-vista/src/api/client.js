@@ -392,4 +392,36 @@ export const eliminarPalabraRestringida = async (id) => {
   return response.data;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU55 / CU56 / CU58 — Evaluación, moderación y calificación
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const registrarEvaluacion = async (citaId, { puntuacion, resena }) => {
+  const response = await apiClient.post(`/citas/${citaId}/evaluacion`, { puntuacion, resena });
+  return response.data;
+};
+
+export const getEvaluacionesPendientes = async () => {
+  const response = await apiClient.get('/citas/evaluaciones/pendientes');
+  return response.data;
+};
+
+export const getResenasProfesional = async (profesionalId) => {
+  const response = await apiClient.get(`/profesionales/${profesionalId}/resenas`);
+  return response.data;
+};
+
+export const getBandejaModeracion = async (estado = 'PENDIENTE') => {
+  const response = await apiClient.get('/evaluaciones/moderacion', { params: { estado } });
+  return response.data;
+};
+
+export const moderarResena = async (evaluacionId, decision, motivo) => {
+  const response = await apiClient.post(`/evaluaciones/${evaluacionId}/moderar`, {
+    decision,
+    motivo,
+  });
+  return response.data;
+};
+
 export default apiClient;

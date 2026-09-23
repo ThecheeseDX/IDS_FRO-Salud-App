@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const profesionalController = require('../controllers/profesionalController');
+const evaluacionController = require('../controllers/evaluacionController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 
@@ -51,5 +52,10 @@ router.get(
   verifyToken, authorizeRoles(['Profesional', 'Administrador']),
   profesionalController.obtenerHistorialPaciente
 );
+
+// CU58 — Calificación y testimonios publicados de un profesional.
+router.get('/:profesional_id/resenas',
+  verifyToken,
+  evaluacionController.resenasPublicas);
 
 module.exports = router;

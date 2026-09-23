@@ -514,6 +514,27 @@ export default function BuscarCitaScreen({ navigation, route }) {
                       {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
                     </Text>
                     <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
+
+                    {/* CU58 — Excepción 2: sin evaluaciones no se muestra un
+                        promedio inventado, se dice que el perfil es nuevo. */}
+                    {item.total_evaluaciones > 0 ? (
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate('ResenasProfesional', {
+                            profesionalId: item.profesional_id,
+                            nombre: `${item.nombres} ${item.apellido_paterno}`,
+                          })
+                        }
+                      >
+                        <Text style={styles.calificacion}>
+                          {'★'.repeat(Math.round(item.calificacion))}
+                          {'☆'.repeat(5 - Math.round(item.calificacion))}{'  '}
+                          {item.calificacion.toFixed(1)} ({item.total_evaluaciones})
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text style={styles.perfilIncipiente}>Perfil nuevo · sin evaluaciones aún</Text>
+                    )}
                   </View>
                 </View>
                 {/* CU10: catálogo público del profesional */}
@@ -731,6 +752,10 @@ const styles = StyleSheet.create({
     borderColor: colores.borde,
     marginBottom: 12,
   },
+  // CU58 — calificación del profesional en la tarjeta de resultados.
+  calificacion: { ...tipografia.meta, color: colores.secundarioFuerte, marginTop: 2 },
+  perfilIncipiente: { ...tipografia.meta, color: colores.textoTenue, marginTop: 2 },
+
   // CU19 — el bloque ocupado se ve apagado: no se puede reservar, solo esperar.
   cardOcupada: { backgroundColor: colores.superficieSuave, borderStyle: 'dashed' },
   nombreOcupado: { fontWeight: 'bold', fontSize: 17, color: colores.textoSuave, marginBottom: 4 },
