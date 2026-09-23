@@ -749,6 +749,115 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Tabla Reporte_Preclinico (CU25/CU26)',
+    descripcion: 'Sintesis del triaje con banderas rojas y especialidad sugerida',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Reporte_Preclinico'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Reporte_Preclinico (
+            reporte_preclinico_id INT PRIMARY KEY AUTO_INCREMENT,
+            resumen TEXT NOT NULL,
+            banderas JSON,
+            etiquetas JSON,
+            suficiente BOOLEAN NOT NULL DEFAULT TRUE,
+            especialidad_sugerida_id INT NULL,
+            momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            triaje_id INT NOT NULL UNIQUE,
+            paciente_id INT NOT NULL,
+            FOREIGN KEY (triaje_id) REFERENCES Triaje(triaje_id),
+            FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+            FOREIGN KEY (especialidad_sugerida_id) REFERENCES Especialidad(especialidad_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Reporte_Sintoma (CU50)',
+    descripcion: 'Reportes de evolucion que el paciente envia entre sesiones',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Reporte_Sintoma'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Reporte_Sintoma (
+            reporte_sintoma_id INT PRIMARY KEY AUTO_INCREMENT,
+            nivel_dolor TINYINT NOT NULL,
+            limitacion_funcional TINYINT NOT NULL,
+            comentario VARCHAR(500),
+            clave_envio VARCHAR(64) NOT NULL UNIQUE,
+            momento_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            paciente_id INT NOT NULL,
+            episodio_clinico_id INT NULL,
+            FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+            FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Alerta_Clinica (CU50)',
+    descripcion: 'Banderas rojas que llegan al panel del profesional',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Alerta_Clinica'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Alerta_Clinica (
+            alerta_clinica_id INT PRIMARY KEY AUTO_INCREMENT,
+            tipo VARCHAR(40) NOT NULL,
+            severidad VARCHAR(20) NOT NULL,
+            motivo VARCHAR(255) NOT NULL,
+            datos JSON,
+            estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTA',
+            momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            momento_revision TIMESTAMP NULL,
+            paciente_id INT NOT NULL,
+            profesional_id INT NULL,
+            reporte_sintoma_id INT NULL,
+            FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+            FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+            FOREIGN KEY (reporte_sintoma_id) REFERENCES Reporte_Sintoma(reporte_sintoma_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de triaje inteligente y deterioro (CU25/CU50)',
+    descripcion: 'Umbrales del reporte pre-clinico y de las alertas por deterioro',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'UMBRAL_DOLOR_CRITICO' LIMIT 1`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('UMBRAL_DOLOR_CRITICO', '8', 'Nivel de dolor (0-10) desde el cual el reporte del paciente levanta una alerta.', 1),
+         ('UMBRAL_ALZA_DOLOR', '3', 'Puntos de aumento del dolor respecto al reporte anterior que levantan una alerta.', 1),
+         ('MINIMO_RESPUESTAS_PRECLINICO', '4', 'Respuestas minimas del triaje para generar un reporte util; bajo eso se marca Informacion Insuficiente.', 1),
+         ('LATENCIA_MAXIMA_REPORTE_MS', '2000', 'Milisegundos sobre los cuales la carga del reporte pre-clinico queda anotada como lenta en la bitacora.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

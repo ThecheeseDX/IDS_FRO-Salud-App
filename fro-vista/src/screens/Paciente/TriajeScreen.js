@@ -21,7 +21,7 @@ import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFecha } from '../../utils/fechas';
-import { colores, espacio, radio, tipografia } from '../../theme';
+import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 
 /**
@@ -58,6 +58,8 @@ export default function TriajeScreen({ navigation }) {
   // fase: 'cargando' | 'error' | 'disclaimer' | 'entrevista' | 'completado' | 'resumen'
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
+  // CU26: a qué especialidad orienta la entrevista recién completada.
+  const [derivacion, setDerivacion] = useState(null);
   const [fase, setFase] = useState('cargando');
   const [disclaimer, setDisclaimer] = useState(null);
   const [arbol, setArbol] = useState(null);
@@ -199,6 +201,9 @@ export default function TriajeScreen({ navigation }) {
         respuestas: finales,
       });
       setVistaPrevia(data?.vista_previa || '');
+      // CU26: la sugerencia de especialidad sale del mismo análisis que el
+      // reporte pre-clínico, y se muestra al cerrar la entrevista.
+      setDerivacion(data?.derivacion || null);
       setFase('resumen');
     } catch (err) {
       const respuesta = err.response?.data;
@@ -324,6 +329,37 @@ export default function TriajeScreen({ navigation }) {
             )
           )}
         </View>
+        {/* CU26 — Sugerencia de derivación por especialidad clínica. */}
+        {derivacion && (
+          <View style={estilos.tarjetaDerivacion}>
+            <Text style={estilos.derivacionTitulo}>
+              {derivacion.general
+                ? '🩺 Te sugerimos una evaluación general'
+                : `🎯 Te sugerimos ${derivacion.nombre}`}
+            </Text>
+            <Text style={estilos.derivacionTexto}>
+              {derivacion.general
+                ? 'Por lo que nos contaste no hay una especialidad clara. Una evaluación general te va a orientar mejor.'
+                : derivacion.disponible_en_comuna
+                  ? `Es la especialidad que mejor calza con tu motivo de consulta, y hay profesionales que atienden a domicilio en ${derivacion.comuna || 'tu comuna'}.`
+                  : derivacion.disponible_online
+                    ? 'Es la especialidad que mejor calza con tu motivo de consulta. En tu comuna no hay atención a domicilio, pero sí teleconsulta.'
+                    : 'Es la especialidad que mejor calza con tu motivo de consulta, pero por ahora no tenemos profesionales disponibles para tu comuna.'}
+            </Text>
+            {derivacion.alternativas?.length > 0 && (
+              <Text style={estilos.derivacionAlternativas}>
+                Disponibles ahora: {derivacion.alternativas.map((a) => a.nombre).join(', ')}.
+              </Text>
+            )}
+            <TouchableOpacity
+              style={estilos.botonDerivacion}
+              onPress={() => navigation.navigate('BuscarCita')}
+            >
+              <Text style={estilos.botonDerivacionTexto}>Buscar hora ahora</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <TouchableOpacity style={estilos.botonPrimario} onPress={() => navigation.goBack()}>
           <Text style={estilos.botonPrimarioTexto}>Volver al inicio</Text>
         </TouchableOpacity>
@@ -413,6 +449,27 @@ const estilos = StyleSheet.create({
   iconoGrande: { fontSize: 52, marginBottom: 10, textAlign: 'center' },
   tituloCentrado: { fontSize: 22, fontWeight: 'bold', color: colores.primario, textAlign: 'center', marginBottom: 8 },
   textoCentrado: { color: colores.textoSuave, textAlign: 'center', marginBottom: 18, lineHeight: 20 },
+
+  // CU26 — la orientación por especialidad, al cerrar la entrevista.
+  tarjetaDerivacion: {
+    ...piezas.tarjeta,
+    width: '100%',
+    backgroundColor: colores.secundarioSuave,
+    borderColor: colores.secundarioBorde,
+    marginBottom: espacio.base,
+  },
+  derivacionTitulo: { ...tipografia.cuerpoFuerte, color: colores.secundarioFuerte },
+  derivacionTexto: { ...tipografia.meta, color: colores.texto, marginTop: espacio.xs },
+  derivacionAlternativas: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm },
+  botonDerivacion: {
+    marginTop: espacio.md,
+    borderWidth: 1.5,
+    borderColor: colores.secundarioFuerte,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  botonDerivacionTexto: { ...tipografia.cuerpoFuerte, color: colores.secundarioFuerte },
 
   tarjetaResumen: {
     backgroundColor: colores.superficie,

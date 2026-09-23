@@ -1,6 +1,6 @@
 // Ruta: fro-vista/src/screens/Profesional/FichaClinica/HistorialPacienteScreen.js
 
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 
+import { getReportePreclinico, getSintomasDePaciente } from '../../../api/client';
 import apiClient, {
   finalizarAtencion,
   getHistorialPaciente,
@@ -60,6 +61,10 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [episodios, setEpisodios] = useState([]);
   const [evoluciones, setEvoluciones] = useState([]);
   const [paciente, setPaciente] = useState(null);
+  // CU25: síntesis de la entrevista previa; CU50: reportes de evolución.
+  const [preclinico, setPreclinico] = useState(null);
+  const [errorPreclinico, setErrorPreclinico] = useState(false);
+  const [seguimiento, setSeguimiento] = useState([]);
   const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -406,6 +411,28 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
   // Al llegar desde la sesión, la cita acaba de cambiar de estado: se recarga
   // para que el botón de finalizar aparezca con el estado real.
+  // CU25 y CU50 viajan aparte del historial: si fallan, la ficha se muestra igual.
+  const cargarPreclinico = useCallback(async () => {
+    setErrorPreclinico(false);
+    try {
+      const datos = await getReportePreclinico(pacienteId);
+      setPreclinico(datos);
+    } catch {
+      // Excepción 2 del CU25: la vista ofrece recargar.
+      setErrorPreclinico(true);
+    }
+    try {
+      const { reportes } = await getSintomasDePaciente(pacienteId);
+      setSeguimiento(reportes || []);
+    } catch {
+      setSeguimiento([]);
+    }
+  }, [pacienteId]);
+
+  useEffect(() => {
+    cargarPreclinico();
+  }, [cargarPreclinico]);
+
   useEffect(() => {
     if (!resaltarCitaId) return;
     cargarHistorial(true);
@@ -718,6 +745,79 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                 📁 Documentos del paciente{totalDocumentos > 0 ? ` (${totalDocumentos})` : ''}
               </Text>
             </TouchableOpacity>
+          )}
+
+          {/* ── CU25: reporte de hallazgos pre-clínicos ──
+              Lo primero que el profesional debe leer antes de atender. */}
+          <View style={styles.tarjetaPreclinico}>
+            <Text style={styles.tituloPreclinico}>🩺 Entrevista previa del paciente</Text>
+
+            {errorPreclinico ? (
+              <>
+                <Text style={styles.textoPreclinico}>
+                  No pudimos cargar el reporte. Puede ser una demora del servidor.
+                </Text>
+                <TouchableOpacity onPress={cargarPreclinico}>
+                  <Text style={styles.enlacePreclinico}>Reintentar</Text>
+                </TouchableOpacity>
+              </>
+            ) : !preclinico ? (
+              <ActivityIndicator color={colores.primario} />
+            ) : !preclinico.hay_triaje ? (
+              <Text style={styles.textoPreclinico}>{preclinico.mensaje}</Text>
+            ) : !preclinico.reporte?.suficiente ? (
+              // Excepción 1 del CU25: sin datos suficientes no se inventa nada.
+              <>
+                <Text style={styles.etiquetaInsuficiente}>Información insuficiente</Text>
+                <Text style={styles.textoPreclinico}>{preclinico.reporte.resumen}</Text>
+              </>
+            ) : (
+              <>
+                {preclinico.reporte.banderas?.length > 0 ? (
+                  <View style={styles.cajaBanderas}>
+                    {preclinico.reporte.banderas.map((b, i) => (
+                      <Text
+                        key={`${b.codigo}-${i}`}
+                        style={[
+                          styles.bandera,
+                          b.severidad === 'CRITICA' && styles.banderaCritica,
+                        ]}
+                      >
+                        {b.severidad === 'CRITICA' ? '🚩' : '⚠️'} {b.texto}
+                      </Text>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.sinBanderas}>✅ Sin banderas rojas en la entrevista.</Text>
+                )}
+
+                <Text style={styles.textoPreclinico}>{preclinico.reporte.resumen}</Text>
+
+                {preclinico.reporte.especialidad_sugerida ? (
+                  <Text style={styles.sugerenciaPreclinico}>
+                    Orientación sugerida al paciente: {preclinico.reporte.especialidad_sugerida}.
+                  </Text>
+                ) : null}
+
+                <Text style={styles.momentoPreclinico}>
+                  Entrevista respondida el {formatearFecha(preclinico.reporte.momento_triaje)}
+                </Text>
+              </>
+            )}
+          </View>
+
+          {/* ── CU50: cómo ha reportado el paciente su evolución ── */}
+          {seguimiento.length > 0 && (
+            <View style={styles.tarjetaSeguimiento}>
+              <Text style={styles.tituloSeguimiento}>📈 Reportes del paciente entre sesiones</Text>
+              {seguimiento.slice(0, 6).map((r) => (
+                <Text key={r.reporte_sintoma_id} style={styles.lineaSeguimiento}>
+                  {formatearFecha(r.momento_registro)} · dolor {r.nivel_dolor}/10 ·
+                  limitación {r.limitacion_funcional}/10
+                  {r.comentario ? ` · "${r.comentario}"` : ''}
+                </Text>
+              ))}
+            </View>
           )}
 
           {/* ── CU71: cuadratura de sesiones bonificables ── */}
@@ -1223,6 +1323,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 10,
   },
+  // CU25 — el reporte pre-clínico, arriba de todo.
+  tarjetaPreclinico: {
+    ...piezas.tarjeta,
+    marginBottom: espacio.base,
+    backgroundColor: colores.primarioSuave,
+    borderColor: colores.primarioBorde,
+  },
+  tituloPreclinico: { ...tipografia.cuerpoFuerte, color: colores.primario, marginBottom: espacio.sm },
+  textoPreclinico: { ...tipografia.meta, color: colores.texto, marginTop: espacio.xs },
+  enlacePreclinico: { ...tipografia.metaFuerte, color: colores.primario, marginTop: espacio.sm },
+  etiquetaInsuficiente: {
+    ...tipografia.micro,
+    color: colores.advertencia,
+    backgroundColor: colores.advertenciaSuave,
+    borderRadius: radio.sm,
+    paddingVertical: 4,
+    paddingHorizontal: espacio.sm,
+    alignSelf: 'flex-start',
+  },
+  cajaBanderas: { marginBottom: espacio.sm },
+  bandera: {
+    ...tipografia.meta,
+    color: colores.advertencia,
+    backgroundColor: colores.advertenciaSuave,
+    borderRadius: radio.sm,
+    paddingVertical: 6,
+    paddingHorizontal: espacio.sm,
+    marginBottom: 4,
+  },
+  // La crítica se lee distinta de la alta sin tener que leer el texto entero.
+  banderaCritica: { color: colores.error, backgroundColor: colores.errorSuave, fontWeight: '700' },
+  sinBanderas: { ...tipografia.meta, color: colores.exito },
+  sugerenciaPreclinico: { ...tipografia.meta, color: colores.secundarioFuerte, marginTop: espacio.sm },
+  momentoPreclinico: { ...tipografia.micro, color: colores.textoTenue, marginTop: espacio.sm },
+
+  // CU50 — reportes de evolución enviados por el paciente.
+  tarjetaSeguimiento: { ...piezas.tarjeta, marginBottom: espacio.base },
+  tituloSeguimiento: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginBottom: espacio.sm },
+  lineaSeguimiento: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
+
   metaEpisodio: { ...tipografia.meta, color: colores.primario, marginTop: espacio.xs },
   metaEpisodioVacia: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.xs },
   cardResaltada: {

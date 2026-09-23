@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
-import apiClient from '../../api/client';
+import apiClient, { getMiDerivacion } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import { colores, espacio, radio, sombra, tipografia, piezas, interaccion } from '../../theme';
 
@@ -14,12 +14,17 @@ export default function DashboardPaciente({ navigation }) {
   // La respuesta ya no se muestra (era un texto técnico de sesión), pero la
   // llamada se mantiene: valida los permisos y detecta la caída del servidor.
 
+  // CU26: a qué especialidad lo deriva su entrevista previa.
+  const [derivacion, setDerivacion] = useState(null);
+
   const cargarDatosProtegidos = async () => {
     setIsLoading(true);
     setErrorRed(false);
 
     try {
       await apiClient.get('/auth/mi-perfil');
+      const datos = await getMiDerivacion().catch(() => null);
+      setDerivacion(datos?.hay_triaje ? datos : null);
     } catch (error) {
       if (!error.response || error.response.status >= 500) {
         setErrorRed(true);
@@ -50,6 +55,42 @@ export default function DashboardPaciente({ navigation }) {
           />
         ) : (
           <>
+            {/* CU26: sugerencia de derivación surgida del triaje. Solo aparece
+                cuando el paciente ya completó su entrevista previa. */}
+            {derivacion && (
+              <View style={styles.tarjetaDerivacion}>
+                <Text style={styles.derivacionTitulo}>
+                  {derivacion.derivacion?.general
+                    ? '🩺 Evaluación general'
+                    : `🎯 Te sugerimos ${derivacion.derivacion?.nombre}`}
+                </Text>
+                <Text style={styles.derivacionTexto}>
+                  {derivacion.derivacion?.general
+                    ? 'Tu entrevista no apunta a una especialidad concreta. Te recomendamos una evaluación general para orientarte.'
+                    : derivacion.derivacion?.disponible_en_comuna
+                      ? `Según lo que contaste, es la especialidad que mejor calza con tu motivo de consulta. Hay profesionales que atienden a domicilio en ${derivacion.derivacion?.comuna || 'tu comuna'}.`
+                      : derivacion.derivacion?.disponible_online
+                        ? 'Según lo que contaste, es la especialidad que mejor calza contigo. En tu comuna no hay atención a domicilio, pero sí teleconsulta.'
+                        : 'Según lo que contaste, es la especialidad que mejor calza contigo, pero por ahora no tenemos profesionales disponibles para tu comuna.'}
+                </Text>
+
+                {/* Excepción 2: sin cobertura en su comuna se ofrecen las
+                    especialidades que sí tienen profesionales. */}
+                {derivacion.derivacion?.alternativas?.length > 0 && (
+                  <Text style={styles.derivacionAlternativas}>
+                    Disponibles ahora: {derivacion.derivacion.alternativas.map((a) => a.nombre).join(', ')}.
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('BuscarCita')}
+                  activeOpacity={interaccion.opacidadActiva}
+                >
+                  <Text style={styles.derivacionEnlace}>Buscar hora con esta orientación →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* CU14 + CU15: gestión de citas unificada (ver, agendar y cancelar) */}
             <TouchableOpacity
               style={styles.menuBtn}
@@ -99,6 +140,24 @@ export default function DashboardPaciente({ navigation }) {
                 <Text style={styles.menuTitle}>Mis Ejercicios</Text>
                 <Text style={styles.menuSubtitle}>
                   Revisa tu rutina del día y marca los ejercicios que completes.
+                </Text>
+              </View>
+              <Text style={styles.menuChevron}>›</Text>
+            </TouchableOpacity>
+
+            {/* CU50: reporte de evolución entre sesiones */}
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => navigation.navigate('MiSeguimiento')}
+              activeOpacity={interaccion.opacidadActiva}
+            >
+              <View style={styles.menuIconoCaja}>
+                <Text style={styles.menuIcon}>📈</Text>
+              </View>
+              <View style={styles.menuTexto}>
+                <Text style={styles.menuTitle}>Mi Seguimiento</Text>
+                <Text style={styles.menuSubtitle}>
+                  Cuenta cómo vas entre sesiones: si algo empeora, avisamos a tu profesional.
                 </Text>
               </View>
               <Text style={styles.menuChevron}>›</Text>
@@ -189,6 +248,18 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: espacio.lg, paddingTop: espacio.xs, paddingBottom: espacio.sm },
 
+
+  // CU26 — la orientación que sale del triaje, antes que el resto del menú.
+  tarjetaDerivacion: {
+    ...piezas.tarjeta,
+    backgroundColor: colores.secundarioSuave,
+    borderColor: colores.secundarioBorde,
+    marginBottom: espacio.base,
+  },
+  derivacionTitulo: { ...tipografia.cuerpoFuerte, color: colores.secundarioFuerte },
+  derivacionTexto: { ...tipografia.meta, color: colores.texto, marginTop: espacio.xs },
+  derivacionAlternativas: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm },
+  derivacionEnlace: { ...tipografia.metaFuerte, color: colores.primario, marginTop: espacio.md },
 
   // Fila: ícono en pastilla de marca, texto a la izquierda, chevron al final.
   menuBtn: {

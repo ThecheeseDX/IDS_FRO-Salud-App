@@ -245,6 +245,59 @@ CREATE TABLE Triaje (
     FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id)
 );
 
+-- CU25: síntesis de la entrevista de triaje que el profesional lee antes de
+-- la sesión. Se genera al completar el triaje y queda ligado al paciente.
+CREATE TABLE Reporte_Preclinico (
+    reporte_preclinico_id INT PRIMARY KEY AUTO_INCREMENT,
+    resumen TEXT NOT NULL,
+    -- Hallazgos que exigen atención prioritaria, con su severidad.
+    banderas JSON,
+    -- Etiquetas clínicas derivadas del triaje; con ellas se sugiere la
+    -- especialidad del CU26.
+    etiquetas JSON,
+    suficiente BOOLEAN NOT NULL DEFAULT TRUE,
+    especialidad_sugerida_id INT NULL,
+    momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    triaje_id INT NOT NULL UNIQUE,
+    paciente_id INT NOT NULL,
+    FOREIGN KEY (triaje_id) REFERENCES Triaje(triaje_id),
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+    FOREIGN KEY (especialidad_sugerida_id) REFERENCES Especialidad(especialidad_id)
+);
+
+-- CU50: reporte de evolución que el paciente envía entre sesiones. clave_envio
+-- es del cliente: si el teléfono reintenta el mismo envío, no se duplica.
+CREATE TABLE Reporte_Sintoma (
+    reporte_sintoma_id INT PRIMARY KEY AUTO_INCREMENT,
+    nivel_dolor TINYINT NOT NULL,
+    limitacion_funcional TINYINT NOT NULL,
+    comentario VARCHAR(500),
+    clave_envio VARCHAR(64) NOT NULL UNIQUE,
+    momento_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paciente_id INT NOT NULL,
+    episodio_clinico_id INT NULL,
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)
+);
+
+-- CU50: alerta que llega al panel del profesional (Banderas Rojas del RF50).
+CREATE TABLE Alerta_Clinica (
+    alerta_clinica_id INT PRIMARY KEY AUTO_INCREMENT,
+    tipo VARCHAR(40) NOT NULL,
+    severidad VARCHAR(20) NOT NULL,
+    motivo VARCHAR(255) NOT NULL,
+    datos JSON,
+    estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTA',
+    momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    momento_revision TIMESTAMP NULL,
+    paciente_id INT NOT NULL,
+    profesional_id INT NULL,
+    reporte_sintoma_id INT NULL,
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+    FOREIGN KEY (reporte_sintoma_id) REFERENCES Reporte_Sintoma(reporte_sintoma_id)
+);
+
 CREATE TABLE Disclaimer (
     disclaimer_id INT PRIMARY KEY AUTO_INCREMENT,
     momento_aceptacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

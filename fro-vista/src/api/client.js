@@ -295,4 +295,43 @@ export const tomarCupoListaEspera = async (listaEsperaId) => {
   return response.data;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU25 / CU26 / CU50 — Triaje inteligente, derivación y seguimiento
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getReportePreclinico = async (pacienteId) => {
+  const response = await apiClient.get(`/clinica/pacientes/${pacienteId}/reporte-preclinico`);
+  return response.data;
+};
+
+export const getMiDerivacion = async () => {
+  const response = await apiClient.get('/clinica/mi-derivacion');
+  return response.data;
+};
+
+export const enviarReporteSintomas = async (payload) => {
+  const response = await apiClient.post('/clinica/sintomas', payload);
+  return response.data;
+};
+
+export const getMisSintomas = async () => {
+  const response = await apiClient.get('/clinica/mis-sintomas');
+  return response.data;
+};
+
+export const getSintomasDePaciente = async (pacienteId) => {
+  const response = await apiClient.get(`/clinica/pacientes/${pacienteId}/sintomas`);
+  return response.data;
+};
+
+export const getAlertasClinicas = async () => {
+  const response = await apiClient.get('/clinica/alertas');
+  return response.data;
+};
+
+export const revisarAlertaClinica = async (alertaId) => {
+  const response = await apiClient.post(`/clinica/alertas/${alertaId}/revisar`);
+  return response.data;
+};
+
 export default apiClient;

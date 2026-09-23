@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 
 import { AuthContext } from '../../context/AuthContext';
-import apiClient from '../../api/client';
+import apiClient, { getAlertasClinicas, revisarAlertaClinica } from '../../api/client';
 import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
 import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
@@ -30,6 +30,8 @@ export default function DashboardProfesional({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  // CU50: banderas rojas de los pacientes a cargo, lo primero que debe verse.
+  const [alertas, setAlertas] = useState([]);
 
   const cargarPacientes = async (isRefresh = false) => {
     try {
@@ -66,9 +68,34 @@ export default function DashboardProfesional({ navigation }) {
     }
   };
 
+  const cargarAlertas = async () => {
+    try {
+      const { alertas: recibidas } = await getAlertasClinicas();
+      setAlertas(recibidas || []);
+    } catch {
+      setAlertas([]);
+    }
+  };
+
   useEffect(() => {
     cargarPacientes();
+    cargarAlertas();
   }, []);
+
+  // Al volver de una ficha puede haber alertas nuevas o ya revisadas.
+  useEffect(() => {
+    const quitar = navigation.addListener('focus', cargarAlertas);
+    return quitar;
+  }, [navigation]);
+
+  const revisar = async (alerta) => {
+    setAlertas((previas) => previas.filter((a) => a.alerta_clinica_id !== alerta.alerta_clinica_id));
+    try {
+      await revisarAlertaClinica(alerta.alerta_clinica_id);
+    } catch {
+      cargarAlertas();
+    }
+  };
 
   const abrirFicha = (paciente) => {
     navigation.navigate('FichaClinica', {
@@ -94,6 +121,42 @@ export default function DashboardProfesional({ navigation }) {
   const Encabezado = (
     <View>
       <Text style={styles.title}>Dr(a). {userData?.apellido_paterno}</Text>
+
+      {/* CU50 — Banderas rojas: deterioro reportado por los pacientes. Va
+          arriba de todo porque es lo que exige atención inmediata. */}
+      {alertas.length > 0 && (
+        <View style={styles.panelAlertas}>
+          <Text style={styles.alertasTitulo}>
+            🚩 Banderas rojas ({alertas.length})
+          </Text>
+          {alertas.map((alerta) => (
+            <View
+              key={alerta.alerta_clinica_id}
+              style={[styles.alerta, alerta.severidad === 'CRITICA' && styles.alertaCritica]}
+            >
+              <Text style={styles.alertaPaciente}>{alerta.paciente}</Text>
+              <Text style={styles.alertaMotivo}>{alerta.motivo}</Text>
+              <View style={styles.filaAlerta}>
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('FichaClinica', {
+                      pacienteId: alerta.paciente_id,
+                      nombrePaciente: alerta.paciente,
+                    })
+                  }
+                  activeOpacity={interaccion.opacidadActiva}
+                >
+                  <Text style={styles.alertaEnlace}>Abrir ficha →</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => revisar(alerta)} activeOpacity={interaccion.opacidadActiva}>
+                  <Text style={styles.alertaRevisar}>Marcar revisada</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
       <Text style={styles.subtitle}>Pacientes asignados</Text>
 
       <View style={styles.filaBuscador}>
@@ -252,6 +315,23 @@ const styles = StyleSheet.create({
   card: { ...piezas.tarjeta, marginBottom: espacio.md },
   nombre: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.xs },
   dato: { ...tipografia.meta, color: colores.textoSuave },
+  // CU50 — el bloque de banderas rojas.
+  panelAlertas: { marginBottom: espacio.base },
+  alertasTitulo: { ...tipografia.subtitulo, color: colores.error, marginBottom: espacio.sm },
+  alerta: {
+    ...piezas.tarjeta,
+    backgroundColor: colores.advertenciaSuave,
+    borderColor: colores.advertenciaBorde,
+    marginBottom: espacio.sm,
+  },
+  // La crítica se distingue de la alta sin depender solo del texto.
+  alertaCritica: { backgroundColor: colores.errorSuave, borderColor: colores.errorBorde },
+  alertaPaciente: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
+  alertaMotivo: { ...tipografia.meta, color: colores.texto, marginTop: 2 },
+  filaAlerta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: espacio.md },
+  alertaEnlace: { ...tipografia.metaFuerte, color: colores.primario },
+  alertaRevisar: { ...tipografia.meta, color: colores.textoSuave },
+
   // Botón delineado: el texto va en el azul de marca, no en blanco (quedaba invisible).
   boton: { ...piezas.botonSecundario, marginTop: espacio.md, paddingVertical: espacio.md },
   botonSecundarioTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
