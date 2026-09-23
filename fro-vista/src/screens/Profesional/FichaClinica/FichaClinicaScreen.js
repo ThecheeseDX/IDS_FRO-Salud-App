@@ -260,7 +260,11 @@ export default function FichaClinicaScreen({ route, navigation }) {
                     {episodioElegido.estado || 'Sin estado'} · desde{' '}
                     {formatearFecha(episodioElegido.fecha_inicio)}
                   </Text>
-                  {episodioElegido.es_propio &&
+                  {/* es_propio llega como 0 o 1 desde la base. Sin convertirlo a
+                      booleano, el 0 se cuela como texto suelto dentro de la vista
+                      y React Native corta la pantalla con "Text strings must be
+                      rendered within a <Text> component". */}
+                  {Boolean(episodioElegido.es_propio) &&
                     String(episodioElegido.estado || '').toUpperCase() !== 'CERRADO' && (
                       <TouchableOpacity
                         disabled={cerrando}
