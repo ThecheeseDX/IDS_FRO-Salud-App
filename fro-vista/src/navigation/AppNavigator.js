@@ -1,7 +1,7 @@
 // Ruta: fro-vista/src/navigation/AppNavigator.js
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AuthContext } from '../context/AuthContext';
@@ -27,6 +27,10 @@ import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
+// Pantallas — Comunes a los tres roles
+import CentroNotificacionesScreen from '../screens/Comun/CentroNotificacionesScreen';
+import CampanaNotificaciones from '../components/CampanaNotificaciones';
+import { escucharToques } from '../utils/push';
 // Pantallas — Comunes a todos los roles
 import SeguridadScreen from '../screens/Comun/SeguridadScreen';
 import EvidenciaSesionScreen from '../screens/Comun/EvidenciaSesionScreen';
@@ -42,6 +46,11 @@ const Stack = createNativeStackNavigator();
 // Acciones que llevan a una pantalla por su nombre: si ningún navegador las
 // atiende es porque la ruta no está registrada (error de ruteo).
 const ACCIONES_DE_RUTEO = ['NAVIGATE', 'NAVIGATE_DEPRECATED', 'PUSH', 'REPLACE', 'JUMP_TO'];
+
+// CU52: el toque sobre una alerta del sistema tiene que abrir la pantalla que
+// corresponde, y eso ocurre fuera del árbol de componentes: hace falta una
+// referencia al navegador.
+export const refNavegacion = createNavigationContainerRef();
 
 export default function AppNavigator() {
   const { userToken, userData, isLoading } = useContext(AuthContext);
@@ -65,6 +74,22 @@ export default function AppNavigator() {
     );
   };
 
+  // CU52 — Excepción 3/4: tocar la alerta del teléfono abre el módulo indicado
+  // en la carga útil del aviso. Si el usuario la descarta, no pasa nada.
+  useEffect(() => {
+    const dejarDeEscuchar = escucharToques((datos) => {
+      const destino = datos?.pantalla;
+      if (!destino || !refNavegacion.isReady()) return;
+      const rutasDelRol = refNavegacion.getRootState()?.routeNames || [];
+      if (rutasDelRol.includes(destino)) {
+        refNavegacion.navigate(destino, datos);
+      } else {
+        console.warn('[notificaciones] pantalla no disponible para este rol:', destino);
+      }
+    });
+    return dejarDeEscuchar;
+  }, []);
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colores.fondo }}>
@@ -74,7 +99,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer key={recargas} onUnhandledAction={alFallarNavegacion}>
+    <NavigationContainer ref={refNavegacion} key={recargas} onUnhandledAction={alFallarNavegacion}>
       <Stack.Navigator
         screenOptions={{
           // Cabecera en el azul de marca en toda la app. Las pantallas de
@@ -114,7 +139,7 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardPaciente"
               component={DashboardPaciente}
-              options={{
+              options={({ navigation }) => ({
                 headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
                   backgroundColor: colores.superficie,
@@ -124,7 +149,9 @@ export default function AppNavigator() {
                 headerTintColor: colores.primario,
                 headerBackVisible: false,
                 gestureEnabled: false,
-              }}
+                // CU52: la campana con el globo de avisos sin leer.
+                headerRight: () => <CampanaNotificaciones navigation={navigation} />,
+              })}
             />
             {/* Gestión de citas unificada: listado + reserva desde el botón flotante */}
             <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
@@ -137,6 +164,7 @@ export default function AppNavigator() {
               component={BuscarCitaScreen}
               options={{ title: 'Buscar y Agendar Cita' }}
             />
+            <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             {/* CU35: el paciente consulta su repositorio con el visor embebido */}
             <Stack.Screen name="Documentos" component={DocumentosScreen} options={{ title: 'Mis Documentos' }} />
@@ -149,7 +177,7 @@ export default function AppNavigator() {
             <Stack.Screen
               name="DashboardProfesional"
               component={DashboardProfesional}
-              options={{
+              options={({ navigation }) => ({
                 headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
                   backgroundColor: colores.superficie,
@@ -159,7 +187,9 @@ export default function AppNavigator() {
                 headerTintColor: colores.primario,
                 headerBackVisible: false,
                 gestureEnabled: false,
-              }}
+                // CU52: la campana con el globo de avisos sin leer.
+                headerRight: () => <CampanaNotificaciones navigation={navigation} />,
+              })}
             />
             {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
@@ -177,6 +207,7 @@ export default function AppNavigator() {
             />
             {/* CU10: catálogo de perfil profesional */}
             <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
+            <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen name="FirmaConformidad" component={FirmaConformidadScreen} options={{ title: 'Firma de Conformidad' }} />
@@ -190,7 +221,7 @@ export default function AppNavigator() {
             <Stack.Screen
               name="ParametrosScreen"
               component={ParametrosScreen}
-              options={{
+              options={({ navigation }) => ({
                 headerTitle: () => <LogoMarca tamano="sm" />,
                 headerStyle: {
                   backgroundColor: colores.superficie,
@@ -200,8 +231,11 @@ export default function AppNavigator() {
                 headerTintColor: colores.primario,
                 headerBackVisible: false,
                 gestureEnabled: false,
-              }}
+                // CU52: la campana con el globo de avisos sin leer.
+                headerRight: () => <CampanaNotificaciones navigation={navigation} />,
+              })}
             />
+            <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
             <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             {/* CU41 Exc.2 (D11): sesiones derivadas a revisión */}
             <Stack.Screen name="SesionesSuspendidas" component={SesionesSuspendidasScreen} options={{ title: 'Sesiones suspendidas' }} />

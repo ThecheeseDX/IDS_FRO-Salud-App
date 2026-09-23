@@ -6,8 +6,9 @@ const {
   notificarUsuario,
   obtenerContactosCita,
   descontarSesionPaquete,
-  notificarListaEspera,
+  ofrecerCupoListaEspera,
 } = require('../services/agenda/agendaService');
+const { cerrarSolicitudPorApp } = require('../services/agenda/confirmacionService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //   CU14 — Buscar disponibilidad
@@ -59,7 +60,7 @@ exports.buscarDisponibilidad = async (req, res) => {
     // ese filtro solo se aplica a los bloques a domicilio.
     let comunaPaciente = null;
     const [[fichaPaciente]] = await pool.query(
-      `SELECT pa.comuna_id, c.nombre
+      `SELECT pa.paciente_id, pa.comuna_id, c.nombre
          FROM Paciente pa
          LEFT JOIN Comuna c ON c.comuna_id = pa.comuna_id
         WHERE pa.usuario_id = ? LIMIT 1`,
@@ -110,6 +111,11 @@ exports.buscarDisponibilidad = async (req, res) => {
     // Para poder explicar en pantalla por qué no salió nadie.
     let descartadosPorComuna = 0;
 
+    // CU19: para marcar los bloques ocupados hace falta saber quién pregunta
+    // (para no ofrecerle esperar su propia hora) y cuál es el tope de la lista.
+    const pacienteQueBusca = fichaPaciente?.paciente_id || 0;
+    const maximoListaEspera = await leerParametroEntero(pool, 'MAX_PACIENTES_LISTA_ESPERA', 5);
+
     for (const fila of filas) {
       // La modalidad la define cada bloque horario del profesional.
       // Un bloque 'AMBOS' sirve tanto para búsquedas online como a domicilio.
@@ -152,7 +158,7 @@ exports.buscarDisponibilidad = async (req, res) => {
 
         // 1. Validar choque con citas existentes
         const [ocupadas] = await pool.query(
-          `SELECT cita_id FROM Cita
+          `SELECT cita_id, paciente_id FROM Cita
            WHERE profesional_id = ?
              AND estado NOT LIKE 'CANCELADA%'
              AND fecha_hora_inicio < ?
@@ -169,7 +175,47 @@ exports.buscarDisponibilidad = async (req, res) => {
           [fila.profesional_id, fechaHoraFin, fechaHoraInicio]
         );
 
-        // 3. Solo agregar si NO hay citas NI bloqueos en ese horario
+        // 3a. CU19: un bloque tomado por otra cita puede tener lista de espera.
+        //     Los bloqueos de agenda no: ese horario no existe para nadie.
+        if (ocupadas.length > 0 && bloqueos.length === 0) {
+          const ocupada = ocupadas[0];
+          const [[espera]] = await pool.query(
+            `SELECT
+                COUNT(*) AS en_espera,
+                MAX(CASE WHEN paciente_id = ? THEN posicion END) AS mi_posicion
+               FROM Lista_Espera
+              WHERE cita_id = ? AND estado IN ('ESPERANDO', 'NOTIFICADO')`,
+            [pacienteQueBusca, ocupada.cita_id]
+          );
+
+          disponibilidad.push({
+            profesional_id:  fila.profesional_id,
+            sede_id:         fila.sede_id,
+            nombres:         fila.nombres,
+            apellido_paterno: fila.apellido_paterno,
+            apellido_materno: fila.apellido_materno,
+            especialidad:    fila.especialidad,
+            tipo_sede:       modalidad,
+            foto_url:        fila.foto_url && fila.foto_url !== 'default.jpg' ? fila.foto_url : null,
+            resena_curricular: fila.resena_curricular || null,
+            areas_experticia: fila.areas_experticia || null,
+            comunas_atencion: fila.comunas_atencion || null,
+            fecha,
+            hora_inicio:     bloqueInicio,
+            hora_fin:        bloqueFin,
+            // Marcas propias del bloque ocupado:
+            ocupado:         true,
+            cita_id:         ocupada.cita_id,
+            es_mi_cita:      Number(ocupada.paciente_id) === Number(pacienteQueBusca),
+            en_espera:       Number(espera.en_espera),
+            mi_posicion:     espera.mi_posicion ? Number(espera.mi_posicion) : null,
+            lista_llena:     Number(espera.en_espera) >= maximoListaEspera,
+          });
+          horaActual++;
+          continue;
+        }
+
+        // 3b. Solo agregar como disponible si NO hay citas NI bloqueos.
         if (ocupadas.length === 0 && bloqueos.length === 0) {
           disponibilidad.push({
             profesional_id:  fila.profesional_id,
@@ -562,12 +608,25 @@ exports.transicionarEstadoCita = async (req, res) => {
           ? `Tu cita fue cancelada. Motivo: ${motivo}`
           : `El estado de tu cita cambió a: ${nuevo_estado}`;
       await notificarUsuario(connection, contactos.usuario_paciente, 'CAMBIO_ESTADO_CITA', texto);
-      await notificarUsuario(connection, contactos.usuario_profesional, 'CAMBIO_ESTADO_CITA', texto);
+      // El profesional tiene su propia pantalla: el aviso lo lleva a su jornada.
+      await notificarUsuario(connection, contactos.usuario_profesional, 'CAMBIO_ESTADO_CITA', texto, {
+        datos: { pantalla: 'MiJornada' },
+      });
     }
 
-    // CU18 — al liberarse el bloque, avisar a la lista de espera.
+    // CU21 — si la cita tenía una solicitud de confirmación abierta, responder
+    // desde la app la cierra: el enlace del correo deja de servir.
+    if (evento === 'CONFIRMAR' || evento === 'CANCELAR') {
+      await cerrarSolicitudPorApp(
+        connection, id, evento === 'CONFIRMAR' ? 'CONFIRMADA' : 'CANCELADA'
+      );
+    }
+
+    // CU18 + CU19 — al liberarse el bloque, el cupo se ofrece al PRIMERO de la
+    // lista de espera, con plazo. Si no responde, el programador lo cede al
+    // siguiente.
     if (esCancelada(nuevo_estado)) {
-      cupos_notificados = await notificarListaEspera(connection, id);
+      cupos_notificados = await ofrecerCupoListaEspera(connection, id);
     }
 
     await connection.commit();

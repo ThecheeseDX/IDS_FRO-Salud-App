@@ -16,14 +16,20 @@ import {
   StyleSheet,
 } from 'react-native';
 
-import apiClient from '../../api/client';
+import apiClient, {
+  getConfirmacionesPendientes,
+  pedirNuevaSolicitudConfirmacion,
+  getMisListasEspera,
+  salirListaEspera,
+  tomarCupoListaEspera,
+} from '../../api/client';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../utils/modalidad';
 import { ordenarCitas } from '../../utils/estados';
-import { colores, espacio, radio, sombra, tipografia } from '../../theme';
+import { colores, espacio, radio, sombra, tipografia, piezas, interaccion } from '../../theme';
 import EtiquetaEstado from '../../components/EtiquetaEstado';
 import DialogoAviso from '../../components/DialogoAviso';
 
@@ -38,6 +44,12 @@ export default function MisCitasScreen({ navigation }) {
   const [refrescando, setRefrescando] = useState(false);
   const [errorRed, setErrorRed] = useState(false);
   const [cancelandoId, setCancelandoId] = useState(null);
+  // CU21: citas con una solicitud de confirmación abierta.
+  const [porConfirmar, setPorConfirmar] = useState([]);
+  const [confirmandoId, setConfirmandoId] = useState(null);
+  // CU19: bloques ocupados en los que el paciente está esperando su turno.
+  const [listasEspera, setListasEspera] = useState([]);
+  const [tomandoCupo, setTomandoCupo] = useState(null);
 
   const cargarCitas = useCallback(async (esRefresco = false) => {
     if (esRefresco) {
@@ -50,6 +62,15 @@ export default function MisCitasScreen({ navigation }) {
     try {
       const { data } = await apiClient.get('/citas/mis-citas');
       setCitas(ordenarCitas(Array.isArray(data) ? data : []));
+
+      // CU21 y CU19 viajan junto con las citas: son parte de la misma vista.
+      // Si alguno falla, las citas se muestran igual.
+      const [confirmaciones, listas] = await Promise.all([
+        getConfirmacionesPendientes().catch(() => ({ pendientes: [] })),
+        getMisListasEspera().catch(() => ({ listas: [] })),
+      ]);
+      setPorConfirmar(confirmaciones.pendientes || []);
+      setListasEspera(listas.listas || []);
     } catch (error) {
       console.error('ERROR MIS CITAS:', error?.response?.data || error.message);
       setErrorRed(true);
@@ -105,9 +126,96 @@ export default function MisCitasScreen({ navigation }) {
     });
   };
 
+  // ── CU21: confirmar o cancelar desde la app ────────────────────────────
+  const responderSolicitud = async (cita, evento, motivo) => {
+    setConfirmandoId(cita.cita_id);
+    try {
+      await apiClient.post(`/citas/${cita.cita_id}/transicionar`, {
+        evento,
+        ...(motivo ? { motivo } : {}),
+      });
+      setAviso({
+        tono: 'ok',
+        titulo: evento === 'CONFIRMAR' ? 'Asistencia confirmada' : 'Cita cancelada',
+        mensaje:
+          evento === 'CONFIRMAR'
+            ? 'Gracias por confirmar. Te esperamos a la hora agendada.'
+            : 'Tu cita quedó cancelada y el bloque se liberó.',
+      });
+      await cargarCitas(true);
+    } catch (error) {
+      // Excepción 4 del CU21: la respuesta no se pudo guardar.
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo guardar',
+        mensaje:
+          error.response?.data?.mensaje ||
+          error.response?.data?.error ||
+          'Refresca la pantalla e inténtalo otra vez.',
+      });
+    } finally {
+      setConfirmandoId(null);
+    }
+  };
+
+  // Excepción 2 del CU21: pedir un enlace nuevo cuando el anterior venció.
+  const pedirOtroEnlace = async (cita) => {
+    try {
+      const datos = await pedirNuevaSolicitudConfirmacion(cita.cita_id);
+      setAviso({ tono: 'ok', titulo: 'Solicitud reenviada', mensaje: datos.mensaje });
+      await cargarCitas(true);
+    } catch (error) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo reenviar',
+        mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.',
+      });
+    }
+  };
+
+  // ── CU19: tomar el cupo o salir de la lista ────────────────────────────
+  const tomarCupo = async (lista) => {
+    setTomandoCupo(lista.lista_espera_id);
+    try {
+      const datos = await tomarCupoListaEspera(lista.lista_espera_id);
+      setAviso({
+        tono: 'ok',
+        titulo: '¡Cupo tomado!',
+        mensaje: datos.mensaje || 'La hora quedó agendada a tu nombre.',
+      });
+      await cargarCitas(true);
+    } catch (error) {
+      setAviso({
+        tono: 'alerta',
+        titulo: 'No se pudo tomar el cupo',
+        mensaje:
+          error.response?.data?.mensaje ||
+          'El cupo ya no está disponible. Busca otro horario.',
+        alCerrar: () => cargarCitas(true),
+      });
+    } finally {
+      setTomandoCupo(null);
+    }
+  };
+
+  const salirDeLista = async (lista) => {
+    try {
+      await salirListaEspera(lista.cita_id);
+      await cargarCitas(true);
+    } catch (error) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo salir',
+        mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.',
+      });
+    }
+  };
+
   const renderCita = ({ item }) => {
     const puedeCancelar = ESTADOS_CANCELABLES.includes(item.estado);
     const cancelando = cancelandoId === item.cita_id;
+    const solicitud = porConfirmar.find((p) => Number(p.cita_id) === Number(item.cita_id));
+    const confirmando = confirmandoId === item.cita_id;
 
     return (
       <View style={styles.card}>
@@ -120,6 +228,37 @@ export default function MisCitasScreen({ navigation }) {
           Profesional: {item.nombre_profesional}
           {`  ·  ${iconoModalidad(item.modalidad)} ${etiquetaModalidad(item.modalidad)}`}
         </Text>
+
+        {/* CU21: si hay una solicitud abierta, la cita se responde aquí mismo. */}
+        {solicitud && (
+          <View style={styles.cajaConfirmar}>
+            <Text style={styles.confirmarTitulo}>
+              {solicitud.vencida ? '⌛ El enlace de confirmación venció' : '📅 Confirma tu asistencia'}
+            </Text>
+            <Text style={styles.confirmarTexto}>
+              {solicitud.vencida
+                ? 'Puedes responder igual desde aquí, o pedir que te reenviemos el correo.'
+                : 'Te enviamos esta solicitud por correo y aquí. Responde para mantener tu hora reservada.'}
+            </Text>
+            <View style={styles.filaAcciones}>
+              <TouchableOpacity
+                style={[styles.botonConfirmar, confirmando && styles.botonDeshabilitado]}
+                onPress={() => responderSolicitud(item, 'CONFIRMAR')}
+                disabled={confirmando}
+                activeOpacity={interaccion.opacidadActiva}
+              >
+                <Text style={styles.botonConfirmarTexto}>
+                  {confirmando ? 'Guardando…' : '✓ Confirmar asistencia'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {solicitud.vencida && (
+              <TouchableOpacity onPress={() => pedirOtroEnlace(item)}>
+                <Text style={styles.enlaceReenviar}>Enviarme un enlace nuevo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* CU39/CU43: evidencia de la sesión (check-in GPS o teleconsulta) */}
         {['CONFIRMADA', 'EN_CURSO'].includes(item.estado) && (
@@ -193,6 +332,51 @@ export default function MisCitasScreen({ navigation }) {
             onRefresh={() => cargarCitas(true)}
             colors={[colores.primario]}
           />
+        }
+        ListHeaderComponent={
+          listasEspera.length > 0 ? (
+            <View style={styles.bloqueEspera}>
+              <Text style={styles.esperaTitulo}>En lista de espera</Text>
+              {listasEspera.map((lista) => {
+                const esMiTurno = lista.estado === 'NOTIFICADO';
+                return (
+                  <View
+                    key={lista.lista_espera_id}
+                    style={[styles.tarjetaEspera, esMiTurno && styles.tarjetaTurno]}
+                  >
+                    <Text style={styles.esperaFecha}>
+                      {formatearFecha(lista.fecha_hora_inicio)} · {lista.profesional}
+                    </Text>
+                    <Text style={styles.esperaDato}>
+                      {esMiTurno
+                        ? '🎟️ ¡Es tu turno! El cupo se liberó y es tuyo si lo tomas ahora.'
+                        : `Posición ${lista.posicion} de ${lista.en_espera} · ${lista.especialidad}`}
+                    </Text>
+
+                    {esMiTurno ? (
+                      <TouchableOpacity
+                        style={[
+                          styles.botonTomarCupo,
+                          tomandoCupo === lista.lista_espera_id && styles.botonDeshabilitado,
+                        ]}
+                        onPress={() => tomarCupo(lista)}
+                        disabled={tomandoCupo === lista.lista_espera_id}
+                        activeOpacity={interaccion.opacidadActiva}
+                      >
+                        <Text style={styles.botonTomarCupoTexto}>
+                          {tomandoCupo === lista.lista_espera_id ? 'Reservando…' : 'Tomar el cupo'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity onPress={() => salirDeLista(lista)}>
+                        <Text style={styles.enlaceSalir}>Salir de la lista</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          ) : null
         }
         ListEmptyComponent={
           <View style={styles.vacio}>
@@ -300,6 +484,46 @@ const styles = StyleSheet.create({
   vacioIcono: { fontSize: 48, marginBottom: 12 },
   vacioTitulo: { fontSize: 17, fontWeight: 'bold', color: colores.texto, marginBottom: 6 },
   vacioTexto: { color: colores.textoSuave, textAlign: 'center' },
+
+  // CU21 — la solicitud de confirmación, dentro de la tarjeta de la cita.
+  cajaConfirmar: {
+    marginTop: espacio.md,
+    padding: espacio.md,
+    borderRadius: radio.md,
+    backgroundColor: colores.primarioSuave,
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+  },
+  confirmarTitulo: { ...tipografia.cuerpoFuerte, color: colores.primario },
+  confirmarTexto: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2, marginBottom: espacio.sm },
+  botonConfirmar: {
+    flex: 1,
+    backgroundColor: colores.primario,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  botonConfirmarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
+  enlaceReenviar: { ...tipografia.metaFuerte, color: colores.secundario, marginTop: espacio.sm },
+
+  // CU19 — los bloques que el paciente está esperando.
+  bloqueEspera: { marginBottom: espacio.lg },
+  esperaTitulo: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.sm },
+  tarjetaEspera: { ...piezas.tarjeta, marginBottom: espacio.md },
+  // Cuando el cupo es suyo la tarjeta cambia de color: es una oportunidad con
+  // plazo, no un dato más de la lista.
+  tarjetaTurno: { borderColor: colores.exito, borderWidth: 1.5, backgroundColor: colores.exitoSuave },
+  esperaFecha: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
+  esperaDato: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
+  botonTomarCupo: {
+    marginTop: espacio.sm,
+    backgroundColor: colores.exito,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  botonTomarCupoTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
+  enlaceSalir: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.sm },
 
   fab: {
     position: 'absolute',

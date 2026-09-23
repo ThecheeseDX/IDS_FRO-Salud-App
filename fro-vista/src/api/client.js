@@ -213,4 +213,86 @@ export const finalizarAtencion = async (citaId, payload = {}) => {
   return response.data;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU52 — Centro de notificaciones, preferencias y dispositivos push
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getNotificaciones = async (pagina = 0) => {
+  const response = await apiClient.get('/notificaciones', { params: { pagina } });
+  return response.data;
+};
+
+export const getResumenNotificaciones = async () => {
+  const response = await apiClient.get('/notificaciones/resumen');
+  return response.data;
+};
+
+export const marcarNotificacionLeida = async (id) => {
+  const response = await apiClient.post(`/notificaciones/${id}/leer`);
+  return response.data;
+};
+
+export const marcarTodasLeidas = async () => {
+  const response = await apiClient.post('/notificaciones/leer-todas');
+  return response.data;
+};
+
+export const getPreferenciasNotificacion = async () => {
+  const response = await apiClient.get('/notificaciones/preferencias');
+  return response.data;
+};
+
+export const guardarPreferenciasNotificacion = async (preferencias) => {
+  const response = await apiClient.put('/notificaciones/preferencias', preferencias);
+  return response.data;
+};
+
+export const registrarDispositivoPush = async (token, plataforma) => {
+  const response = await apiClient.post('/notificaciones/dispositivo', { token, plataforma });
+  return response.data;
+};
+
+export const olvidarDispositivoPush = async (token) => {
+  const response = await apiClient.delete('/notificaciones/dispositivo', { data: { token } });
+  return response.data;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU21 — Confirmación de asistencia
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getConfirmacionesPendientes = async () => {
+  const response = await apiClient.get('/citas/confirmaciones/pendientes');
+  return response.data;
+};
+
+export const pedirNuevaSolicitudConfirmacion = async (citaId) => {
+  const response = await apiClient.post(`/citas/${citaId}/solicitar-confirmacion`);
+  return response.data;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU19 — Lista de espera
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getMisListasEspera = async () => {
+  const response = await apiClient.get('/citas/mis-listas-espera');
+  return response.data;
+};
+
+export const inscribirseListaEspera = async (citaId) => {
+  const response = await apiClient.post(`/citas/${citaId}/lista-espera`);
+  return response.data;
+};
+
+export const salirListaEspera = async (citaId) => {
+  const response = await apiClient.delete(`/citas/${citaId}/lista-espera`);
+  return response.data;
+};
+
+export const tomarCupoListaEspera = async (listaEsperaId) => {
+  const response = await apiClient.post(`/citas/lista-espera/${listaEsperaId}/tomar`);
+  return response.data;
+};
+
 export default apiClient;

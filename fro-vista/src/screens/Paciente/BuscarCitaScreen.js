@@ -15,7 +15,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-import apiClient from '../../api/client';
+import apiClient, { inscribirseListaEspera } from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
@@ -60,6 +60,8 @@ export default function BuscarCitaScreen({ navigation, route }) {
   // ── CU15: bloqueo del horario ─────────────────────────────────────────────
   const [bloqueSeleccionado, setBloqueSeleccionado] = useState(null);
   const [cargandoBloqueo, setCargandoBloqueo] = useState(false);
+  // CU19: inscripción en la lista de espera de un bloque ya tomado.
+  const [inscribiendo, setInscribiendo] = useState(null);
 
   useEffect(() => {
     cargarEspecialidades();
@@ -119,6 +121,36 @@ export default function BuscarCitaScreen({ navigation, route }) {
   // ── CU14 → CU15: el paciente selecciona un bloque y confirma ─────────────
   const seleccionarBloque = (item) => {
     setBloqueSeleccionado(item);
+  };
+
+  // ── CU19: anotarse en la lista de espera de un bloque ocupado ───────────
+  const anotarseEnEspera = async (item) => {
+    setInscribiendo(item.cita_id);
+    try {
+      const datos = await inscribirseListaEspera(item.cita_id);
+      setAviso({
+        tono: 'ok',
+        titulo: 'Quedaste en la lista',
+        mensaje:
+          `${datos.mensaje} Si el bloque se libera te avisamos, y si eres el primero ` +
+          'tendrás un plazo para tomarlo antes de que pase al siguiente.',
+        alCerrar: buscarDisponibilidad,
+      });
+    } catch (error) {
+      const err = error.response?.data;
+      // Excepción 1: la lista llegó a su tope.
+      setAviso({
+        tono: err?.error === 'LISTA_COMPLETA' ? 'alerta' : 'error',
+        titulo: err?.error === 'LISTA_COMPLETA' ? 'Lista completa' : 'No se pudo inscribir',
+        mensaje:
+          err?.mensaje ||
+          // Excepción 2: falla de sincronización al guardar la posición.
+          'No pudimos guardar tu lugar en la lista. Vuelve a intentarlo.',
+        alCerrar: err?.error ? buscarDisponibilidad : undefined,
+      });
+    } finally {
+      setInscribiendo(null);
+    }
   };
 
   // ── CU15: confirmar y bloquear el horario ─────────────────────────────────
@@ -397,9 +429,67 @@ export default function BuscarCitaScreen({ navigation, route }) {
           )}
           {disponibilidad.map((item, index) => {
             const estaSeleccionado =
+              !item.ocupado &&
               bloqueSeleccionado?.profesional_id === item.profesional_id &&
               bloqueSeleccionado?.hora_inicio === item.hora_inicio &&
               bloqueSeleccionado?.fecha === item.fecha;
+
+            // CU19: un bloque tomado no se puede reservar, pero sí esperar.
+            if (item.ocupado) {
+              const enLista = Boolean(item.mi_posicion);
+              const bloqueado = item.es_mi_cita || item.lista_llena || enLista;
+              return (
+                <View
+                  key={`ocupado-${item.profesional_id}-${item.hora_inicio}-${index}`}
+                  style={[styles.card, styles.cardOcupada]}
+                >
+                  <Text style={styles.nombreOcupado}>
+                    {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
+                  </Text>
+                  <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
+                  <View style={styles.datosCita}>
+                    <Text style={styles.detalle}>📅  {fechaLegible(item.fecha)}</Text>
+                    <Text style={styles.bloqueOcupado}>
+                      🕐  {item.hora_inicio.slice(0, 5)} – {item.hora_fin.slice(0, 5)} · bloque tomado
+                    </Text>
+                    <Text style={styles.detalle}>
+                      {item.en_espera > 0
+                        ? `👥  ${item.en_espera} persona(s) en lista de espera`
+                        : '👥  Nadie en la lista de espera todavía'}
+                    </Text>
+
+                    {item.es_mi_cita ? (
+                      <Text style={styles.notaEspera}>Esta hora ya es tuya.</Text>
+                    ) : enLista ? (
+                      <Text style={styles.notaEspera}>
+                        Ya estás en esta lista, en la posición {item.mi_posicion}.
+                      </Text>
+                    ) : item.lista_llena ? (
+                      <Text style={styles.notaEspera}>
+                        La lista de espera está completa. Prueba con otro horario o profesional.
+                      </Text>
+                    ) : null}
+
+                    {!bloqueado && (
+                      <TouchableOpacity
+                        style={[
+                          styles.btnEspera,
+                          inscribiendo === item.cita_id && styles.btnDeshabilitado,
+                        ]}
+                        onPress={() => anotarseEnEspera(item)}
+                        disabled={inscribiendo === item.cita_id}
+                      >
+                        <Text style={styles.btnEsperaTexto}>
+                          {inscribiendo === item.cita_id
+                            ? 'Inscribiendo…'
+                            : '🔔 Avisarme si se libera'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
+            }
 
             return (
               <TouchableOpacity
@@ -641,6 +731,21 @@ const styles = StyleSheet.create({
     borderColor: colores.borde,
     marginBottom: 12,
   },
+  // CU19 — el bloque ocupado se ve apagado: no se puede reservar, solo esperar.
+  cardOcupada: { backgroundColor: colores.superficieSuave, borderStyle: 'dashed' },
+  nombreOcupado: { fontWeight: 'bold', fontSize: 17, color: colores.textoSuave, marginBottom: 4 },
+  bloqueOcupado: { fontSize: 15, fontWeight: '600', color: colores.textoSuave, marginTop: 6 },
+  notaEspera: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.sm },
+  btnEspera: {
+    marginTop: espacio.md,
+    borderWidth: 1.5,
+    borderColor: colores.secundario,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  btnEsperaTexto: { ...tipografia.cuerpoFuerte, color: colores.secundarioFuerte },
+
   cardSeleccionada: {
     borderColor: colores.primario,
     borderWidth: 2,

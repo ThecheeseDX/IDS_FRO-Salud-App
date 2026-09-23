@@ -6,6 +6,8 @@ const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const citaController     = require('../controllers/citaController');
 const evidenciaController = require('../controllers/evidenciaController');
 const marcasTemporalesController = require('../controllers/marcasTemporalesController');
+const confirmacionController = require('../controllers/confirmacionController');
+const listaEsperaController = require('../controllers/listaEsperaController');
 
 // CU38 - Marcas temporales de la prestacion
 router.get('/marcas-temporales',
@@ -55,6 +57,36 @@ router.get('/disponibilidad/:profesional_id',
 router.post('/bloquear',
   verifyToken, authorizeRoles(['Paciente']),
   citaController.bloquearHorario);
+
+// ── CU21 — Confirmación de asistencia distribuida
+// El enlace del correo es público a propósito: su autorización es el token,
+// que es secreto, de un solo uso y con vencimiento.
+router.get('/confirmacion/:token', confirmacionController.responderDesdeCorreo);
+
+router.get('/confirmaciones/pendientes',
+  verifyToken, authorizeRoles(['Paciente']),
+  confirmacionController.pendientes);
+
+router.post('/:id/solicitar-confirmacion',
+  verifyToken, authorizeRoles(['Paciente']),
+  confirmacionController.reenviar);
+
+// ── CU19 — Lista de espera secuencial
+router.get('/mis-listas-espera',
+  verifyToken, authorizeRoles(['Paciente']),
+  listaEsperaController.misListas);
+
+router.post('/lista-espera/:lista_espera_id/tomar',
+  verifyToken, authorizeRoles(['Paciente']),
+  listaEsperaController.tomarCupo);
+
+router.post('/:id/lista-espera',
+  verifyToken, authorizeRoles(['Paciente']),
+  listaEsperaController.inscribirse);
+
+router.delete('/:id/lista-espera',
+  verifyToken, authorizeRoles(['Paciente']),
+  listaEsperaController.salir);
 
 // ── CU20 — Listado de citas por rol
 router.get('/mis-citas',

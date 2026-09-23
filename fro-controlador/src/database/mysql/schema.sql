@@ -33,11 +33,51 @@ CREATE TABLE Notificacion (
     notificacion_id INT PRIMARY KEY AUTO_INCREMENT,
     canal VARCHAR(50) NOT NULL,
     tipo VARCHAR(50) NOT NULL,
+    -- CU52: el título encabeza el aviso en el centro de notificaciones y en la
+    -- alerta push; 'datos' dice a qué pantalla saltar al tocarlo.
+    titulo VARCHAR(120),
     contenido TEXT NOT NULL,
+    datos JSON,
     momento_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     leida BOOLEAN DEFAULT FALSE,
     usuario_id INT NOT NULL,
-    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id) 
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
+
+-- CU52: canales de salida que acepta cada usuario. Sin fila, ambos activos.
+-- El centro de notificaciones dentro de la app siempre recibe: es el registro
+-- histórico del usuario, apagarlo seria perder el rastro de lo que se le avisó.
+CREATE TABLE Preferencia_Notificacion (
+    usuario_id INT PRIMARY KEY,
+    canal_push BOOLEAN NOT NULL DEFAULT TRUE,
+    canal_email BOOLEAN NOT NULL DEFAULT TRUE,
+    ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
+
+-- CU52: tokens de notificación push del usuario, uno por dispositivo.
+CREATE TABLE Dispositivo_Push (
+    dispositivo_push_id INT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    plataforma VARCHAR(20) NOT NULL DEFAULT 'DESCONOCIDA',
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    momento_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_id INT NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
+
+-- CU21: solicitud de confirmación de asistencia. El token viaja en el enlace
+-- del correo y vence solo, así que la respuesta asíncrona no necesita sesión.
+CREATE TABLE Solicitud_Confirmacion (
+    solicitud_confirmacion_id INT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    momento_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    momento_expira TIMESTAMP NOT NULL,
+    momento_respuesta TIMESTAMP NULL,
+    respuesta VARCHAR(20) NULL,
+    canal_respuesta VARCHAR(20) NULL,
+    cita_id INT NOT NULL UNIQUE,
+    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
 );
 
 CREATE TABLE Ticket_Soporte (
@@ -442,8 +482,14 @@ CREATE TABLE Lista_Espera (
     momento_inscripcion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     posicion INT NOT NULL,
     notificado BOOLEAN DEFAULT FALSE,
+    -- CU19: el cupo se ofrece de a uno. ESPERANDO -> NOTIFICADO -> TOMADO, o
+    -- VENCIDO si no responde en el plazo y el turno pasa al siguiente.
+    estado VARCHAR(20) NOT NULL DEFAULT 'ESPERANDO',
+    momento_notificacion TIMESTAMP NULL,
+    momento_expira TIMESTAMP NULL,
     paciente_id INT NOT NULL,
     cita_id INT NOT NULL,
+    UNIQUE KEY uq_espera_cita_paciente (cita_id, paciente_id),
     FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
     FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
 );

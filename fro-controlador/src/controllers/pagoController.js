@@ -13,7 +13,8 @@ const { leerParametroEntero } = require('../services/agenda/agendaService');
 
 const REGEX_FOLIO = /^BON-\d{6}$/;
 const METODOS_PAGO = ['TARJETA_OK', 'TARJETA_RECHAZADA', 'TARJETA_LENTA'];
-const SESIONES_PAQUETE = [4, 8, 12];
+// RF73: planes de 10, 15 y 20 sesiones, como pide el documento.
+const SESIONES_PAQUETE = [10, 15, 20];
 
 /** Arancel vigente de una prestación (editable por el administrador). */
 async function arancelVigente() {

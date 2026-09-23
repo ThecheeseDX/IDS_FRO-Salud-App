@@ -594,6 +594,161 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Notificacion con titulo y datos (CU52)',
+    descripcion: 'Titulo del aviso y carga util para abrir la pantalla correcta al tocarlo',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Notificacion' AND COLUMN_NAME = 'datos'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Notificacion ADD COLUMN titulo VARCHAR(120) NULL AFTER tipo`);
+      await conexion.query(`ALTER TABLE Notificacion ADD COLUMN datos JSON NULL AFTER contenido`);
+    },
+  },
+  {
+    nombre: 'Tabla Preferencia_Notificacion (CU52)',
+    descripcion: 'Canales de salida que acepta cada usuario: push y correo',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Preferencia_Notificacion'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Preferencia_Notificacion (
+            usuario_id INT PRIMARY KEY,
+            canal_push BOOLEAN NOT NULL DEFAULT TRUE,
+            canal_email BOOLEAN NOT NULL DEFAULT TRUE,
+            ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Dispositivo_Push (CU52)',
+    descripcion: 'Tokens de notificacion push por dispositivo, listos para cuando exista build propia',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Dispositivo_Push'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Dispositivo_Push (
+            dispositivo_push_id INT PRIMARY KEY AUTO_INCREMENT,
+            token VARCHAR(255) NOT NULL UNIQUE,
+            plataforma VARCHAR(20) NOT NULL DEFAULT 'DESCONOCIDA',
+            activo BOOLEAN NOT NULL DEFAULT TRUE,
+            momento_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            usuario_id INT NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Solicitud_Confirmacion (CU21)',
+    descripcion: 'Solicitud de confirmacion de asistencia con token de un solo uso y vencimiento',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Solicitud_Confirmacion'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Solicitud_Confirmacion (
+            solicitud_confirmacion_id INT PRIMARY KEY AUTO_INCREMENT,
+            token VARCHAR(64) NOT NULL UNIQUE,
+            momento_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            momento_expira TIMESTAMP NOT NULL,
+            momento_respuesta TIMESTAMP NULL,
+            respuesta VARCHAR(20) NULL,
+            canal_respuesta VARCHAR(20) NULL,
+            cita_id INT NOT NULL UNIQUE,
+            FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Lista_Espera secuencial con plazo (CU19)',
+    descripcion: 'Estado del turno, momento de aviso y vencimiento para ofrecer el cupo de a uno',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Lista_Espera' AND COLUMN_NAME = 'estado'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion, baseDatos) => {
+      await conexion.query(
+        `ALTER TABLE Lista_Espera
+           ADD COLUMN estado VARCHAR(20) NOT NULL DEFAULT 'ESPERANDO' AFTER notificado,
+           ADD COLUMN momento_notificacion TIMESTAMP NULL AFTER estado,
+           ADD COLUMN momento_expira TIMESTAMP NULL AFTER momento_notificacion`
+      );
+      // Las inscripciones anteriores ya avisadas se dan por atendidas: con la
+      // regla nueva habrian quedado esperando un turno que nadie les ofrece.
+      await conexion.query(
+        `UPDATE Lista_Espera SET estado = 'VENCIDO' WHERE notificado = TRUE`
+      );
+      // Un paciente no puede estar dos veces en la misma lista.
+      const [duplicados] = await conexion.query(
+        `SELECT 1 FROM information_schema.STATISTICS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Lista_Espera'
+            AND INDEX_NAME = 'uq_espera_cita_paciente' LIMIT 1`,
+        [baseDatos]
+      );
+      if (duplicados.length === 0) {
+        await conexion.query(
+          `DELETE le FROM Lista_Espera le
+             JOIN Lista_Espera otra
+               ON otra.cita_id = le.cita_id
+              AND otra.paciente_id = le.paciente_id
+              AND otra.lista_espera_id < le.lista_espera_id`
+        );
+        await conexion.query(
+          `ALTER TABLE Lista_Espera
+             ADD UNIQUE KEY uq_espera_cita_paciente (cita_id, paciente_id)`
+        );
+      }
+    },
+  },
+  {
+    nombre: 'Parametros de avisos, confirmacion y lista de espera (CU19/CU21/CU52)',
+    descripcion: 'Plazos del bloque de notificaciones y agenda del Incremento 3',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'MAX_PACIENTES_LISTA_ESPERA' LIMIT 1`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('ANTICIPACION_SOLICITUD_CONFIRMACION_HORAS', '24', 'Horas antes de la cita en que se pide al paciente confirmar su asistencia.', 1),
+         ('VIGENCIA_ENLACE_CONFIRMACION_HORAS', '48', 'Horas que dura el enlace de confirmacion enviado por correo.', 1),
+         ('MAX_PACIENTES_LISTA_ESPERA', '5', 'Cantidad maxima de pacientes inscritos en la lista de espera de un mismo bloque.', 1),
+         ('PLAZO_RESPUESTA_LISTA_ESPERA_MINUTOS', '30', 'Minutos que tiene el primero de la lista para tomar el cupo antes de cederlo al siguiente.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

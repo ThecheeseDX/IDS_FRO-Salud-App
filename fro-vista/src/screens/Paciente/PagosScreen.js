@@ -51,7 +51,7 @@ export default function PagosScreen() {
   const [metodoPago, setMetodoPago] = useState('TARJETA_OK');
 
   // Compra de paquetes
-  const [sesionesPlan, setSesionesPlan] = useState('4');
+  const [sesionesPlan, setSesionesPlan] = useState('10');
   const [metodoPlan, setMetodoPlan] = useState('TARJETA_OK');
   const [comprandoPlan, setComprandoPlan] = useState(false);
 
@@ -322,9 +322,9 @@ export default function PagosScreen() {
       <View style={estilos.tarjeta}>
         <View style={estilos.selector}>
           <Picker selectedValue={sesionesPlan} onValueChange={setSesionesPlan}>
-            <Picker.Item label="Plan de 4 sesiones" value="4" />
-            <Picker.Item label="Plan de 8 sesiones" value="8" />
-            <Picker.Item label="Plan de 12 sesiones" value="12" />
+            <Picker.Item label="Plan de 10 sesiones" value="10" />
+            <Picker.Item label="Plan de 15 sesiones" value="15" />
+            <Picker.Item label="Plan de 20 sesiones" value="20" />
           </Picker>
         </View>
         <View style={estilos.selector}>
