@@ -118,7 +118,24 @@ export default function MisCitasScreen({ navigation }) {
         data?.cupos_notificados > 0
           ? ` Se avisó a ${data.cupos_notificados} persona(s) en lista de espera.`
           : '';
-      setAviso({ tono: 'info', titulo: 'Cita cancelada', mensaje: `Tu hora fue liberada correctamente.${aviso}` });
+      // RF74: cancelar con la anticipación mínima devuelve el pago de la sesión.
+      if (data?.devolucion?.devuelto) {
+        setAviso({
+          tono: 'ok',
+          titulo: 'Cita cancelada y pago devuelto',
+          mensaje:
+            `Como cancelaste con tiempo, te devolvimos $${Number(data.devolucion.devuelto).toLocaleString('es-CL')}. ` +
+            `Lo verás como devolución en Pagos y Bonos.${aviso}`,
+        });
+      } else if (data?.devolucion?.sesion_en_plan) {
+        setAviso({
+          tono: 'info',
+          titulo: 'Cita cancelada',
+          mensaje: `Tu hora fue liberada. La sesión sigue disponible en tu plan para cuando vuelvas a agendar.${aviso}`,
+        });
+      } else {
+        setAviso({ tono: 'info', titulo: 'Cita cancelada', mensaje: `Tu hora fue liberada correctamente.${aviso}` });
+      }
       await cargarCitas(true);
     } catch (error) {
       const respuesta = error.response?.data;

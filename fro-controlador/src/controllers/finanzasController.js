@@ -524,7 +524,12 @@ exports.actualizarAPaquete = async (req, res) => {
  * La llama la máquina de estados de la cita cuando el paciente cancela. No
  * lanza: una devolución fallida no puede impedir que la cita se cancele.
  *
- * @returns {Promise<{devuelto: number}|null>}
+ * Solo se devuelve dinero por una sesión pagada suelta (PRESTACION). Si la
+ * cita se pagó comprando un plan, el plan sigue activo con todas sus sesiones
+ * (se descuentan al realizarse la atención): devolver el precio del plan y
+ * dejarle las sesiones sería pagarle dos veces.
+ *
+ * @returns {Promise<{devuelto: number}|{sesion_en_plan: true}|null>}
  */
 async function devolverPorCancelacion(conexion, citaId, fechaHoraInicio, req) {
   try {
@@ -533,12 +538,13 @@ async function devolverPorCancelacion(conexion, citaId, fechaHoraInicio, req) {
     if (anticipacion < horas) return null;
 
     const [[pago]] = await conexion.execute(
-      `SELECT transaccion_id, monto_total, metodo_pago FROM Transaccion
+      `SELECT transaccion_id, monto_total, metodo_pago, tipo FROM Transaccion
         WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION'
         ORDER BY transaccion_id DESC LIMIT 1`,
       [citaId]
     );
     if (!pago) return null;
+    if (pago.tipo !== 'PRESTACION') return { sesion_en_plan: true };
 
     // Una sola devolución por cita.
     const [[yaDevuelta]] = await conexion.execute(
@@ -568,6 +574,24 @@ async function devolverPorCancelacion(conexion, citaId, fechaHoraInicio, req) {
         req?.user?.usuario_id ?? null,
       ]
     );
+
+    // El aviso queda en la campana (y sale por correo/push si corresponde).
+    const [[paciente]] = await conexion.execute(
+      `SELECT pa.usuario_id FROM Cita c
+         JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+        WHERE c.cita_id = ? LIMIT 1`,
+      [citaId]
+    );
+    if (paciente) {
+      await notificarUsuario(
+        conexion,
+        paciente.usuario_id,
+        'DEVOLUCION_PAGO',
+        `Cancelaste con ${Math.floor(anticipacion)} horas de anticipación, así que te devolvimos ` +
+          `$${Number(pago.monto_total).toLocaleString('es-CL')} por la sesión. ` +
+          'Lo verás como devolución en Pagos y Bonos.'
+      ).catch(() => {});
+    }
 
     return { devuelto: Number(pago.monto_total) };
   } catch (error) {

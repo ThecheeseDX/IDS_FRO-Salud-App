@@ -392,6 +392,18 @@ async function perfilDeUsuario(usuarioId) {
     [perfil.profesional_id]
   );
   perfil.comunas = comunas;
+
+  // CU58: la calificación que ven los pacientes, para que el profesional sepa
+  // cómo aparece. Sin evaluaciones el promedio no significa nada.
+  const [[evaluaciones]] = await db.query(
+    `SELECT COUNT(*) AS total
+       FROM Evaluacion_Satisfaccion es
+       JOIN Cita c ON c.cita_id = es.cita_id
+      WHERE c.profesional_id = ?`,
+    [perfil.profesional_id]
+  );
+  perfil.total_evaluaciones = Number(evaluaciones.total) || 0;
+  perfil.calificacion_promedio = Number(perfil.calificacion_promedio) || 0;
   return perfil;
 }
 

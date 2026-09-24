@@ -30,7 +30,7 @@ const MODALIDADES = [
   { valor: 'AMBOS', etiqueta: 'A domicilio y virtual' },
 ];
 
-export default function MiPerfilScreen() {
+export default function MiPerfilScreen({ navigation }) {
   const [perfil, setPerfil] = useState(null);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState(null);
@@ -177,6 +177,27 @@ export default function MiPerfilScreen() {
             {perfil.nombres} {perfil.apellido_paterno} {perfil.apellido_materno}
           </Text>
           <Text style={estilos.meta}>{perfil.especialidad || 'Sin especialidad'} · Reg. {perfil.num_registro_salud}</Text>
+          {/* CU58: la misma calificación que ven los pacientes al buscar hora */}
+          {perfil.total_evaluaciones > 0 ? (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('ResenasProfesional', {
+                  profesionalId: perfil.profesional_id,
+                  nombre: 'Mis evaluaciones',
+                })
+              }
+              activeOpacity={interaccion.opacidadActiva}
+            >
+              <Text style={estilos.calificacion}>
+                {'★'.repeat(Math.round(perfil.calificacion_promedio))}
+                {'☆'.repeat(5 - Math.round(perfil.calificacion_promedio))}{'  '}
+                {perfil.calificacion_promedio.toFixed(1)} ({perfil.total_evaluaciones})
+              </Text>
+              <Text style={estilos.verEvaluaciones}>Ver evaluaciones ›</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={estilos.ayuda}>Perfil nuevo · sin evaluaciones aún</Text>
+          )}
           <TouchableOpacity
             style={estilos.botonFoto}
             onPress={elegirFoto}
@@ -301,6 +322,8 @@ const estilos = StyleSheet.create({
   fotoTexto: { flex: 1, marginLeft: espacio.base },
   nombre: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
   meta: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.sm },
+  calificacion: { ...tipografia.meta, color: colores.secundarioFuerte },
+  verEvaluaciones: { ...tipografia.micro, color: colores.primario, marginTop: 2, marginBottom: espacio.sm },
   botonFoto: { ...piezas.botonSecundario, paddingVertical: espacio.sm, alignSelf: 'flex-start' },
   botonFotoTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
 

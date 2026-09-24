@@ -300,6 +300,25 @@ export default function PagosScreen() {
         })
       )}
 
+      {/* ── RF74: devoluciones por cancelación anticipada ── */}
+      {resumen?.devoluciones?.length > 0 && (
+        <>
+          <Text style={estilos.seccion}>Devoluciones</Text>
+          {resumen.devoluciones.map((d) => (
+            <View key={d.transaccion_id} style={estilos.tarjetaDevolucion}>
+              <View style={estilos.filaTitulo}>
+                <Text style={estilos.tituloDevolucion}>+ {pesos(d.monto_total)}</Text>
+                <EtiquetaEstado estado="DEVOLUCION" tamano="sm" />
+              </View>
+              <Text style={estilos.detalle}>
+                Cita cancelada del {formatearFecha(d.fecha_hora_inicio)} con {d.nombre_profesional}
+              </Text>
+              <Text style={estilos.detalle}>Devuelto el {formatearFecha(d.momento_pago)}</Text>
+            </View>
+          ))}
+        </>
+      )}
+
       {/* ── Planes de sesiones ── */}
       <Text style={estilos.seccion}>Planes de sesiones</Text>
       <Text style={estilos.ayuda}>
@@ -437,6 +456,16 @@ const estilos = StyleSheet.create({
     marginBottom: 8,
   },
   tituloPlan: { fontWeight: 'bold', color: colores.exito },
+
+  tarjetaDevolucion: {
+    backgroundColor: colores.infoSuave,
+    borderRadius: radio.md,
+    borderWidth: 1,
+    borderColor: colores.infoBorde,
+    padding: 12,
+    marginBottom: 8,
+  },
+  tituloDevolucion: { fontWeight: 'bold', color: colores.primario, fontSize: 15 },
 
   notaDemo: { color: colores.textoTenue, fontSize: 11, textAlign: 'center', marginTop: 14, fontStyle: 'italic' },
 });

@@ -85,6 +85,11 @@ exports.buscarDisponibilidad = async (req, res) => {
           pd.hora_inicio, pd.hora_fin, pd.modalidad,
           -- CU10: catálogo público del profesional
           p.foto_url, p.reseña_curricular AS resena_curricular, p.areas_experticia,
+          -- CU58: promedio y cantidad de evaluaciones, para las estrellas.
+          p.calificacion_promedio,
+          (SELECT COUNT(*) FROM Evaluacion_Satisfaccion es
+             JOIN Cita ce ON ce.cita_id = es.cita_id
+            WHERE ce.profesional_id = p.profesional_id) AS total_evaluaciones,
           -- CU14: comunas declaradas y si cubren la del paciente. Sin comunas
           -- declaradas se entiende que atiende en cualquiera.
           (SELECT GROUP_CONCAT(c2.nombre ORDER BY c2.nombre SEPARATOR ', ')

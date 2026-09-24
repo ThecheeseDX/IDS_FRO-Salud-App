@@ -40,6 +40,7 @@ const TIPOS = {
   TICKET_SIN_OPERADOR:    { titulo: 'Ticket sin operador',          pantalla: 'BandejaSoporte' },
   TICKET_RESUELTO:        { titulo: 'Tu solicitud fue atendida',    pantalla: 'Soporte' },
   LIQUIDACION_EMITIDA:    { titulo: 'Liquidación emitida',           pantalla: 'MisLiquidaciones' },
+  DEVOLUCION_PAGO:        { titulo: 'Te devolvimos el pago',         pantalla: 'Pagos' },
   ALERTA_DETERIORO:       { titulo: 'Bandera roja de un paciente',  pantalla: 'DashboardProfesional' },
   SESION_SUSPENDIDA:      { titulo: 'Sesión derivada a revisión',    pantalla: 'SesionesSuspendidas' },
   PAUTA_ASIGNADA:         { titulo: 'Tienes ejercicios nuevos',      pantalla: 'MisPautas' },

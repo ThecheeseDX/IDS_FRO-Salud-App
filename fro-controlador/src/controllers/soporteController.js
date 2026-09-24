@@ -58,7 +58,7 @@ async function alertarDesborde(conexion, ticketId, categoria) {
   const [admins] = await conexion.query(
     `SELECT u.usuario_id FROM Usuario u
       JOIN Rol r ON r.rol_id = u.rol_id
-     WHERE r.nombre = 'Administrador' AND u.cuenta_activo = TRUE`
+     WHERE r.nombre_rol = 'Administrador' AND u.cuenta_activo = TRUE`
   );
   for (const admin of admins) {
     await notificarUsuario(
@@ -225,7 +225,7 @@ exports.bandeja = async (req, res) => {
                 NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno)), ''),
                 CONCAT('Usuario #', t.usuario_id)
               ) AS solicitante,
-              r.nombre AS rol_solicitante,
+              r.nombre_rol AS rol_solicitante,
               COALESCE(
                 NULLIF(TRIM(CONCAT_WS(' ', o.nombres, o.apellido_paterno)), ''),
                 'Sin asignar'

@@ -234,6 +234,8 @@ export default function AppNavigator() {
             />
             {/* CU10: catálogo de perfil profesional */}
             <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
+            {/* CU58: el profesional ve sus propias evaluaciones publicadas */}
+            <Stack.Screen name="ResenasProfesional" component={ResenasProfesionalScreen} options={{ title: 'Evaluaciones' }} />
             {/* CU75: historial de liquidaciones, solo lectura */}
             <Stack.Screen name="MisLiquidaciones" component={MisLiquidacionesScreen} options={{ title: 'Mis Liquidaciones' }} />
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
