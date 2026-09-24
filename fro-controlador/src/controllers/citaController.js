@@ -10,6 +10,7 @@ const {
 } = require('../services/agenda/agendaService');
 const { cerrarSolicitudPorApp } = require('../services/agenda/confirmacionService');
 const { actualizarIndicador } = require('../services/clinico/adherenciaService');
+const { devolverPorCancelacion } = require('./finanzasController');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //   CU14 — Buscar disponibilidad
@@ -629,6 +630,15 @@ exports.transicionarEstadoCita = async (req, res) => {
       );
     }
 
+    // RF74 — la cancelación con la anticipación mínima da derecho a devolución
+    // total. Va dentro de la transacción: o se cancela y se devuelve, o nada.
+    let devolucion = null;
+    if (esCancelada(nuevo_estado)) {
+      devolucion = await devolverPorCancelacion(
+        connection, id, cita.fecha_hora_inicio, req
+      );
+    }
+
     // CU18 + CU19 — al liberarse el bloque, el cupo se ofrece al PRIMERO de la
     // lista de espera, con plazo. Si no responde, el programador lo cede al
     // siguiente.
@@ -652,6 +662,7 @@ exports.transicionarEstadoCita = async (req, res) => {
       nuevo_estado,
       inventario,
       cupos_notificados,
+      devolucion,
     });
 
   } catch (err) {

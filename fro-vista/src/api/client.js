@@ -507,4 +507,41 @@ export const urlInforme = (tipo, { desde, hasta, formato, tomo }) => {
   return `${apiClient.defaults.baseURL}/gestion/informes/${tipo}?${parametros.toString()}`;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU73 / CU74 / CU75 — Comercializacion, actualizacion y liquidaciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getOpcionesDeCompra = async (citaId) => {
+  const response = await apiClient.get(`/finanzas/citas/${citaId}/opciones`);
+  return response.data;
+};
+
+export const comprarPrestacion = async (citaId, payload) => {
+  const response = await apiClient.post(`/finanzas/citas/${citaId}/comprar`, payload);
+  return response.data;
+};
+
+export const actualizarAPaquete = async (citaId, { sesiones, metodo_pago }) => {
+  const response = await apiClient.post(`/finanzas/citas/${citaId}/actualizar-a-paquete`, {
+    sesiones,
+    metodo_pago,
+  });
+  return response.data;
+};
+
+export const getLiquidaciones = async (anio, mes) => {
+  const response = await apiClient.get('/finanzas/liquidaciones', { params: { anio, mes } });
+  return response.data;
+};
+
+export const emitirLiquidacion = async (payload) => {
+  const response = await apiClient.post('/finanzas/liquidaciones', payload);
+  return response.data;
+};
+
+export const getMisLiquidaciones = async () => {
+  const response = await apiClient.get('/finanzas/mis-liquidaciones');
+  return response.data;
+};
+
 export default apiClient;

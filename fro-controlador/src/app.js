@@ -14,6 +14,7 @@ const notificacionRoutes = require('./routes/notificacionRoutes');
 const evaluacionRoutes = require('./routes/evaluacionRoutes');
 const soporteRoutes = require('./routes/soporteRoutes');
 const gestionRoutes = require('./routes/gestionRoutes');
+const finanzasRoutes = require('./routes/finanzasRoutes');
 const pagoController = require('./controllers/pagoController');
 
 const app = express();
@@ -194,6 +195,7 @@ app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/evaluaciones', evaluacionRoutes);
 app.use('/api/soporte', soporteRoutes);
 app.use('/api/gestion', gestionRoutes);
+app.use('/api/finanzas', finanzasRoutes);
 
 // Simulador del financiador externo (CU66/CU69). Sin autenticación de la app:
 // representa al proveedor foráneo; exige su propia credencial X-Api-Key.

@@ -1059,6 +1059,57 @@ const MIGRACIONES = [
     },
   },
   {
+    nombre: 'Tabla Liquidacion (CU75)',
+    descripcion: 'Historial mensual de liquidaciones por profesional, inalterable',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Liquidacion'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Liquidacion (
+            liquidacion_id INT PRIMARY KEY AUTO_INCREMENT,
+            anio SMALLINT NOT NULL,
+            mes TINYINT NOT NULL,
+            sesiones_validadas INT NOT NULL DEFAULT 0,
+            monto_prestaciones INT NOT NULL DEFAULT 0,
+            bonificacion INT NOT NULL DEFAULT 0,
+            monto_total INT NOT NULL DEFAULT 0,
+            observacion VARCHAR(255) NULL,
+            momento_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            profesional_id INT NOT NULL,
+            emitida_por INT NOT NULL,
+            UNIQUE KEY uq_liquidacion_periodo (profesional_id, anio, mes),
+            FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+            FOREIGN KEY (emitida_por) REFERENCES Usuario(usuario_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de comercializacion y liquidacion (CU73/CU74/CU75)',
+    descripcion: 'Descuento de los planes, ventana de actualizacion y honorario del profesional',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'DESCUENTO_PAQUETE_PORCENTAJE' LIMIT 1`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('DESCUENTO_PAQUETE_PORCENTAJE', '10', 'Descuento porcentual al comprar un plan de sesiones en vez de sesiones sueltas.', 1),
+         ('HORAS_ANTICIPACION_DEVOLUCION', '24', 'Anticipacion minima de una cancelacion para que corresponda devolucion total.', 1),
+         ('PORCENTAJE_HONORARIO_PROFESIONAL', '70', 'Porcentaje del arancel que se liquida al profesional por cada prestacion validada.', 1),
+         ('LATENCIA_MAXIMA_LIQUIDACION_MS', '2000', 'Milisegundos sobre los cuales el calculo de la liquidacion queda anotado como lento.', 1)`
+      );
+    },
+  },
+  {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
     yaAplicada: async (conexion, baseDatos) => {

@@ -212,6 +212,17 @@ export default function DashboardProfesional({ navigation }) {
 
       <TouchableOpacity
         style={styles.herramienta}
+        onPress={() => navigation.navigate('MisLiquidaciones')}
+      >
+        <Text style={styles.herramientaIcono}>💼</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Mis Liquidaciones</Text>
+          <Text style={styles.herramientaSub}>Tus ganancias mensuales por prestaciones validadas.</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.herramienta}
         onPress={() => navigation.navigate('Soporte')}
       >
         <Text style={styles.herramientaIcono}>🎫</Text>

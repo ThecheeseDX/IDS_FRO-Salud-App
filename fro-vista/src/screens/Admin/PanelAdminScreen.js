@@ -273,6 +273,7 @@ export default function PanelAdminScreen({ navigation }) {
       <Text style={estilos.seccion}>Herramientas</Text>
 
       {[
+        { titulo: 'Liquidaciones', icono: '💼', destino: 'Liquidaciones', sub: 'Ganancias mensuales de cada profesional.' },
         { titulo: 'Informes operativos', icono: '📊', destino: 'Reportes', sub: 'Asistencia, recaudación y adherencia, exportables.' },
         { titulo: 'Parámetros globales', icono: '⚙️', destino: 'Parametros', sub: 'Plazos, umbrales, aranceles y disponibilidad.' },
         { titulo: 'Moderar testimonios', icono: '📝', destino: 'ModeracionResenas', sub: 'Qué comentarios se publican en los perfiles.' },

@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 
 import apiClient, {
+  actualizarAPaquete,
   getEvaluacionesPendientes,
   registrarEvaluacion,
   getConfirmacionesPendientes,
@@ -57,6 +58,8 @@ export default function MisCitasScreen({ navigation }) {
   const [porEvaluar, setPorEvaluar] = useState([]);
   const [evaluando, setEvaluando] = useState(null);
   const [enviandoEvaluacion, setEnviandoEvaluacion] = useState(false);
+  // CU74: cambio de sesión unitaria a plan, con su diferencia.
+  const [actualizandoId, setActualizandoId] = useState(null);
 
   const cargarCitas = useCallback(async (esRefresco = false) => {
     if (esRefresco) {
@@ -244,6 +247,32 @@ export default function MisCitasScreen({ navigation }) {
     }
   };
 
+  // ── CU74: pasar la sesión pagada a un plan, cobrando solo la diferencia ─
+  const cambiarAPlan = async (cita, sesiones) => {
+    setActualizandoId(cita.cita_id);
+    try {
+      const datos = await actualizarAPaquete(cita.cita_id, {
+        sesiones,
+        metodo_pago: 'TARJETA_OK',
+      });
+      setAviso({
+        tono: datos.devolucion ? 'alerta' : 'ok',
+        titulo: datos.devolucion ? 'Te devolvimos el pago' : 'Plan activado',
+        mensaje: datos.mensaje,
+      });
+      await cargarCitas(true);
+    } catch (error) {
+      setAviso({
+        tono: 'error',
+        titulo: 'No se pudo cambiar',
+        mensaje: error.response?.data?.mensaje || 'Inténtalo nuevamente.',
+      });
+      await cargarCitas(true);
+    } finally {
+      setActualizandoId(null);
+    }
+  };
+
   const renderCita = ({ item }) => {
     const puedeCancelar = ESTADOS_CANCELABLES.includes(item.estado);
     const cancelando = cancelandoId === item.cita_id;
@@ -290,6 +319,39 @@ export default function MisCitasScreen({ navigation }) {
                 <Text style={styles.enlaceReenviar}>Enviarme un enlace nuevo</Text>
               </TouchableOpacity>
             )}
+          </View>
+        )}
+
+        {/* CU73: una cita agendada sigue sin pagar; se confirma al cobrar. */}
+        {item.estado === 'AGENDADA' && (
+          <TouchableOpacity
+            style={styles.botonPagar}
+            onPress={() => navigation.navigate('PagarReserva', { citaId: item.cita_id })}
+            activeOpacity={interaccion.opacidadActiva}
+          >
+            <Text style={styles.botonPagarTexto}>💳 Pagar y confirmar esta hora</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* CU74: cambiar la sesión suelta por un plan, pagando la diferencia. */}
+        {item.estado === 'CONFIRMADA' && (
+          <View style={styles.cajaPlan}>
+            <Text style={styles.planTexto}>
+              ¿Vas a necesitar más sesiones? Cambia a un plan y paga solo la diferencia.
+            </Text>
+            <View style={styles.filaPlanes}>
+              {[10, 15, 20].map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.botonPlan, actualizandoId === item.cita_id && styles.botonDeshabilitado]}
+                  onPress={() => cambiarAPlan(item, n)}
+                  disabled={actualizandoId === item.cita_id}
+                  activeOpacity={interaccion.opacidadActiva}
+                >
+                  <Text style={styles.botonPlanTexto}>Plan {n}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
@@ -571,6 +633,37 @@ const styles = StyleSheet.create({
   },
   botonConfirmarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   enlaceReenviar: { ...tipografia.metaFuerte, color: colores.secundario, marginTop: espacio.sm },
+
+  // CU73 — la cita agendada está reservada pero no pagada.
+  botonPagar: {
+    marginTop: espacio.md,
+    backgroundColor: colores.primario,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    alignItems: 'center',
+  },
+  botonPagarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
+
+  // CU74 — cambio a plan desde la cita ya pagada.
+  cajaPlan: {
+    marginTop: espacio.md,
+    padding: espacio.md,
+    borderRadius: radio.md,
+    backgroundColor: colores.secundarioSuave,
+    borderWidth: 1,
+    borderColor: colores.secundarioBorde,
+  },
+  planTexto: { ...tipografia.meta, color: colores.secundarioFuerte },
+  filaPlanes: { flexDirection: 'row', gap: espacio.sm, marginTop: espacio.sm },
+  botonPlan: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: colores.secundarioFuerte,
+    borderRadius: radio.md,
+    paddingVertical: espacio.sm,
+    alignItems: 'center',
+  },
+  botonPlanTexto: { ...tipografia.metaFuerte, color: colores.secundarioFuerte },
 
   // CU55 — atenciones cerradas pendientes de calificar.
   bloqueEvaluar: { marginBottom: espacio.lg },

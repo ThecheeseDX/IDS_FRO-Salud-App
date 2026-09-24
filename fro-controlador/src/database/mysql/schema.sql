@@ -598,6 +598,25 @@ CREATE TABLE Lista_Espera (
     FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
 );
 
+-- CU75: liquidación mensual del profesional. Una fila por profesional y mes,
+-- inalterable una vez emitida: es el respaldo del pago.
+CREATE TABLE Liquidacion (
+    liquidacion_id INT PRIMARY KEY AUTO_INCREMENT,
+    anio SMALLINT NOT NULL,
+    mes TINYINT NOT NULL,
+    sesiones_validadas INT NOT NULL DEFAULT 0,
+    monto_prestaciones INT NOT NULL DEFAULT 0,
+    bonificacion INT NOT NULL DEFAULT 0,
+    monto_total INT NOT NULL DEFAULT 0,
+    observacion VARCHAR(255) NULL,
+    momento_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    profesional_id INT NOT NULL,
+    emitida_por INT NOT NULL,
+    UNIQUE KEY uq_liquidacion_periodo (profesional_id, anio, mes),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+    FOREIGN KEY (emitida_por) REFERENCES Usuario(usuario_id)
+);
+
 CREATE TABLE Evaluacion_Satisfaccion(
     evaluacion_satisfaccion_id INT PRIMARY KEY AUTO_INCREMENT,
     puntuacion TINYINT NOT NULL,

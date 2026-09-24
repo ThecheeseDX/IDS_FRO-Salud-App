@@ -73,7 +73,11 @@ exports.kpis = async (req, res) => {
     );
 
     const [[recaudacion]] = await pool.query(
-      `SELECT COALESCE(SUM(monto_total), 0) AS total, COUNT(*) AS transacciones
+      `SELECT
+          -- Una devolución resta: si no, la recaudación del panel quedaría
+          -- inflada con dinero que volvió al paciente (RF74).
+          COALESCE(SUM(CASE WHEN tipo = 'DEVOLUCION' THEN -monto_total ELSE monto_total END), 0) AS total,
+          COUNT(*) AS transacciones
          FROM Transaccion
         WHERE estado = 'PAGADA'
           AND (? IS NULL OR DATE(momento_pago) >= ?)

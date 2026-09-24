@@ -18,6 +18,7 @@ import MisPautasScreen from '../screens/Paciente/MisPautasScreen';
 import MiSeguimientoScreen from '../screens/Paciente/MiSeguimientoScreen';
 import MiProgresoScreen from '../screens/Paciente/MiProgresoScreen';
 import ResenasProfesionalScreen from '../screens/Paciente/ResenasProfesionalScreen';
+import PagarReservaScreen from '../screens/Paciente/PagarReservaScreen';
 import TriajeScreen from '../screens/Paciente/TriajeScreen';
 import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
@@ -27,6 +28,7 @@ import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibi
 import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
 import MiJornadaScreen from '../screens/Profesional/MiJornadaScreen';
 import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
+import MisLiquidacionesScreen from '../screens/Profesional/MisLiquidacionesScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
@@ -35,6 +37,7 @@ import ModeracionResenasScreen from '../screens/Admin/ModeracionResenasScreen';
 import PanelAdminScreen from '../screens/Admin/PanelAdminScreen';
 import BandejaSoporteScreen from '../screens/Admin/BandejaSoporteScreen';
 import ReportesScreen from '../screens/Admin/ReportesScreen';
+import LiquidacionesScreen from '../screens/Admin/LiquidacionesScreen';
 // Pantallas — Comunes a los tres roles
 import CentroNotificacionesScreen from '../screens/Comun/CentroNotificacionesScreen';
 import SoporteScreen from '../screens/Comun/SoporteScreen';
@@ -173,6 +176,8 @@ export default function AppNavigator() {
             <Stack.Screen name="MiProgreso" component={MiProgresoScreen} options={{ title: 'Mi Progreso' }} />
             {/* CU58: calificación y testimonios de un profesional */}
             <Stack.Screen name="ResenasProfesional" component={ResenasProfesionalScreen} options={{ title: 'Evaluaciones' }} />
+            {/* CU73: cobro anticipado antes de confirmar la hora */}
+            <Stack.Screen name="PagarReserva" component={PagarReservaScreen} options={{ title: 'Pagar tu hora' }} />
             <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
@@ -229,6 +234,8 @@ export default function AppNavigator() {
             />
             {/* CU10: catálogo de perfil profesional */}
             <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
+            {/* CU75: historial de liquidaciones, solo lectura */}
+            <Stack.Screen name="MisLiquidaciones" component={MisLiquidacionesScreen} options={{ title: 'Mis Liquidaciones' }} />
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
             {/* CU53: bandeja y conversación cifrada */}
             <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
@@ -277,6 +284,8 @@ export default function AppNavigator() {
             <Stack.Screen name="BandejaSoporte" component={BandejaSoporteScreen} options={{ title: 'Soporte' }} />
             {/* CU63: informes operativos exportables */}
             <Stack.Screen name="Reportes" component={ReportesScreen} options={{ title: 'Informes' }} />
+            {/* CU75: liquidación mensual de los profesionales */}
+            <Stack.Screen name="Liquidaciones" component={LiquidacionesScreen} options={{ title: 'Liquidaciones' }} />
           </>
         ) : (
           // ── ESCENARIO E: Rol Desconocido ──

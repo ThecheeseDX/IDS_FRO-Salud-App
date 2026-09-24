@@ -229,15 +229,20 @@ export default function BuscarCitaScreen({ navigation, route }) {
         modalidad: bloqueSeleccionado.tipo_sede === 'AMBOS' ? 'DOMICILIO' : bloqueSeleccionado.tipo_sede,
       });
 
-      // Poscondición CU15: bloque reservado exclusivamente
+      // Poscondición CU15: bloque reservado exclusivamente.
+      // CU73: la reserva es temporal hasta que se paga, así que el paso
+      // siguiente es el cobro anticipado, no volver al listado.
       setAviso({
         tono: 'ok',
-        titulo: '¡Reserva exitosa!',
-        mensaje: `Tu cita quedó agendada para el ${fechaLegible(bloqueSeleccionado.fecha)} de ${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}.`,
+        titulo: 'Bloque reservado',
+        mensaje:
+          `Reservamos el ${fechaLegible(bloqueSeleccionado.fecha)} de ` +
+          `${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}. ` +
+          'Para confirmarla tienes que completar el pago.',
         alCerrar: () => {
           setBloqueSeleccionado(null);
           setDisponibilidad([]);
-          navigation.goBack();
+          navigation.navigate('PagarReserva', { citaId: data.cita_id });
         },
       });
     } catch (error) {
