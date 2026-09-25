@@ -816,7 +816,7 @@ const estilos = StyleSheet.create({
   botonFirmar: { ...piezas.botonPrimario, backgroundColor: colores.secundarioFuerte, marginTop: espacio.sm },
   botonFinalizar: {
     marginTop: espacio.base,
-    backgroundColor: colores.exito,
+    backgroundColor: colores.primario,
     borderRadius: radio.md,
     paddingVertical: espacio.base,
     alignItems: 'center',

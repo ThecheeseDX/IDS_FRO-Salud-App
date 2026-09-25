@@ -294,7 +294,7 @@ export default function BandejaSoporteScreen() {
         titulo={`Resolver ticket #${porResolver?.ticket_soporte_id || ''}`}
         descripcion="Escribe la respuesta que verá quien lo reportó:"
         etiquetaConfirmar="Marcar resuelto"
-        colorConfirmar={colores.exito}
+        colorConfirmar={colores.primario}
         onConfirmar={(texto) => actualizar(porResolver, { estado: 'RESUELTO', resolucion: texto, tomar: true })}
         onCancelar={() => setPorResolver(null)}
       />
@@ -415,7 +415,7 @@ const estilos = StyleSheet.create({
   botonTomarTexto: { ...tipografia.metaFuerte, color: colores.primario },
   botonResolver: {
     flex: 1,
-    backgroundColor: colores.exito,
+    backgroundColor: colores.primario,
     borderRadius: radio.md,
     paddingVertical: espacio.sm,
     alignItems: 'center',

@@ -47,7 +47,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
   // ── CU14: filtros de búsqueda ─────────────────────────────────────────────
   const [especialidades, setEspecialidades] = useState([]);
   const [especialidadId, setEspecialidadId] = useState('');
-  const [tipoSede, setTipoSede] = useState('ONLINE');
+  const [tipoSede, setTipoSede] = useState('AMBOS');
   const [fechaSeleccionada, setFechaSeleccionada] = useState('');
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [nombreProfesional, setNombreProfesional] = useState('');
@@ -254,8 +254,9 @@ export default function BuscarCitaScreen({ navigation, route }) {
         return;
       }
 
-      // CU15 — Excepción 4: colisión de reserva simultánea
-      if (err?.error === 'BLOQUE_OCUPADO') {
+      // CU15 — Excepción 4: colisión de reserva simultánea. Una hora que ya
+      // pasó mientras la pantalla estaba abierta se trata igual.
+      if (err?.error === 'BLOQUE_OCUPADO' || err?.error === 'HORA_PASADA') {
         setAviso({
           tono: 'alerta',
           titulo: 'Horario no disponible',
@@ -721,7 +722,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   btnConfirmar: {
-    backgroundColor: colores.exito,
+    backgroundColor: colores.primario,
     padding: 16,
     borderRadius: radio.md,
     alignItems: 'center',

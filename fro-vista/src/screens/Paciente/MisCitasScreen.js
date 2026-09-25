@@ -138,10 +138,8 @@ export default function MisCitasScreen({ navigation, route }) {
         evento: 'CANCELAR',
         motivo,
       });
-      const aviso =
-        data?.cupos_notificados > 0
-          ? ` Se avisó a ${data.cupos_notificados} persona(s) en lista de espera.`
-          : '';
+      // A quien cancela no se le informa si había otros pacientes esperando
+      // esa hora: la lista de espera es información de terceros.
       // RF74: cancelar con la anticipación mínima devuelve el pago de la sesión.
       if (data?.devolucion?.devuelto) {
         setAviso({
@@ -149,16 +147,16 @@ export default function MisCitasScreen({ navigation, route }) {
           titulo: 'Cita cancelada y pago devuelto',
           mensaje:
             `Como cancelaste con tiempo, te devolvimos $${Number(data.devolucion.devuelto).toLocaleString('es-CL')}. ` +
-            `Lo verás como devolución en Pagos y Bonos.${aviso}`,
+            'Lo verás como devolución en Pagos y Bonos.',
         });
       } else if (data?.devolucion?.sesion_en_plan) {
         setAviso({
           tono: 'info',
           titulo: 'Cita cancelada',
-          mensaje: `Tu hora fue liberada. La sesión sigue disponible en tu plan para cuando vuelvas a agendar.${aviso}`,
+          mensaje: 'Tu hora fue liberada. La sesión sigue disponible en tu plan para cuando vuelvas a agendar.',
         });
       } else {
-        setAviso({ tono: 'info', titulo: 'Cita cancelada', mensaje: `Tu hora fue liberada correctamente.${aviso}` });
+        setAviso({ tono: 'info', titulo: 'Cita cancelada', mensaje: 'Tu hora fue liberada correctamente.' });
       }
       await cargarCitas(true);
     } catch (error) {
@@ -538,8 +536,13 @@ export default function MisCitasScreen({ navigation, route }) {
                         </Text>
                       </TouchableOpacity>
                     ) : (
-                      <TouchableOpacity onPress={() => salirDeLista(lista)}>
-                        <Text style={styles.enlaceSalir}>Salir de la lista</Text>
+                      <TouchableOpacity
+                        style={styles.botonSalirLista}
+                        onPress={() => salirDeLista(lista)}
+                        activeOpacity={interaccion.opacidadActiva}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.botonSalirListaTexto}>Salir de la lista de espera</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -644,12 +647,12 @@ const styles = StyleSheet.create({
   botonEvidencia: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: colores.exito,
+    borderColor: colores.primario,
     borderRadius: radio.sm,
     padding: 10,
     alignItems: 'center',
   },
-  botonEvidenciaTexto: { color: colores.exito, fontWeight: 'bold' },
+  botonEvidenciaTexto: { color: colores.primario, fontWeight: 'bold' },
   botonReprogramar: {
     flex: 1,
     borderWidth: 1,
@@ -757,13 +760,22 @@ const styles = StyleSheet.create({
   esperaDato: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
   botonTomarCupo: {
     marginTop: espacio.sm,
-    backgroundColor: colores.exito,
+    backgroundColor: colores.primario,
     borderRadius: radio.md,
     paddingVertical: espacio.md,
     alignItems: 'center',
   },
   botonTomarCupoTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
-  enlaceSalir: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.sm },
+  botonSalirLista: {
+    marginTop: espacio.md,
+    borderWidth: 1.5,
+    borderColor: colores.error,
+    borderRadius: radio.md,
+    paddingVertical: espacio.sm,
+    alignItems: 'center',
+    backgroundColor: colores.superficie,
+  },
+  botonSalirListaTexto: { ...tipografia.metaFuerte, color: colores.error },
 
   fab: {
     position: 'absolute',

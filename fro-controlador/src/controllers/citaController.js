@@ -116,6 +116,10 @@ exports.buscarDisponibilidad = async (req, res) => {
     );
 
     const disponibilidad = [];
+    // Los bloques de hoy cuya hora ya pasó no se ofrecen. El proceso corre en
+    // hora de Chile (server.js), igual que las fechas de la base, así que el
+    // texto "AAAA-MM-DD HH:MM:SS" se puede comparar directamente.
+    const ahoraTexto = aTextoSQL(new Date());
     // Para poder explicar en pantalla por qué no salió nadie.
     let descartadosPorComuna = 0;
 
@@ -163,6 +167,11 @@ exports.buscarDisponibilidad = async (req, res) => {
         const bloqueFin       = `${String(horaActual + 1).padStart(2, '0')}:00:00`;
         const fechaHoraInicio = `${fecha} ${bloqueInicio}`;
         const fechaHoraFin    = `${fecha} ${bloqueFin}`;
+
+        if (fechaHoraInicio <= ahoraTexto) {
+          horaActual++;
+          continue;
+        }
 
         // 1. Validar choque con citas existentes
         const [ocupadas] = await pool.query(
@@ -350,6 +359,16 @@ exports.bloquearHorario = async (req, res) => {
 
   if (!profesional_id || !sede_id || !fecha_hora_inicio || !fecha_hora_fin) {
     return res.status(400).json({ error: 'Todos los campos son requeridos.' });
+  }
+
+  // Una hora que ya pasó no se puede reservar (p. ej. si la pantalla de
+  // búsqueda quedó abierta desde antes). Hora de Chile, igual que la base.
+  const inicioTexto = String(fecha_hora_inicio).replace('T', ' ').slice(0, 19);
+  if (inicioTexto <= aTextoSQL(new Date())) {
+    return res.status(409).json({
+      error: 'HORA_PASADA',
+      mensaje: 'Ese horario ya pasó. Vuelve a buscar para ver las horas disponibles.',
+    });
   }
 
   const connection = await pool.getConnection();

@@ -300,7 +300,7 @@ export default function EpisodioScreen({ route, navigation }) {
           )}
 
           <TouchableOpacity
-            style={[styles.boton, { backgroundColor: colores.exito }]}
+            style={[styles.boton, { backgroundColor: colores.primario }]}
             onPress={crearEpisodio}
             disabled={cargandoCreacion}
           >
@@ -414,10 +414,10 @@ const styles = StyleSheet.create({
     padding: espacio.base,
     marginBottom: espacio.base,
   },
-  guiaTitulo: { ...tipografia.cuerpoFuerte, color: colores.exito, marginBottom: espacio.xs },
+  guiaTitulo: { ...tipografia.cuerpoFuerte, color: colores.primario, marginBottom: espacio.xs },
   guiaTexto: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.md },
   guiaBoton: {
-    backgroundColor: colores.exito,
+    backgroundColor: colores.primario,
     borderRadius: radio.md,
     paddingVertical: espacio.md,
     alignItems: 'center',

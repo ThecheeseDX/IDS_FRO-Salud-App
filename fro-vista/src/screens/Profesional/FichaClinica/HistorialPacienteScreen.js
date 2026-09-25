@@ -584,7 +584,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {/* ACCIONES SI LA CITA ESTÁ EN CURSO */}
                     {estadoCita === 'EN_CURSO' && (
                       <TouchableOpacity 
-                        style={[styles.botonAccion, { backgroundColor: colores.exito, marginHorizontal: 0 }]}
+                        style={[styles.botonAccion, { backgroundColor: colores.primario, marginHorizontal: 0 }]}
                         onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
                       >
                         <Text style={styles.textoBotonAccion}>✅ Finalizar Atención</Text>
@@ -1102,7 +1102,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
             : ''
         }
         etiquetaConfirmar="Guardar versión"
-        colorConfirmar={colores.exito}
+        colorConfirmar={colores.primario}
         onConfirmar={(texto) => crearCorreccion(correccionEvolucion.evolucion_clinica_id, texto)}
         onCancelar={() => setCorreccionEvolucion(null)}
       />
@@ -1113,7 +1113,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         titulo="Cierre manual auditado"
         descripcion="Justifica el cierre sin la marca de término del paciente:"
         etiquetaConfirmar="Certificar sesión"
-        colorConfirmar={colores.exito}
+        colorConfirmar={colores.primario}
         onConfirmar={(motivo) => {
           const cita = cierreManualCita;
           setCierreManualCita(null);
@@ -1280,7 +1280,7 @@ const styles = StyleSheet.create({
   },
   enlaceVersiones: { color: colores.primario, fontWeight: '600', fontSize: 13 },
   pistaCorreccion: { color: colores.textoSuave, fontSize: 13, fontStyle: 'italic', marginTop: 8 },
-  enlaceCorreccion: { color: colores.exito, fontWeight: '600', fontSize: 13 },
+  enlaceCorreccion: { color: colores.primario, fontWeight: '600', fontSize: 13 },
   cajaVersiones: {
     marginTop: 8,
     borderLeftWidth: 3,

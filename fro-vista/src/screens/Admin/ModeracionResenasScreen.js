@@ -225,7 +225,7 @@ const estilos = StyleSheet.create({
   acciones: { flexDirection: 'row', gap: espacio.sm, marginTop: espacio.base },
   botonAprobar: {
     flex: 1,
-    backgroundColor: colores.exito,
+    backgroundColor: colores.primario,
     borderRadius: radio.md,
     paddingVertical: espacio.md,
     alignItems: 'center',
