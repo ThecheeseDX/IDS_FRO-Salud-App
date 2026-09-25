@@ -247,6 +247,9 @@ export default function SoporteScreen() {
             </View>
             <Text style={estilos.categoriaTicket}>{t.categoria}</Text>
             <Text style={estilos.descripcionTicket}>{t.descripcion}</Text>
+            {t.adjunto_url ? (
+              <Image source={{ uri: t.adjunto_url }} style={estilos.capturaTicket} resizeMode="cover" />
+            ) : null}
             <Text style={estilos.momento}>{formatearFechaHora(t.momento_creacion)}</Text>
             {t.resolucion ? (
               <Text style={estilos.resolucion}>Respuesta: {t.resolucion}</Text>
@@ -286,12 +289,13 @@ const estilos = StyleSheet.create({
     borderColor: colores.bordeCampo,
   },
   categoriaElegida: { borderColor: colores.primario, backgroundColor: colores.primarioSuave },
-  categoriaTexto: { ...tipografia.meta, color: colores.textoSuave },
-  categoriaTextoElegida: { color: colores.primario, fontWeight: '700' },
+  categoriaTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
+  categoriaTextoElegida: { color: colores.primario },
 
   enlace: { ...tipografia.metaFuerte, color: colores.primario, marginTop: espacio.md },
   adjunto: { flexDirection: 'row', alignItems: 'center', gap: espacio.md, marginTop: espacio.md },
   miniatura: { width: 56, height: 56, borderRadius: radio.sm, backgroundColor: colores.superficieSuave },
+  capturaTicket: { width: '100%', height: 140, borderRadius: radio.md, marginTop: espacio.sm, backgroundColor: colores.superficieSuave },
   quitarAdjunto: { ...tipografia.meta, color: colores.error },
 
   boton: { ...piezas.botonPrimario, alignItems: 'center' },

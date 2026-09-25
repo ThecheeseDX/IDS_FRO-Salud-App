@@ -16,12 +16,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet,
+  ActivityIndicator, StyleSheet,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 import { getMensajes, enviarMensajeClinico } from '../../api/client';
 import DialogoAviso from '../../components/DialogoAviso';
+import useEspacioInferior from '../../utils/useEspacioInferior';
 import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFechaHora, formatearHora } from '../../utils/fechas';
 import { colores, espacio, radio, tipografia, interaccion } from '../../theme';
@@ -32,6 +33,7 @@ const clavePendientes = (episodioId) => `cu53_pendientes_${episodioId}`;
 export default function ChatClinicoScreen({ route, navigation }) {
   const episodioId = route?.params?.episodioId;
   const nombreOtro = route?.params?.nombreOtro;
+  const espacioInferior = useEspacioInferior();
 
   const [mensajes, setMensajes] = useState([]);
   const [pendientes, setPendientes] = useState([]);
@@ -190,11 +192,9 @@ export default function ChatClinicoScreen({ route, navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={estilos.fondo}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
-    >
+    // La barra de envío sube hasta el borde del teclado y, con el teclado
+    // cerrado, queda por encima de los botones del celular.
+    <View style={[estilos.fondo, { paddingBottom: espacioInferior }]}>
       <View style={estilos.cintaContexto}>
         <Text style={estilos.contextoTexto} numberOfLines={1}>
           🔒 Conversación cifrada · {conversacion?.motivo_consulta || 'tratamiento'}
@@ -206,6 +206,8 @@ export default function ChatClinicoScreen({ route, navigation }) {
         style={estilos.lista}
         contentContainerStyle={estilos.listaContenido}
         onContentSizeChange={() => refScroll.current?.scrollToEnd({ animated: true })}
+        onLayout={() => refScroll.current?.scrollToEnd({ animated: false })}
+        keyboardShouldPersistTaps="handled"
       >
         {mensajes.length === 0 && pendientes.length === 0 && (
           <Text style={estilos.vacio}>
@@ -276,7 +278,7 @@ export default function ChatClinicoScreen({ route, navigation }) {
         tono={aviso?.tono}
         onCerrar={() => setAviso(null)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

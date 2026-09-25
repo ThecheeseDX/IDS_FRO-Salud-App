@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 const { actualizarIndicador } = require('../services/clinico/adherenciaService');
-const { descontarSesionPaquete } = require('../services/agenda/agendaService');
+const { descontarSesionPaquete, pedirEvaluacion } = require('../services/agenda/agendaService');
 
 function obtenerIP(req) {
   return (
@@ -357,6 +357,9 @@ exports.finalizarAtencion = async (req, res) => {
         : null,
       inventario
     });
+
+    // CU55: el paciente recibe el aviso para calificar la sesión.
+    await pedirEvaluacion(connection, cita_id);
 
     await connection.commit();
 

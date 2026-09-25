@@ -521,8 +521,8 @@ const styles = StyleSheet.create({
         backgroundColor: colores.superficie,
     },
     comunaChipElegida: { borderColor: colores.primario, backgroundColor: colores.primarioSuave },
-    comunaChipTexto: { ...tipografia.meta, color: colores.textoSuave },
-    comunaChipTextoElegida: { color: colores.primario, fontWeight: '700' },
+    comunaChipTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
+    comunaChipTextoElegida: { color: colores.primario },
     ayudaComunas: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.sm },
     subHeader: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginTop: espacio.md, marginBottom: espacio.sm },
 

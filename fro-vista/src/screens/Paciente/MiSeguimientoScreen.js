@@ -281,8 +281,8 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nivelTexto: { ...tipografia.meta, color: colores.textoSuave },
-  nivelTextoElegido: { color: colores.textoInverso, fontWeight: '700' },
+  nivelTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
+  nivelTextoElegido: { color: colores.textoInverso },
   filaExtremos: { flexDirection: 'row', justifyContent: 'space-between', marginTop: espacio.sm },
   extremo: { ...tipografia.micro, color: colores.textoTenue },
 

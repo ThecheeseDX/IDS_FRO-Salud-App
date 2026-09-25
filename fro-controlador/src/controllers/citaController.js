@@ -4,6 +4,7 @@ const {
   registrarTrazabilidadAgenda,
   obtenerTrazabilidadCita,
   notificarUsuario,
+  pedirEvaluacion,
   obtenerContactosCita,
   descontarSesionPaquete,
   ofrecerCupoListaEspera,
@@ -633,6 +634,11 @@ exports.transicionarEstadoCita = async (req, res) => {
       await cerrarSolicitudPorApp(
         connection, id, evento === 'CONFIRMAR' ? 'CONFIRMADA' : 'CANCELADA'
       );
+    }
+
+    // CU55 — sesión cerrada por la máquina de estados: se pide la calificación.
+    if (nuevo_estado === 'REALIZADA') {
+      await pedirEvaluacion(connection, id);
     }
 
     // RF74 — la cancelación con la anticipación mínima da derecho a devolución

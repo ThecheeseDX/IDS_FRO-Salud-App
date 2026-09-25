@@ -9,7 +9,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, RefreshControl,
-  ActivityIndicator, StyleSheet,
+  ActivityIndicator, StyleSheet, Image, Modal, Linking, Pressable,
 } from 'react-native';
 
 import {
@@ -44,6 +44,8 @@ export default function BandejaSoporteScreen() {
   const [porResolver, setPorResolver] = useState(null);
 
   const [verAreas, setVerAreas] = useState(false);
+  // Captura adjunta abierta a pantalla completa.
+  const [imagenAbierta, setImagenAbierta] = useState(null);
   const [misAreas, setMisAreas] = useState([]);
 
   const cargar = useCallback(
@@ -204,15 +206,56 @@ export default function BandejaSoporteScreen() {
 
                 <Text style={estilos.descripcion}>{t.descripcion}</Text>
 
+                {/* Captura que adjuntó quien reportó: se amplía al tocarla. */}
+                {t.adjunto_url ? (
+                  <TouchableOpacity
+                    onPress={() => setImagenAbierta(t.adjunto_url)}
+                    activeOpacity={interaccion.opacidadActiva}
+                    style={estilos.adjunto}
+                  >
+                    <Image source={{ uri: t.adjunto_url }} style={estilos.miniatura} resizeMode="cover" />
+                    <Text style={estilos.adjuntoTexto}>📎 Captura adjunta · toca para ampliar</Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {/* Quién lo reportó y cómo contactarlo. */}
+                <View style={estilos.contacto}>
+                  <Text style={estilos.contactoNombre}>
+                    {t.solicitante} · {t.rol_solicitante || 'usuario'}
+                    {t.rut_solicitante ? ` · RUT ${t.rut_solicitante}` : ''}
+                  </Text>
+                  {t.telefono_solicitante ? (
+                    <Text
+                      style={estilos.contactoDato}
+                      onPress={() =>
+                        Linking.openURL(`tel:${String(t.telefono_solicitante).split(',')[0].replace(/\s/g, '')}`).catch(() => {})
+                      }
+                    >
+                      📞 {t.telefono_solicitante}
+                    </Text>
+                  ) : (
+                    <Text style={estilos.meta}>📞 Sin teléfono registrado</Text>
+                  )}
+                  {t.email_solicitante ? (
+                    <Text
+                      style={estilos.contactoDato}
+                      onPress={() =>
+                        Linking.openURL(
+                          `mailto:${t.email_solicitante}?subject=${encodeURIComponent(`Ticket de soporte #${t.ticket_soporte_id}`)}`
+                        ).catch(() => {})
+                      }
+                    >
+                      ✉️ {t.email_solicitante}
+                    </Text>
+                  ) : null}
+                </View>
+
                 <Text style={estilos.meta}>
-                  {t.solicitante} ({t.rol_solicitante || 'usuario'}) ·{' '}
-                  {formatearFechaHora(t.momento_creacion)} · {t.horas_abierto}h
+                  Creado {formatearFechaHora(t.momento_creacion)} · hace {t.horas_abierto}h
                 </Text>
                 <Text style={estilos.meta}>
                   {t.asignado_a ? `Operador: ${t.operador}` : '⚠️ Sin operador · supervisión general'}
                 </Text>
-
-                {t.adjunto_url ? <Text style={estilos.meta}>📎 Con captura adjunta</Text> : null}
 
                 {t.resolucion ? <Text style={estilos.resolucion}>{t.resolucion}</Text> : null}
 
@@ -255,6 +298,20 @@ export default function BandejaSoporteScreen() {
         onConfirmar={(texto) => actualizar(porResolver, { estado: 'RESUELTO', resolucion: texto, tomar: true })}
         onCancelar={() => setPorResolver(null)}
       />
+
+      <Modal
+        visible={imagenAbierta !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImagenAbierta(null)}
+      >
+        <Pressable style={estilos.visor} onPress={() => setImagenAbierta(null)}>
+          {imagenAbierta ? (
+            <Image source={{ uri: imagenAbierta }} style={estilos.visorImagen} resizeMode="contain" />
+          ) : null}
+          <Text style={estilos.visorCerrar}>Toca para cerrar</Text>
+        </Pressable>
+      </Modal>
 
       <DialogoAviso
         visible={aviso !== null}
@@ -316,6 +373,35 @@ const estilos = StyleSheet.create({
   descripcion: { ...tipografia.meta, color: colores.texto, marginTop: espacio.sm },
   meta: { ...tipografia.micro, color: colores.textoTenue, marginTop: espacio.xs },
   resolucion: { ...tipografia.meta, color: colores.exito, marginTop: espacio.sm },
+
+  adjunto: { marginTop: espacio.md },
+  miniatura: {
+    width: '100%',
+    height: 160,
+    borderRadius: radio.md,
+    backgroundColor: colores.superficieSuave,
+  },
+  adjuntoTexto: { ...tipografia.micro, color: colores.primario, marginTop: espacio.xs },
+
+  contacto: {
+    marginTop: espacio.md,
+    padding: espacio.md,
+    borderRadius: radio.md,
+    backgroundColor: colores.superficieSuave,
+    gap: 2,
+  },
+  contactoNombre: { ...tipografia.metaFuerte, color: colores.textoTitulo },
+  contactoDato: { ...tipografia.meta, color: colores.primario, paddingVertical: 2 },
+
+  visor: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: espacio.base,
+  },
+  visorImagen: { width: '100%', height: '80%' },
+  visorCerrar: { ...tipografia.meta, color: colores.textoInverso, marginTop: espacio.md },
 
   acciones: { flexDirection: 'row', gap: espacio.sm, marginTop: espacio.md },
   botonTomar: {

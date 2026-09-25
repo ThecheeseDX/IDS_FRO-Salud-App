@@ -347,8 +347,8 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
   },
   comunaElegida: { borderColor: colores.primario, backgroundColor: colores.primarioSuave },
-  comunaTexto: { ...tipografia.meta, color: colores.textoSuave },
-  comunaTextoElegida: { color: colores.primario, fontWeight: '700' },
+  comunaTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
+  comunaTextoElegida: { color: colores.primario },
 
   botonGuardar: { ...piezas.botonPrimario, alignItems: 'center', marginTop: espacio.xl },
   botonDeshabilitado: { opacity: 0.6 },

@@ -97,6 +97,39 @@ async function notificarUsuario(connection, usuario_id, tipo, contenido, extra =
   }
 }
 
+/**
+ * CU55 — Terminada la sesión, se le pide al PACIENTE que califique la
+ * atención con un aviso en su propio teléfono. Antes el formulario aparecía
+ * en el celular del profesional, que no es quien debe evaluarse a sí mismo.
+ * El aviso abre Mis Citas con el formulario de esa cita ya desplegado.
+ */
+async function pedirEvaluacion(connection, citaId) {
+  try {
+    const [[cita]] = await connection.execute(
+      `SELECT pa.usuario_id,
+              TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno)) AS profesional
+         FROM Cita c
+         JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+         JOIN Profesional pr ON pr.profesional_id = c.profesional_id
+         JOIN Usuario u ON u.usuario_id = pr.usuario_id
+        WHERE c.cita_id = ? LIMIT 1`,
+      [citaId]
+    );
+    if (!cita) return false;
+    return notificarUsuario(
+      connection,
+      cita.usuario_id,
+      'EVALUAR_SESION',
+      `¿Cómo te fue en tu sesión con ${cita.profesional || 'tu profesional'}? ` +
+        'Tócalo para calificar la atención: tu opinión ayuda a otros pacientes a elegir.',
+      { datos: { pantalla: 'MisCitas', evaluar_cita_id: Number(citaId) } }
+    );
+  } catch (error) {
+    console.error('[pedirEvaluacion CU55]', error.message);
+    return false;
+  }
+}
+
 /** Ids de usuario del paciente y del profesional de una cita. */
 async function obtenerContactosCita(connection, cita_id) {
   const [filas] = await connection.execute(
@@ -325,6 +358,7 @@ module.exports = {
   registrarTrazabilidadAgenda,
   obtenerTrazabilidadCita,
   notificarUsuario,
+  pedirEvaluacion,
   obtenerContactosCita,
   descontarSesionPaquete,
   ofrecerCupoListaEspera,

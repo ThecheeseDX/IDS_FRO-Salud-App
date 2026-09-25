@@ -40,7 +40,7 @@ import DialogoEvaluacion from '../../components/DialogoEvaluacion';
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
 
-export default function MisCitasScreen({ navigation }) {
+export default function MisCitasScreen({ navigation, route }) {
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
   const [citas, setCitas] = useState([]);
@@ -101,6 +101,18 @@ export default function MisCitasScreen({ navigation }) {
     const quitarListener = navigation.addListener('focus', () => cargarCitas(true));
     return quitarListener;
   }, [navigation, cargarCitas]);
+
+  // CU55: el aviso "Califica tu atención" llega con la cita a evaluar. Cuando
+  // esa cita aparece entre las pendientes, el formulario se abre solo.
+  const citaAEvaluar = route?.params?.evaluar_cita_id;
+  useEffect(() => {
+    if (!citaAEvaluar) return;
+    const cita = porEvaluar.find((c) => Number(c.cita_id) === Number(citaAEvaluar));
+    if (cita) {
+      setEvaluando(cita);
+      navigation.setParams({ evaluar_cita_id: undefined });
+    }
+  }, [citaAEvaluar, porEvaluar, navigation]);
 
   // CU22: cancelar exige un motivo, así que se pide en un diálogo propio.
   const [citaPorCancelar, setCitaPorCancelar] = useState(null);

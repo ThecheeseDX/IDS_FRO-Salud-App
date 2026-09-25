@@ -226,6 +226,11 @@ exports.bandeja = async (req, res) => {
                 CONCAT('Usuario #', t.usuario_id)
               ) AS solicitante,
               r.nombre_rol AS rol_solicitante,
+              -- Para que el operador pueda contactar a quien reportó.
+              u.email AS email_solicitante,
+              (SELECT GROUP_CONCAT(ut.telefono SEPARATOR ', ')
+                 FROM Usuario_Telefono ut WHERE ut.usuario_id = t.usuario_id) AS telefono_solicitante,
+              u.rut AS rut_solicitante,
               COALESCE(
                 NULLIF(TRIM(CONCAT_WS(' ', o.nombres, o.apellido_paterno)), ''),
                 'Sin asignar'

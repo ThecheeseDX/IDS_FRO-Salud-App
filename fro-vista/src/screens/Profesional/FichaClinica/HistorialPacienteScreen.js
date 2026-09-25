@@ -13,8 +13,6 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import { registrarEvaluacion } from '../../../api/client';
-import DialogoEvaluacion from '../../../components/DialogoEvaluacion';
 import {
   getReportePreclinico,
   getSintomasDePaciente,
@@ -75,8 +73,6 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [adherencia, setAdherencia] = useState(null);
   // CU55: al cerrar la atención se le pasa el teléfono al paciente para que
   // califique en el momento; si prefiere hacerlo después, lo tiene en Mis Citas.
-  const [evaluandoCita, setEvaluandoCita] = useState(null);
-  const [enviandoEvaluacion, setEnviandoEvaluacion] = useState(false);
   const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -245,9 +241,9 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         setAviso({
           tono: 'ok',
           titulo: 'Atención finalizada',
-          mensaje: `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}`,
-          // CU55: cerrada la sesión, se ofrece el formulario de satisfacción.
-          alCerrar: () => setEvaluandoCita({ cita_id: citaId }),
+          // CU55: la calificación la hace el paciente desde su teléfono; se
+          // le envía un aviso al cerrar la sesión.
+          mensaje: `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}\n\nLe enviamos al paciente un aviso para que califique la atención.`,
         });
       }
       cargarHistorial(false);
@@ -474,31 +470,6 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }, 350);
     return () => clearTimeout(t);
   }, [resaltarCitaId, resaltarEn, historial.length]);
-
-  const enviarEvaluacion = async ({ puntuacion, resena }) => {
-    if (!evaluandoCita) return;
-    setEnviandoEvaluacion(true);
-    try {
-      const datos = await registrarEvaluacion(evaluandoCita.cita_id, { puntuacion, resena });
-      setEvaluandoCita(null);
-      setAviso({
-        tono: datos.resena_bloqueada ? 'alerta' : 'ok',
-        titulo: 'Evaluación registrada',
-        mensaje: datos.mensaje,
-      });
-    } catch (error) {
-      setAviso({
-        tono: 'error',
-        titulo: 'No se pudo registrar',
-        mensaje:
-          error.response?.data?.mensaje ||
-          'El paciente puede calificar después desde su propia aplicación.',
-      });
-      setEvaluandoCita(null);
-    } finally {
-      setEnviandoEvaluacion(false);
-    }
-  };
 
   // El historial se parte en dos: lo que todavía tiene acción (por confirmar,
   // iniciar o finalizar) y lo ya cerrado, que se consulta pero no estorba.
@@ -1196,13 +1167,6 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           if (accion) accion();
         }}
         onCancelar={() => setConfirmacion(null)}
-      />
-      <DialogoEvaluacion
-        visible={evaluandoCita !== null}
-        profesional={null}
-        enviando={enviandoEvaluacion}
-        onEnviar={enviarEvaluacion}
-        onCancelar={() => setEvaluandoCita(null)}
       />
 
 

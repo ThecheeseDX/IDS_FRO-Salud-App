@@ -391,8 +391,8 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   atajoElegido: { backgroundColor: colores.primario, borderColor: colores.primario },
-  atajoTexto: { ...tipografia.meta, color: colores.textoSuave },
-  atajoTextoElegido: { color: colores.textoInverso, fontWeight: '700' },
+  atajoTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
+  atajoTextoElegido: { color: colores.textoInverso },
 
   filaFechas: { flexDirection: 'row', gap: espacio.sm, marginBottom: espacio.base },
   campoFecha: {

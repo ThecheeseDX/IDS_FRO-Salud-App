@@ -90,14 +90,14 @@ router.delete('/:id/lista-espera',
   listaEsperaController.salir);
 
 // ── CU55 — Evaluación de satisfacción post-sesión
-// La puede enviar el paciente desde su teléfono o el profesional entregándole
-// el suyo al cerrar la sesión: el controlador verifica que sean de esa cita.
+// Solo la envía el paciente desde su teléfono: al cerrar la sesión le llega un
+// aviso para calificar. El profesional no puede evaluarse a sí mismo.
 router.get('/evaluaciones/pendientes',
   verifyToken, authorizeRoles(['Paciente']),
   evaluacionController.pendientesDeEvaluar);
 
 router.post('/:id/evaluacion',
-  verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+  verifyToken, authorizeRoles(['Paciente']),
   evaluacionController.registrarEvaluacion);
 
 // ── CU20 — Listado de citas por rol
