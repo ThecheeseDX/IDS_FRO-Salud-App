@@ -3,9 +3,11 @@
  * CU74 — Actualización a paquete y devoluciones.
  * CU75 — Liquidación de ganancias del profesional.
  *
- * La regla que ordena los tres: una cita solo pasa a CONFIRMADA cuando el
- * sistema verificó que el pago entró completo. Antes de eso la reserva es
- * temporal y se revoca si el cobro no prospera.
+ * La regla que ordena los tres: una cita solo puede pasar a CONFIRMADA
+ * cuando el sistema verificó que el pago entró completo. Pagar NO confirma:
+ * la cita queda AGENDADA y pagada, y es el profesional quien la confirma
+ * (el servidor le impide confirmar una hora sin pago). Antes del pago la
+ * reserva es temporal y se revoca si el cobro no prospera.
  */
 
 const pool = require('./../config/database');
@@ -13,9 +15,23 @@ const {
   leerParametroEntero,
   notificarUsuario,
   ofrecerCupoListaEspera,
+  obtenerContactosCita,
 } = require('../services/agenda/agendaService');
 
 const METODOS_PAGO = ['TARJETA_OK', 'TARJETA_RECHAZADA', 'TARJETA_LENTA'];
+
+/** Con la hora pagada, el profesional ya puede confirmarla: se le avisa. */
+async function avisarHoraPagada(conexion, citaId) {
+  const contactos = await obtenerContactosCita(conexion, citaId).catch(() => null);
+  if (!contactos?.usuario_profesional) return;
+  await notificarUsuario(
+    conexion,
+    contactos.usuario_profesional,
+    'CAMBIO_ESTADO_CITA',
+    'Un paciente pagó su hora: ya puedes confirmarla desde su ficha.',
+    { titulo: 'Hora pagada por confirmar', datos: { pantalla: 'MiJornada' } }
+  );
+}
 const SESIONES_PAQUETE = [10, 15, 20];
 
 async function arancelVigente(conexion = pool) {
@@ -197,11 +213,14 @@ exports.comprarPrestacion = async (req, res) => {
       }
 
       // La sesión se descuenta al finalizar la atención (CU76). Acá solo se
-      // deja la cita confirmada contra el plan: descontarla dos veces sería
-      // cobrarle al paciente dos sesiones por una.
-      await conexion.execute(`UPDATE Cita SET estado = 'CONFIRMADA' WHERE cita_id = ?`, [
-        req.params.id,
-      ]);
+      // deja constancia de que la hora queda cubierta por el plan (monto 0):
+      // descontarla dos veces sería cobrarle dos sesiones por una. La cita
+      // sigue AGENDADA hasta que el profesional la confirme.
+      await conexion.execute(
+        `INSERT INTO Transaccion (monto_total, tipo, estado, metodo_pago, cita_id)
+         VALUES (0, 'SESION_PLAN', 'PAGADA', 'PLAN_SESIONES', ?)`,
+        [req.params.id]
+      );
       await conexion.execute(
         `INSERT INTO Bitacora_Auditoria
             (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
@@ -216,11 +235,14 @@ exports.comprarPrestacion = async (req, res) => {
           req.user.usuario_id,
         ]
       );
+      await avisarHoraPagada(conexion, req.params.id);
       await conexion.commit();
 
       return res.status(200).json({
-        mensaje: 'Cita confirmada con una sesión de tu plan.',
-        estado: 'CONFIRMADA',
+        mensaje:
+          'Listo: esta hora queda cubierta con una sesión de tu plan. ' +
+          'Te avisaremos cuando el profesional la confirme.',
+        estado: 'AGENDADA',
         monto: 0,
         disponibles: paquete.sesiones_total - paquete.sesiones_usadas,
       });
@@ -270,13 +292,9 @@ exports.comprarPrestacion = async (req, res) => {
       [monto, modalidad === 'PAQUETE' ? 'PAQUETE' : 'PRESTACION', estadoPago, metodo, req.params.id]
     );
 
-    // RF73: la cita solo pasa a CONFIRMADA con el pago ÍNTEGRO recibido. Un
-    // pago en tránsito no confirma nada todavía.
+    // RF73: con el pago ÍNTEGRO la hora queda pagada y lista para que el
+    // profesional la confirme. Un pago en tránsito todavía no habilita eso.
     if (estadoPago === 'PAGADA') {
-      await conexion.execute(`UPDATE Cita SET estado = 'CONFIRMADA' WHERE cita_id = ?`, [
-        req.params.id,
-      ]);
-
       if (modalidad === 'PAQUETE') {
         // El plan se activa con una sesión ya asignada a esta cita.
         await conexion.execute(
@@ -304,6 +322,7 @@ exports.comprarPrestacion = async (req, res) => {
       ]
     );
 
+    if (estadoPago === 'PAGADA') await avisarHoraPagada(conexion, req.params.id);
     await conexion.commit();
 
     if (estadoPago === 'EN_TRANSITO') {
@@ -318,10 +337,11 @@ exports.comprarPrestacion = async (req, res) => {
 
     return res.status(200).json({
       mensaje:
-        modalidad === 'PAQUETE'
-          ? `Plan de ${sesiones} sesiones activado y cita confirmada.`
-          : 'Pago recibido y cita confirmada.',
-      estado: 'CONFIRMADA',
+        (modalidad === 'PAQUETE'
+          ? `Plan de ${sesiones} sesiones activado y hora pagada.`
+          : 'Pago recibido.') +
+        ' Te avisaremos cuando el profesional confirme la cita.',
+      estado: 'AGENDADA',
       monto,
       sesiones: modalidad === 'PAQUETE' ? sesiones : 1,
     });
@@ -375,16 +395,31 @@ exports.actualizarAPaquete = async (req, res) => {
     if (!cita || Number(cita.paciente_id) !== Number(pacienteId)) {
       return res.status(404).json({ error: 'La cita no existe o no te pertenece.' });
     }
-    if (cita.estado !== 'CONFIRMADA') {
+    if (!['AGENDADA', 'CONFIRMADA'].includes(cita.estado)) {
       return res.status(409).json({
         error: 'ESTADO_NO_ACTUALIZABLE',
-        mensaje: 'Solo se puede cambiar a plan una prestación pagada y confirmada.',
+        mensaje: 'Solo se puede cambiar a plan una prestación pagada que aún no se realiza.',
+      });
+    }
+
+    // Ya cubierta por un plan (comprado al reservar, con una sesión del plan
+    // o por un cambio anterior): no hay nada que actualizar.
+    const [[yaEnPlan]] = await conexion.execute(
+      `SELECT transaccion_id FROM Transaccion
+        WHERE cita_id = ? AND estado = 'PAGADA'
+          AND tipo IN ('PAQUETE', 'SESION_PLAN', 'ACTUALIZACION') LIMIT 1`,
+      [req.params.id]
+    );
+    if (yaEnPlan) {
+      return res.status(409).json({
+        error: 'YA_EN_PLAN',
+        mensaje: 'Esta hora ya está cubierta por un plan de sesiones.',
       });
     }
 
     const [[pagoPrevio]] = await conexion.execute(
       `SELECT transaccion_id, monto_total, momento_pago FROM Transaccion
-        WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION'
+        WHERE cita_id = ? AND estado = 'PAGADA' AND tipo = 'PRESTACION'
         ORDER BY transaccion_id DESC LIMIT 1`,
       [req.params.id]
     );

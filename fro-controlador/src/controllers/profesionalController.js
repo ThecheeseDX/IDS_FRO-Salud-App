@@ -156,7 +156,11 @@ exports.obtenerHistorialPaciente = async (req, res) => {
         -- paciente se vea completa, pero solo las propias se pueden gestionar:
         -- la app bloquea los botones de las ajenas y el servidor rechaza
         -- cualquier transicion sobre ellas (403 CITA_AJENA).
-        (pr.usuario_id = ?) AS es_propia
+        (pr.usuario_id = ?) AS es_propia,
+        -- CU73: la hora solo se puede confirmar si ya está pagada.
+        (SELECT t.tipo FROM Transaccion t
+             WHERE t.cita_id = c.cita_id AND t.estado = 'PAGADA' AND t.tipo <> 'DEVOLUCION'
+             ORDER BY t.transaccion_id DESC LIMIT 1) AS pago_tipo
       FROM Cita c
       LEFT JOIN Profesional pr ON pr.profesional_id = c.profesional_id
       LEFT JOIN Usuario u ON u.usuario_id = pr.usuario_id

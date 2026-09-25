@@ -17,6 +17,7 @@ import { Platform } from 'react-native';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import LogoMarca from '../../components/LogoMarca';
 import { obtenerDispositivoId, nombreDispositivo } from '../../utils/dispositivo';
+import CampoContrasena from '../../components/CampoContrasena';
 import { colores, espacio, radio, sombra, tipografia, piezas } from '../../theme';
 
 export default function LoginScreen({ navigation }) {
@@ -115,11 +116,10 @@ export default function LoginScreen({ navigation }) {
         {rutError ? <Text style={styles.errorText}>{rutError}</Text> : null}
 
         <Text style={styles.label}>Contraseña</Text>
-        <TextInput
+        <CampoContrasena
           style={styles.input}
           placeholder="••••••••"
           placeholderTextColor={colores.textoTenue} 
-          secureTextEntry={true} 
           value={password}
           onChangeText={setPassword}
           autoCapitalize="none"

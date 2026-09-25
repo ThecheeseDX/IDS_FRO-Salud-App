@@ -554,6 +554,24 @@ exports.transicionarEstadoCita = async (req, res) => {
     // 2. Evaluar máquina de estados
     const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento, rolActor);
 
+    // RF73 — el profesional confirma la hora, pero solo si el pago entró
+    // completo. (El paciente confirmando su asistencia, CU21, es otro flujo.)
+    if (evento === 'CONFIRMAR' && rolActor === 'Profesional') {
+      const [[pago]] = await connection.execute(
+        `SELECT transaccion_id FROM Transaccion
+          WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION' LIMIT 1`,
+        [id]
+      );
+      if (!pago) {
+        await connection.rollback();
+        return res.status(409).json({
+          error: 'CITA_SIN_PAGO',
+          mensaje:
+            'Esta hora todavía no está pagada. Podrás confirmarla cuando el paciente complete el pago desde Mis Citas.',
+        });
+      }
+    }
+
     // CU18 — Excepción 1: el paciente solo puede cancelar dentro del plazo
     // reglamentario (parámetro editable por el administrador).
     if (evento === 'CANCELAR' && rolActor === 'Paciente') {
@@ -919,7 +937,12 @@ exports.obtenerCitasPaciente = async (req, res) => {
           c.estado,
           COALESCE(c.modalidad, NULLIF(prof.tipo_sede, 'AMBOS')) AS modalidad,
           CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
-          CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
+          CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional,
+          -- CU73: cómo quedó pagada la hora (PRESTACION, PAQUETE, SESION_PLAN,
+          -- ACTUALIZACION) o NULL si todavía no se paga.
+          (SELECT t.tipo FROM Transaccion t
+             WHERE t.cita_id = c.cita_id AND t.estado = 'PAGADA' AND t.tipo <> 'DEVOLUCION'
+             ORDER BY t.transaccion_id DESC LIMIT 1) AS pago_tipo
        FROM Cita c
        JOIN Paciente pac      ON c.paciente_id = pac.paciente_id
        JOIN Usuario u_pac     ON pac.usuario_id = u_pac.usuario_id
@@ -949,7 +972,12 @@ exports.obtenerCitasProfesional = async (req, res) => {
           c.estado,
           COALESCE(c.modalidad, NULLIF(prof.tipo_sede, 'AMBOS')) AS modalidad,
           CONCAT(u_pac.nombres, ' ', u_pac.apellido_paterno) AS nombre_paciente,
-          CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional
+          CONCAT(u_prof.nombres, ' ', u_prof.apellido_paterno) AS nombre_profesional,
+          -- CU73: cómo quedó pagada la hora (PRESTACION, PAQUETE, SESION_PLAN,
+          -- ACTUALIZACION) o NULL si todavía no se paga.
+          (SELECT t.tipo FROM Transaccion t
+             WHERE t.cita_id = c.cita_id AND t.estado = 'PAGADA' AND t.tipo <> 'DEVOLUCION'
+             ORDER BY t.transaccion_id DESC LIMIT 1) AS pago_tipo
        FROM Cita c
        JOIN Paciente pac      ON c.paciente_id = pac.paciente_id
        JOIN Usuario u_pac     ON pac.usuario_id = u_pac.usuario_id

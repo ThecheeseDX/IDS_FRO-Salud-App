@@ -24,7 +24,11 @@ import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
 
 const CLAVE_PENDIENTE = 'cu50_reporte_pendiente';
-const NIVELES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Dos filas (0–5 y 6–10) para que cada botón sea grande y fácil de tocar.
+const FILAS_NIVELES = [
+  [0, 1, 2, 3, 4, 5],
+  [6, 7, 8, 9, 10],
+];
 
 /** Identificador único del envío: es lo que evita reportes duplicados. */
 function nuevaClave() {
@@ -150,24 +154,29 @@ export default function MiSeguimientoScreen() {
     <View style={[estilos.tarjeta, conError && estilos.tarjetaError]}>
       <Text style={estilos.etiqueta}>{titulo}</Text>
       <Text style={estilos.ayuda}>{ayuda}</Text>
-      <View style={estilos.escala}>
-        {NIVELES.map((n) => {
-          const elegido = valor === n;
-          return (
-            <TouchableOpacity
-              key={n}
-              style={[
-                estilos.nivel,
-                elegido && { backgroundColor: colorNivel(n), borderColor: colorNivel(n) },
-              ]}
-              onPress={() => alElegir(n)}
-              activeOpacity={interaccion.opacidadActiva}
-            >
-              <Text style={[estilos.nivelTexto, elegido && estilos.nivelTextoElegido]}>{n}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {FILAS_NIVELES.map((fila) => (
+        <View key={fila[0]} style={estilos.escala}>
+          {fila.map((n) => {
+            const elegido = valor === n;
+            return (
+              <TouchableOpacity
+                key={n}
+                style={[
+                  estilos.nivel,
+                  elegido && { backgroundColor: colorNivel(n), borderColor: colorNivel(n) },
+                ]}
+                onPress={() => alElegir(n)}
+                activeOpacity={interaccion.opacidadActiva}
+                accessibilityRole="button"
+                accessibilityLabel={`Nivel ${n}`}
+                accessibilityState={{ selected: elegido }}
+              >
+                <Text style={[estilos.nivelTexto, elegido && estilos.nivelTextoElegido]}>{n}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ))}
       <View style={estilos.filaExtremos}>
         <Text style={estilos.extremo}>0 · nada</Text>
         <Text style={estilos.extremo}>10 · lo peor</Text>
@@ -270,18 +279,18 @@ const estilos = StyleSheet.create({
   etiqueta: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
   ayuda: { ...tipografia.meta, color: colores.textoTenue, marginTop: 2, marginBottom: espacio.md },
 
-  // Once botones en fila: la escala completa cabe sin desplazar la pantalla.
-  escala: { flexDirection: 'row', justifyContent: 'space-between', gap: 3 },
+  // Dos filas centradas con botones del mismo tamaño (0–5 arriba, 6–10 abajo).
+  escala: { flexDirection: 'row', justifyContent: 'center', gap: espacio.sm, marginBottom: espacio.sm },
   nivel: {
-    flex: 1,
+    width: '14%',
     aspectRatio: 1,
-    borderRadius: radio.sm,
+    borderRadius: radio.md,
     borderWidth: 1,
     borderColor: colores.bordeCampo,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nivelTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
+  nivelTexto: { ...tipografia.subtitulo, color: colores.textoSuave, fontWeight: '600' },
   nivelTextoElegido: { color: colores.textoInverso },
   filaExtremos: { flexDirection: 'row', justifyContent: 'space-between', marginTop: espacio.sm },
   extremo: { ...tipografia.micro, color: colores.textoTenue },

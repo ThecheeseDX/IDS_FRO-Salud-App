@@ -40,6 +40,9 @@ function desglosarResumen(texto) {
       // "── TRIAJE AUTOMATIZADO (05/09/2026) ──" y sus cierres.
       if (/^─+/.test(linea) || /^──/.test(linea)) {
         const limpio = linea.replace(/[─-]/g, '').trim();
+        // "FIN TRIAJE" es un marcador interno (la ficha lo usa para separar
+        // el bloque del triaje); al paciente no le dice nada.
+        if (/^FIN TRIAJE$/i.test(limpio)) return null;
         return limpio ? { tipo: 'encabezado', texto: limpio } : null;
       }
       const corte = linea.indexOf(':');

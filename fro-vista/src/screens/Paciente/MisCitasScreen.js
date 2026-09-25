@@ -29,9 +29,10 @@ import apiClient, {
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
-import { formatearFechaHora as formatearFecha } from '../../utils/fechas';
+import { formatearFechaHora as formatearFecha, parsearFecha } from '../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../utils/modalidad';
-import { ordenarCitas } from '../../utils/estados';
+import { ordenarCitas, esEstadoTerminal } from '../../utils/estados';
+import SeccionHistorial from '../../components/SeccionHistorial';
 import { colores, espacio, radio, sombra, tipografia, piezas, interaccion } from '../../theme';
 import EtiquetaEstado from '../../components/EtiquetaEstado';
 import DialogoAviso from '../../components/DialogoAviso';
@@ -39,6 +40,17 @@ import DialogoEvaluacion from '../../components/DialogoEvaluacion';
 
 // Estados desde los que el paciente todavía puede anular o mover la hora.
 const ESTADOS_CANCELABLES = ['AGENDADA', 'CONFIRMADA'];
+
+// Una cita va al historial cuando terminó (realizada, cancelada, inasistencia)
+// o cuando su hora pasó hace más de un día sin cerrarse. Las que están en
+// curso nunca se esconden.
+const UN_DIA_MS = 24 * 60 * 60 * 1000;
+function vaAlHistorial(cita) {
+  if (esEstadoTerminal(cita.estado)) return true;
+  if (cita.estado === 'EN_CURSO') return false;
+  const inicio = parsearFecha(cita.fecha_hora_inicio);
+  return Boolean(inicio) && Date.now() - inicio.getTime() > UN_DIA_MS;
+}
 
 export default function MisCitasScreen({ navigation, route }) {
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
@@ -351,19 +363,25 @@ export default function MisCitasScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* CU73: una cita agendada sigue sin pagar; se confirma al cobrar. */}
-        {item.estado === 'AGENDADA' && (
+        {/* CU73: sin pago la hora es una reserva temporal. Pagada, queda a la
+            espera de que el profesional la confirme. */}
+        {item.estado === 'AGENDADA' && !item.pago_tipo && (
           <TouchableOpacity
             style={styles.botonPagar}
             onPress={() => navigation.navigate('PagarReserva', { citaId: item.cita_id })}
             activeOpacity={interaccion.opacidadActiva}
           >
-            <Text style={styles.botonPagarTexto}>💳 Pagar y confirmar esta hora</Text>
+            <Text style={styles.botonPagarTexto}>💳 Pagar esta hora</Text>
           </TouchableOpacity>
         )}
+        {item.estado === 'AGENDADA' && item.pago_tipo ? (
+          <Text style={styles.notaPagada}>
+            ✓ {item.pago_tipo === 'SESION_PLAN' ? 'Cubierta con tu plan' : 'Pagada'} · esperando que el profesional confirme
+          </Text>
+        ) : null}
 
         {/* CU74: cambiar la sesión suelta por un plan, pagando la diferencia. */}
-        {item.estado === 'CONFIRMADA' && (
+        {['AGENDADA', 'CONFIRMADA'].includes(item.estado) && item.pago_tipo === 'PRESTACION' && (
           <View style={styles.cajaPlan}>
             <Text style={styles.planTexto}>
               ¿Vas a necesitar más sesiones? Cambia a un plan y paga solo la diferencia.
@@ -432,6 +450,9 @@ export default function MisCitasScreen({ navigation, route }) {
     );
   }
 
+  const citasHistorial = citas.filter(vaAlHistorial);
+  const citasVigentes = citas.filter((c) => !vaAlHistorial(c));
+
   if (errorRed) {
     return (
       <View style={styles.centrado}>
@@ -446,7 +467,7 @@ export default function MisCitasScreen({ navigation, route }) {
   return (
     <View style={styles.contenedor}>
       <FlatList
-        data={citas}
+        data={citasVigentes}
         keyExtractor={(item) => String(item.cita_id)}
         renderItem={renderCita}
         contentContainerStyle={styles.lista}
@@ -531,11 +552,23 @@ export default function MisCitasScreen({ navigation, route }) {
         ListEmptyComponent={
           <View style={styles.vacio}>
             <Text style={styles.vacioIcono}>📅</Text>
-            <Text style={styles.vacioTitulo}>Aún no tienes citas</Text>
+            <Text style={styles.vacioTitulo}>
+              {citasHistorial.length > 0 ? 'No tienes citas próximas' : 'Aún no tienes citas'}
+            </Text>
             <Text style={styles.vacioTexto}>
-              Usa el botón de abajo para buscar disponibilidad y reservar tu primera hora.
+              Usa el botón de abajo para buscar disponibilidad y reservar una hora.
             </Text>
           </View>
+        }
+        ListFooterComponent={
+          <SeccionHistorial
+            cantidad={citasHistorial.length}
+            ayuda="Citas realizadas, canceladas o ya pasadas"
+          >
+            {citasHistorial.map((item) => (
+              <React.Fragment key={String(item.cita_id)}>{renderCita({ item })}</React.Fragment>
+            ))}
+          </SeccionHistorial>
         }
       />
 
@@ -672,6 +705,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   botonPagarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
+  notaPagada: { ...tipografia.meta, color: colores.exito, marginTop: espacio.sm },
 
   // CU74 — cambio a plan desde la cita ya pagada.
   cajaPlan: {

@@ -2,10 +2,10 @@
 //
 // CU73 — Comercialización con restricción de cobro anticipado.
 //
-// La hora queda reservada de forma temporal al elegir el bloque, pero solo
-// pasa a CONFIRMADA cuando el sistema verifica que el pago entró completo. Si
-// el cobro se rechaza, la reserva se revoca y el bloque vuelve a estar
-// disponible para otros pacientes.
+// La hora queda reservada de forma temporal al elegir el bloque. Con el pago
+// completo queda pagada y el profesional la confirma (no puede confirmar una
+// hora sin pago). Si el cobro se rechaza, la reserva se revoca y el bloque
+// vuelve a estar disponible para otros pacientes.
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -88,7 +88,7 @@ export default function PagarReservaScreen({ route, navigation }) {
       const datos = await comprarPrestacion(citaId, { modalidad, sesiones, metodo_pago: metodo });
       setAviso({
         tono: datos.estado === 'EN_TRANSITO' ? 'alerta' : 'ok',
-        titulo: datos.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : '¡Cita confirmada!',
+        titulo: datos.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : '¡Pago recibido!',
         mensaje: datos.mensaje,
         alCerrar: () => navigation.navigate('MisCitas'),
       });
@@ -132,7 +132,7 @@ export default function PagarReservaScreen({ route, navigation }) {
         <Text style={estilos.iconoGrande}>✅</Text>
         <Text style={estilos.tituloOk}>Esta hora ya está pagada</Text>
         <Text style={estilos.textoOk}>
-          Pagaste {pesos(opciones.monto_pagado)}. Tu cita quedó confirmada.
+          Pagaste {pesos(opciones.monto_pagado)}. Falta que el profesional confirme la cita.
         </Text>
         <TouchableOpacity
           style={estilos.botonPrimario}
@@ -246,7 +246,7 @@ export default function PagarReservaScreen({ route, navigation }) {
           <ActivityIndicator color={colores.textoInverso} />
         ) : (
           <Text style={estilos.botonPrimarioTexto}>
-            {modalidad === 'USAR_PAQUETE' ? 'Confirmar con mi plan' : 'Pagar y confirmar la hora'}
+            {modalidad === 'USAR_PAQUETE' ? 'Usar una sesión de mi plan' : 'Pagar la hora'}
           </Text>
         )}
       </TouchableOpacity>

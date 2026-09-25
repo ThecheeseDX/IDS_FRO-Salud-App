@@ -526,12 +526,19 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {/* ACCIONES SI LA CITA ESTÁ AGENDADA */}
                     {estadoCita === 'AGENDADA' && (
                       <>
-                        <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
-                          onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CONFIRMAR')}
-                        >
-                          <Text style={styles.textoBotonAccion}>👍 Confirmar</Text>
-                        </TouchableOpacity>
+                        {/* CU73: solo se confirma una hora ya pagada. */}
+                        {item.pago_tipo ? (
+                          <TouchableOpacity 
+                            style={[styles.botonAccion, { backgroundColor: colores.advertencia }]}
+                            onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'CONFIRMAR')}
+                          >
+                            <Text style={styles.textoBotonAccion}>👍 Confirmar</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={[styles.botonAccion, styles.esperaPago]}>
+                            <Text style={styles.textoEsperaPago}>⏳ Esperando pago</Text>
+                          </View>
+                        )}
 
                         <TouchableOpacity 
                           style={[styles.botonAccion, { backgroundColor: colores.error }]}
@@ -1337,6 +1344,8 @@ const styles = StyleSheet.create({
     ...tipografia.metaFuerte,
     color: colores.textoInverso,
   },
+  esperaPago: { backgroundColor: colores.superficieSuave, borderWidth: 1, borderColor: colores.borde },
+  textoEsperaPago: { ...tipografia.metaFuerte, color: colores.textoSuave, textAlign: 'center' },
   estadoTexto: {
     fontWeight: '600',
     color: colores.primario

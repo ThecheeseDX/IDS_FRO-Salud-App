@@ -266,6 +266,7 @@ exports.misConversaciones = async (req, res) => {
                 CONCAT('Profesional #', ec.profesional_id)
               ) AS profesional,
               (pac_u.usuario_id = ?) AS soy_paciente,
+              pr.foto_url AS foto_profesional,
               (SELECT COUNT(*) FROM Mensaje_Chat m
                 WHERE m.episodio_clinico_id = ec.episodio_clinico_id
                   AND m.remitente_usuario_id <> ? AND m.leido = FALSE
@@ -290,6 +291,12 @@ exports.misConversaciones = async (req, res) => {
         motivo_consulta: f.motivo_consulta,
         estado: f.estado,
         con: Number(f.soy_paciente) === 1 ? f.profesional : f.paciente,
+        // Foto del profesional (la ve el paciente). 'default.jpg' es el
+        // marcador del registro, no una imagen real.
+        foto:
+          Number(f.soy_paciente) === 1 && f.foto_profesional && f.foto_profesional !== 'default.jpg'
+            ? f.foto_profesional
+            : null,
         sin_leer: Number(f.sin_leer) || 0,
         ultimo_momento: f.ultimo_momento,
       })),

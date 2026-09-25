@@ -14,6 +14,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet 
 import CodigoOTP from './CodigoOTP';
 import DialogoAviso from './DialogoAviso';
 import { REQUISITOS_CONTRASENA } from '../utils/contrasena';
+import CampoContrasena from './CampoContrasena';
 import { colores, espacio, radio, tipografia, interaccion } from '../theme';
 
 const LARGO_CODIGO = 6;
@@ -172,19 +173,17 @@ export default function CambioContrasenaOTP({
         <>
           <Text style={estilos.verificado}>✓ Código verificado</Text>
           <Text style={estilos.instruccion}>Escribe tu contraseña nueva.</Text>
-          <TextInput
+          <CampoContrasena
             style={estilos.input}
             placeholder="Contraseña nueva"
-            secureTextEntry
             value={nuevaContrasena}
             onChangeText={setNuevaContrasena}
             editable={!cargando}
             autoFocus
           />
-          <TextInput
+          <CampoContrasena
             style={estilos.input}
             placeholder="Confirmar contraseña nueva"
-            secureTextEntry
             value={confirmacion}
             onChangeText={setConfirmacion}
             editable={!cargando}

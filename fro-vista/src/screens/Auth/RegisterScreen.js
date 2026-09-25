@@ -8,6 +8,7 @@ import { validateRut } from '../../utils/validators';
 import { requisitosIncumplidos } from '../../utils/contrasena';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
+import CampoContrasena from '../../components/CampoContrasena';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
 const RegisterScreen = ({ navigation }) => {
@@ -287,11 +288,11 @@ const RegisterScreen = ({ navigation }) => {
                 </View>
                 <View style={styles.campo}>
                     <Text style={styles.label}>Contraseña</Text>
-                    <TextInput style={[styles.input, errores.contrasena && styles.inputError]} placeholder="8+ caracteres, letra, número y símbolo" secureTextEntry value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
+                    <CampoContrasena style={[styles.input, errores.contrasena && styles.inputError]} placeholder="8+ caracteres, letra, número y símbolo" value={formData.contrasena} onChangeText={(v) => handleChange('contrasena', v)} />
                 </View>
                 <View style={styles.campo}>
                     <Text style={styles.label}>Confirmar contraseña</Text>
-                    <TextInput style={[styles.input, errores.confirmar_contrasena && styles.inputError]} placeholder="Repite la contraseña" secureTextEntry value={formData.confirmar_contrasena} onChangeText={(v) => handleChange('confirmar_contrasena', v)} />
+                    <CampoContrasena style={[styles.input, errores.confirmar_contrasena && styles.inputError]} placeholder="Repite la contraseña" value={formData.confirmar_contrasena} onChangeText={(v) => handleChange('confirmar_contrasena', v)} />
                 </View>
 
                 {!esProfesional && (

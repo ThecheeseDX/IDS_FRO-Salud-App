@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, RefreshControl,
-  ActivityIndicator, StyleSheet,
+  ActivityIndicator, StyleSheet, Image,
 } from 'react-native';
 
 import { getMisConversaciones } from '../../api/client';
@@ -98,6 +98,22 @@ export default function ConversacionesScreen({ navigation }) {
               }
               activeOpacity={interaccion.opacidadActiva}
             >
+              {/* Foto del profesional; sin foto, sus iniciales. */}
+              {c.foto ? (
+                <Image source={{ uri: c.foto }} style={estilos.avatar} />
+              ) : (
+                <View style={[estilos.avatar, estilos.avatarVacio]}>
+                  <Text style={estilos.iniciales}>
+                    {String(c.con || '')
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((p) => p[0])
+                      .join('')
+                      .toUpperCase()}
+                  </Text>
+                </View>
+              )}
               <View style={estilos.cuerpo}>
                 <Text style={estilos.nombre}>{c.con}</Text>
                 <Text style={estilos.motivo} numberOfLines={1}>
@@ -134,6 +150,15 @@ const estilos = StyleSheet.create({
   tarjeta: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginBottom: espacio.md },
   tarjetaCerrada: { backgroundColor: colores.superficieSuave },
   cuerpo: { flex: 1 },
+  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: espacio.md },
+  avatarVacio: {
+    backgroundColor: colores.primarioSuave,
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iniciales: { ...tipografia.cuerpoFuerte, color: colores.primario },
   nombre: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
   motivo: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
   momento: { ...tipografia.micro, color: colores.textoTenue, marginTop: espacio.xs },

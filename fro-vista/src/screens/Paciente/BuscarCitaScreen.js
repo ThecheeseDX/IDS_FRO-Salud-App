@@ -238,7 +238,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
         mensaje:
           `Reservamos el ${fechaLegible(bloqueSeleccionado.fecha)} de ` +
           `${bloqueSeleccionado.hora_inicio.slice(0, 5)} a ${bloqueSeleccionado.hora_fin.slice(0, 5)}. ` +
-          'Para confirmarla tienes que completar el pago.',
+          'Ahora completa el pago; después el profesional confirmará la cita.',
         alCerrar: () => {
           setBloqueSeleccionado(null);
           setDisponibilidad([]);
