@@ -168,7 +168,7 @@ exports.registrarEvaluacion = async (req, res) => {
 
     return res.status(201).json({
       mensaje: resenaBloqueada
-        ? 'Registramos tu calificación. El comentario no se guardó porque contiene términos no permitidos.'
+        ? 'No se pudo registrar el mensaje porque incluye términos no permitidos.'
         : resena
           ? 'Gracias. Tu calificación quedó registrada y tu comentario pasará por revisión antes de publicarse.'
           : 'Gracias. Tu calificación quedó registrada.',
@@ -241,9 +241,19 @@ exports.resenasPublicas = async (req, res) => {
     );
 
     const [resenas] = await pool.query(
-      `SELECT e.evaluacion_satisfaccion_id, e.puntuacion, e.resena, e.momento_creacion
+      `SELECT e.evaluacion_satisfaccion_id, e.puntuacion, e.resena, e.momento_creacion,
+              -- Nombre y la inicial del apellido, salvo que el paciente haya
+              -- pedido aparecer como anónimo (Seguridad y privacidad).
+              CASE WHEN pa.resena_anonima THEN 'Anónimo'
+                   ELSE COALESCE(
+                     NULLIF(TRIM(CONCAT(SUBSTRING_INDEX(TRIM(u.nombres), ' ', 1), ' ',
+                                        COALESCE(CONCAT(LEFT(TRIM(u.apellido_paterno), 1), '.'), ''))), ''),
+                     'Paciente')
+              END AS autor
          FROM Evaluacion_Satisfaccion e
          JOIN Cita c ON c.cita_id = e.cita_id
+         JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+         LEFT JOIN Usuario u ON u.usuario_id = pa.usuario_id
         WHERE c.profesional_id = ?
           AND e.estado_moderacion = 'APROBADA'
           AND e.resena IS NOT NULL

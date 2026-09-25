@@ -4,10 +4,13 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity
 import { AuthContext } from '../../context/AuthContext';
 import apiClient, { getMiDerivacion } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colores, espacio, radio, sombra, tipografia, piezas, interaccion } from '../../theme';
 
 export default function DashboardPaciente({ navigation }) {
   const { userData, confirmarCierreSesion } = useContext(AuthContext);
+  // Margen de los botones/gesto del sistema: el botón fijo no queda tapado.
+  const bordes = useSafeAreaInsets();
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorRed, setErrorRed] = useState(false);
@@ -275,7 +278,7 @@ export default function DashboardPaciente({ navigation }) {
       </ScrollView>
 
       <TouchableOpacity
-        style={styles.logoutButton}
+        style={[styles.logoutButton, { marginBottom: espacio.lg + bordes.bottom }]}
         onPress={confirmarCierreSesion}
         activeOpacity={interaccion.opacidadActiva}
       >

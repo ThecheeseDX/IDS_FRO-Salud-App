@@ -30,6 +30,13 @@ router.get('/mi-perfil',
 router.put('/mi-perfil',
   verifyToken, authorizeRoles(['Profesional']),
   profesionalController.actualizarMiPerfil);
+// Jornada semanal: el profesional gestiona sus bloques horarios.
+router.get('/mi-horario',
+  verifyToken, authorizeRoles(['Profesional']),
+  profesionalController.obtenerMiHorario);
+router.put('/mi-horario',
+  verifyToken, authorizeRoles(['Profesional']),
+  profesionalController.guardarMiHorario);
 router.post('/mi-perfil/foto',
   verifyToken, authorizeRoles(['Profesional']),
   cargaFoto.single('foto'), manejarErrorFoto,

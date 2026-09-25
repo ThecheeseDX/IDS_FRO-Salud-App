@@ -79,6 +79,52 @@ function aMensaje(fila, usuarioId) {
  * Con desde_id devuelve solo lo nuevo: es lo que consulta la app cada pocos
  * segundos mientras la conversación está abierta.
  */
+/**
+ * Un solo aviso por conversación: si el destinatario ya tiene uno sin leer de
+ * este chat, se actualiza con la cantidad de mensajes pendientes y sube al
+ * principio, en vez de sumar un aviso (y un push) por cada mensaje.
+ */
+async function avisarMensajeNuevo({ destinatario, quien, episodioId, motivo }) {
+  const conversacion = `la conversación de "${motivo || 'tu tratamiento'}"`;
+
+  const [[previo]] = await pool.query(
+    `SELECT notificacion_id FROM Notificacion
+      WHERE usuario_id = ? AND tipo = 'MENSAJE_CLINICO' AND leida = FALSE
+        AND CAST(JSON_UNQUOTE(JSON_EXTRACT(datos, '$.episodioId')) AS UNSIGNED) = ?
+      ORDER BY notificacion_id DESC LIMIT 1`,
+    [destinatario, episodioId]
+  );
+
+  if (previo) {
+    const [[pendientes]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM Mensaje_Chat
+        WHERE episodio_clinico_id = ? AND remitente_usuario_id <> ?
+          AND leido = FALSE AND bloqueado = FALSE`,
+      [episodioId, destinatario]
+    );
+    const total = Math.max(2, Number(pendientes.total) || 0);
+    await pool.query(
+      `UPDATE Notificacion
+          SET titulo = ?, contenido = ?, momento_envio = CURRENT_TIMESTAMP
+        WHERE notificacion_id = ?`,
+      [
+        `${total} mensajes nuevos`,
+        `${quien} te escribió ${total} mensajes en ${conversacion}.`,
+        previo.notificacion_id,
+      ]
+    );
+    return;
+  }
+
+  await notificarUsuario(
+    pool,
+    destinatario,
+    'MENSAJE_CLINICO',
+    `${quien} te escribió en ${conversacion}.`,
+    { datos: { pantalla: 'ChatClinico', episodioId, nombreOtro: quien } }
+  );
+}
+
 exports.listarMensajes = async (req, res) => {
   const { episodio_id } = req.params;
   const desdeId = Number.parseInt(req.query?.desde_id, 10) || 0;
@@ -118,6 +164,17 @@ exports.listarMensajes = async (req, res) => {
         )
         .catch(() => {});
     }
+
+    // Abrir la conversación equivale a ver su aviso: se marca leído para que
+    // el próximo mensaje genere uno nuevo en vez de sumarse a uno ya visto.
+    pool
+      .query(
+        `UPDATE Notificacion SET leida = TRUE
+          WHERE usuario_id = ? AND tipo = 'MENSAJE_CLINICO' AND leida = FALSE
+            AND CAST(JSON_UNQUOTE(JSON_EXTRACT(datos, '$.episodioId')) AS UNSIGNED) = ?`,
+        [req.user.usuario_id, Number(episodio_id)]
+      )
+      .catch(() => {});
 
     // Excepción 3 del CU53: sobre un episodio cerrado se lee, no se escribe.
     const cerrado = estaCerrado(contexto.estado);
@@ -219,19 +276,12 @@ exports.enviarMensaje = async (req, res) => {
       contexto.papel === 'PACIENTE' ? contexto.usuario_profesional : contexto.usuario_paciente;
     const quien = contexto.papel === 'PACIENTE' ? contexto.paciente : contexto.profesional;
 
-    notificarUsuario(
-      pool,
+    avisarMensajeNuevo({
       destinatario,
-      'MENSAJE_CLINICO',
-      `${quien} te escribió en la conversación de "${contexto.motivo_consulta || 'tu tratamiento'}".`,
-      {
-        datos: {
-          pantalla: 'ChatClinico',
-          episodioId: Number(episodio_id),
-          nombreOtro: quien,
-        },
-      }
-    ).catch(() => {});
+      quien,
+      episodioId: Number(episodio_id),
+      motivo: contexto.motivo_consulta,
+    }).catch(() => {});
 
     return res.status(201).json({
       mensaje_id: resultado.insertId,

@@ -305,15 +305,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       if (err.response) {
         const { status, data } = err.response;
 
+        // CU73: la hora todavía no está pagada. Se explica y se refresca la
+        // lista para que el botón pase a "Esperando pago".
+        if (data?.error === 'CITA_SIN_PAGO') {
+          setAviso({ tono: 'info', titulo: 'Esperando pago', mensaje: data.mensaje });
+          cargarHistorial(true);
+        }
         // EXCEPCIÓN 2: Muestra el error exacto que envía el backend para saber qué falló
-        if (status === 422 || data.code === 'TRANSICION_INVALIDA') {
+        else if (status === 422 || data.code === 'TRANSICION_INVALIDA') {
           setAviso({ tono: 'error', titulo: "Error de validación de flujo lógico", mensaje: `${data.error || 'La transición no está permitida por las reglas de negocio.'}\n\nPor favor, sigue el orden del flujo clínico.` });
         } 
         // EXCEPCIÓN 4: Fallo de persistencia en BD
         else if (status === 500 || data.code === 'PERSIST_FAIL') {
           setAviso({ tono: 'error', titulo: "Alerta de Error Crítica", mensaje: "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia. Intente nuevamente o contacte a soporte." });
         } else {
-          setAviso({ tono: 'error', titulo: "Error", mensaje: data.error || "No se pudo cambiar el estado." });
+          setAviso({ tono: 'error', titulo: "No se pudo cambiar el estado", mensaje: data.mensaje || data.error || "Intenta nuevamente." });
         }
       } else {
         // EXCEPCIÓN 3: Latencia o pérdida de red

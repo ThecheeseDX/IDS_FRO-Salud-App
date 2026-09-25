@@ -272,15 +272,21 @@ async function ofrecerCupoListaEspera(connection, cita_id) {
       connection, 'PLAZO_RESPUESTA_LISTA_ESPERA_MINUTOS', 30
     );
 
+    // Enlace del correo para tomar el cupo sin abrir la app.
+    const token = require('crypto').randomBytes(24).toString('hex');
     await connection.execute(
       `UPDATE Lista_Espera
           SET estado = 'NOTIFICADO',
               notificado = TRUE,
               momento_notificacion = NOW(),
-              momento_expira = DATE_ADD(NOW(), INTERVAL ? MINUTE)
+              momento_expira = DATE_ADD(NOW(), INTERVAL ? MINUTE),
+              token_cupo = ?
         WHERE lista_espera_id = ?`,
-      [minutos, siguiente.lista_espera_id]
+      [minutos, token, siguiente.lista_espera_id]
     );
+    // Carga diferida: confirmacionService depende de este módulo.
+    const { urlPublica } = require('./confirmacionService');
+    const enlace = `${urlPublica()}/api/citas/lista-espera/cupo/${token}`;
 
     const bloque = await datosDelBloque(connection, cita_id);
     const cuando = describirBloque(bloque);
@@ -296,8 +302,11 @@ async function ofrecerCupoListaEspera(connection, cita_id) {
         correo: {
           asunto: 'Se liberó el cupo que esperabas - Punto Paz Salud',
           accion:
-            '<p style="color:#23201C;font-size:15px;">Entra a la app, sección <b>Mis Citas</b>, ' +
-            'y toca <b>Tomar el cupo</b> antes de que venza tu turno.</p>',
+            `<p style="text-align:center;margin:24px 0;"><a href="${enlace}" ` +
+            'style="display:inline-block;background:#003B4D;color:#FFFFFF;text-decoration:none;' +
+            'font-weight:600;padding:14px 28px;border-radius:10px;font-size:15px;">Tomar el cupo</a></p>' +
+            `<p style="color:#5D564D;font-size:13px;">Tienes ${minutos} minutos. También puedes tomarlo ` +
+            'desde la app, sección <b>Mis Citas</b>.</p>',
         },
       }
     );

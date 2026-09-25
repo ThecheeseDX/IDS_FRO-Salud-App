@@ -273,7 +273,7 @@ export default function MisCitasScreen({ navigation, route }) {
       setEvaluando(null);
       setAviso({
         tono: datos.resena_bloqueada ? 'alerta' : 'ok',
-        titulo: '¡Gracias!',
+        titulo: datos.resena_bloqueada ? 'Aviso' : '¡Gracias!',
         mensaje: datos.mensaje,
       });
       await cargarCitas(true);

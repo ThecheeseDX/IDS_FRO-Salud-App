@@ -24,11 +24,20 @@ import { getMensajes, enviarMensajeClinico } from '../../api/client';
 import DialogoAviso from '../../components/DialogoAviso';
 import useEspacioInferior from '../../utils/useEspacioInferior';
 import ErrorRetry from '../../components/ErrorRetry';
-import { formatearFechaHora, formatearHora } from '../../utils/fechas';
+import { formatearFecha, formatearFechaHora, formatearHora } from '../../utils/fechas';
 import { colores, espacio, radio, tipografia, interaccion } from '../../theme';
 
 const SEGUNDOS_ENTRE_CONSULTAS = 6;
 const clavePendientes = (episodioId) => `cu53_pendientes_${episodioId}`;
+
+/** "Hoy", "Ayer" o la fecha, para separar la conversación por día (hora de Chile). */
+function etiquetaDia(momento) {
+  const dia = formatearFecha(momento, '');
+  if (!dia) return '';
+  if (dia === formatearFecha(new Date())) return 'Hoy';
+  if (dia === formatearFecha(new Date(Date.now() - 24 * 60 * 60 * 1000))) return 'Ayer';
+  return dia;
+}
 
 export default function ChatClinicoScreen({ route, navigation }) {
   const episodioId = route?.params?.episodioId;
@@ -215,19 +224,30 @@ export default function ChatClinicoScreen({ route, navigation }) {
           </Text>
         )}
 
-        {mensajes.map((m) => (
-          <View
-            key={m.mensaje_id}
-            style={[estilos.burbuja, m.mio ? estilos.burbujaMia : estilos.burbujaOtro]}
-          >
-            <Text style={[estilos.texto, m.mio && estilos.textoMio, m.ilegible && estilos.ilegible]}>
-              {m.contenido}
-            </Text>
-            <Text style={[estilos.hora, m.mio && estilos.horaMia]}>
-              {formatearHora(m.momento_envio)}
-            </Text>
-          </View>
-        ))}
+        {mensajes.map((m, i) => {
+          // Separador cada vez que cambia el día: "Hoy", "Ayer" o la fecha.
+          const dia = etiquetaDia(m.momento_envio);
+          const cambiaDia = dia && (i === 0 || etiquetaDia(mensajes[i - 1].momento_envio) !== dia);
+          return (
+            <React.Fragment key={m.mensaje_id}>
+              {cambiaDia ? (
+                <View style={estilos.separadorDia}>
+                  <View style={estilos.lineaDia} />
+                  <Text style={estilos.textoDia}>{dia}</Text>
+                  <View style={estilos.lineaDia} />
+                </View>
+              ) : null}
+              <View style={[estilos.burbuja, m.mio ? estilos.burbujaMia : estilos.burbujaOtro]}>
+                <Text style={[estilos.texto, m.mio && estilos.textoMio, m.ilegible && estilos.ilegible]}>
+                  {m.contenido}
+                </Text>
+                <Text style={[estilos.hora, m.mio && estilos.horaMia]}>
+                  {formatearHora(m.momento_envio)}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        })}
 
         {/* Lo retenido se ve en gris: el autor sabe que aún no salió. */}
         {pendientes.map((p, i) => (
@@ -328,6 +348,23 @@ const estilos = StyleSheet.create({
   ilegible: { fontStyle: 'italic', color: colores.advertencia },
   hora: { ...tipografia.micro, color: colores.textoTenue, marginTop: 4, alignSelf: 'flex-end' },
   horaMia: { color: colores.primarioBorde },
+
+  separadorDia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.sm,
+    marginVertical: espacio.md,
+  },
+  lineaDia: { flex: 1, height: 1, backgroundColor: colores.bordeSuave },
+  textoDia: {
+    ...tipografia.micro,
+    color: colores.textoSuave,
+    backgroundColor: colores.superficieSuave,
+    paddingHorizontal: espacio.md,
+    paddingVertical: 3,
+    borderRadius: radio.completo,
+    overflow: 'hidden',
+  },
 
   barraEnvio: {
     flexDirection: 'row',

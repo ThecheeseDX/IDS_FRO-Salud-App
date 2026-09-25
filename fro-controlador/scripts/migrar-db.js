@@ -1124,6 +1124,42 @@ const MIGRACIONES = [
       await conexion.query(`DROP TABLE IF EXISTS Pauta_Material`);
     },
   },
+  {
+    nombre: 'Lista_Espera.token_cupo (CU19 desde el correo)',
+    descripcion: 'Enlace seguro para tomar el cupo liberado directamente desde el correo',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Lista_Espera' AND COLUMN_NAME = 'token_cupo'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Lista_Espera
+           ADD COLUMN token_cupo VARCHAR(64) NULL,
+           ADD UNIQUE KEY uq_lista_espera_token (token_cupo)`
+      );
+    },
+  },
+  {
+    nombre: 'Paciente.resena_anonima (CU58)',
+    descripcion: 'El paciente decide si su nombre aparece bajo sus calificaciones escritas',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Paciente' AND COLUMN_NAME = 'resena_anonima'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Paciente ADD COLUMN resena_anonima BOOLEAN NOT NULL DEFAULT FALSE`
+      );
+    },
+  },
 ];
 
 /**

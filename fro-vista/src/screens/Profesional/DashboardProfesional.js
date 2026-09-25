@@ -20,10 +20,13 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import apiClient, { getAlertasClinicas, revisarAlertaClinica } from '../../api/client';
 import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
 export default function DashboardProfesional({ navigation }) {
   const { userData, confirmarCierreSesion } = useContext(AuthContext);
+  // Margen de los botones/gesto del sistema: el botón fijo no queda tapado.
+  const bordes = useSafeAreaInsets();
 
   const [pacientes, setPacientes] = useState([]);
   const [buscar, setBuscar] = useState('');
@@ -254,6 +257,18 @@ export default function DashboardProfesional({ navigation }) {
         </View>
       </TouchableOpacity>
 
+      {/* Jornada semanal: días y horas en que los pacientes pueden reservar */}
+      <TouchableOpacity
+        style={styles.herramienta}
+        onPress={() => navigation.navigate('MisHorarios')}
+      >
+        <Text style={styles.herramientaIcono}>🕘</Text>
+        <View style={styles.herramientaTexto}>
+          <Text style={styles.herramientaTitulo}>Mis horarios de atención</Text>
+          <Text style={styles.herramientaSub}>Agregar, editar o quitar tus bloques horarios semanales.</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* CU10: catálogo público del profesional (foto, reseña, áreas, modalidad) */}
       <TouchableOpacity
         style={styles.herramienta}
@@ -304,7 +319,7 @@ export default function DashboardProfesional({ navigation }) {
 
       {/* Fijo al borde inferior, igual que en la vista de Paciente. */}
       <TouchableOpacity
-        style={styles.logoutBtn}
+        style={[styles.logoutBtn, { marginBottom: espacio.lg + bordes.bottom }]}
         onPress={confirmarCierreSesion}
         activeOpacity={interaccion.opacidadActiva}
       >

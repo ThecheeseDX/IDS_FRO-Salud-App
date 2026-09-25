@@ -232,51 +232,67 @@ exports.misListas = async (req, res) => {
 };
 
 /**
- * POST /api/citas/lista-espera/:lista_espera_id/tomar
+ * Toma del cupo, compartida por la app y por el enlace del correo.
  *
- * El primero de la fila acepta el cupo dentro de su plazo: se le agenda una
- * cita nueva en ese mismo bloque y la lista se cierra para el resto.
+ * @param {object} p
+ * @param {number} [p.listaEsperaId]  turno elegido en la app
+ * @param {number} [p.usuarioId]      paciente con sesión (app)
+ * @param {string} [p.token]          enlace del correo (sin sesión)
+ * @param {string} [p.ip]
+ * @returns {Promise<{status: number, body: object}>}
  */
-exports.tomarCupo = async (req, res) => {
+async function tomarTurno({ listaEsperaId, usuarioId, token, ip }) {
   const conexion = await pool.getConnection();
 
   try {
     await conexion.beginTransaction();
 
-    const paciente_id = await pacienteDe(conexion, req.user.usuario_id);
-    if (!paciente_id) {
-      await conexion.rollback();
-      return res.status(403).json({ error: 'SOLO_PACIENTES' });
-    }
-
     const [[turno]] = await conexion.execute(
       `SELECT le.lista_espera_id, le.estado, le.paciente_id, le.cita_id,
+              p.usuario_id,
               (le.momento_expira <= NOW()) AS vencido
          FROM Lista_Espera le
-        WHERE le.lista_espera_id = ? LIMIT 1 FOR UPDATE`,
-      [req.params.lista_espera_id]
+         JOIN Paciente p ON p.paciente_id = le.paciente_id
+        WHERE ${token ? 'le.token_cupo = ?' : 'le.lista_espera_id = ?'}
+        LIMIT 1 FOR UPDATE`,
+      [token || listaEsperaId]
     );
 
-    if (!turno || Number(turno.paciente_id) !== Number(paciente_id)) {
+    // En la app el turno tiene que ser del paciente con sesión.
+    if (!turno || (!token && Number(turno.usuario_id) !== Number(usuarioId))) {
       await conexion.rollback();
-      return res.status(404).json({ error: 'TURNO_NO_ENCONTRADO', mensaje: 'Esta inscripción no es tuya.' });
+      return {
+        status: 404,
+        body: {
+          error: 'TURNO_NO_ENCONTRADO',
+          mensaje: token ? 'Este enlace no corresponde a ningún cupo.' : 'Esta inscripción no es tuya.',
+        },
+      };
+    }
+
+    if (turno.estado === 'TOMADO') {
+      await conexion.rollback();
+      return { status: 409, body: { error: 'YA_TOMADO', mensaje: 'Ya tomaste este cupo: revisa Mis Citas en la app.' } };
     }
 
     if (turno.estado !== 'NOTIFICADO' || Number(turno.vencido) === 1) {
       await conexion.rollback();
-      return res.status(409).json({
-        error: 'TURNO_NO_VIGENTE',
-        mensaje:
-          turno.estado === 'NOTIFICADO'
-            ? 'Se venció tu plazo para tomar el cupo y pasó al siguiente de la lista.'
-            : 'Todavía no es tu turno para este bloque.',
-      });
+      return {
+        status: 409,
+        body: {
+          error: 'TURNO_NO_VIGENTE',
+          mensaje:
+            turno.estado === 'NOTIFICADO' || turno.estado === 'VENCIDO'
+              ? 'Se venció tu plazo para tomar el cupo y pasó al siguiente de la lista.'
+              : 'Este cupo ya no está disponible para ti.',
+        },
+      };
     }
 
     const bloque = await datosDelBloque(conexion, turno.cita_id);
     if (!bloque) {
       await conexion.rollback();
-      return res.status(404).json({ error: 'BLOQUE_NO_ENCONTRADO' });
+      return { status: 404, body: { error: 'BLOQUE_NO_ENCONTRADO', mensaje: 'El bloque ya no existe.' } };
     }
 
     // El bloque pudo ocuparse de nuevo mientras el paciente decidía.
@@ -295,10 +311,10 @@ exports.tomarCupo = async (req, res) => {
         [turno.lista_espera_id]
       );
       await conexion.commit();
-      return res.status(409).json({
-        error: 'BLOQUE_OCUPADO',
-        mensaje: 'El bloque volvió a ocuparse. Busca otro horario disponible.',
-      });
+      return {
+        status: 409,
+        body: { error: 'BLOQUE_OCUPADO', mensaje: 'El bloque volvió a ocuparse. Busca otro horario disponible.' },
+      };
     }
 
     const [creada] = await conexion.execute(
@@ -306,11 +322,11 @@ exports.tomarCupo = async (req, res) => {
          (fecha_hora_inicio, fecha_hora_fin, estado, modalidad, paciente_id, profesional_id, sede_id)
        SELECT fecha_hora_inicio, fecha_hora_fin, 'AGENDADA', modalidad, ?, profesional_id, sede_id
          FROM Cita WHERE cita_id = ?`,
-      [paciente_id, turno.cita_id]
+      [turno.paciente_id, turno.cita_id]
     );
 
     await conexion.execute(
-      `UPDATE Lista_Espera SET estado = 'TOMADO' WHERE lista_espera_id = ?`,
+      `UPDATE Lista_Espera SET estado = 'TOMADO', token_cupo = NULL WHERE lista_espera_id = ?`,
       [turno.lista_espera_id]
     );
 
@@ -326,7 +342,7 @@ exports.tomarCupo = async (req, res) => {
     );
     for (const otro of restantes) {
       await conexion.execute(
-        `UPDATE Lista_Espera SET estado = 'CERRADO' WHERE lista_espera_id = ?`,
+        `UPDATE Lista_Espera SET estado = 'CERRADO', token_cupo = NULL WHERE lista_espera_id = ?`,
         [otro.lista_espera_id]
       );
       await notificarUsuario(
@@ -338,12 +354,13 @@ exports.tomarCupo = async (req, res) => {
       );
     }
 
+    // CU73: la hora tomada es una reserva como cualquier otra: falta pagarla.
     await notificarUsuario(
       conexion,
-      req.user.usuario_id,
+      turno.usuario_id,
       'CAMBIO_ESTADO_CITA',
       `Tomaste el cupo de ${describirBloque(bloque)}${bloque.profesional ? ` con ${bloque.profesional}` : ''}. ` +
-      'La cita quedó agendada: confírmala cuando te llegue la solicitud.',
+      'Ahora completa el pago desde Mis Citas para que el profesional pueda confirmarla.',
       { datos: { pantalla: 'MisCitas', cita_id: creada.insertId } }
     );
 
@@ -352,31 +369,149 @@ exports.tomarCupo = async (req, res) => {
           (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES ('TOMA_CUPO_LISTA_ESPERA', 'Cita', ?, ?, ?)`,
       [
-        req.ip || null,
+        ip || null,
         JSON.stringify({
           cita_id: creada.insertId,
           bloque_liberado: Number(turno.cita_id),
           lista_espera_id: Number(turno.lista_espera_id),
+          origen: token ? 'CORREO' : 'APP',
         }),
-        req.user.usuario_id,
+        turno.usuario_id,
       ]
     );
 
     await conexion.commit();
 
-    return res.status(201).json({
-      mensaje: 'El cupo quedó reservado a tu nombre.',
-      cita_id: creada.insertId,
-      estado: 'AGENDADA',
-    });
+    return {
+      status: 201,
+      body: {
+        mensaje: 'El cupo quedó reservado a tu nombre. Complétalo pagando desde Mis Citas.',
+        cita_id: creada.insertId,
+        estado: 'AGENDADA',
+        cuando: describirBloque(bloque),
+        profesional: bloque.profesional || null,
+      },
+    };
   } catch (error) {
-    await conexion.rollback();
-    console.error('[listaEspera.tomarCupo]', error);
-    return res.status(500).json({
-      error: 'NO_SE_PUDO_TOMAR',
-      mensaje: 'No pudimos reservar el cupo. Vuelve a intentarlo.',
-    });
+    await conexion.rollback().catch(() => {});
+    console.error('[listaEspera.tomarTurno]', error);
+    return {
+      status: 500,
+      body: { error: 'NO_SE_PUDO_TOMAR', mensaje: 'No pudimos reservar el cupo. Vuelve a intentarlo.' },
+    };
   } finally {
     conexion.release();
+  }
+}
+
+/**
+ * POST /api/citas/lista-espera/:lista_espera_id/tomar
+ *
+ * El primero de la fila acepta el cupo dentro de su plazo: se le agenda una
+ * cita nueva en ese mismo bloque y la lista se cierra para el resto.
+ */
+exports.tomarCupo = async (req, res) => {
+  const { status, body } = await tomarTurno({
+    listaEsperaId: req.params.lista_espera_id,
+    usuarioId: req.user.usuario_id,
+    ip: req.ip,
+  });
+  return res.status(status).json(body);
+};
+
+// ── Enlace del correo: tomar el cupo sin abrir la app ─────────────────────
+function paginaCupo({ titulo, mensaje, detalle, tono, boton }) {
+  const color = tono === 'error' ? '#B3261E' : tono === 'aviso' ? '#A85A00' : '#003B4D';
+  return `<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${titulo} · Punto Paz Salud</title></head>
+<body style="margin:0;background:#FCFBF9;font-family:-apple-system,Segoe UI,Arial,sans-serif;">
+  <div style="max-width:520px;margin:48px auto;background:#FFFFFF;border:1px solid #ECE8E3;
+              border-radius:16px;padding:32px;text-align:center;">
+    <p style="font-size:20px;letter-spacing:6px;color:#003B4D;margin:0;font-weight:600;">PUNTOPAZ</p>
+    <p style="font-size:11px;letter-spacing:5px;color:#8B7140;margin:0 0 28px 0;font-weight:600;">SALUD</p>
+    <h1 style="color:${color};font-size:21px;margin:0 0 12px 0;">${titulo}</h1>
+    <p style="color:#23201C;font-size:15px;line-height:1.6;margin:0 0 8px 0;">${mensaje}</p>
+    ${detalle ? `<p style="color:#5D564D;font-size:14px;margin:0;">${detalle}</p>` : ''}
+    ${boton ? `<a href="${boton.href}" style="display:inline-block;margin-top:24px;background:#003B4D;color:#FFFFFF;
+        text-decoration:none;font-weight:600;padding:14px 28px;border-radius:10px;font-size:15px;">${boton.texto}</a>` : ''}
+    <p style="color:#7D756A;font-size:13px;margin-top:28px;border-top:1px solid #ECE8E3;padding-top:20px;">
+      También puedes hacerlo desde la app, sección Mis Citas.
+    </p>
+  </div>
+</body></html>`;
+}
+
+const escaparHTML = (t) =>
+  String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/**
+ * GET /api/citas/lista-espera/cupo/:token?accion=TOMAR   (público)
+ *
+ * Sin 'accion' muestra el cupo y el botón (los lectores de correo abren los
+ * enlaces para previsualizarlos: por eso tomar el cupo exige el segundo paso).
+ * Con 'accion=TOMAR' reserva la hora y muestra el resultado.
+ */
+exports.cupoDesdeCorreo = async (req, res) => {
+  const token = String(req.params.token || '');
+  const accion = String(req.query?.accion || '').toUpperCase();
+
+  if (!/^[a-f0-9]{32,64}$/.test(token)) {
+    return res.status(404).send(paginaCupo({
+      titulo: 'Enlace no válido', mensaje: 'Este enlace no corresponde a ningún cupo.', tono: 'error',
+    }));
+  }
+
+  if (accion === 'TOMAR') {
+    const { status, body } = await tomarTurno({ token, ip: req.ip });
+    if (status === 201) {
+      return res.status(200).send(paginaCupo({
+        titulo: '¡El cupo es tuyo!',
+        mensaje: `Reservamos tu hora de ${escaparHTML(body.cuando)}${body.profesional ? ` con ${escaparHTML(body.profesional)}` : ''}.`,
+        detalle: 'Entra a la app y completa el pago en Mis Citas para que el profesional pueda confirmarla.',
+      }));
+    }
+    return res.status(status).send(paginaCupo({
+      titulo: status === 409 ? 'No se pudo tomar el cupo' : 'Algo salió mal',
+      mensaje: escaparHTML(body.mensaje),
+      tono: status >= 500 ? 'error' : 'aviso',
+    }));
+  }
+
+  try {
+    const [[turno]] = await pool.query(
+      `SELECT le.estado, le.cita_id,
+              GREATEST(0, TIMESTAMPDIFF(MINUTE, NOW(), le.momento_expira)) AS minutos_restantes,
+              (le.momento_expira <= NOW()) AS vencido
+         FROM Lista_Espera le WHERE le.token_cupo = ? LIMIT 1`,
+      [token]
+    );
+    if (!turno) {
+      return res.status(404).send(paginaCupo({
+        titulo: 'Enlace no válido',
+        mensaje: 'Este enlace ya no corresponde a ningún cupo disponible.',
+        tono: 'error',
+      }));
+    }
+    if (turno.estado !== 'NOTIFICADO' || Number(turno.vencido) === 1) {
+      return res.status(410).send(paginaCupo({
+        titulo: 'El plazo terminó',
+        mensaje: 'Se venció el tiempo para tomar este cupo y pasó al siguiente de la lista.',
+        tono: 'aviso',
+      }));
+    }
+    const bloque = await datosDelBloque(pool, turno.cita_id);
+    return res.status(200).send(paginaCupo({
+      titulo: 'Se liberó tu cupo',
+      mensaje: `Hora de ${escaparHTML(describirBloque(bloque))}${bloque?.profesional ? ` con ${escaparHTML(bloque.profesional)}` : ''}.`,
+      detalle: `Te quedan ${Number(turno.minutos_restantes)} minutos para tomarlo.`,
+      boton: { href: `?accion=TOMAR`, texto: 'Tomar el cupo' },
+    }));
+  } catch (error) {
+    console.error('[listaEspera.cupoDesdeCorreo]', error);
+    return res.status(500).send(paginaCupo({
+      titulo: 'Algo salió mal', mensaje: 'No pudimos cargar el cupo. Intenta desde la app.', tono: 'error',
+    }));
   }
 };

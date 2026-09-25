@@ -337,12 +337,12 @@ export default function TriajeScreen({ navigation }) {
           <View style={estilos.tarjetaDerivacion}>
             <Text style={estilos.derivacionTitulo}>
               {derivacion.general
-                ? '🩺 Te sugerimos una evaluación general'
+                ? '🧭 Tu entrevista no apunta a una especialidad concreta'
                 : `🎯 Te sugerimos ${derivacion.nombre}`}
             </Text>
             <Text style={estilos.derivacionTexto}>
               {derivacion.general
-                ? 'Por lo que nos contaste no hay una especialidad clara. Una evaluación general te va a orientar mejor.'
+                ? 'Contáctate con nosotros para poder guiarte hacia el profesional adecuado.'
                 : derivacion.disponible_en_comuna
                   ? `Es la especialidad que mejor calza con tu motivo de consulta, y hay profesionales que atienden a domicilio en ${derivacion.comuna || 'tu comuna'}.`
                   : derivacion.disponible_online
@@ -354,11 +354,14 @@ export default function TriajeScreen({ navigation }) {
                 Disponibles ahora: {derivacion.alternativas.map((a) => a.nombre).join(', ')}.
               </Text>
             )}
+            {/* Sin especialidad clara, el paso útil es hablar con el equipo. */}
             <TouchableOpacity
               style={estilos.botonDerivacion}
-              onPress={() => navigation.navigate('BuscarCita')}
+              onPress={() => navigation.navigate(derivacion.general ? 'Soporte' : 'BuscarCita')}
             >
-              <Text style={estilos.botonDerivacionTexto}>Buscar hora ahora</Text>
+              <Text style={estilos.botonDerivacionTexto}>
+                {derivacion.general ? 'Contactarnos' : 'Buscar hora ahora'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}

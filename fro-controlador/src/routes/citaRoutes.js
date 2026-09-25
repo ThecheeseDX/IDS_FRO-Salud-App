@@ -77,6 +77,10 @@ router.get('/mis-listas-espera',
   verifyToken, authorizeRoles(['Paciente']),
   listaEsperaController.misListas);
 
+// Enlace del correo "Tomar el cupo": público, su autorización es el token
+// secreto, que deja de servir apenas se toma, se cede o vence el turno.
+router.get('/lista-espera/cupo/:token', listaEsperaController.cupoDesdeCorreo);
+
 router.post('/lista-espera/:lista_espera_id/tomar',
   verifyToken, authorizeRoles(['Paciente']),
   listaEsperaController.tomarCupo);

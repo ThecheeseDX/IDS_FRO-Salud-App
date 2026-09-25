@@ -28,6 +28,7 @@ import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibi
 import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
 import MiJornadaScreen from '../screens/Profesional/MiJornadaScreen';
 import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
+import MisHorariosScreen from '../screens/Profesional/MisHorariosScreen';
 import MisLiquidacionesScreen from '../screens/Profesional/MisLiquidacionesScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
@@ -234,6 +235,8 @@ export default function AppNavigator() {
             />
             {/* CU10: catálogo de perfil profesional */}
             <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
+            {/* Jornada semanal: el profesional gestiona sus bloques horarios */}
+            <Stack.Screen name="MisHorarios" component={MisHorariosScreen} options={{ title: 'Mis horarios de atención' }} />
             {/* CU58: el profesional ve sus propias evaluaciones publicadas */}
             <Stack.Screen name="ResenasProfesional" component={ResenasProfesionalScreen} options={{ title: 'Evaluaciones' }} />
             {/* CU75: historial de liquidaciones, solo lectura */}

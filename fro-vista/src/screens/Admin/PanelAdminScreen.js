@@ -17,6 +17,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { getKPIs } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import GraficoLinea from '../../components/GraficoLinea';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
 
 const ATAJOS = [
@@ -40,6 +41,8 @@ const pesos = (valor) => `$${Number(valor || 0).toLocaleString('es-CL')}`;
 
 export default function PanelAdminScreen({ navigation }) {
   const { userData, confirmarCierreSesion } = useContext(AuthContext);
+  // El botón de salir va al final: se deja el margen de los botones del sistema.
+  const bordes = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
   const [datos, setDatos] = useState(null);
@@ -119,7 +122,7 @@ export default function PanelAdminScreen({ navigation }) {
   return (
     <ScrollView
       style={estilos.fondo}
-      contentContainerStyle={estilos.contenido}
+      contentContainerStyle={[estilos.contenido, { paddingBottom: espacio.xxl + bordes.bottom }]}
       refreshControl={
         <RefreshControl
           refreshing={refrescando}

@@ -85,6 +85,8 @@ export default function ResenasProfesionalScreen({ route, navigation }) {
               <Text style={estilos.momento}>{formatearFecha(r.momento_creacion)}</Text>
             </View>
             <Text style={estilos.texto}>“{r.resena}”</Text>
+            {/* Quién la escribió: nombre e inicial, o "Anónimo" si lo pidió. */}
+            <Text style={estilos.autor}>— {r.autor || 'Paciente'}</Text>
           </View>
         ))
       ) : (
@@ -125,6 +127,7 @@ const estilos = StyleSheet.create({
   estrellasChicas: { fontSize: 15, color: colores.secundario, letterSpacing: 2 },
   momento: { ...tipografia.micro, color: colores.textoTenue },
   texto: { ...tipografia.cuerpo, color: colores.texto, marginTop: espacio.sm, fontStyle: 'italic' },
+  autor: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm, fontStyle: 'italic' },
 
   sinComentarios: { ...tipografia.meta, color: colores.textoSuave, textAlign: 'center' },
   nota: {

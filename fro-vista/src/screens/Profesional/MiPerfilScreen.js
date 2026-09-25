@@ -289,6 +289,17 @@ export default function MiPerfilScreen({ navigation }) {
         </>
       )}
 
+      {/* La jornada semanal se edita en su propia pantalla. */}
+      <Text style={estilos.etiqueta}>Horarios de atención</Text>
+      <TouchableOpacity
+        style={estilos.botonHorarios}
+        onPress={() => navigation.navigate('MisHorarios')}
+        activeOpacity={interaccion.opacidadActiva}
+      >
+        <Text style={estilos.botonHorariosTexto}>🕘 Gestionar mis bloques horarios</Text>
+        <Text style={estilos.botonHorariosFlecha}>›</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={[estilos.botonGuardar, guardando && estilos.botonDeshabilitado]}
         onPress={guardar}
@@ -350,6 +361,20 @@ const estilos = StyleSheet.create({
   comunaTexto: { ...tipografia.meta, color: colores.textoSuave, fontWeight: '600' },
   comunaTextoElegida: { color: colores.primario },
 
+  botonHorarios: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+    backgroundColor: colores.primarioSuave,
+    borderRadius: radio.md,
+    paddingVertical: espacio.md,
+    paddingHorizontal: espacio.base,
+    marginTop: espacio.xs,
+  },
+  botonHorariosTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
+  botonHorariosFlecha: { ...tipografia.subtitulo, color: colores.primario },
   botonGuardar: { ...piezas.botonPrimario, alignItems: 'center', marginTop: espacio.xl },
   botonDeshabilitado: { opacity: 0.6 },
   botonGuardarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },

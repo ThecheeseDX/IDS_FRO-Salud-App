@@ -242,6 +242,8 @@ CREATE TABLE Paciente (
     -- CU09: qué datos de contacto ve el profesional. NULL = todo visible.
     -- Formato: {"mostrar_direccion": true, "mostrar_telefono": true}
     privacidad_contacto JSON,
+    -- CU58: si es TRUE, sus calificaciones escritas se muestran como anónimas.
+    resena_anonima BOOLEAN NOT NULL DEFAULT FALSE,
     contacto_emergencia_id INT,
     usuario_id INT NOT NULL UNIQUE,
     comuna_id INT NOT NULL,
@@ -591,9 +593,12 @@ CREATE TABLE Lista_Espera (
     estado VARCHAR(20) NOT NULL DEFAULT 'ESPERANDO',
     momento_notificacion TIMESTAMP NULL,
     momento_expira TIMESTAMP NULL,
+    -- Enlace del correo para tomar el cupo sin abrir la app.
+    token_cupo VARCHAR(64) NULL,
     paciente_id INT NOT NULL,
     cita_id INT NOT NULL,
     UNIQUE KEY uq_espera_cita_paciente (cita_id, paciente_id),
+    UNIQUE KEY uq_lista_espera_token (token_cupo),
     FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
     FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
 );

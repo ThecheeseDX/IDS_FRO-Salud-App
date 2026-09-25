@@ -22,7 +22,7 @@ import VistaConTeclado from '../../components/VistaConTeclado';
 import CambioContrasenaOTP from '../../components/CambioContrasenaOTP';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import { formatearFechaHora } from '../../utils/fechas';
-import { colores, radio } from '../../theme';
+import { colores, espacio, radio, tipografia } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 
 export default function SeguridadScreen() {
@@ -147,6 +147,7 @@ export default function SeguridadScreen() {
       await apiClient.put('/auth/privacidad', {
         mostrar_direccion: nueva.mostrar_direccion,
         mostrar_telefono: nueva.mostrar_telefono,
+        nombre_en_resenas: nueva.nombre_en_resenas !== false,
       });
     } catch (err) {
       // CU09 — Excepción 4: si la escritura falla, se restaura lo anterior.
@@ -288,6 +289,25 @@ export default function SeguridadScreen() {
                   ios_backgroundColor={colores.borde}
                 />
               </View>
+              {/* CU58: nombre bajo las calificaciones escritas, o anónimo. */}
+              <View style={estilos.filaPreferencia}>
+                <View style={estilos.preferenciaTextos}>
+                  <Text style={estilos.preferenciaTexto}>Mostrar mi nombre en mis calificaciones</Text>
+                  <Text style={estilos.preferenciaAyuda}>
+                    {privacidad.nombre_en_resenas !== false
+                      ? 'Tus comentarios publicados muestran tu nombre y la inicial de tu apellido.'
+                      : 'Tus comentarios publicados aparecen como “Anónimo”.'}
+                  </Text>
+                </View>
+                <Switch
+                  value={privacidad.nombre_en_resenas !== false}
+                  onValueChange={(v) => cambiarPreferencia('nombre_en_resenas', v)}
+                  disabled={guardandoPrivacidad}
+                  trackColor={{ false: colores.borde, true: colores.azul[300] }}
+                  thumbColor={privacidad.nombre_en_resenas !== false ? colores.primario : colores.superficie}
+                  ios_backgroundColor={colores.borde}
+                />
+              </View>
             </View>
           )}
         </>
@@ -395,4 +415,6 @@ const estilos = StyleSheet.create({
     paddingVertical: 10,
   },
   preferenciaTexto: { color: colores.texto, fontSize: 15 },
+  preferenciaTextos: { flex: 1, paddingRight: espacio.md },
+  preferenciaAyuda: { ...tipografia.micro, color: colores.textoTenue, marginTop: 2, letterSpacing: 0 },
 });

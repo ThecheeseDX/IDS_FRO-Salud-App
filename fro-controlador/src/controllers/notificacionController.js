@@ -22,7 +22,8 @@ exports.listar = async (req, res) => {
          FROM Notificacion
         WHERE usuario_id = ?
           ${soloNoLeidas ? 'AND leida = FALSE' : ''}
-        ORDER BY momento_envio DESC, notificacion_id DESC
+        -- Lo que falta por leer arriba; lo ya visto baja al final.
+        ORDER BY leida ASC, momento_envio DESC, notificacion_id DESC
         LIMIT ? OFFSET ?`,
       [req.user.usuario_id, LIMITE_POR_PAGINA, pagina * LIMITE_POR_PAGINA]
     );
