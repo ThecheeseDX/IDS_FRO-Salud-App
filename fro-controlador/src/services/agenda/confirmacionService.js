@@ -22,6 +22,7 @@ const {
   obtenerContactosCita,
   ofrecerCupoListaEspera,
   describirBloque,
+  datosDelBloque,
 } = require('./agendaService');
 
 /**
@@ -126,7 +127,12 @@ async function despacharSolicitudesPendientes(pool) {
         WHERE c.estado = 'AGENDADA'
           AND c.fecha_hora_inicio > NOW()
           AND c.fecha_hora_inicio <= DATE_ADD(NOW(), INTERVAL ? HOUR)
-          AND s.solicitud_confirmacion_id IS NULL`,
+          AND s.solicitud_confirmacion_id IS NULL
+          -- CU73: solo se pide confirmar una hora ya pagada. Sin pago no hay
+          -- nada que confirmar: lo que corresponde es recordar el pago.
+          AND EXISTS (SELECT 1 FROM Transaccion t
+                       WHERE t.cita_id = c.cita_id AND t.estado = 'PAGADA'
+                         AND t.tipo <> 'DEVOLUCION')`,
       [horas]
     );
 
@@ -139,6 +145,52 @@ async function despacharSolicitudesPendientes(pool) {
         // intento se reintenta en la próxima pasada.
         console.error(`[confirmacion] cita ${cita.cita_id} sin solicitud:`, error.message);
       }
+    }
+
+    // Las citas agendadas SIN pago dentro de la misma ventana reciben, una
+    // sola vez, el recordatorio "Paga tu hora" (app + correo).
+    const [sinPago] = await pool.execute(
+      `SELECT c.cita_id, c.fecha_hora_inicio,
+              u_pac.usuario_id AS usuario_paciente,
+              COALESCE(
+                NULLIF(TRIM(CONCAT_WS(' ', u_prof.nombres, u_prof.apellido_paterno)), ''),
+                CONCAT('Profesional #', c.profesional_id)
+              ) AS profesional
+         FROM Cita c
+         JOIN Paciente pac      ON pac.paciente_id = c.paciente_id
+         JOIN Usuario u_pac     ON u_pac.usuario_id = pac.usuario_id
+         JOIN Profesional prof  ON prof.profesional_id = c.profesional_id
+         LEFT JOIN Usuario u_prof ON u_prof.usuario_id = prof.usuario_id
+        WHERE c.estado = 'AGENDADA'
+          AND c.fecha_hora_inicio > NOW()
+          AND c.fecha_hora_inicio <= DATE_ADD(NOW(), INTERVAL ? HOUR)
+          AND NOT EXISTS (SELECT 1 FROM Transaccion t
+                           WHERE t.cita_id = c.cita_id AND t.estado = 'PAGADA'
+                             AND t.tipo <> 'DEVOLUCION')
+          AND NOT EXISTS (SELECT 1 FROM Notificacion n
+                           WHERE n.usuario_id = u_pac.usuario_id
+                             AND n.tipo = 'RECORDATORIO_PAGO'
+                             AND CAST(JSON_UNQUOTE(JSON_EXTRACT(n.datos, '$.cita_id')) AS UNSIGNED) = c.cita_id)`,
+      [horas]
+    );
+    for (const cita of sinPago) {
+      const cuando = describirBloque(await datosDelBloque(pool, cita.cita_id));
+      await notificarUsuario(
+        pool,
+        cita.usuario_paciente,
+        'RECORDATORIO_PAGO',
+        `Tu hora de ${cuando}${cita.profesional ? ` con ${cita.profesional}` : ''} todavía no está pagada. ` +
+          'Págala desde Mis Citas para que el profesional pueda confirmarla; sin pago, la reserva es temporal.',
+        {
+          datos: { pantalla: 'MisCitas', cita_id: Number(cita.cita_id) },
+          correo: {
+            asunto: 'Tu hora sigue sin pagar - Punto Paz Salud',
+            accion:
+              '<p style="color:#23201C;font-size:15px;">Entra a la app, sección <b>Mis Citas</b>, ' +
+              'y toca <b>Pagar esta hora</b>.</p>',
+          },
+        }
+      );
     }
   } catch (error) {
     console.error('[despacharSolicitudesPendientes]', error.message);
@@ -226,6 +278,24 @@ async function responderPorEnlace(pool, token, accion, req) {
     }
 
     const confirma = accion === 'CONFIRMAR';
+
+    // CU73: confirmar exige el pago íntegro. La solicitud solo se emite para
+    // horas pagadas, pero una devolución posterior podría dejarla sin pago.
+    if (confirma) {
+      const [[pago]] = await conexion.execute(
+        `SELECT 1 AS ok FROM Transaccion
+          WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION' LIMIT 1`,
+        [solicitud.cita_id]
+      );
+      if (!pago) {
+        await conexion.rollback();
+        return {
+          ok: false,
+          codigo: 'CITA_SIN_PAGO',
+          mensaje: 'Esta hora todavía no está pagada. Págala desde la app, en Mis Citas, y después confírmala.',
+        };
+      }
+    }
 
     // Cancelar por correo respeta el mismo plazo mínimo que la app (CU18).
     if (!confirma) {

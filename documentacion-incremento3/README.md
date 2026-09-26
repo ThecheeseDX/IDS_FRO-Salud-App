@@ -15,7 +15,7 @@ Código de referencia: commit `4e01994b` (26-09-2026).
 | `CU-corregidos-Incremento3.txt` | Las 20 fichas de caso de uso corregidas (CU19, 21, 25, 26, 44, 45, 50, 52, 53, 55, 56, 57, 58, 60, 61, 63, 64, 73, 74, 75), en el formato exacto del informe, listas para copiar y pegar. |
 | `generar_reporte.py` | Script que genera el HTML. Las cuatro listas del modelo relacional salen de una sola fuente de datos; si cambia una tabla, se edita ahí y se vuelve a correr. |
 
-Decisión pendiente **[D1]** (CU21 vs. CU73): ver la caja al inicio del reporte.
+Decisión **[D1]** (CU21 vs. CU73) tomada: opción A, aplicada en el código; ver la caja al inicio del reporte.
 
 ## Pendiente
 

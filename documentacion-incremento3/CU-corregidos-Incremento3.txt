@@ -3,7 +3,7 @@ Fichas listas para reemplazar en el informe. Cada bloque va desde "CUxx" hasta "
 Código de referencia: IDS_FRO-Salud-App commit 4e01994b (26-09-2026).
 Las fichas reflejan lo que hace el código, incluidas las correcciones hechas durante las pruebas del 24 al 26-09-2026.
 
-DECISIÓN PENDIENTE (marcada como [D1] en CU21 y CU73): hoy la solicitud de confirmación del CU21 se envía a citas agendadas aunque no estén pagadas, y la respuesta del paciente las pasa a Confirmada. La regla del CU73 dice que una cita solo pasa a Confirmada con el pago íntegro. Las fichas están escritas con la opción recomendada (la solicitud del CU21 solo se emite para citas ya pagadas). Si se decide otra cosa, se ajustan esas dos fichas.
+Decisión D1 (tomada el 26-09-2026, opción A): la solicitud de confirmación del CU21 solo se emite para citas ya pagadas; a las no pagadas dentro de la ventana se les envía el recordatorio "Paga tu hora". Confirmar una cita (por el paciente o el profesional) exige el pago íntegro, como pide el CU73.
 
 Orden: CU19, CU21, CU25, CU26, CU44, CU45, CU50, CU52, CU53, CU55, CU56, CU57, CU58, CU60, CU61, CU63, CU64, CU73, CU74, CU75.
 
@@ -47,14 +47,14 @@ Cuando una cita entra en la ventana de anticipación, el sistema le pide al paci
 Frecuencia
 Alta
 Precondiciones
-La cita está agendada y pagada [D1], y su hora de inicio entra en la ventana de anticipación configurada (parámetro ANTICIPACION_SOLICITUD_CONFIRMACION_HORAS, 24 horas).
+La cita está agendada y pagada, y su hora de inicio entra en la ventana de anticipación configurada (parámetro ANTICIPACION_SOLICITUD_CONFIRMACION_HORAS, 24 horas).
 Descripción
-El sistema detecta, mediante el programador del servidor o al abrir el paciente sus citas, las citas que entran en la ventana de anticipación sin solicitud emitida, genera para cada una un token con vigencia (parámetro VIGENCIA_ENLACE_CONFIRMACION_HORAS, 48 horas) y despacha la solicitud al centro de notificaciones de la app y por correo con un enlace [Excepción 1], el paciente abre la solicitud desde Mis Citas, donde la cita aparece destacada con los botones de confirmar y cancelar, o desde el enlace del correo, que muestra una página con el detalle de la cita y los dos botones [Excepción 2], el paciente elige confirmar su asistencia o cancelar la cita indicando el motivo [Excepción 3], el sistema aplica el cambio de estado (Confirmada o Cancelada por paciente), marca la solicitud como respondida por el canal utilizado, deja de aceptar el enlace, registra la trazabilidad y avisa al paciente y al profesional [Excepción 4].
+El sistema detecta, mediante el programador del servidor o al abrir el paciente sus citas, las citas que entran en la ventana de anticipación sin solicitud emitida, genera para cada una un token con vigencia (parámetro VIGENCIA_ENLACE_CONFIRMACION_HORAS, 48 horas) y despacha la solicitud al centro de notificaciones de la app y por correo con un enlace; a las citas de la misma ventana que siguen sin pago les envía en cambio, una sola vez, el recordatorio "Paga tu hora" [Excepción 1], el paciente abre la solicitud desde Mis Citas, donde la cita aparece destacada con los botones de confirmar y cancelar, o desde el enlace del correo, que muestra una página con el detalle de la cita y los dos botones [Excepción 2], el paciente elige confirmar su asistencia o cancelar la cita indicando el motivo [Excepción 3], el sistema aplica el cambio de estado (Confirmada o Cancelada por paciente), marca la solicitud como respondida por el canal utilizado, deja de aceptar el enlace, registra la trazabilidad y avisa al paciente y al profesional [Excepción 4].
 Excepciones
 Excepción 1: El correo o la notificación no pueden entregarse por latencia o caída del servicio. El sistema mantiene la solicitud creada, registra el resultado del despacho en la bitácora y la muestra igual en Mis Citas. El paciente revisa manualmente el estado de su cita en la aplicación.
 Excepción 2: El token del enlace ya venció. El sistema muestra la página "El enlace venció" y no permite responder desde el correo. El paciente pide un enlace nuevo con la opción "Enviarme un enlace nuevo" de Mis Citas, que genera otro token y reenvía el correo.
 Excepción 3: El paciente no responde la solicitud. El sistema mantiene el estado de la cita sin cambios hasta la hora de la atención. El paciente acude a la cita o asume la posible reasignación del cupo.
-Excepción 4: Falla la persistencia al procesar la respuesta, o la cita ya no está en el estado esperado (ya respondida, ya cancelada o con menos anticipación que la mínima para cancelar). El sistema informa que el cambio no pudo guardarse, o el motivo por el que ya no procede, sin alterar la cita. El paciente reintenta tras refrescar Mis Citas.
+Excepción 4: Falla la persistencia al procesar la respuesta, o la cita ya no está en el estado esperado (ya respondida, ya cancelada, sin pago vigente por una devolución, o con menos anticipación que la mínima para cancelar). El sistema informa que el cambio no pudo guardarse, o el motivo por el que ya no procede, sin alterar la cita. El paciente reintenta tras refrescar Mis Citas.
 Poscondiciones
 La cita queda confirmada por el paciente o cancelada con sus recursos liberados (bloque disponible y cupo ofrecido a la lista de espera), y la solicitud de confirmación queda cerrada.
 Dependencias
@@ -455,7 +455,7 @@ Comercializando prestaciones con restricción de cobro anticipado
 Actor(es)
 Paciente, Profesional
 Resumen
-Tras reservar un bloque, el paciente paga la sesión suelta, compra un plan de 10, 15 o 20 sesiones o usa una sesión de un plan vigente. La reserva es temporal hasta que el pago íntegro se valida; solo entonces el profesional puede confirmar la cita [D1].
+Tras reservar un bloque, el paciente paga la sesión suelta, compra un plan de 10, 15 o 20 sesiones o usa una sesión de un plan vigente. La reserva es temporal hasta que el pago íntegro se valida; solo entonces puede confirmarse la cita, por el profesional desde la ficha o por el paciente al responder la solicitud de asistencia (CU21).
 Frecuencia
 Múltiples veces por día.
 Precondiciones

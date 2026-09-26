@@ -573,9 +573,9 @@ exports.transicionarEstadoCita = async (req, res) => {
     // 2. Evaluar máquina de estados
     const nuevo_estado = evaluarMaquinaEstados(estado_anterior, evento, rolActor);
 
-    // RF73 — el profesional confirma la hora, pero solo si el pago entró
-    // completo. (El paciente confirmando su asistencia, CU21, es otro flujo.)
-    if (evento === 'CONFIRMAR' && rolActor === 'Profesional') {
+    // RF73 — una cita solo pasa a CONFIRMADA con el pago íntegro, la confirme
+    // el profesional desde la ficha o el paciente desde la solicitud del CU21.
+    if (evento === 'CONFIRMAR') {
       const [[pago]] = await connection.execute(
         `SELECT transaccion_id FROM Transaccion
           WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION' LIMIT 1`,

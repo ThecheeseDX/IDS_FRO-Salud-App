@@ -368,7 +368,7 @@ CUS = [
     'Dos superficies: <b>Mis Citas</b> (cita destacada con Confirmar / Cancelar, cancelar exige motivo y anticipación ≥ 2 h) y el <b>correo</b> con un enlace con token de un solo uso y vigencia de 48 h que abre una página web con el detalle y los dos botones.',
     'Responder desde la app cierra el enlace del correo. Exc. 2 (token vencido): la página lo informa y Mis Citas ofrece <b>"Enviarme un enlace nuevo"</b>.',
     'Nuevos motivos de rechazo: ya respondida, cita en otro estado, cancelación fuera de plazo.',
-    '<span class="alerta">[D1] Hoy la solicitud se emite para citas <b>agendadas aunque no estén pagadas</b>, y la respuesta las pasa a Confirmada sin pago. Choca con la regla del CU73. Ver decisión pendiente.</span>'],
+    'Decisión D1: la solicitud se emite <b>solo para citas pagadas</b>; a las no pagadas de la ventana se les envía el recordatorio "Paga tu hora". Confirmar exige pago (CITA_SIN_PAGO), también al reenviar el enlace.'],
    'Mis Citas, página pública del enlace · <code>/api/citas/confirmacion/:token</code>, <code>/confirmaciones/pendientes</code>, <code>/:id/solicitar-confirmacion</code> · tabla Solicitud_Confirmacion · programador'),
   ('CU19','Gestionando lista de espera secuencial','Paciente',
    ['La lista se ofrece <b>de a uno</b>: al liberarse el bloque, solo el primero pasa a NOTIFICADO con un plazo (parámetro, 30 min). Antes (Inc 2) se avisaba a todos a la vez.',
@@ -461,7 +461,7 @@ CUS = [
  ]),
  ('Finanzas', [
   ('CU73','Comercializando prestaciones con restricción de cobro anticipado','Paciente → <b>Paciente, Profesional</b> (confirma)',
-   ['<b>Cambio central:</b> pagar <b>no confirma</b> la cita. Con el pago íntegro la cita queda agendada y pagada, el profesional recibe el aviso "Hora pagada por confirmar" y <b>la confirma desde la ficha</b>; el servidor le impide confirmar una hora sin pago (CITA_SIN_PAGO → "Esperando pago"). <span class="alerta">[D1] ver decisión pendiente sobre el CU21.</span>',
+   ['<b>Cambio central:</b> pagar <b>no confirma</b> la cita. Con el pago íntegro la cita queda agendada y pagada, el profesional recibe el aviso "Hora pagada por confirmar" y <b>la confirma desde la ficha</b>; el servidor impide confirmar una hora sin pago a cualquier actor (CITA_SIN_PAGO → "Esperando pago" en la ficha). Decisión D1: la solicitud de asistencia del CU21 solo se emite para horas pagadas.',
     'Nueva pantalla <b>Pagar tu hora</b> tras reservar: sesión suelta (ARANCEL_ESPECIALIDAD), plan de <b>10, 15 o 20</b> con DESCUENTO_PAQUETE_PORCENTAJE (reemplaza los 4/8/12 del Inc 2) o usar una sesión de un plan activo (transacción SESION_PLAN de monto 0; la sesión se descuenta al finalizar, CU76).',
     'Pasarela <b>simulada</b> con tres métodos: pago exitoso, rechazado, confirmación lenta. Rechazo (Exc. 3 y 4) → transacción RECHAZADA, reserva revocada (cita cancelada) y cupo a la lista de espera. Pago en tránsito → hora reservada pero no pagada ni confirmable.',
     'Mis Citas: "Pagar esta hora" o "Pagada · esperando que el profesional confirme". Poscondición cambia: agendada y pagada, pendiente de confirmación.'],
@@ -604,7 +604,7 @@ mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-
 
 <nav class="indice">
   <a href="#resumen">Resumen</a>
-  <a href="#decision">Decisión pendiente</a>
+  <a href="#decision">Decisión D1</a>
   <a href="#metodo">Método</a>
   <a href="#cus">A · Casos de uso</a>
   <a href="#previos">B · Cambios previos al Inc 3</a>
@@ -625,11 +625,8 @@ mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-
 </ul>
 
 <div class="caja decision" id="decision">
-  <b>[D1] Decisión pendiente — CU21 versus CU73.</b><br>
-  Hoy la solicitud de confirmación de asistencia (CU21) se emite para citas <b>agendadas aunque no estén pagadas</b>, y si el paciente confirma desde la app o el correo, la cita pasa a Confirmada <b>sin pago</b>. La regla que fijamos en el CU73 dice que una cita solo pasa a Confirmada con el pago íntegro (y la confirma el profesional). Hay dos formas coherentes de resolverlo:<br>
-  <b>Opción A (recomendada):</b> la solicitud del CU21 solo se emite para citas <b>ya pagadas</b>; a las no pagadas dentro de las 24 h se les envía en cambio el recordatorio "Paga tu hora". La respuesta del paciente sigue confirmando la cita (confirmación distribuida = confirmación final; el profesional también puede confirmarla desde la ficha).<br>
-  <b>Opción B:</b> el CU21 queda como está (confirma sin pago) y la restricción de pago aplica solo cuando confirma el profesional. Es más simple pero deja una puerta para confirmar sin pagar.<br>
-  Las fichas de CU21 y CU73 del archivo TXT están escritas con la <b>opción A</b>. Con la respuesta se ajusta el código (es un cambio chico en el servidor) y, si hace falta, las dos fichas.
+  <b>[D1] Decisión tomada (26-09-2026) — CU21 versus CU73: opción A.</b><br>
+  La solicitud de confirmación de asistencia (CU21) se emite <b>solo para citas ya pagadas</b>; a las citas agendadas sin pago dentro de la misma ventana se les envía, una sola vez, el recordatorio <b>"Paga tu hora"</b> (app + correo, tipo de aviso RECORDATORIO_PAGO). Confirmar una cita exige el pago íntegro sea quien sea el que confirme: el profesional desde la ficha, o el paciente desde Mis Citas o desde el enlace del correo (CITA_SIN_PAGO en caso contrario). Aplicado en el código el mismo día; las fichas del TXT ya lo reflejan.
 </div>
 
 <h2 id="metodo">Alcance y método</h2>

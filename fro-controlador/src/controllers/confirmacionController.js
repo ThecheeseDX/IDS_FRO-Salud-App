@@ -183,6 +183,18 @@ exports.reenviar = async (req, res) => {
     if (cita.usuario_paciente !== req.user.usuario_id) {
       return res.status(403).json({ error: 'CITA_AJENA', mensaje: 'Esta cita no es tuya.' });
     }
+    const [[pago]] = await pool.query(
+      `SELECT 1 AS ok FROM Transaccion
+        WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION' LIMIT 1`,
+      [cita.cita_id]
+    );
+    if (!pago) {
+      return res.status(409).json({
+        error: 'CITA_SIN_PAGO',
+        mensaje: 'Esta hora todavía no está pagada. Págala primero y después podrás confirmarla.',
+      });
+    }
+
     if (cita.estado !== 'AGENDADA') {
       return res.status(409).json({
         error: 'ESTADO_NO_ESPERADO',
