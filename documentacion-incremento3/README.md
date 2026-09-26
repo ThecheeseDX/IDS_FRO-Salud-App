@@ -29,6 +29,15 @@ Decisión **[D1]** (CU21 vs. CU73) tomada: opción A, aplicada en el código; ve
 
 Decisiones del árbol: las dos páginas del correo (Confirmación por Correo, Tomar Cupo por Correo) se dibujan como interfaces con la nota "desde el correo"; los CU que corren en el servidor (CU25, CU44, CU52, CU61) van como funcionalidades de la vista que los dispara; el título usa el nombre actual, Punto Paz Salud.
 
+## Paso 4 — Tanda 0: diagrama de componentes (hecho, carpeta `diagrama-componentes/`)
+
+| Archivo | Qué contiene |
+|---|---|
+| `Diagrama de Componentes Inc3.png` | Figura en alta resolución, mismo estilo del Inc 2, con los seis componentes internos nuevos del Inc 3. |
+| `Diagrama de Componentes Inc3.drawio` | Fuente editable (el del Inc 2 solo existía en PNG). |
+| `Diagrama de Componentes Inc3 - texto.md` | Texto propuesto para la Vista de Desarrollo, tabla de componentes nuevos y sus nombres en los diagramas de secuencia. |
+| `generar_componentes.py` | Generador (.drawio + SVG); el PNG se captura con Chromium headless. |
+
 ## Pendiente
 
-- Paso 4: diagramas de secuencia por tandas y diagrama de componentes.
+- Paso 4, tandas 1 a 6: diagramas de secuencia (CU52/21/19 · CU25/26/50/44/45 · CU53/57 · CU55/56/58 · CU60/61/64/63 · CU73/74/75).
