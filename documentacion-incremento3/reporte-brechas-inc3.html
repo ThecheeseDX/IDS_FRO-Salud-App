@@ -58,6 +58,8 @@ ol.mr { padding-left:22px; font:14px/1.6 "JetBrains Mono", monospace; background
 ol.mr li { max-width:none; margin:2px 0; white-space:normal }
 ol.mr li.nueva { background:var(--nuevo); border-radius:4px; padding:2px 6px; margin-left:-6px }
 ol.mr li.nueva b::before { content:"NUEVA · "; color:var(--nuevoTexto); font-size:11px; letter-spacing:.06em }
+ol.mr li.repuesta { background:var(--alertaSuave); border-radius:4px; padding:2px 6px; margin-left:-6px }
+ol.mr li.repuesta b::before { content:"FALTABA EN LA 3FN DEL INC 2 · "; color:var(--alerta); font-size:11px; letter-spacing:.06em }
 mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-radius:3px }
 .leyenda { font-size:13px; color:var(--suave) }
 .leyenda mark, .leyenda .nuevaEj { margin:0 4px }
@@ -87,7 +89,7 @@ mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-r
 
 <h2 id="resumen">Resumen</h2>
 <ul>
-  <li><b>20 casos de uso</b> implementados: CU19, 21, 25, 26, 44, 45, 50, 52, 53, 55, 56, 57, 58, 60, 61, 63, 64, 73, 74 y 75. Los 20 tienen diferencias con su ficha del Documento 0; en cinco cambia el actor (CU50, CU55, CU57, CU58, CU73, CU75) y en tres cambia el disparo principal (CU55, CU73, CU25).</li>
+  <li><b>20 casos de uso</b> implementados: CU19, 21, 25, 26, 44, 45, 50, 52, 53, 55, 56, 57, 58, 60, 61, 63, 64, 73, 74 y 75. Los 20 tienen diferencias con su ficha del Documento 0; en seis cambia o se amplía el actor (CU50, CU55, CU57, CU58, CU73, CU75) y en tres cambia el disparo principal (CU55, CU73, CU25).</li>
   <li><b>Base de datos:</b> 10 tablas nuevas del Incremento 3 más 1 posterior al Inc 2 (<code>Profesional_Comuna</code>); 7 tablas existentes con atributos nuevos o cambiados; 17 parámetros globales nuevos. En total la base tiene 55 tablas y 46 migraciones automáticas.</li>
   <li><b>Fichas listas para pegar:</b> las 20 fichas corregidas están en <code>CU-corregidos-Incremento3.txt</code>, en el formato exacto del informe.</li>
   <li><b>Decisiones tomadas durante el desarrollo</b> (ya aplicadas en el código): push real solo con build propia; chat con consulta periódica en vez de WebSockets; el paciente califica, no el profesional; pagar no confirma, confirma el profesional; planes de 10/15/20 en vez de 4/8/12; devolución solo sobre sesiones sueltas.</li>
@@ -541,7 +543,7 @@ mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-r
 <li><b>Derivacion_Interna</b> (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)</li>
 <li><b>Paquete_Sesiones</b> (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)</li>
 <li><b>Disclaimer</b> (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)</li>
-<li><b><mark>Parametro_Global</b> (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)</mark></li></ol>
+<li class="repuesta"><b>Parametro_Global</b> (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)</li></ol>
 
 <h3 id="fisico">Modelo físico</h3>
 <p>Tipos y restricciones reales de MySQL, tomados de <code>schema.sql</code> y de las migraciones. En el diagrama del modelo físico (<code>Modelo_Físico.drawio.png</code>) hay que agregar las 11 cajas nuevas con sus columnas, dibujar las llaves foráneas indicadas y agregar las columnas nuevas a las 6 cajas modificadas (Notificacion, Lista_Espera, Mensaje_Chat, Evaluacion_Satisfaccion, Ticket_Soporte, Paciente). Las cajas <b>Preferencia_Notificacion</b> y <b>Dispositivo_Push</b> van junto a Notificacion (arriba); <b>Solicitud_Confirmacion</b> bajo Cita; <b>Reporte_Preclinico</b> junto a Triaje; <b>Reporte_Sintoma</b>, <b>Alerta_Clinica</b> e <b>Indicador_Adherencia</b> entre Paciente y Episodio_Clinico; <b>Palabra_Restringida</b> junto a Parametro_Global; <b>Area_Soporte_Operador</b> junto a Ticket_Soporte; <b>Liquidacion</b> junto a Profesional; <b>Profesional_Comuna</b> entre Profesional y Comuna.</p>

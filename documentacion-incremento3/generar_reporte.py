@@ -170,7 +170,7 @@ Objetivo_Terapeutico (objetivo_terapeutico_id, descripcion, meta_valor, valor_ac
 Derivacion_Interna (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)
 Paquete_Sesiones (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)
 Disclaimer (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)
-{+Parametro_Global (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)}
+=Parametro_Global (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)
 """
 
 
@@ -179,14 +179,15 @@ def lista_relacional(texto):
     filas = []
     for linea in texto.strip().split('\n'):
         nueva_tabla = linea.startswith('+')
-        if nueva_tabla:
+        repuesta = linea.startswith('=')   # estaba en 1FN/2FN del anexo pero faltaba en su 3FN
+        if nueva_tabla or repuesta:
             linea = linea[1:]
         # La PK es lo que va hasta la primera coma dentro del paréntesis
         # (o la pareja usuario_id/… en las tablas con clave compuesta).
         seg = html.escape(linea)
         seg = re.sub(r'\{\+([^{}]*(?:\{[^{}]*\}[^{}]*)?)\}', r'<mark>\1</mark>', seg)
         nombre, resto = seg.split(' (', 1)
-        clase = ' class="nueva"' if nueva_tabla else ''
+        clase = ' class="nueva"' if nueva_tabla else (' class="repuesta"' if repuesta else '')
         filas.append(f'<li{clase}><b>{nombre}</b> ({resto}</li>')
     return '<ol class="mr">' + '\n'.join(filas) + '</ol>'
 
@@ -586,6 +587,8 @@ ol.mr {{ padding-left:22px; font:14px/1.6 "JetBrains Mono", monospace; backgroun
 ol.mr li {{ max-width:none; margin:2px 0; white-space:normal }}
 ol.mr li.nueva {{ background:var(--nuevo); border-radius:4px; padding:2px 6px; margin-left:-6px }}
 ol.mr li.nueva b::before {{ content:"NUEVA · "; color:var(--nuevoTexto); font-size:11px; letter-spacing:.06em }}
+ol.mr li.repuesta {{ background:var(--alertaSuave); border-radius:4px; padding:2px 6px; margin-left:-6px }}
+ol.mr li.repuesta b::before {{ content:"FALTABA EN LA 3FN DEL INC 2 · "; color:var(--alerta); font-size:11px; letter-spacing:.06em }}
 mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-radius:3px }}
 .leyenda {{ font-size:13px; color:var(--suave) }}
 .leyenda mark, .leyenda .nuevaEj {{ margin:0 4px }}
@@ -615,7 +618,7 @@ mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-
 
 <h2 id="resumen">Resumen</h2>
 <ul>
-  <li><b>20 casos de uso</b> implementados: CU19, 21, 25, 26, 44, 45, 50, 52, 53, 55, 56, 57, 58, 60, 61, 63, 64, 73, 74 y 75. Los 20 tienen diferencias con su ficha del Documento 0; en cinco cambia el actor (CU50, CU55, CU57, CU58, CU73, CU75) y en tres cambia el disparo principal (CU55, CU73, CU25).</li>
+  <li><b>20 casos de uso</b> implementados: CU19, 21, 25, 26, 44, 45, 50, 52, 53, 55, 56, 57, 58, 60, 61, 63, 64, 73, 74 y 75. Los 20 tienen diferencias con su ficha del Documento 0; en seis cambia o se amplía el actor (CU50, CU55, CU57, CU58, CU73, CU75) y en tres cambia el disparo principal (CU55, CU73, CU25).</li>
   <li><b>Base de datos:</b> 10 tablas nuevas del Incremento 3 más 1 posterior al Inc 2 (<code>Profesional_Comuna</code>); 7 tablas existentes con atributos nuevos o cambiados; 17 parámetros globales nuevos. En total la base tiene 55 tablas y 46 migraciones automáticas.</li>
   <li><b>Fichas listas para pegar:</b> las 20 fichas corregidas están en <code>CU-corregidos-Incremento3.txt</code>, en el formato exacto del informe.</li>
   <li><b>Decisiones tomadas durante el desarrollo</b> (ya aplicadas en el código): push real solo con build propia; chat con consulta periódica en vez de WebSockets; el paciente califica, no el profesional; pagar no confirma, confirma el profesional; planes de 10/15/20 en vez de 4/8/12; devolución solo sobre sesiones sueltas.</li>
