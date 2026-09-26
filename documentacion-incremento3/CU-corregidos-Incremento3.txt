@@ -1,0 +1,525 @@
+CASOS DE USO CORREGIDOS — PUNTO PAZ SALUD (ex FRO SALUD), INCREMENTO 3
+Fichas listas para reemplazar en el informe. Cada bloque va desde "CUxx" hasta "Dependencias".
+Código de referencia: IDS_FRO-Salud-App commit 4e01994b (26-09-2026).
+Las fichas reflejan lo que hace el código, incluidas las correcciones hechas durante las pruebas del 24 al 26-09-2026.
+
+DECISIÓN PENDIENTE (marcada como [D1] en CU21 y CU73): hoy la solicitud de confirmación del CU21 se envía a citas agendadas aunque no estén pagadas, y la respuesta del paciente las pasa a Confirmada. La regla del CU73 dice que una cita solo pasa a Confirmada con el pago íntegro. Las fichas están escritas con la opción recomendada (la solicitud del CU21 solo se emite para citas ya pagadas). Si se decide otra cosa, se ajustan esas dos fichas.
+
+Orden: CU19, CU21, CU25, CU26, CU44, CU45, CU50, CU52, CU53, CU55, CU56, CU57, CU58, CU60, CU61, CU63, CU64, CU73, CU74, CU75.
+
+════════════════════════════════════════════════════════════════════
+
+CU19
+Gestionando lista de espera secuencial
+Nombre
+Gestionando lista de espera secuencial
+Actor(es)
+Paciente
+Resumen
+Un paciente se inscribe en un bloque horario ocupado por otra cita. Cuando ese bloque se libera, el sistema ofrece el cupo únicamente al primero de la lista, por un plazo parametrizado, con un aviso en el centro de notificaciones de la app y un correo con enlace para tomarlo; si no responde en el plazo, el turno pasa automáticamente al siguiente.
+Frecuencia
+Baja
+Precondiciones
+El paciente encontró en el buscador un bloque ocupado por la cita de otro paciente (no por un bloqueo de agenda), con fecha futura, y no está inscrito en él.
+Descripción
+El paciente selecciona en el buscador de horas un bloque marcado como ocupado y activa la opción "Avisarme si se libera" [Excepción 1], el sistema registra la inscripción asignándole la posición siguiente según el orden cronológico de llegada, deja un aviso de confirmación y muestra la posición en Mis Citas [Excepción 2], el paciente mantiene la inscripción visible en Mis Citas, donde puede salir de la lista, mientras espera la liberación [Excepción 3], al cancelarse la cita que ocupaba el bloque el sistema ofrece el cupo solo al primero de la lista: lo marca como notificado con un plazo (parámetro PLAZO_RESPUESTA_LISTA_ESPERA_MINUTOS, 30 minutos), le deja el aviso en la app y le envía un correo con el enlace "Tomar el cupo" [Excepción 4], el paciente toma el cupo desde Mis Citas o desde el enlace del correo y el sistema agenda una cita nueva a su nombre en ese bloque, cierra la lista para el resto de los inscritos avisándoles que el cupo fue tomado y le indica al paciente que complete el pago [Excepción 5].
+Excepciones
+Excepción 1: El bloque ya alcanzó el máximo de pacientes en espera (parámetro MAX_PACIENTES_LISTA_ESPERA, 5), o es un bloque propio, ya libre o ya pasado. El sistema deshabilita la inscripción y muestra el motivo. El paciente busca otro horario o profesional.
+Excepción 2: Falla la escritura de la inscripción en la base de datos. El sistema informa que el registro no pudo completarse y sugiere reintentar. El paciente vuelve a presionar la opción de inscripción.
+Excepción 3: El dispositivo del paciente no recibe notificaciones push (sin red, sin permiso o sin compilación propia con push). El aviso queda igual en el centro de notificaciones de la app y sale por correo; el sistema registra en la bitácora por qué canales salió (DESPACHO_NOTIFICACION). El paciente revisa la campana de la app o su correo.
+Excepción 4: El paciente notificado no toma el cupo dentro del plazo. El sistema marca su turno como vencido, le revoca la prioridad y ofrece el cupo al siguiente de la lista; la revisión de vencimientos corre en el programador del servidor cada cinco minutos y también cada vez que un paciente abre sus citas o sus listas. El siguiente paciente recibe el aviso.
+Excepción 5: El bloque volvió a ocuparse mientras el paciente decidía. El sistema marca el turno como vencido y le informa que el bloque ya no está disponible. El paciente busca otro horario.
+Poscondiciones
+El paciente queda alertado sobre la liberación del bloque que esperaba. Si toma el cupo, obtiene una cita agendada en ese bloque, pendiente de pago (CU73), y la lista de espera del bloque queda cerrada.
+Dependencias
+RF18, RF19, RF52, RNF11
+
+════════════════════════════════════════════════════════════════════
+
+CU21
+Confirmando asistencia a cita de forma distribuida
+Nombre
+Confirmando asistencia a cita de forma distribuida
+Actor(es)
+Paciente
+Resumen
+Cuando una cita entra en la ventana de anticipación, el sistema le pide al paciente que confirme o cancele su asistencia. El paciente responde de forma síncrona desde Mis Citas o de forma asíncrona desde un enlace en su correo, con un token propio y con vencimiento.
+Frecuencia
+Alta
+Precondiciones
+La cita está agendada y pagada [D1], y su hora de inicio entra en la ventana de anticipación configurada (parámetro ANTICIPACION_SOLICITUD_CONFIRMACION_HORAS, 24 horas).
+Descripción
+El sistema detecta, mediante el programador del servidor o al abrir el paciente sus citas, las citas que entran en la ventana de anticipación sin solicitud emitida, genera para cada una un token con vigencia (parámetro VIGENCIA_ENLACE_CONFIRMACION_HORAS, 48 horas) y despacha la solicitud al centro de notificaciones de la app y por correo con un enlace [Excepción 1], el paciente abre la solicitud desde Mis Citas, donde la cita aparece destacada con los botones de confirmar y cancelar, o desde el enlace del correo, que muestra una página con el detalle de la cita y los dos botones [Excepción 2], el paciente elige confirmar su asistencia o cancelar la cita indicando el motivo [Excepción 3], el sistema aplica el cambio de estado (Confirmada o Cancelada por paciente), marca la solicitud como respondida por el canal utilizado, deja de aceptar el enlace, registra la trazabilidad y avisa al paciente y al profesional [Excepción 4].
+Excepciones
+Excepción 1: El correo o la notificación no pueden entregarse por latencia o caída del servicio. El sistema mantiene la solicitud creada, registra el resultado del despacho en la bitácora y la muestra igual en Mis Citas. El paciente revisa manualmente el estado de su cita en la aplicación.
+Excepción 2: El token del enlace ya venció. El sistema muestra la página "El enlace venció" y no permite responder desde el correo. El paciente pide un enlace nuevo con la opción "Enviarme un enlace nuevo" de Mis Citas, que genera otro token y reenvía el correo.
+Excepción 3: El paciente no responde la solicitud. El sistema mantiene el estado de la cita sin cambios hasta la hora de la atención. El paciente acude a la cita o asume la posible reasignación del cupo.
+Excepción 4: Falla la persistencia al procesar la respuesta, o la cita ya no está en el estado esperado (ya respondida, ya cancelada o con menos anticipación que la mínima para cancelar). El sistema informa que el cambio no pudo guardarse, o el motivo por el que ya no procede, sin alterar la cita. El paciente reintenta tras refrescar Mis Citas.
+Poscondiciones
+La cita queda confirmada por el paciente o cancelada con sus recursos liberados (bloque disponible y cupo ofrecido a la lista de espera), y la solicitud de confirmación queda cerrada.
+Dependencias
+RF18, RF20, RF21, RF52
+
+════════════════════════════════════════════════════════════════════
+
+CU25
+Sintetizando reporte de hallazgos pre-clínicos
+Nombre
+Sintetizando reporte de hallazgos pre-clínicos
+Actor(es)
+Profesional
+Resumen
+Al completarse la entrevista de triaje, el sistema la analiza una sola vez y guarda un reporte con antecedentes relevantes, etiquetas clínicas y banderas rojas, que el profesional lee desde la ficha del paciente antes de la sesión.
+Frecuencia
+Alta, una vez por cada triaje finalizado.
+Precondiciones
+El paciente finalizó la entrevista clínica automatizada (CU23) y el profesional tiene vínculo clínico con él (episodio o cita).
+Descripción
+El sistema, al completarse el triaje, recupera las respuestas y detecta antecedentes relevantes, alergias, cirugías previas y banderas rojas según reglas fijas (dolor declarado de 8 o más, cuadro de más de seis meses, falta de aire al esfuerzo, antecedentes sensibles, alergias y signos de alarma en el relato), cada una con su severidad, además de las etiquetas clínicas que alimentan la sugerencia de especialidad del CU26, y guarda el reporte vinculado al triaje y al paciente [Excepción 1], el profesional abre el reporte desde la Ficha Clínica del paciente y lo lee antes de iniciar la sesión; si el triaje se completó antes de que existiera el reporte, el sistema lo genera en ese momento y lo guarda [Excepción 2].
+Excepciones
+Excepción 1: El triaje tiene menos respuestas que el mínimo configurado (parámetro MINIMO_RESPUESTAS_PRECLINICO, 4). El sistema genera igual el reporte y lo etiqueta como Información Insuficiente. El profesional realiza el triaje manual en la sesión.
+Excepción 2: La carga del reporte supera el tiempo máximo configurado (parámetro LATENCIA_MAXIMA_REPORTE_MS, 2000 milisegundos) o falla. El sistema registra el evento en la bitácora de auditoría y, si no pudo cargarlo, muestra la opción de reintentar. El profesional recarga la vista.
+Poscondiciones
+El reporte pre-clínico queda persistido y vinculado al triaje y al perfil del paciente, disponible para cualquier profesional tratante.
+Dependencias
+RF23, RF25
+
+════════════════════════════════════════════════════════════════════
+
+CU26
+Sugiriendo derivación por especialidad clínica
+Nombre
+Sugiriendo derivación por especialidad clínica
+Actor(es)
+Paciente
+Resumen
+Al terminar la entrevista, el sistema contrasta el motivo de consulta del triaje con las especialidades registradas y con los profesionales disponibles para la comuna y modalidad del paciente, y le muestra una sugerencia de atención.
+Frecuencia
+Alta, al cerrar cada triaje.
+Precondiciones
+Entrevista automatizada completa con etiquetas clínicas generadas (CU25).
+Descripción
+El sistema contrasta las etiquetas del reporte pre-clínico con las especialidades registradas mediante un mapa motivo-especialidad (respiratorio a Kinesiología Respiratoria, nutrición a Nutricionista, dolor y lesión a Kinesiología) y verifica si hay profesionales de esa especialidad que atiendan a domicilio en la comuna del paciente o en teleconsulta [Excepción 1], el paciente visualiza en la pantalla de cierre de la entrevista la especialidad sugerida, la explicación de la coincidencia y el botón "Buscar hora ahora" [Excepción 2].
+Excepciones
+Excepción 1: Ningún motivo calza con una especialidad registrada. El sistema muestra "Tu entrevista no apunta a una especialidad concreta" con la invitación a contactarse con el centro y el botón "Contactarnos", que abre Soporte. El paciente levanta una solicitud o busca hora con la modalidad que prefiera.
+Excepción 2: La especialidad sugerida no tiene profesionales que lleguen a la comuna del paciente. El sistema lo indica y, si hay teleconsulta u otras especialidades con disponibilidad, las muestra como alternativas. El paciente elige teleconsulta o una alternativa.
+Poscondiciones
+El paciente recibe una sugerencia de derivación técnica orientada a su sintomatología, que queda guardada en el reporte pre-clínico.
+Dependencias
+RF24, RF26
+
+════════════════════════════════════════════════════════════════════
+
+CU44
+Actualizando indicadores de adherencia y síntomas
+Nombre
+Actualizando indicadores de adherencia y síntomas
+Actor(es)
+Paciente
+Resumen
+Cálculo automático del índice de adherencia (tareas cumplidas sobre tareas programadas mientras la pauta estuvo vigente), guardado como una medición diaria que alimenta la curva de progreso y levanta una bandera roja cuando cae bajo el umbral.
+Frecuencia
+Muy alta: tras cada registro de cumplimiento, cada cierre de sesión y cada apertura del panel de progreso.
+Precondiciones
+El paciente tiene una pauta de ejercicios vigente y registró cumplimientos, o una sesión clínica quedó cerrada.
+Descripción
+El paciente registra el cumplimiento de un ejercicio en Mis Ejercicios [Excepción 1], el sistema recupera las pautas del paciente y cuenta las tareas programadas hasta hoy (una por día de vigencia transcurrido para los ejercicios diarios y una por semana iniciada para los semanales) y las cumplidas [Excepción 2], el paciente navega a Mi Progreso [Excepción 3], el sistema recalcula el porcentaje con tope de 100%, lo guarda como la medición del día y actualiza la curva de síntomas y el panel [Excepción 4].
+Excepciones
+Excepción 1: El paciente registra un cumplimiento fuera del periodo de vigencia de la pauta. El sistema rechaza el registro (pauta expirada, CU49) y no lo considera en el cálculo. El paciente revisa sus tareas vigentes.
+Excepción 2: Falla la lectura de las tareas programadas. El sistema suspende el cálculo y entrega el último porcentaje guardado marcado como suspendido. El paciente visualiza el valor previo.
+Excepción 3: El paciente pierde la conexión al navegar. El sistema mantiene la actualización en el servidor. El paciente ve el nuevo dato al recuperar señal.
+Excepción 4: El porcentaje cae bajo el umbral de seguridad (parámetro UMBRAL_ADHERENCIA_CRITICA, 50%) habiendo al menos el mínimo de tareas programadas (parámetro MINIMO_TAREAS_PARA_ALERTA_ADHERENCIA, 5). El sistema emite una alerta clínica de adherencia baja al profesional tratante, una sola abierta por paciente. El profesional revisa el caso desde su panel de banderas rojas.
+Poscondiciones
+Los indicadores del paciente reflejan su compromiso terapéutico y quedan disponibles para él (Mi Progreso) y para el profesional (adherencia en la Ficha Clínica).
+Dependencias
+RF38, RF44, RF48
+
+════════════════════════════════════════════════════════════════════
+
+CU45
+Visualizando progreso en dashboard gráfico
+Nombre
+Visualizando progreso en dashboard gráfico
+Actor(es)
+Paciente
+Resumen
+Panel consolidado con el índice de adherencia, la curva de dolor y limitación funcional reportada, y el recuento de sesiones realizadas, filtrable por rango de fechas.
+Frecuencia
+Media, consultada libremente por el paciente.
+Precondiciones
+El paciente está autenticado.
+Descripción
+El paciente abre Mi Progreso desde su panel de inicio [Excepción 1], el sistema recalcula la adherencia (CU44) y extrae la serie diaria del índice, los reportes de síntomas y el recuento de citas realizadas del rango [Excepción 2], el paciente ajusta el rango con los atajos de 30 o 90 días o con las fechas desde y hasta [Excepción 3], el sistema dibuja los gráficos lineales y el resumen consolidado [Excepción 4].
+Excepciones
+Excepción 1: El paciente no tiene mediciones, reportes ni sesiones en el rango. El sistema muestra una vista introductoria sin métricas. El paciente agenda su evaluación o registra su primer reporte.
+Excepción 2: Falla el dibujo de un gráfico. El sistema captura el error y muestra los valores en texto en el mismo lugar. El paciente recarga el panel.
+Excepción 3: El paciente elige una fecha de inicio posterior a la de fin. La aplicación bloquea la selección y, si igual llega al servidor, este la rechaza (RANGO_INVALIDO). El paciente corrige el rango.
+Excepción 4: El servidor tarda en calcular la serie. El sistema muestra un indicador de carga circular hasta completar. El paciente espera.
+Poscondiciones
+El paciente obtiene una vista clara y estructurada de su trayectoria de rehabilitación.
+Dependencias
+RF44, RF45
+
+════════════════════════════════════════════════════════════════════
+
+CU50
+Generando y notificando alerta por deterioro clínico
+Nombre
+Generando y notificando alerta por deterioro clínico
+Actor(es)
+Paciente, Profesional
+Resumen
+El paciente reporta entre sesiones su nivel de dolor y de limitación funcional; el sistema compara el reporte con los umbrales y con el reporte anterior, lo etiqueta como riesgo crítico si corresponde y deja una alerta en el panel de banderas rojas del profesional.
+Frecuencia
+Alta, en cada reporte de seguimiento.
+Precondiciones
+El paciente tiene Ficha Clínica y accede a Mi Seguimiento.
+Descripción
+El paciente marca su nivel de dolor y de limitación para moverse en escalas de 0 a 10, agrega un comentario opcional y envía el reporte, que viaja con una clave de envío única [Excepción 1], el sistema calcula la desviación respecto de los umbrales (parámetros UMBRAL_DOLOR_CRITICO, 8, y UMBRAL_ALZA_DOLOR, 3 puntos sobre el reporte anterior) y etiqueta el registro como riesgo crítico cuando los supera [Excepción 2], el paciente recibe la confirmación de envío en pantalla [Excepción 3], el sistema persiste la alerta vinculada al reporte y al paciente y avisa a los profesionales tratantes, que la ven en el panel de banderas rojas de su inicio y la marcan como revisada [Excepción 4].
+Excepciones
+Excepción 1: El paciente envía el reporte sin dolor o sin limitación. El sistema descarta el envío y resalta los campos faltantes. El paciente los completa.
+Excepción 2: La desviación no supera los umbrales. El sistema clasifica la evolución como normal y no genera alerta. El paciente recibe la confirmación habitual.
+Excepción 3: El paciente cierra la aplicación antes de recibir el acuse del servidor. El sistema conserva el reporte gracias a la clave de envío, que impide duplicarlo si el teléfono lo reintenta, y registra el corte en la bitácora. El paciente ve el reporte al volver.
+Excepción 4: El teléfono no tiene conexión al enviar, o el servidor no puede escribir la alerta. Sin conexión, la aplicación retiene el reporte en el dispositivo y lo reenvía al volver a la pantalla con señal; si el reporte se guardó pero la alerta falló, el reporte no se pierde y el fallo queda anotado. El paciente recibe igual su acuse de recibo.
+Poscondiciones
+El reporte queda en la Ficha Clínica del paciente y, si hubo deterioro, la alerta queda persistida y visible para el profesional hasta que la revise.
+Dependencias
+RF45, RF50, RF51
+
+════════════════════════════════════════════════════════════════════
+
+CU52
+Emitiendo notificaciones multicanal
+Nombre
+Emitiendo notificaciones multicanal
+Actor(es)
+Paciente, Profesional, Administrador
+Resumen
+Todo aviso del sistema sale por un despachador único: siempre queda en el centro de notificaciones de la app y, según las preferencias del usuario, también se envía como notificación push y por correo electrónico. Al tocar un aviso, la aplicación abre la pantalla correspondiente.
+Frecuencia
+Alta, gatillada por la agenda, los pagos, el chat, el soporte y las alertas clínicas.
+Precondiciones
+El usuario tiene una cuenta activa con correo verificado.
+Descripción
+Un evento del sistema (cambio en una cita, cupo liberado, mensaje nuevo, ticket, liquidación, alerta clínica, entre otros) genera un aviso con destinatario, tipo y pantalla de destino [Excepción 1], el sistema lo guarda en el centro de notificaciones del usuario, lee sus preferencias de canal y lo envía por notificación push si tiene un dispositivo registrado y por correo cuando el aviso lo requiere, registrando en la bitácora por qué canales salió [Excepción 2], el usuario ve el globo de no leídos en la campana, abre el centro de notificaciones (los no leídos arriba, los leídos al final) o toca la alerta del teléfono [Excepción 3], el sistema abre la pantalla indicada en el aviso y lo marca como leído [Excepción 4].
+Excepciones
+Excepción 1: Se produce un fallo al despachar el aviso. El sistema no revierte la operación que lo originó: el aviso queda en la app aunque falle el push o el correo. El usuario lo ve en la campana.
+Excepción 2: El usuario desactivó las notificaciones push (o el correo) en sus preferencias, o no tiene dispositivo registrado porque la aplicación corre en Expo Go, donde Android no entrega push remoto. El sistema enruta el aviso solo por los canales habilitados y deja constancia en la bitácora. El usuario recibe el aviso por la app y el correo.
+Excepción 3: El usuario descarta la alerta del teléfono sin tocarla. El sistema no abre nada. El usuario entra a la aplicación por su cuenta y ve el aviso en la campana.
+Excepción 4: La pantalla de destino no existe para el rol del usuario. El sistema ignora el salto y anota el caso en la consola, dejando al usuario en su pantalla actual.
+Poscondiciones
+El aviso queda indexado en el historial del usuario con su estado de lectura, y el despacho queda registrado en la bitácora de auditoría.
+Dependencias
+RF09, RF14, RF22, RF52
+
+════════════════════════════════════════════════════════════════════
+
+CU53
+Comunicando mediante mensajería clínica cifrada
+Nombre
+Comunicando mediante mensajería clínica cifrada
+Actor(es)
+Paciente, Profesional
+Resumen
+Chat entre el paciente y el profesional de un episodio clínico. Los mensajes se guardan cifrados con AES-256-GCM y se descifran solo al servirlos a los dos participantes; la aplicación consulta novedades cada pocos segundos mientras la conversación está abierta.
+Frecuencia
+Alta, bajo demanda durante el tratamiento.
+Precondiciones
+Existe un episodio clínico que vincula al paciente con el profesional.
+Descripción
+El actor abre Mensajes, elige la conversación del episodio (con la foto del profesional, el motivo de consulta y los no leídos) y redacta un mensaje [Excepción 1], el sistema pasa el texto por el filtro de contenido (CU57), lo cifra y lo guarda con su remitente, y avisa a la otra parte con un único aviso por conversación que se actualiza con la cantidad de mensajes pendientes [Excepción 2], la otra parte abre la conversación, agrupada por día ("Hoy", "Ayer" o la fecha) [Excepción 3], el sistema descifra los mensajes, los marca como leídos y sigue entregando los nuevos cada seis segundos [Excepción 4].
+Excepciones
+Excepción 1: El mensaje contiene términos del diccionario de palabras restringidas o supera los 1000 caracteres. El sistema bloquea el envío sin guardar el texto y muestra la advertencia. El actor reescribe el mensaje.
+Excepción 2: Falla el envío por pérdida de red o error del servidor. La aplicación conserva el mensaje en el dispositivo como pendiente y lo reintenta al recuperar la conexión. El actor ve el mensaje marcado como pendiente de envío.
+Excepción 3: El episodio clínico está cerrado. El sistema suprime la caja de texto y deja la conversación en solo lectura. El actor lee el historial.
+Excepción 4: Un mensaje no puede descifrarse porque la clave del servidor cambió o el registro está alterado. El sistema no muestra basura ni falla: entrega ese mensaje como ilegible con una advertencia. El administrador revisa la clave de cifrado configurada en el servidor.
+Poscondiciones
+Los mensajes quedan almacenados cifrados en la base de datos, ilegibles para cualquiera que no sea uno de los dos participantes.
+Dependencias
+RF53, RF57
+
+════════════════════════════════════════════════════════════════════
+
+CU55
+Evaluando satisfacción post-sesión
+Nombre
+Evaluando satisfacción post-sesión
+Actor(es)
+Paciente
+Resumen
+Al cerrarse una sesión, el paciente recibe un aviso para calificar la atención con una nota de 1 a 5 estrellas y un comentario opcional. La nota entra de inmediato al promedio del profesional; el comentario queda pendiente de moderación.
+Frecuencia
+Alta, una vez por cada cita realizada.
+Precondiciones
+La cita del paciente está en estado Realizada (el profesional finalizó la atención) y no ha sido evaluada.
+Descripción
+El sistema, al cerrarse la sesión, envía al paciente el aviso "Califica tu atención" [Excepción 1], el paciente toca el aviso y la aplicación abre Mis Citas con el formulario de esa cita desplegado [Excepción 2], el paciente marca la nota en estrellas y, si quiere, escribe una reseña [Excepción 3], el sistema registra la evaluación, pasa la reseña por el filtro de contenido (CU57), recalcula el promedio del profesional bloqueando su fila y lo persiste en su perfil [Excepción 4].
+Excepciones
+Excepción 1: El paciente intenta evaluar una cita que no está Realizada, o que ya evaluó. El sistema rechaza el registro e informa el motivo. El paciente espera el cierre de la sesión o revisa su evaluación anterior.
+Excepción 2: El aviso no se muestra o el paciente lo descarta. El sistema mantiene la cita en la sección "Califica tu atención" de Mis Citas. El paciente la evalúa desde ahí.
+Excepción 3: El paciente envía solo la nota, sin reseña, o la reseña contiene términos no permitidos. El sistema registra únicamente la nota; en el segundo caso muestra el aviso "No se pudo registrar el mensaje porque incluye términos no permitidos". El paciente vuelve a Mis Citas.
+Excepción 4: Dos evaluaciones del mismo profesional se registran al mismo tiempo. El sistema aplica un bloqueo temporal de la fila del profesional, serializa el cálculo y asienta el promedio final. Ninguna evaluación se pierde.
+Poscondiciones
+La nota queda registrada y modifica el promedio del profesional y el KPI de satisfacción del panel administrativo; la reseña, si la hubo, queda pendiente de moderación (CU56).
+Dependencias
+RF41, RF55, RF58, RF64
+
+════════════════════════════════════════════════════════════════════
+
+CU56
+Moderando testimonios públicos
+Nombre
+Moderando testimonios públicos
+Actor(es)
+Administrador
+Resumen
+El administrador revisa las reseñas escritas por los pacientes antes de que se publiquen en el perfil del profesional: las aprueba o las rechaza con una causal. La nota en estrellas nunca pasa por moderación.
+Frecuencia
+Media, según el volumen de reseñas escritas.
+Precondiciones
+Existe al menos una evaluación con reseña en estado Pendiente.
+Descripción
+El administrador abre Moderar testimonios y filtra por estado (pendientes, aprobadas o rechazadas) [Excepción 1], el sistema lista las reseñas con el profesional evaluado, la nota, la fecha y el texto saneado [Excepción 2], el administrador aprueba la reseña, o la rechaza indicando la causal en el diálogo [Excepción 3], el sistema guarda la decisión con el moderador y el momento: la aprobación publica la reseña y avisa al profesional; el rechazo aplica un borrado lógico que la conserva con su causal pero la excluye de las lecturas públicas [Excepción 4].
+Excepciones
+Excepción 1: No hay reseñas en el estado filtrado. El sistema muestra el conjunto vacío. El administrador vuelve al panel.
+Excepción 2: El texto contiene caracteres de control o codificación no estándar. El sistema lo sanea antes de mostrarlo. El administrador lee la versión corregida.
+Excepción 3: El administrador intenta rechazar sin causal. La aplicación no envía la decisión hasta que la escriba. El administrador especifica la causal.
+Excepción 4: Falla la escritura de la decisión. El sistema revierte la transacción y la reseña conserva su estado anterior. El administrador reintenta.
+Poscondiciones
+La reseña queda en estado Aprobada (visible en el perfil del profesional) o Rechazada (oculta, con causal, moderador y fecha).
+Dependencias
+RF56, RF57
+
+════════════════════════════════════════════════════════════════════
+
+CU57
+Filtrando automáticamente contenido restringido
+Nombre
+Filtrando automáticamente contenido restringido
+Actor(es)
+Paciente, Profesional, Administrador
+Resumen
+Cada texto que un paciente o profesional envía al chat clínico o como reseña se contrasta contra el diccionario de términos restringidos que administra el Administrador; si coincide, no se guarda. El diccionario se gestiona desde la aplicación.
+Frecuencia
+Alta, en cada envío de texto a los módulos cualitativos.
+Precondiciones
+El diccionario de términos restringidos está poblado con al menos un término activo (viene sembrado con una lista inicial).
+Descripción
+El administrador gestiona el diccionario desde Términos restringidos: agrega términos con categoría, los activa o desactiva y los elimina; cada cambio refresca la caché del filtro [Excepción 1], el actor envía un mensaje del chat o una reseña [Excepción 2], el sistema normaliza el texto (minúsculas, sin acentos, sin letras repetidas) y lo compara por palabra completa contra los términos activos [Excepción 3], el sistema bloquea la escritura, registra el bloqueo en la bitácora sin guardar el texto y muestra la advertencia; en el chat el mensaje no se envía y en la evaluación se registra solo la nota [Excepción 4].
+Excepciones
+Excepción 1: El administrador intenta agregar un término vacío o ya existente. El sistema lo rechaza o reactiva el existente. El administrador corrige el término.
+Excepción 2: El actor envía un texto sin caracteres imprimibles. El sistema lo rechaza antes de pasar por el filtro. El actor escribe un mensaje válido.
+Excepción 3: No hay coincidencias. El sistema autoriza el envío y guarda el texto (cifrado en el chat, pendiente de moderación en la reseña). El actor ve la confirmación de envío.
+Excepción 4: Se pierde la conexión durante la validación. En el chat la aplicación conserva el mensaje en el dispositivo y lo reintenta al recuperar la red; en la evaluación el actor reintenta. El texto no se pierde localmente.
+Poscondiciones
+El texto restringido no se almacena ni puede leerse por terceros; solo queda en la bitácora el registro del bloqueo con los términos coincidentes.
+Dependencias
+RF53, RF55, RF57, RF59
+
+════════════════════════════════════════════════════════════════════
+
+CU58
+Calculando y visualizando calificación profesional
+Nombre
+Calculando y visualizando calificación profesional
+Actor(es)
+Paciente, Profesional
+Resumen
+El promedio de las notas recibidas por cada profesional se persiste en su perfil y se muestra en estrellas en el buscador de horas; al tocarlo, el paciente ve la cantidad de evaluaciones y las reseñas aprobadas con el nombre de su autor o "Anónimo".
+Frecuencia
+Alta, en cada búsqueda de horas.
+Precondiciones
+El profesional tiene un perfil activo visible para los pacientes.
+Descripción
+El paciente busca horas por especialidad, modalidad y fecha [Excepción 1], el sistema devuelve, junto con cada bloque, el promedio persistido del profesional (recalculado en cada evaluación, CU55) y la cantidad de evaluaciones [Excepción 2], el paciente toca las estrellas de un profesional [Excepción 3], el sistema abre la pantalla de evaluaciones con el promedio, el total y las reseñas aprobadas, cada una con la fecha y el autor (nombre e inicial del apellido, o "Anónimo" si el paciente así lo configuró en Seguridad y privacidad) [Excepción 4].
+Excepciones
+Excepción 1: Los filtros no arrojan profesionales. El sistema muestra que no hay coincidencias y explica el motivo (por ejemplo, profesionales descartados por la comuna). El paciente amplía los filtros.
+Excepción 2: El profesional no tiene evaluaciones. El sistema no inventa un promedio: muestra "Perfil nuevo · sin evaluaciones aún" en lugar de las estrellas y no habilita el acceso a las reseñas.
+Excepción 3: El paciente sale de la pantalla antes de que carguen las reseñas. El sistema cancela la carga. El paciente vuelve a abrirla cuando quiera.
+Excepción 4: El servidor tarda en responder. El sistema muestra un esqueleto de carga hasta recibir los datos. El paciente espera.
+Poscondiciones
+El paciente ve métricas exactas del historial de evaluaciones; el profesional ve la misma calificación en Mi perfil público con acceso a sus evaluaciones.
+Dependencias
+RF55, RF58
+
+════════════════════════════════════════════════════════════════════
+
+CU60
+Registrando y siguiendo solicitudes de soporte
+Nombre
+Registrando y siguiendo solicitudes de soporte
+Actor(es)
+Paciente, Profesional
+Resumen
+El usuario levanta una solicitud de soporte categorizada, con descripción y una captura de pantalla opcional, obtiene un número correlativo y sigue su estado y la respuesta del operador desde la misma pantalla.
+Frecuencia
+Media, ante bloqueos técnicos o administrativos.
+Precondiciones
+El usuario tiene sesión iniciada.
+Descripción
+El actor abre Soporte desde su panel [Excepción 1], el sistema carga las categorías (problema técnico, citas y horarios, pagos, consulta clínica, mi cuenta, otro) y el formulario [Excepción 2], el actor elige la categoría, describe el problema y opcionalmente adjunta una imagen, y envía la solicitud [Excepción 3], el sistema sube la imagen al repositorio en la nube, guarda el ticket en estado Abierto con su número, lo enruta al operador del área (CU61), confirma el número al actor y lo muestra en "Mis solicitudes" con su estado, la imagen y la respuesta cuando la haya [Excepción 4].
+Excepciones
+Excepción 1: El teléfono no tiene conexión. El sistema muestra la alerta de conectividad. El actor espera a recuperar la red.
+Excepción 2: El repositorio de imágenes no está disponible. El sistema rechaza el adjunto y ofrece enviar la solicitud sin imagen. El actor la envía sin adjunto o reintenta después.
+Excepción 3: El actor omite la categoría o la descripción. El sistema devuelve un error de validación y no crea el ticket. El actor completa los campos.
+Excepción 4: La imagen supera el tamaño máximo (parámetro MAX_ADJUNTO_TICKET_MB, 5 MB). El sistema aborta la transferencia sin crear el ticket. El actor comprime la imagen y reintenta.
+Poscondiciones
+El ticket queda registrado en estado Abierto, disponible para las reglas de enrutamiento, y el actor recibe un aviso cuando es resuelto.
+Dependencias
+RF60, RF61
+
+════════════════════════════════════════════════════════════════════
+
+CU61
+Enrutando automáticamente solicitudes por categoría
+Nombre
+Enrutando automáticamente solicitudes por categoría
+Actor(es)
+Administrador
+Resumen
+Cada ticket se asigna automáticamente al operador que cubre su área (repartiendo por carga si hay varios) y aparece en su bandeja con los datos de contacto de quien lo reportó; sin operador para el área, el ticket cae en la bandeja de supervisión general y se alerta del desborde.
+Frecuencia
+Alta, como consecuencia directa de cada ticket del CU60.
+Precondiciones
+Existe un ticket recién creado con su categoría; cada operador declaró las áreas que atiende.
+Descripción
+El sistema, al crearse el ticket, busca entre los administradores activos al que cubre esa categoría con menos tickets abiertos, le asigna el ticket, registra el momento de enrutamiento y le avisa [Excepción 1], el administrador abre su bandeja, filtra por estado o por sus propios tickets y ve cada uno con la descripción, la captura adjunta (ampliable), el solicitante con su RUT, teléfono y correo, el operador asignado y las horas transcurridas [Excepción 2], el administrador toma un ticket sin asignar o pasa el suyo a En proceso, y lo resuelve escribiendo la respuesta que verá el solicitante [Excepción 3], el sistema guarda el estado, la resolución y el momento, registra la gestión en la bitácora y avisa al solicitante [Excepción 4].
+Excepciones
+Excepción 1: Ningún operador activo cubre el área del ticket. El sistema lo deja sin asignar en la bandeja de supervisión general y alerta a todos los administradores del desborde; cada vez que se abre la bandeja reintenta el enrutamiento, por si el área ganó operador.
+Excepción 2: La sesión del administrador expiró. El sistema rechaza la consulta y exige iniciar sesión de nuevo. El administrador se autentica.
+Excepción 3: Otro operador tomó o resolvió el ticket entre medio. El sistema rechaza la escritura y pide refrescar la bandeja para ver el estado real. El administrador refresca.
+Excepción 4: El administrador intenta resolver sin escribir la respuesta. La aplicación no envía la resolución hasta que la escriba. El administrador la completa.
+Poscondiciones
+El ticket queda vinculado al operador resolutor con su momento de enrutamiento, y la telemetría de horas abiertas se muestra en la bandeja y en el panel de KPIs.
+Dependencias
+RF60, RF61
+
+════════════════════════════════════════════════════════════════════
+
+CU63
+Generando y exportando reportes operativos
+Nombre
+Generando y exportando reportes operativos
+Actor(es)
+Administrador
+Resumen
+El administrador elige un tipo de informe (asistencia, recaudación o adherencia), un rango de fechas y un formato (XLSX, PDF o CSV), y el sistema genera el archivo y lo entrega para descargar o compartir desde el teléfono.
+Frecuencia
+Media, bajo demanda.
+Precondiciones
+El usuario autenticado tiene rol de Administrador.
+Descripción
+El administrador abre Informes operativos, elige el tipo y el rango de fechas [Excepción 1], el sistema ejecuta las consultas de agregación del periodo [Excepción 2], el administrador elige el formato de salida [Excepción 3], el sistema compila el archivo, registra la extracción en la bitácora de auditoría y lo entrega a la aplicación, que lo guarda y abre la hoja de compartir del sistema [Excepción 4].
+Excepciones
+Excepción 1: La fecha de inicio es posterior a la de fin. El sistema rechaza la consulta. El administrador corrige el rango.
+Excepción 2: El periodo no tiene registros. El sistema interrumpe la generación e informa que no hay datos. El administrador cambia los criterios.
+Excepción 3: El generador de PDF no está disponible en el servidor. El sistema informa el error de formato y la aplicación ofrece exportar en XLSX o CSV. El administrador elige el formato alternativo.
+Excepción 4: El informe supera el máximo de filas por archivo (parámetro MAX_FILAS_POR_TOMO_INFORME, 2000). El sistema lo divide en tomos correlativos. El administrador descarga cada tomo.
+Poscondiciones
+La extracción queda registrada en la bitácora (EXPORTACION_INFORME) con el tipo, el rango, el formato y el tomo descargado.
+Dependencias
+RF18, RF51, RF63, RF67
+
+════════════════════════════════════════════════════════════════════
+
+CU64
+Visualizando dashboard de monitoreo de KPIs
+Nombre
+Visualizando dashboard de monitoreo de KPIs
+Actor(es)
+Administrador
+Resumen
+El panel de inicio del administrador muestra los indicadores organizacionales del periodo (pacientes activos, citas por estado, satisfacción promedio, adherencia, recaudación neta de devoluciones y pendientes de gestión) con gráficos, filtros de rango y accesos a las herramientas de administración.
+Frecuencia
+Alta, en cada inicio de sesión del administrador.
+Precondiciones
+El administrador tiene sesión válida.
+Descripción
+El administrador inicia sesión y el sistema lo lleva al Panel de administración [Excepción 1], el sistema calcula los indicadores del periodo con consultas de agregación sobre pacientes, citas, evaluaciones, adherencia, transacciones, tickets y testimonios [Excepción 2], el administrador ajusta el rango de fechas o entra a un pendiente de gestión (tickets abiertos, testimonios por moderar, sesiones suspendidas) [Excepción 3], el sistema actualiza las tarjetas y los gráficos con los valores recalculados [Excepción 4].
+Excepciones
+Excepción 1: Un gráfico no puede dibujarse en el dispositivo. El sistema muestra los valores en texto en su lugar. El administrador evalúa los datos numéricos.
+Excepción 2: El cálculo falla o excede el tiempo por alta latencia. El sistema entrega la última versión calculada (caché de dos minutos) y lo advierte con la leyenda de datos diferidos. El administrador ve la información transitoria.
+Excepción 3: El administrador ingresa un rango con fecha de inicio posterior a la de fin. El sistema rechaza la petición. El administrador corrige el rango.
+Excepción 4: El servidor no responde. El sistema muestra el indicador de carga y la opción de reintentar. El administrador recarga el panel.
+Poscondiciones
+Ninguna: es una lectura no destructiva; solo se actualiza la caché de indicadores en memoria del servidor.
+Dependencias
+RF55, RF64, RF67
+
+════════════════════════════════════════════════════════════════════
+
+CU73
+Comercializando prestaciones con restricción de cobro anticipado
+Nombre
+Comercializando prestaciones con restricción de cobro anticipado
+Actor(es)
+Paciente, Profesional
+Resumen
+Tras reservar un bloque, el paciente paga la sesión suelta, compra un plan de 10, 15 o 20 sesiones o usa una sesión de un plan vigente. La reserva es temporal hasta que el pago íntegro se valida; solo entonces el profesional puede confirmar la cita [D1].
+Frecuencia
+Múltiples veces por día.
+Precondiciones
+El paciente tiene cuenta activa y acaba de reservar un bloque horario (cita Agendada sin pago).
+Descripción
+El paciente, al reservar el bloque, pasa a la pantalla de pago y elige entre pagar solo esta sesión, comprar un plan (10, 15 o 20 sesiones) o usar una sesión de su plan activo [Excepción 1], el sistema calcula y muestra el monto: el arancel de la sesión (parámetro ARANCEL_ESPECIALIDAD) o el precio del plan con su descuento (parámetro DESCUENTO_PAQUETE_PORCENTAJE), o cero si usa el plan [Excepción 2], el paciente elige el método de pago de la pasarela (simulada: tarjeta con pago exitoso, tarjeta rechazada o tarjeta con confirmación lenta) y paga [Excepción 3], el sistema registra la transacción pagada, activa el plan si lo compró, deja la cita agendada y pagada, avisa al profesional "Hora pagada por confirmar" y este la confirma desde la ficha del paciente; el sistema impide confirmar una hora que no esté pagada [Excepción 4].
+Excepciones
+Excepción 1: El paciente intenta pagar sin elegir modalidad. El sistema bloquea el paso. El paciente elige una modalidad.
+Excepción 2: Falla el cálculo del monto. El sistema muestra un error técnico y la opción de reintentar. El paciente reintenta.
+Excepción 3: La entidad bancaria rechaza el pago. El sistema registra la transacción rechazada, revoca la reserva (la cita queda cancelada), ofrece el bloque a la lista de espera y devuelve al paciente al buscador. El paciente reinicia el agendamiento con otro método.
+Excepción 4: El banco aún no confirma el pago (pago en tránsito). El sistema registra la transacción en tránsito y deja la hora reservada pero no pagada ni confirmable. El paciente reintenta más tarde sin volver a pagar.
+Poscondiciones
+La cita queda agendada con su pago registrado (o cubierta por una sesión del plan) y pendiente de confirmación del profesional; el balance de sesiones del paciente refleja el plan comprado.
+Dependencias
+RF14, RF20, RF73
+
+════════════════════════════════════════════════════════════════════
+
+CU74
+Actualizando y devolviendo transacciones financieras
+Nombre
+Actualizando y devolviendo transacciones financieras
+Actor(es)
+Paciente
+Resumen
+El paciente convierte una sesión suelta ya pagada en un plan de 10, 15 o 20 sesiones pagando solo la diferencia dentro de las 24 horas previas a la prestación; fuera de esa ventana el sistema devuelve el pago completo. Además, cancelar una sesión suelta con 24 horas o más de anticipación genera la devolución automática.
+Frecuencia
+Bajo demanda del paciente.
+Precondiciones
+El paciente tiene una cita agendada o confirmada, pagada como sesión unitaria.
+Descripción
+El paciente, en Mis Citas, elige "Cambiar a plan" con 10, 15 o 20 sesiones sobre su cita pagada [Excepción 1], el sistema verifica que la cita esté dentro de la ventana (parámetro HORAS_ANTICIPACION_DEVOLUCION, 24 horas) y calcula la diferencia entre el precio del plan y lo ya pagado [Excepción 2], el paciente paga la diferencia en la pasarela [Excepción 3], el sistema registra la transacción de actualización, activa el plan con una sesión ya asignada a esa cita y actualiza el inventario del paciente [Excepción 4]. Adicionalmente, cuando el paciente cancela una cita pagada como sesión unitaria con al menos 24 horas de anticipación, el sistema registra en la misma transacción de la cancelación una devolución total, le avisa y la muestra en la sección Devoluciones de Pagos y Bonos; si la hora estaba cubierta por un plan no devuelve dinero, porque la sesión sigue disponible en el plan.
+Excepciones
+Excepción 1: La cita está a más de 24 horas. El sistema ejecuta la devolución total del pago inicial, cancela la cita liberando la hora y la ofrece a la lista de espera. El paciente agenda de nuevo y compra el plan desde el inicio.
+Excepción 2: No existe registro del pago previo, o la cita ya está cubierta por un plan. El sistema detiene el cálculo; en el primer caso levanta una alerta de auditoría (INCONSISTENCIA_PAGO_PREVIO). El paciente contacta a soporte o no necesita el cambio.
+Excepción 3: El pago de la diferencia es rechazado o abandonado. El sistema anula la actualización y registra la transacción rechazada. El paciente conserva su sesión unitaria.
+Excepción 4: Hay latencia de red al registrar la actualización. El sistema revierte la transacción y pide reintentar. El paciente reintenta y ve la confirmación.
+Poscondiciones
+El inventario de sesiones del paciente queda actualizado bajo el formato de plan, o la devolución queda registrada como transacción de tipo Devolución y el pago inicial revertido.
+Dependencias
+RF17, RF18, RF74
+
+════════════════════════════════════════════════════════════════════
+
+CU75
+Liquidando ganancias en panel financiero
+Nombre
+Liquidando ganancias en panel financiero
+Actor(es)
+Administrador, Profesional
+Resumen
+El administrador consulta, mes a mes, cuánto corresponde a cada profesional por sus sesiones validadas, agrega bonificaciones y emite la liquidación, que queda inalterable y visible en solo lectura para el profesional.
+Frecuencia
+Una vez por profesional al cierre de cada mes.
+Precondiciones
+Existen citas del profesional con sesión validada (CU41) en el mes consultado.
+Descripción
+El administrador abre Liquidaciones y navega al mes operativo [Excepción 1], el sistema calcula para cada profesional las sesiones validadas del mes y el monto (sesiones por arancel por el parámetro PORCENTAJE_HONORARIO_PROFESIONAL) e indica si el periodo ya fue emitido [Excepción 2], el administrador ingresa una bonificación y una observación opcionales [Excepción 3], el sistema muestra el total, y al emitir persiste la liquidación con el detalle, la fecha y quién la emitió, la deja inalterable y avisa al profesional, que la consulta en Mis Liquidaciones [Excepción 4].
+Excepciones
+Excepción 1: El mes consultado es futuro o no tiene registros. El sistema devuelve la lista vacía e informa que no hay prestaciones que liquidar. El administrador elige un mes finalizado.
+Excepción 2: El profesional tiene cero sesiones validadas. El sistema muestra un monto de cero pesos. El administrador audita las citas del profesional.
+Excepción 3: El administrador escribe caracteres no numéricos en la bonificación. La aplicación no los acepta y el servidor los rechaza. El administrador ingresa un valor numérico.
+Excepción 4: El cálculo supera el tiempo máximo (parámetro LATENCIA_MAXIMA_LIQUIDACION_MS, 2000 milisegundos) o el periodo ya fue emitido. El sistema registra la latencia en la bitácora, o rechaza la segunda emisión informando que ya existe. El administrador recarga la vista o consulta la emitida.
+Poscondiciones
+La liquidación mensual queda almacenada de forma inalterable (una por profesional y mes), con acceso de solo lectura para el profesional y registro en la bitácora de auditoría.
+Dependencias
+RF41, RF75
