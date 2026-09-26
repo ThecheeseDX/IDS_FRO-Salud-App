@@ -47,7 +47,7 @@ export default function BuscarCitaScreen({ navigation, route }) {
   // ── CU14: filtros de búsqueda ─────────────────────────────────────────────
   const [especialidades, setEspecialidades] = useState([]);
   const [especialidadId, setEspecialidadId] = useState('');
-  const [tipoSede, setTipoSede] = useState('AMBOS');
+  const [tipoSede, setTipoSede] = useState('DOMICILIO');
   const [fechaSeleccionada, setFechaSeleccionada] = useState('');
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [nombreProfesional, setNombreProfesional] = useState('');
@@ -342,8 +342,9 @@ export default function BuscarCitaScreen({ navigation, route }) {
             setBloqueSeleccionado(null);
           }}
         >
-          <Picker.Item label="Teleconsulta Online" value="ONLINE" />
+          {/* A domicilio primero: es la opción por defecto y la más usada. */}
           <Picker.Item label="Atención Domiciliaria" value="DOMICILIO" />
+          <Picker.Item label="Teleconsulta Online" value="ONLINE" />
           <Picker.Item label="Ambas modalidades" value="AMBOS" />
         </Picker>
       </View>
