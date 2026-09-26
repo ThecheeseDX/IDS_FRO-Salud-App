@@ -77,8 +77,7 @@ CREATE TABLE Solicitud_Confirmacion (
     respuesta VARCHAR(20) NULL,
     canal_respuesta VARCHAR(20) NULL,
     cita_id INT NOT NULL UNIQUE,
-    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id),
-    FOREIGN KEY (moderador_id) REFERENCES Usuario(usuario_id)
+    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
 );
 
 CREATE TABLE Ticket_Soporte (
