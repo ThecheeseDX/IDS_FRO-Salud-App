@@ -97,7 +97,7 @@ CU25 = dict(id='CU25', nombre='Sintetizando reporte de hallazgos pre-clínicos',
 # Dos roles con flujos distintos: el paciente reporta (y el motor clinico
 # levanta la bandera roja), el profesional la revisa en su panel.
 PARTES_CU50 = [ACTOR, VISTA, *capa(MCL, DESP, ADP, BREVO),
-               *T('Reporte_Sintoma', 'Episodio_Clinico', 'Cita', 'Parametro_Global', 'Alerta_Clinica', 'Notificacion')]
+               *T('Reporte_Sintoma', 'Episodio_Clinico', 'Cita', 'Parametro_Global', 'Alerta_Clinica', 'Notificacion', 'Bitacora_Auditoria')]
 
 CU50_PACIENTE = [
     'A -> V: marcar_dolor_y_limitacion(nivel_dolor, limitacion_funcional, comentario)',
@@ -172,6 +172,7 @@ CU50 = dict(id='CU50', nombre='Generando y notificando alerta por deterioro clí
           f'V -> {API}: POST /clinica/sintomas (misma clave_envio)',
           *leer('verificar_clave_de_envio(clave_envio)', 'Reporte_Sintoma', 'reporte_sintoma_id, momento_registro',
                 '1 coincidencia', 'return (reporte ya registrado)'),
+          *insertar('registrar_el_corte(REENVIO_REPORTE_SINTOMA)', 'Bitacora_Auditoria'),
           f'{API} --> V: return (HTTP 200 OK: este reporte ya habia quedado registrado)'],
           reanudar='mostrar_confirmacion_de_envio'),
       4: dict(cortar='INSERT INTO Alerta_Clinica', lineas=[
