@@ -193,6 +193,69 @@ exports.comprarPrestacion = async (req, res) => {
       });
     }
 
+    // Excepción 4 del CU73: un pago anterior quedó "en tránsito" (el banco no
+    // alcanzó a confirmar). El siguiente intento lo concilia y NO cobra de
+    // nuevo: antes se registraba un segundo pago y el primero quedaba colgado.
+    const [[enTransito]] = await conexion.execute(
+      `SELECT transaccion_id, monto_total, tipo FROM Transaccion
+        WHERE cita_id = ? AND estado = 'EN_TRANSITO'
+        ORDER BY transaccion_id DESC LIMIT 1`,
+      [req.params.id]
+    );
+    if (enTransito) {
+      await conexion.beginTransaction();
+      await conexion.execute(
+        `UPDATE Transaccion SET estado = 'PAGADA' WHERE transaccion_id = ?`,
+        [enTransito.transaccion_id]
+      );
+
+      // Si lo que quedó en tránsito era un plan, se activa ahora. El plan se
+      // reconoce por su precio; si el arancel cambió entre medio, se usa el
+      // plan que el paciente eligió en este intento.
+      let sesionesPlan = null;
+      if (enTransito.tipo === 'PAQUETE') {
+        for (const opcion of SESIONES_PAQUETE) {
+          if ((await precioPaquete(conexion, opcion)) === Number(enTransito.monto_total)) {
+            sesionesPlan = opcion;
+            break;
+          }
+        }
+        sesionesPlan = sesionesPlan || (SESIONES_PAQUETE.includes(sesiones) ? sesiones : SESIONES_PAQUETE[0]);
+        await conexion.execute(
+          `INSERT INTO Paquete_Sesiones (sesiones_total, sesiones_usadas, estado, precio_total, paciente_id)
+           VALUES (?, 0, 'ACTIVO', ?, ?)`,
+          [sesionesPlan, enTransito.monto_total, pacienteId]
+        );
+      }
+
+      await conexion.execute(
+        `INSERT INTO Bitacora_Auditoria
+            (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
+         VALUES ('CONCILIACION_PAGO_EN_TRANSITO', 'Transaccion', ?, ?, ?)`,
+        [
+          req.ip || null,
+          JSON.stringify({
+            cita_id: Number(req.params.id),
+            transaccion_id: enTransito.transaccion_id,
+            monto: Number(enTransito.monto_total),
+            plan: sesionesPlan,
+          }),
+          req.user.usuario_id,
+        ]
+      );
+      await avisarHoraPagada(conexion, req.params.id);
+      await conexion.commit();
+
+      return res.status(200).json({
+        mensaje:
+          'Encontramos tu pago anterior en tránsito y quedó conciliado: no se hizo un nuevo cobro. ' +
+          'Te avisaremos cuando el profesional confirme la cita.',
+        estado: 'AGENDADA',
+        monto: Number(enTransito.monto_total),
+        conciliado: true,
+      });
+    }
+
     // ── Camino A: usar una sesión de un plan ya comprado ────────────────
     if (modalidad === 'USAR_PAQUETE') {
       await conexion.beginTransaction();
