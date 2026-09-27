@@ -282,12 +282,22 @@ async function reenrutarPendientes(conexion) {
     for (const ticket of huerfanos) {
       const operador = await operadorParaCategoria(conexion, ticket.categoria);
       if (operador) {
-        await conexion.query(
+        const [resultado] = await conexion.query(
           `UPDATE Ticket_Soporte
               SET asignado_a = ?, momento_enrutamiento = NOW()
             WHERE ticket_soporte_id = ? AND asignado_a IS NULL`,
           [operador, ticket.ticket_soporte_id]
         );
+        // Igual que al enrutar en la creación: el operador se entera.
+        if (resultado.affectedRows > 0) {
+          await notificarUsuario(
+            conexion,
+            operador,
+            'TICKET_ASIGNADO',
+            `Se te asignó el ticket #${ticket.ticket_soporte_id} del área ${ticket.categoria}.`,
+            { datos: { pantalla: 'BandejaSoporte', ticket_id: ticket.ticket_soporte_id } }
+          ).catch(() => {});
+        }
       }
     }
   } catch (error) {
