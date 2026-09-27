@@ -1,0 +1,263 @@
+# Tanda 5 — Soporte y panel de gestión: CU60, CU61, CU64, CU63.
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from motor import generar_cu, chrome_path
+from comun import *
+
+# ──────────────────────────── CU60 ────────────────────────────
+CU60 = dict(id='CU60', nombre='Registrando y siguiendo solicitudes de soporte', actores=['Paciente', 'Profesional'],
+  vistas={'Paciente': 'V_Soporte', 'Profesional': 'V_Soporte'},
+  participantes=[ACTOR, VISTA, *capa(DESP, ADP, CLOUD),
+                 *T('Ticket_Soporte', 'Parametro_Global', 'Area_Soporte_Operador', 'Notificacion', 'Bitacora_Auditoria')],
+  principal=[
+    'A -> V: abrir_soporte()',
+    f'V -> {API}: GET /soporte/categorias',
+    f'{API} --> V: return (HTTP 200 OK: categorias de soporte)',
+    f'V -> {API}: GET /soporte/mis-tickets',
+    *leer('listar_mis_solicitudes(usuario_id)', 'Ticket_Soporte', 'ticket_soporte_id, categoria, estado, adjunto_url, resolucion',
+          'solicitudes del usuario', 'return (mis solicitudes)'),
+    f'{API} --> V: return (HTTP 200 OK: mis solicitudes)',
+    'V --> A: mostrar_formulario_y_mis_solicitudes()',
+    'A -> V: enviar_solicitud(categoria, descripcion, imagen)',
+    f'V -> {API}: POST /soporte/tickets (categoria, descripcion, adjunto)',
+    f'{API} ->> {API}: validar_categoria_y_descripcion()',
+    *leer('leer_parametro(MAX_ADJUNTO_TICKET_MB)', 'Parametro_Global', 'clave, valor', '5 MB', 'return (peso maximo)'),
+    f'{API} ->> {API}: verificar_el_peso_del_adjunto()',
+    *externo('subir_imagen(adjunto)', CLOUD, 'POST /image/upload (punto-paz/soporte)', 'return (secure_url)', 'return (url de la captura)'),
+    *begin(),
+    *insertar('registrar_ticket(ABIERTO, adjunto_url)', 'Ticket_Soporte'),
+    *bloque('buscar_operador_del_area_con_menos_carga(categoria) (CU61)',
+            [q('Area_Soporte_Operador', 'usuario_id, categoria', 'operadores del area'),
+             q('Ticket_Soporte', 'asignado_a, estado', 'carga de cada operador')],
+            'return (operador con menos carga)'),
+    *actualizar('enrutar_al_operador(asignado_a)', 'Ticket_Soporte', 'asignado_a, momento_enrutamiento'),
+    *despachar(API, 'TICKET_ASIGNADO', 'operador del area', retorno='return (operador avisado)'),
+    *insertar('registrar_alta(ALTA_TICKET_SOPORTE)', 'Bitacora_Auditoria'),
+    *commit(),
+    f'{API} --> V: return (HTTP 201 Created: numero del ticket)',
+    'V --> A: mostrar_el_numero_y_el_ticket_en_mis_solicitudes()',
+  ],
+  excepciones={
+    1: dict(cortar='abrir_soporte', lineas=[
+        '! El telefono no tiene conexion',
+        'V ->> V: detectar_que_no_hay_red()',
+        'V --> A: mostrar_la_alerta_de_conectividad()',
+        'A -> V: reintentar_con_senal()'],
+        reanudar='GET /soporte/categorias'),
+    2: dict(cortar='POST /image/upload', lineas=[
+        f'{CLOUD} --> {ADP}: return (servicio no disponible)',
+        f'{ADP} --> {API}: return (repositorio de imagenes no disponible)',
+        f'{API} --> V: return (HTTP 503 ADJUNTOS_NO_DISPONIBLES)',
+        'V --> A: ofrecer_enviar_sin_la_imagen()',
+        'A -> V: enviar_sin_imagen(categoria, descripcion)',
+        f'V -> {API}: POST /soporte/tickets (categoria, descripcion)'],
+        reanudar='abrir_transaccion'),
+    3: dict(cortar='validar_categoria_y_descripcion', lineas=[
+        '! Falta la categoria o la descripcion tiene menos de 10 caracteres',
+        f'{API} --> V: return (HTTP 400 CAMPOS_OBLIGATORIOS)',
+        'V --> A: resaltar_los_campos_faltantes()',
+        'A -> V: completar_los_campos(categoria, descripcion, imagen)'],
+        reanudar='POST /soporte/tickets'),
+    4: dict(cortar='verificar_el_peso_del_adjunto', lineas=[
+        '! La imagen supera los 5 MB: no se crea el ticket',
+        f'{API} --> V: return (HTTP 413 ADJUNTO_MUY_PESADO)',
+        'V --> A: pedir_comprimir_la_imagen()',
+        'A -> V: adjuntar_la_imagen_comprimida(categoria, descripcion, imagen)'],
+        reanudar='POST /soporte/tickets'),
+  })
+
+# ──────────────────────────── CU61 ────────────────────────────
+CU61 = dict(id='CU61', nombre='Enrutando automáticamente solicitudes por categoría', actores=['Administrador'],
+  vistas={'Administrador': 'V_Bandeja_Soporte'},
+  participantes=[ACTOR, VISTA, *capa(SEG, DESP),
+                 *T('Ticket_Soporte', 'Area_Soporte_Operador', 'Usuario', 'Usuario_Telefono', 'Notificacion', 'Bitacora_Auditoria')],
+  principal=[
+    'A -> V: abrir_bandeja_de_soporte(filtro)',
+    f'V -> {API}: GET /soporte/bandeja?estado=&solo_mios=',
+    f'{API} -> {SEG}: verificar_token_y_rol(Administrador)',
+    f'{SEG} --> {API}: return (sesion valida)',
+    '! Al abrir la bandeja se reintenta el enrutamiento de los tickets que quedaron sin operador',
+    *leer('buscar_tickets_sin_operador()', 'Ticket_Soporte', 'ticket_soporte_id, categoria, asignado_a',
+          '1 ticket sin asignar', 'return (ticket por enrutar)'),
+    *bloque('buscar_operador_del_area_con_menos_carga(categoria)',
+            [q('Area_Soporte_Operador', 'usuario_id, categoria', 'operadores activos del area'),
+             q('Ticket_Soporte', 'asignado_a, estado', 'carga de cada operador')],
+            'return (operador con menos carga)'),
+    *actualizar('enrutar_al_operador(asignado_a)', 'Ticket_Soporte', 'asignado_a, momento_enrutamiento'),
+    *despachar(API, 'TICKET_ASIGNADO', 'operador asignado', retorno='return (operador avisado)'),
+    *bloque('listar_tickets_con_solicitante_y_contacto(filtro)',
+            [q('Ticket_Soporte', 'ticket_soporte_id, categoria, descripcion, estado, adjunto_url, asignado_a, momento_creacion',
+               'tickets del filtro'),
+             q('Usuario', 'nombres, apellido_paterno, rut, email', 'solicitantes y operadores'),
+             q('Usuario_Telefono', 'telefono', 'telefonos del solicitante')],
+            'return (tickets con contacto)'),
+    f'{API} --> V: return (HTTP 200 OK: tickets y resumen)',
+    'V --> A: mostrar_tickets_con_captura_y_contacto()',
+    'A -> V: resolver_ticket(ticket_id)',
+    'V ->> V: exigir_la_respuesta_para_el_solicitante()',
+    'V --> A: pedir_la_respuesta()',
+    'A -> V: escribir_la_respuesta(resolucion)',
+    f'V -> {API}: PUT /soporte/tickets/:id (RESUELTO, resolucion, tomar)',
+    f'{API} ->> {API}: validar_estado_y_resolucion()',
+    *begin(),
+    *leer('bloquear_ticket(ticket_id)', 'Ticket_Soporte', 'estado, asignado_a, usuario_id', '1 ticket', 'return (ticket bloqueado)'),
+    f'{API} ->> {API}: verificar_que_no_lo_tomo_otro_operador()',
+    *actualizar('resolver(RESUELTO, resolucion, asignado_a)', 'Ticket_Soporte', 'estado, resolucion, asignado_a, momento_resuelto'),
+    *insertar('registrar_gestion(GESTION_TICKET_SOPORTE)', 'Bitacora_Auditoria'),
+    *commit(),
+    *despachar(API, 'TICKET_RESUELTO', 'solicitante', retorno='return (solicitante avisado)'),
+    f'{API} --> V: return (HTTP 200 OK: ticket actualizado)',
+    'V --> A: mostrar_el_ticket_resuelto()',
+  ],
+  excepciones={
+    1: dict(cortar='verificar_token_y_rol', lineas=[
+        f'{SEG} --> {API}: return (token expirado)',
+        f'{API} --> V: return (HTTP 401 sesion expirada)',
+        'V --> A: exigir_iniciar_sesion_de_nuevo()',
+        'A -> V: iniciar_sesion_y_volver_a_la_bandeja()'],
+        reanudar='GET /soporte/bandeja'),
+    2: dict(cortar='SELECT usuario_id, categoria FROM Area_Soporte_Operador', lineas=[
+        f'Area_Soporte_Operador --> {SQL}: return (0 operadores activos del area)',
+        f'{SQL} --> {DAO}: return (resultado)',
+        f'{DAO} --> {API}: return (area sin operador)',
+        '! El ticket queda sin asignar en la bandeja de supervision general (el desborde se alerto al crearse)',
+        f'{API} ->> {API}: dejar_en_supervision_general()'],
+        reanudar='listar_tickets_con_solicitante'),
+    3: dict(cortar='verificar_que_no_lo_tomo_otro_operador', lineas=[
+        '! Otro operador tomo el ticket entre medio',
+        *rollback(),
+        f'{API} --> V: return (HTTP 409 TICKET_REASIGNADO)',
+        'V --> A: pedir_refrescar_la_bandeja()',
+        'A -> V: refrescar_la_bandeja(filtro)'],
+        reanudar='GET /soporte/bandeja'),
+    4: dict(cortar='exigir_la_respuesta_para_el_solicitante', lineas=[
+        '! El administrador intenta resolver sin escribir la respuesta',
+        'V --> A: bloquear_el_envio_hasta_escribir_la_respuesta()'],
+        reanudar='escribir_la_respuesta'),
+  })
+
+# ──────────────────────────── CU64 ────────────────────────────
+CU64 = dict(id='CU64', nombre='Visualizando dashboard de monitoreo de KPIs', actores=['Administrador'],
+  vistas={'Administrador': 'V_Panel_Administracion'},
+  participantes=[ACTOR, VISTA, *capa(SEG),
+                 *T('Cita', 'Paciente', 'Evaluacion_Satisfaccion', 'Indicador_Adherencia', 'Transaccion', 'Ticket_Soporte',
+                    'Alerta_Clinica')],
+  principal=[
+    'A -> V: abrir_panel_de_administracion()',
+    'V --> A: mostrar_rango_por_defecto_y_accesos()',
+    'A -> V: ajustar_rango(desde, hasta)',
+    f'V -> {API}: GET /gestion/kpis?desde=&hasta=',
+    f'{API} -> {SEG}: verificar_token_y_rol(Administrador)',
+    f'{SEG} --> {API}: return (sesion valida)',
+    f'{API} ->> {API}: validar_rango()',
+    *bloque('calcular_indicadores(desde, hasta)',
+            [q('Cita', 'estado, fecha_hora_inicio, paciente_id', 'citas por estado'),
+             q('Paciente', 'paciente_id', 'pacientes registrados y activos'),
+             q('Evaluacion_Satisfaccion', 'puntuacion', 'satisfaccion promedio'),
+             q('Indicador_Adherencia', 'porcentaje', 'adherencia promedio'),
+             q('Transaccion', 'monto_total, tipo, estado', 'recaudacion neta de devoluciones'),
+             q('Ticket_Soporte', 'estado', 'tickets abiertos'),
+             q('Alerta_Clinica', 'estado', 'alertas abiertas')],
+            'return (indicadores del periodo)'),
+    f'{API} ->> {API}: guardar_en_cache(2 minutos)',
+    f'{API} --> V: return (HTTP 200 OK: KPIs del periodo)',
+    'V ->> V: dibujar_graficos()',
+    'V --> A: mostrar_el_panel_con_los_kpis_y_pendientes()',
+  ],
+  excepciones={
+    1: dict(cortar='dibujar_graficos', lineas=[
+        '! Un grafico no puede dibujarse en el dispositivo',
+        'V ->> V: mostrar_los_valores_en_texto()'],
+        reanudar='mostrar_el_panel_con_los_kpis'),
+    2: dict(cortar='SELECT estado, fecha_hora_inicio, paciente_id FROM Cita', lineas=[
+        f'Cita --> {SQL}: tiempo de espera agotado',
+        f'{SQL} --> {DAO}: throw (SQLException)',
+        f'{DAO} --> {API}: return (fallo del calculo)',
+        '! El calculo falla por alta latencia: se entrega la ultima version con la leyenda de datos diferidos',
+        f'{API} ->> {API}: recuperar_la_ultima_version_en_cache()'],
+        reanudar='return (HTTP 200 OK: KPIs del periodo)'),
+    3: dict(cortar='validar_rango', lineas=[
+        '! La fecha de inicio es posterior a la de fin',
+        f'{API} --> V: return (HTTP 400 RANGO_INVALIDO)',
+        'V --> A: pedir_corregir_el_rango()',
+        'A -> V: corregir_el_rango(desde, hasta)'],
+        reanudar='GET /gestion/kpis'),
+    4: dict(cortar='GET /gestion/kpis', lineas=[
+        '! El servidor no responde',
+        f'{API} --> V: return (tiempo de espera agotado)',
+        'V ->> V: mostrar_indicador_de_carga()',
+        'V --> A: ofrecer_reintentar()',
+        'A -> V: recargar_el_panel()'],
+        reanudar='GET /gestion/kpis'),
+  })
+
+# ──────────────────────────── CU63 ────────────────────────────
+CU63 = dict(id='CU63', nombre='Generando y exportando reportes operativos', actores=['Administrador'],
+  vistas={'Administrador': 'V_Informes_Operativos'},
+  participantes=[ACTOR, VISTA, *capa(SEG, INF),
+                 *T('Cita', 'Usuario', 'Especialidad', 'Parametro_Global', 'Bitacora_Auditoria')],
+  principal=[
+    'A -> V: abrir_informes_operativos()',
+    f'V -> {API}: GET /gestion/informes',
+    f'{API} --> V: return (HTTP 200 OK: tipos y formatos)',
+    'V --> A: mostrar_tipos_rango_y_formatos()',
+    'A -> V: elegir_tipo_y_rango(ASISTENCIA, desde, hasta)',
+    'V --> A: pedir_el_formato()',
+    'A -> V: elegir_formato(XLSX)',
+    f'V -> {API}: GET /gestion/informes/:tipo?desde=&hasta=&formato=XLSX&tomo=1',
+    f'{API} -> {SEG}: verificar_token_y_rol(Administrador)',
+    f'{SEG} --> {API}: return (sesion valida)',
+    *insertar('registrar_extraccion(EXPORTACION_INFORME, tipo, rango, formato, tomo)', 'Bitacora_Auditoria'),
+    f'{API} ->> {API}: validar_rango()',
+    *bloque('consultar_filas_del_informe(tipo, desde, hasta)',
+            [q('Cita', 'cita_id, fecha_hora_inicio, modalidad, estado', 'citas del periodo'),
+             q('Usuario', 'nombres, apellido_paterno', 'pacientes y profesionales'),
+             q('Especialidad', 'nombre', 'especialidades')],
+            'return (filas del informe)'),
+    *leer('leer_parametro(MAX_FILAS_POR_TOMO_INFORME)', 'Parametro_Global', 'clave, valor', '2000 filas', 'return (filas por tomo)'),
+    f'{API} ->> {API}: dividir_en_tomos()',
+    f'{API} -> {INF}: generar_xlsx(columnas, filas_del_tomo)',
+    f'{INF} --> {API}: return (archivo XLSX)',
+    f'{API} --> V: return (HTTP 200 OK: archivo, X-Total-Tomos)',
+    'V ->> V: guardar_el_archivo_y_abrir_la_hoja_de_compartir()',
+    'V --> A: mostrar_el_informe_descargado()',
+  ],
+  excepciones={
+    1: dict(cortar='validar_rango', lineas=[
+        '! La fecha de inicio es posterior a la de fin',
+        f'{API} --> V: return (HTTP 400 RANGO_INVALIDO)',
+        'V --> A: pedir_corregir_el_rango()',
+        'A -> V: corregir_el_rango(desde, hasta)'],
+        reanudar='GET /gestion/informes/:tipo'),
+    2: dict(cortar='SELECT cita_id, fecha_hora_inicio, modalidad, estado FROM Cita', lineas=[
+        f'Cita --> {SQL}: return (0 registros en el periodo)',
+        f'{SQL} --> {DAO}: return (resultado)',
+        f'{DAO} --> {API}: return (sin datos)',
+        f'{API} --> V: return (HTTP 404 SIN_DATOS)',
+        'V --> A: alertar_que_no_hay_datos()',
+        'A -> V: cambiar_los_criterios(tipo, desde, hasta)'],
+        reanudar='GET /gestion/informes/:tipo'),
+    3: dict(cortar='dividir_en_tomos', lineas=[
+        '! El administrador eligio PDF y el generador no esta disponible en el servidor',
+        f'{API} -> {INF}: generar_pdf(columnas, filas_del_tomo)',
+        f'{INF} --> {API}: return (generador PDF no disponible)',
+        f'{API} --> V: return (HTTP 503 PDF_NO_DISPONIBLE)',
+        'V --> A: ofrecer_XLSX_o_CSV()',
+        'A -> V: elegir_el_formato_alternativo(XLSX)'],
+        reanudar='GET /gestion/informes/:tipo'),
+    4: dict(cortar='dividir_en_tomos', lineas=[
+        '! El informe supera las 2000 filas: se divide en tomos correlativos',
+        f'{API} ->> {API}: entregar_el_tomo_1_de_N()',
+        '! El administrador descarga cada tomo con tomo=2, 3, ...'],
+        reanudar='generar_xlsx'),
+  })
+
+if __name__ == '__main__':
+    salida = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    chrome = chrome_path()
+    total = 0
+    for cu in (CU60, CU61, CU64, CU63):
+        verificar_participantes(cu)
+        ruta, n = generar_cu(cu, os.path.join(salida, cu['id']), chrome, png='--sin-png' not in sys.argv)
+        total += n
+        print(f"{cu['id']}: {n} paginas -> {os.path.relpath(ruta, salida)}")
+    print('total:', total)
