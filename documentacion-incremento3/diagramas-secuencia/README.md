@@ -17,7 +17,7 @@ Convenciones propias del Incremento 3:
 - Los avisos siempre pasan por `C_Despachador_Notificaciones`. En el CU52 se dibuja completo (preferencias, tokens, Expo Push, Brevo, bitácora); en los demás CU, en su forma corta (centro de notificaciones y, si corresponde, correo).
 - Lo que en el servidor corre también por temporizador (CU21, Exc. 4 del CU19) se dibuja desde la consulta del paciente que lo dispara de verdad: abrir Mis Citas llama al `C_Programador_Agenda` antes de responder. El temporizador de cada 5 minutos se indica en una nota.
 - Lo que ocurre dentro de la acción de otro usuario (la oferta del cupo al primero de la fila, que sucede en la cancelación del CU18) se indica en una nota con referencia al CU que lo dibuja.
-- Una sola vista por actor y CU, salvo el **CU52**: cada rol dispara el aviso con una acción propia (Paciente cancela una cita en Mis Citas, Profesional confirma una hora pagada en la ficha, Administrador declara sus áreas en la Bandeja de Soporte) y luego lo lee en el Centro de Notificaciones, así que lleva dos vistas.
+- Una sola vista por actor y CU, salvo el **CU58** (la calificación se ve en el buscador o en Mi perfil público y las reseñas en Evaluaciones del Profesional) y el **CU52**: cada rol dispara el aviso con una acción propia (Paciente cancela una cita en Mis Citas, Profesional confirma una hora pagada en la ficha, Administrador declara sus áreas en la Bandeja de Soporte) y luego lo lee en el Centro de Notificaciones, así que lleva dos vistas.
 
 ## Tandas
 
@@ -26,7 +26,7 @@ Convenciones propias del Incremento 3:
 | 1 · Notificaciones y agenda | CU52 (3 roles), CU21, CU19 | 26 | hecha |
 | 2 · Triaje y seguimiento | CU25, CU26, CU50 (2 roles), CU44, CU45 | 22 | hecha |
 | 3 · Mensajería y filtro | CU53 (2 roles), CU57 (3 roles) | 20 | hecha |
-| 4 · Calidad del servicio | CU55, CU56, CU58 | ~20 | pendiente |
+| 4 · Calidad del servicio | CU55, CU56, CU58 (2 roles) | 19 | hecha |
 | 5 · Soporte y gestión | CU60, CU61, CU64, CU63 | ~25 | pendiente |
 | 6 · Finanzas | CU73, CU74, CU75 | ~25 | pendiente |
 
