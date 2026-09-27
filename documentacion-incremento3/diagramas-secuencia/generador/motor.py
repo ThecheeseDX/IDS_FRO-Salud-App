@@ -192,8 +192,14 @@ def validar_pagina(nombre_pagina, parts, msgs, problemas):
     if niveles != sorted(niveles):
         problemas.append(f"{nombre_pagina}: orden de lifelines incorrecto (actor, vistas, controladores, capa de datos, MySQL, tablas)")
     pila = []
+    # Regla del Incremento 3 (Pablo, 26-09-2026): en un CU con actor, todo
+    # tramo nace en el actor y vuelve a el. Con la pila vacia, lo unico valido
+    # es una llamada del actor (o una accion propia del actor).
+    con_actor = parts[0]['tipo'] == 'actor'
     for m in msgs:
         de, a = m['de'], m['a']
+        if con_actor and not pila and de != ACTOR_ID:
+            problemas.append(f"{nombre_pagina}: \"{m['texto'][:50]}\" no nace del actor (el tramo anterior ya volvio al actor)")
         if de not in pos or a not in pos:
             problemas.append(f"{nombre_pagina}: participante no declarado ({de} -> {a})"); continue
         if de == a: continue
@@ -213,6 +219,8 @@ def validar_pagina(nombre_pagina, parts, msgs, problemas):
             else:
                 esperado = f"{pila[-1][1]} --> {pila[-1][0]}" if pila else "ninguno (pila vacia)"
                 problemas.append(f"{nombre_pagina}: retorno {de} --> {a} \"{m['texto'][:40]}\" no responde a la ultima llamada; se esperaba {esperado}")
+    if con_actor and msgs and msgs[-1]['a'] != ACTOR_ID:
+        problemas.append(f"{nombre_pagina}: el diagrama no termina de vuelta en el actor")
     if pila:
         problemas.append(f"{nombre_pagina}: quedan llamadas sin retorno: " + ", ".join(f"{x} -> {y}" for x, y in pila))
 
@@ -224,10 +232,16 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
     for actor in cu['actores']:
         suf = f" {actor}" if multi else ""
         vista = cu.get('vistas', {}).get(actor)
-        principal = parsear(cu['principal'], actor, vista)
+        # Incremento 3: el flujo principal (y sus excepciones) puede definirse
+        # por rol, cuando cada rol dispara el CU con una accion distinta.
+        fuente = cu['principal'][actor] if isinstance(cu['principal'], dict) else cu['principal']
+        excepciones = cu['excepciones']
+        if excepciones and all(isinstance(k, str) for k in excepciones):
+            excepciones = excepciones[actor]
+        principal = parsear(fuente, actor, vista)
         paginas.append((f"{cu['id']} - Principal{suf}", f"{cu['id']}-Principal{suf}", principal, actor, vista))
-        for n, ex in sorted(cu['excepciones'].items()):
-            base = parsear(cu['principal'], actor, vista)
+        for n, ex in sorted(excepciones.items()):
+            base = parsear(fuente, actor, vista)
             def indice(ref, desde_fin=False):
                 if isinstance(ref, int): return ref
                 for k, m in enumerate(base):
