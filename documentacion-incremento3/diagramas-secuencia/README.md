@@ -25,7 +25,7 @@ Convenciones propias del Incremento 3:
 |---|---|---|---|
 | 1 · Notificaciones y agenda | CU52 (3 roles), CU21, CU19 | 26 | hecha |
 | 2 · Triaje y seguimiento | CU25, CU26, CU50 (2 roles), CU44, CU45 | 22 | hecha |
-| 3 · Mensajería y filtro | CU53, CU57 | ~25 | pendiente |
+| 3 · Mensajería y filtro | CU53 (2 roles), CU57 (3 roles) | 20 | hecha |
 | 4 · Calidad del servicio | CU55, CU56, CU58 | ~20 | pendiente |
 | 5 · Soporte y gestión | CU60, CU61, CU64, CU63 | ~25 | pendiente |
 | 6 · Finanzas | CU73, CU74, CU75 | ~25 | pendiente |
