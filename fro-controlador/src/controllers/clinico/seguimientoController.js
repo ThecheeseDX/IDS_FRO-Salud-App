@@ -293,6 +293,12 @@ exports.registrarSintomas = async (req, res) => {
       [claveEnvio]
     );
     if (repetido) {
+      // Excepción 3: el envío se cortó antes del acuse; el corte queda en la bitácora.
+      await auditar(req, 'REENVIO_REPORTE_SINTOMA', 'Reporte_Sintoma', {
+        reporte_sintoma_id: repetido.reporte_sintoma_id,
+        clave_envio: claveEnvio,
+        registrado_en: repetido.momento_registro,
+      });
       return res.status(200).json({
         mensaje: 'Este reporte ya había quedado registrado.',
         reporte_sintoma_id: repetido.reporte_sintoma_id,
