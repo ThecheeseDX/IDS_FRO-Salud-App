@@ -186,6 +186,8 @@ exports.listarMensajes = async (req, res) => {
         motivo_consulta: contexto.motivo_consulta,
         con: contexto.papel === 'PACIENTE' ? contexto.profesional : contexto.paciente,
         papel: contexto.papel,
+        // El profesional puede saltar del chat a la ficha clínica del paciente.
+        paciente_id: contexto.papel === 'PACIENTE' ? undefined : contexto.paciente_id,
       },
       puede_escribir: !cerrado,
       motivo_bloqueo: cerrado

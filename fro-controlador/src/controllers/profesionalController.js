@@ -369,6 +369,15 @@ const EXTENSIONES_FOTO = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
 const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
 async function perfilDeUsuario(usuarioId) {
+  return perfilDonde('p.usuario_id = ?', usuarioId);
+}
+
+// El mismo perfil, buscado por el profesional (lo que ve el paciente).
+async function perfilDeProfesional(profesionalId) {
+  return perfilDonde('p.profesional_id = ?', profesionalId);
+}
+
+async function perfilDonde(condicion, valor) {
   const [[perfil]] = await db.query(
     `SELECT p.profesional_id, p.num_registro_salud, p.reseña_curricular AS resena_curricular,
             p.areas_experticia, p.tipo_sede, p.foto_url, p.calificacion_promedio,
@@ -377,8 +386,8 @@ async function perfilDeUsuario(usuarioId) {
        FROM Profesional p
        JOIN Usuario u ON u.usuario_id = p.usuario_id
        LEFT JOIN Especialidad e ON e.especialidad_id = p.especialidad_id
-      WHERE p.usuario_id = ? LIMIT 1`,
-    [usuarioId]
+      WHERE ${condicion} LIMIT 1`,
+    [valor]
   );
   if (!perfil) return null;
   // 'default.jpg' es el marcador del registro: no es una URL utilizable.
@@ -469,6 +478,25 @@ exports.obtenerMiPerfil = async (req, res) => {
   } catch (error) {
     console.error('[obtenerMiPerfil]', error);
     return res.status(500).json({ error: 'No se pudo cargar tu perfil.' });
+  }
+};
+
+/**
+ * GET /profesionales/:profesional_id/perfil-publico
+ * CU10/CU14: el perfil que ve el paciente al tocar el nombre en el buscador,
+ * de solo lectura. Solo lo público: sin correo ni datos de contacto.
+ */
+exports.obtenerPerfilPublico = async (req, res) => {
+  try {
+    const perfil = await perfilDeProfesional(Number(req.params.profesional_id));
+    if (!perfil) {
+      return res.status(404).json({ error: 'No se encontró el perfil del profesional.' });
+    }
+    const { email, ...publico } = perfil;
+    return res.status(200).json(publico);
+  } catch (error) {
+    console.error('[obtenerPerfilPublico]', error);
+    return res.status(500).json({ error: 'No se pudo cargar el perfil del profesional.' });
   }
 };
 

@@ -163,15 +163,7 @@ async function actualizarIndicador(conexion, pacienteId) {
     const minimo = await leerParametroEntero(conexion, 'MINIMO_TAREAS_PARA_ALERTA_ADHERENCIA', 5);
 
     if (calculo.porcentaje < umbral && calculo.programadas >= minimo) {
-      const [[abierta]] = await conexion.query(
-        `SELECT alerta_clinica_id FROM Alerta_Clinica
-          WHERE paciente_id = ? AND tipo = 'ADHERENCIA_BAJA' AND estado = 'ABIERTA'
-          LIMIT 1`,
-        [pacienteId]
-      );
-      // Una sola alerta abierta por paciente: repetirla cada vez que marca un
-      // ejercicio convertiría el panel en ruido.
-      if (!abierta) {
+      if (await debeAlertarAdherencia(conexion, pacienteId, calculo.porcentaje, umbral)) {
         await crearAlerta(conexion, {
           pacienteId,
           tipo: 'ADHERENCIA_BAJA',
@@ -190,6 +182,46 @@ async function actualizarIndicador(conexion, pacienteId) {
   return { ...calculo, suspendido: false };
 }
 
+/**
+ * ¿Corresponde levantar una bandera de adherencia baja? El índice se recalcula
+ * en muchas lecturas (abrir la ficha, marcar un ejercicio), así que:
+ * - con una alerta ABIERTA no se crea otra (sería ruido en el panel);
+ * - una alerta ya REVISADA por el profesional no se repite por el mismo cuadro:
+ *   solo si la adherencia empeoró respecto de la revisada, o si el paciente se
+ *   recuperó sobre el umbral y volvió a caer. Antes, abrir la ficha después de
+ *   marcarla como revisada la hacía reaparecer en el inicio.
+ */
+async function debeAlertarAdherencia(conexion, pacienteId, porcentaje, umbral) {
+  const [[ultima]] = await conexion.query(
+    `SELECT alerta_clinica_id, estado, datos, momento_revision, momento_creacion
+       FROM Alerta_Clinica
+      WHERE paciente_id = ? AND tipo = 'ADHERENCIA_BAJA'
+      ORDER BY alerta_clinica_id DESC LIMIT 1`,
+    [pacienteId]
+  );
+  if (!ultima) return true;
+  if (ultima.estado === 'ABIERTA') return false;
+
+  let datos = ultima.datos;
+  if (typeof datos === 'string') {
+    try {
+      datos = JSON.parse(datos);
+    } catch {
+      datos = {};
+    }
+  }
+  const porcentajeRevisado = Number(datos?.porcentaje);
+  if (Number.isFinite(porcentajeRevisado) && porcentaje < porcentajeRevisado) return true;
+
+  const [[recuperado]] = await conexion.query(
+    `SELECT 1 AS si FROM Indicador_Adherencia
+      WHERE paciente_id = ? AND fecha >= DATE(?) AND porcentaje >= ?
+      LIMIT 1`,
+    [pacienteId, ultima.momento_revision || ultima.momento_creacion, umbral]
+  );
+  return Boolean(recuperado);
+}
+
 /** Serie diaria del índice, para el gráfico del CU45. */
 async function serieAdherencia(conexion, pacienteId, { desde = null, hasta = null } = {}) {
   const [filas] = await conexion.query(
@@ -204,4 +236,4 @@ async function serieAdherencia(conexion, pacienteId, { desde = null, hasta = nul
   return filas;
 }
 
-module.exports = { calcularAdherencia, actualizarIndicador, serieAdherencia, ultimoIndicador, hoySQL };
+module.exports = { calcularAdherencia, actualizarIndicador, serieAdherencia, ultimoIndicador, hoySQL, debeAlertarAdherencia };

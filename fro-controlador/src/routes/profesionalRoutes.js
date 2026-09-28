@@ -60,6 +60,11 @@ router.get(
   profesionalController.obtenerHistorialPaciente
 );
 
+// CU10/CU14 — Perfil público de un profesional, de solo lectura.
+router.get('/:profesional_id/perfil-publico',
+  verifyToken,
+  profesionalController.obtenerPerfilPublico);
+
 // CU58 — Calificación y testimonios publicados de un profesional.
 router.get('/:profesional_id/resenas',
   verifyToken,
