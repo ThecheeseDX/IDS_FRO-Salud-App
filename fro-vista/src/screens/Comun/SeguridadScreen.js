@@ -18,6 +18,7 @@ import {
 
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import CambioContrasenaOTP from '../../components/CambioContrasenaOTP';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
@@ -372,17 +373,30 @@ function SeccionesSeguridad({ contrasenaPrimero = false }) {
   );
 }
 
+// Franja de color de lado a lado que abre cada sección de "Mi perfil", para
+// distinguirlas de un vistazo.
+function FranjaSeccion({ icono, titulo, alInicio = false }) {
+  return (
+    <View style={[estilos.franja, alInicio && estilos.franjaAlInicio]} accessibilityRole="header">
+      <Ionicons name={icono} size={16} color={colores.primario} />
+      <Text style={estilos.franjaTexto}>{titulo}</Text>
+    </View>
+  );
+}
+
 // Pie de "Mi perfil" (paciente y profesional), de arriba hacia abajo: la
 // seguridad de la cuenta (contraseña y, justo debajo, sesiones activas), Ayuda
 // y soporte y, al final de todo, Cerrar sesión.
-export function PieDePerfil({ navigation, tituloSeguridad }) {
+// alInicio: el pie es lo primero de la pantalla (paciente), así que la primera
+// franja va pegada a la cabecera.
+export function PieDePerfil({ navigation, tituloSeguridad, alInicio = false }) {
   const { confirmarCierreSesion } = useContext(AuthContext);
   return (
     <>
-      <Text style={estilos.grupo}>{tituloSeguridad}</Text>
+      <FranjaSeccion icono="shield-checkmark-outline" titulo={tituloSeguridad} alInicio={alInicio} />
       <SeccionesSeguridad contrasenaPrimero />
 
-      <Text style={estilos.grupo}>Ayuda y soporte</Text>
+      <FranjaSeccion icono="help-buoy-outline" titulo="Ayuda y soporte" />
       {/* CU60: el mismo acceso a soporte que tenía el menú de inicio. */}
       <TouchableOpacity
         style={estilos.filaMenu}
@@ -420,7 +434,7 @@ export default function SeguridadScreen({ navigation, comoPerfil = false }) {
   return (
     <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>
       {comoPerfil ? (
-        <PieDePerfil navigation={navigation} tituloSeguridad="Seguridad y privacidad" />
+        <PieDePerfil navigation={navigation} tituloSeguridad="Seguridad y privacidad" alInicio />
       ) : (
         <SeccionesSeguridad />
       )}
@@ -430,7 +444,7 @@ export default function SeguridadScreen({ navigation, comoPerfil = false }) {
 
 const estilos = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: colores.fondo },
-  contenido: { padding: 20, paddingBottom: 40 },
+  contenido: { padding: espacio.lg, paddingBottom: 40 },
   seccion: { fontSize: 17, fontWeight: 'bold', color: colores.primario, marginTop: 18, marginBottom: 6 },
   ayudaSeccion: { color: colores.textoSuave, fontSize: 13, marginBottom: 12 },
   cargando: { marginVertical: 12 },
@@ -503,13 +517,28 @@ const estilos = StyleSheet.create({
   preferenciaAyuda: { ...tipografia.micro, color: colores.textoTenue, marginTop: 2, letterSpacing: 0 },
 
   // ── Mi perfil (paciente) ──
-  grupo: {
+  // La franja cruza todo el ancho: anula el margen lateral del contenido
+  // (espacio.lg, igual aquí y en el perfil del profesional).
+  franja: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.sm,
+    marginHorizontal: -espacio.lg,
+    marginTop: espacio.xxl,
+    marginBottom: espacio.sm,
+    paddingHorizontal: espacio.lg,
+    paddingVertical: espacio.md,
+    backgroundColor: colores.primarioSuave,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colores.primarioBorde,
+  },
+  franjaAlInicio: { marginTop: -espacio.lg, borderTopWidth: 0 },
+  franjaTexto: {
     ...tipografia.micro,
-    color: colores.textoSuave,
+    color: colores.primario,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginTop: espacio.xl,
-    marginBottom: espacio.xs,
   },
   filaMenu: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginTop: espacio.sm },
   menuIconoCaja: {

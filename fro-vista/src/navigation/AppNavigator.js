@@ -15,6 +15,7 @@ import RecuperarContrasenaScreen from '../screens/Auth/RecuperarContrasenaScreen
 import PestanasPaciente from './PestanasPaciente';
 import { PESTANAS_PACIENTE, PESTANAS_PROFESIONAL, resolverDestino } from './rutasBarra';
 import ResenasProfesionalScreen from '../screens/Paciente/ResenasProfesionalScreen';
+import PerfilProfesionalScreen from '../screens/Paciente/PerfilProfesionalScreen';
 import PagarReservaScreen from '../screens/Paciente/PagarReservaScreen';
 import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
@@ -155,6 +156,8 @@ export default function AppNavigator() {
             />
             {/* CU58: calificación y testimonios de un profesional */}
             <Stack.Screen name="ResenasProfesional" component={ResenasProfesionalScreen} options={{ title: 'Evaluaciones' }} />
+            {/* CU10/CU14: perfil público del profesional, de solo lectura */}
+            <Stack.Screen name="PerfilProfesional" component={PerfilProfesionalScreen} options={{ title: 'Perfil del profesional' }} />
             {/* CU73: cobro anticipado antes de confirmar la hora */}
             <Stack.Screen name="PagarReserva" component={PagarReservaScreen} options={{ title: 'Pagar tu hora' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />

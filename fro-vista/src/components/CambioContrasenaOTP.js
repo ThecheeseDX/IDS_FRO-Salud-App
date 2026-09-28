@@ -13,7 +13,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet 
 
 import CodigoOTP from './CodigoOTP';
 import DialogoAviso from './DialogoAviso';
-import { REQUISITOS_CONTRASENA } from '../utils/contrasena';
+import RequisitosContrasena, { evaluarRequisitos } from './RequisitosContrasena';
 import CampoContrasena from './CampoContrasena';
 import { colores, espacio, radio, tipografia, interaccion } from '../theme';
 
@@ -42,13 +42,7 @@ export default function CambioContrasenaOTP({
   const [reenviando, setReenviando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
-  const requisitos = [
-    ...REQUISITOS_CONTRASENA.map((requisito) => ({
-      etiqueta: requisito.etiqueta,
-      cumple: requisito.cumple(nuevaContrasena),
-    })),
-    { etiqueta: 'Las dos contraseñas coinciden', cumple: nuevaContrasena !== '' && nuevaContrasena === confirmacion },
-  ];
+  const requisitos = evaluarRequisitos(nuevaContrasena, confirmacion);
   const contrasenaValida = requisitos.every((requisito) => requisito.cumple);
 
   const rechazarCodigo = (mensaje) => {
@@ -189,21 +183,7 @@ export default function CambioContrasenaOTP({
             editable={!cargando}
           />
 
-          <View style={estilos.requisitos}>
-            {requisitos.map((requisito) => (
-              <Text
-                key={requisito.etiqueta}
-                style={[
-                  estilos.requisito,
-                  requisito.cumple
-                    ? estilos.requisitoCumplido
-                    : nuevaContrasena !== '' && estilos.requisitoIncumplido,
-                ]}
-              >
-                {requisito.cumple ? '✓' : '✗'}  {requisito.etiqueta}
-              </Text>
-            ))}
-          </View>
+          <RequisitosContrasena contrasena={nuevaContrasena} confirmacion={confirmacion} />
 
           <Boton
             etiqueta="Confirmar contraseña"
@@ -258,10 +238,6 @@ const estilos = StyleSheet.create({
     marginBottom: espacio.md,
     fontSize: 15,
   },
-  requisitos: { marginBottom: espacio.xs },
-  requisito: { ...tipografia.meta, color: colores.textoTenue, marginBottom: 2 },
-  requisitoCumplido: { color: colores.exito },
-  requisitoIncumplido: { color: colores.error },
   boton: {
     backgroundColor: colores.primario,
     borderRadius: radio.md,

@@ -63,6 +63,15 @@ export default function ChatClinicoScreen({ route, navigation }) {
     navigation.setOptions?.({ title: nombreOtro ? `Chat con ${nombreOtro}` : 'Mensajes' });
   }, [navigation, nombreOtro]);
 
+  const esProfesional = conversacion?.papel === 'PROFESIONAL' && Boolean(conversacion?.paciente_id);
+
+  const abrirFicha = () =>
+    navigation.navigate('FichaClinica', {
+      pacienteId: conversacion.paciente_id,
+      nombrePaciente: conversacion.con || nombreOtro,
+      episodioId: String(conversacion.episodio_clinico_id),
+    });
+
   /** Trae lo nuevo desde el último mensaje conocido. */
   const consultar = useCallback(
     async (primeraVez = false) => {
@@ -204,59 +213,87 @@ export default function ChatClinicoScreen({ route, navigation }) {
     // La barra de envío sube hasta el borde del teclado y, con el teclado
     // cerrado, queda por encima de los botones del celular.
     <View style={[estilos.fondo, { paddingBottom: espacioInferior }]}>
-      <View style={estilos.cintaContexto}>
-        <Text style={estilos.contextoTexto} numberOfLines={1}>
-          🔒 Conversación cifrada · {conversacion?.motivo_consulta || 'tratamiento'}
-        </Text>
-      </View>
-
-      <ScrollView
-        ref={refScroll}
-        style={estilos.lista}
-        contentContainerStyle={estilos.listaContenido}
-        onContentSizeChange={() => refScroll.current?.scrollToEnd({ animated: true })}
-        onLayout={() => refScroll.current?.scrollToEnd({ animated: false })}
-        keyboardShouldPersistTaps="handled"
-      >
-        {mensajes.length === 0 && pendientes.length === 0 && (
-          <Text style={estilos.vacio}>
-            Todavía no hay mensajes. Escribe el primero: este canal es solo entre ustedes dos.
+      {esProfesional ? (
+        // El profesional ve de qué episodio es el chat y salta a la ficha.
+        <View style={[estilos.cintaContexto, estilos.cintaEpisodio]}>
+          <Text style={[estilos.contextoTexto, estilos.episodioTexto]} numberOfLines={1}>
+            Episodio #{conversacion.episodio_clinico_id} · {conversacion.motivo_consulta || 'tratamiento'}
           </Text>
-        )}
+          <TouchableOpacity
+            style={estilos.botonFicha}
+            onPress={abrirFicha}
+            activeOpacity={interaccion.opacidadActiva}
+            accessibilityRole="button"
+          >
+            <Text style={estilos.botonFichaTexto}>Ficha clínica ›</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={estilos.cintaContexto}>
+          <Text style={estilos.contextoTexto} numberOfLines={1}>
+            🔒 Conversación cifrada · {conversacion?.motivo_consulta || 'tratamiento'}
+          </Text>
+        </View>
+      )}
 
-        {mensajes.map((m, i) => {
-          // Separador cada vez que cambia el día: "Hoy", "Ayer" o la fecha.
-          const dia = etiquetaDia(m.momento_envio);
-          const cambiaDia = dia && (i === 0 || etiquetaDia(mensajes[i - 1].momento_envio) !== dia);
-          return (
-            <React.Fragment key={m.mensaje_id}>
-              {cambiaDia ? (
-                <View style={estilos.separadorDia}>
-                  <View style={estilos.lineaDia} />
-                  <Text style={estilos.textoDia}>{dia}</Text>
-                  <View style={estilos.lineaDia} />
+      <View style={estilos.lista}>
+        <ScrollView
+          ref={refScroll}
+          style={estilos.lista}
+          contentContainerStyle={[estilos.listaContenido, esProfesional && estilos.listaBajoCinta]}
+          onContentSizeChange={() => refScroll.current?.scrollToEnd({ animated: true })}
+          onLayout={() => refScroll.current?.scrollToEnd({ animated: false })}
+          keyboardShouldPersistTaps="handled"
+        >
+          {mensajes.length === 0 && pendientes.length === 0 && (
+            <Text style={estilos.vacio}>
+              Todavía no hay mensajes. Escribe el primero: este canal es solo entre ustedes dos.
+            </Text>
+          )}
+
+          {mensajes.map((m, i) => {
+            // Separador cada vez que cambia el día: "Hoy", "Ayer" o la fecha.
+            const dia = etiquetaDia(m.momento_envio);
+            const cambiaDia = dia && (i === 0 || etiquetaDia(mensajes[i - 1].momento_envio) !== dia);
+            return (
+              <React.Fragment key={m.mensaje_id}>
+                {cambiaDia ? (
+                  <View style={estilos.separadorDia}>
+                    <View style={estilos.lineaDia} />
+                    <Text style={estilos.textoDia}>{dia}</Text>
+                    <View style={estilos.lineaDia} />
+                  </View>
+                ) : null}
+                <View style={[estilos.burbuja, m.mio ? estilos.burbujaMia : estilos.burbujaOtro]}>
+                  <Text style={[estilos.texto, m.mio && estilos.textoMio, m.ilegible && estilos.ilegible]}>
+                    {m.contenido}
+                  </Text>
+                  <Text style={[estilos.hora, m.mio && estilos.horaMia]}>
+                    {formatearHora(m.momento_envio)}
+                  </Text>
                 </View>
-              ) : null}
-              <View style={[estilos.burbuja, m.mio ? estilos.burbujaMia : estilos.burbujaOtro]}>
-                <Text style={[estilos.texto, m.mio && estilos.textoMio, m.ilegible && estilos.ilegible]}>
-                  {m.contenido}
-                </Text>
-                <Text style={[estilos.hora, m.mio && estilos.horaMia]}>
-                  {formatearHora(m.momento_envio)}
-                </Text>
-              </View>
-            </React.Fragment>
-          );
-        })}
+              </React.Fragment>
+            );
+          })}
 
-        {/* Lo retenido se ve en gris: el autor sabe que aún no salió. */}
-        {pendientes.map((p, i) => (
-          <View key={`pendiente-${i}`} style={[estilos.burbuja, estilos.burbujaPendiente]}>
-            <Text style={estilos.texto}>{p.contenido}</Text>
-            <Text style={estilos.hora}>⏳ pendiente de envío</Text>
+          {/* Lo retenido se ve en gris: el autor sabe que aún no salió. */}
+          {pendientes.map((p, i) => (
+            <View key={`pendiente-${i}`} style={[estilos.burbuja, estilos.burbujaPendiente]}>
+              <Text style={estilos.texto}>{p.contenido}</Text>
+              <Text style={estilos.hora}>⏳ pendiente de envío</Text>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Aviso de cifrado: fijo sobre el chat y semitransparente, deja ver
+            los mensajes que pasan por detrás. */}
+        {esProfesional && (
+          <View style={estilos.cintaFlotante} pointerEvents="none">
+            <View style={estilos.cintaFlotanteFondo} />
+            <Text style={estilos.cintaFlotanteTexto}>🔒 Conversación cifrada</Text>
           </View>
-        ))}
-      </ScrollView>
+        )}
+      </View>
 
       {puedeEscribir ? (
         <View style={estilos.barraEnvio}>
@@ -314,6 +351,33 @@ const estilos = StyleSheet.create({
     borderBottomColor: colores.primarioBorde,
   },
   contextoTexto: { ...tipografia.micro, color: colores.primario },
+  cintaEpisodio: { flexDirection: 'row', alignItems: 'center', gap: espacio.md },
+  episodioTexto: { ...tipografia.metaFuerte, flex: 1 },
+  botonFicha: {
+    paddingVertical: espacio.xs + 2,
+    paddingHorizontal: espacio.md,
+    borderRadius: radio.completo,
+    backgroundColor: colores.primario,
+  },
+  botonFichaTexto: { ...tipografia.metaFuerte, color: colores.textoInverso },
+
+  // Franja semitransparente fija arriba del chat.
+  cintaFlotante: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingVertical: espacio.xs + 2,
+  },
+  cintaFlotanteFondo: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colores.fondo,
+    opacity: 0.8,
+  },
+  cintaFlotanteTexto: { ...tipografia.micro, color: colores.textoSuave, letterSpacing: 0.3 },
+  // El primer mensaje parte bajo la franja, sin quedar tapado.
+  listaBajoCinta: { paddingTop: espacio.xxl + espacio.xs },
 
   lista: { flex: 1 },
   listaContenido: { padding: espacio.lg, paddingBottom: espacio.base },

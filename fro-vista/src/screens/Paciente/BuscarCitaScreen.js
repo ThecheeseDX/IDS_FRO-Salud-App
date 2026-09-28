@@ -21,7 +21,7 @@ import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // El formateador local de arriba arma AAAA-MM-DD para el servidor; este es para mostrar.
 import { formatearFecha as fechaLegible } from '../../utils/fechas';
-import { colores, radio, espacio, tipografia, sombra } from '../../theme';
+import { colores, radio, espacio, tipografia, sombra, interaccion } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
@@ -119,6 +119,13 @@ export default function BuscarCitaScreen({ navigation, route }) {
   };
 
   // ── CU14 → CU15: el paciente selecciona un bloque y confirma ─────────────
+  // CU10/CU14: perfil público completo del profesional, de solo lectura.
+  const verPerfil = (item) =>
+    navigation.navigate('PerfilProfesional', {
+      profesionalId: item.profesional_id,
+      nombre: `${item.nombres} ${item.apellido_paterno}`,
+    });
+
   const seleccionarBloque = (item) => {
     setBloqueSeleccionado(item);
   };
@@ -507,19 +514,30 @@ export default function BuscarCitaScreen({ navigation, route }) {
                 {/* CU10: la foto del perfil público ayuda a reconocer al
                     profesional antes de reservar. Sin foto, sus iniciales. */}
                 <View style={styles.cabeceraProfesional}>
-                  {item.foto_url ? (
-                    <Image source={{ uri: item.foto_url }} style={styles.foto} />
-                  ) : (
-                    <View style={[styles.foto, styles.fotoVacia]}>
-                      <Text style={styles.iniciales}>
-                        {`${item.nombres?.[0] || ''}${item.apellido_paterno?.[0] || ''}`.toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
+                  {/* Tocar la foto o el nombre abre su perfil público completo. */}
+                  <TouchableOpacity onPress={() => verPerfil(item)} activeOpacity={interaccion.opacidadActiva}>
+                    {item.foto_url ? (
+                      <Image source={{ uri: item.foto_url }} style={styles.foto} />
+                    ) : (
+                      <View style={[styles.foto, styles.fotoVacia]}>
+                        <Text style={styles.iniciales}>
+                          {`${item.nombres?.[0] || ''}${item.apellido_paterno?.[0] || ''}`.toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
                   <View style={styles.datosProfesional}>
-                    <Text style={styles.nombre}>
-                      {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
-                    </Text>
+                    <TouchableOpacity
+                      onPress={() => verPerfil(item)}
+                      activeOpacity={interaccion.opacidadActiva}
+                      accessibilityRole="link"
+                      accessibilityHint="Abre el perfil público del profesional"
+                    >
+                      <Text style={styles.nombre}>
+                        {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
+                        <Text style={styles.verPerfil}>  Ver perfil ›</Text>
+                      </Text>
+                    </TouchableOpacity>
                     <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
 
                     {/* CU58 — Excepción 2: sin evaluaciones no se muestra un
@@ -783,6 +801,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: colores.primarioSuave,
   },
+  verPerfil: { ...tipografia.metaFuerte, color: colores.secundarioFuerte },
   nombre: {
     fontWeight: 'bold',
     fontSize: 17,

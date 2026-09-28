@@ -98,7 +98,7 @@ export default function LoginScreen({ navigation }) {
             encima lo duplicaba. El isotipo solo queda para el ícono de la app
             y la pantalla de carga, donde no cabe la marca completa. */}
         <LogoMarca tamano="lg" conNombre />
-        <Text style={styles.subtitle}>Portal de acceso seguro</Text>
+        <Text style={styles.subtitle}>Inicio de sesión</Text>
       </View>
 
       <View style={styles.formContainer}>

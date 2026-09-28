@@ -31,6 +31,7 @@ import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
 import { datosEstado, etiquetaEstado, esEstadoTerminal } from '../../../utils/estados';
 import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
+import SeccionHistorial from '../../../components/SeccionHistorial';
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 
 /**
@@ -484,6 +485,135 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
   // Una sola tarjeta de cita, reutilizada por las citas activas y por el
   // desplegable de anteriores.
+  // Episodios y evoluciones: el más reciente a la vista y los anteriores en
+  // el desplegable de historial. El identificador crece con cada registro,
+  // así que ordena por antigüedad sin depender del formato de las fechas.
+  const episodiosOrdenados = [...episodios].sort(
+    (x, y) => Number(y.episodio_clinico_id) - Number(x.episodio_clinico_id)
+  );
+  const evolucionesOrdenadas = [...evoluciones].sort(
+    (x, y) => Number(y.evolucion_clinica_id) - Number(x.evolucion_clinica_id)
+  );
+
+  const renderEpisodio = (item) => (
+    <View key={item.episodio_clinico_id} style={styles.cardEpisodio}>
+      <Text style={styles.fecha}>
+        Episodio #{item.episodio_clinico_id}
+      </Text>
+      <Text>Motivo: {item.motivo_consulta}</Text>
+      <Text>Estado: {item.estado ? etiquetaEstado(item.estado) : 'No informado'}</Text>
+      <Text>Inicio: {formatearFecha(item.fecha_inicio)}</Text>
+      <Text>
+        Término:{' '}
+        {item.fecha_terminado
+          ? formatearFecha(item.fecha_terminado)
+          : 'En curso · el episodio sigue abierto'}
+      </Text>
+
+      {/* Las metas del episodio, que son las que dan el porcentaje de
+          avance de cada evolución. */}
+      {(item.metas || []).length === 0 ? (
+        <Text style={styles.metaEpisodioVacia}>
+          Sin metas definidas en este episodio
+        </Text>
+      ) : (
+        item.metas.map((meta) => {
+          const pct = Math.min(
+            100,
+            Math.round(
+              (Number(meta.valor_actual || 0) / Number(meta.meta_valor || 1)) * 100
+            )
+          );
+          return (
+            <Text key={meta.objetivo_terapeutico_id} style={styles.metaEpisodio}>
+              🎯 {meta.descripcion}: {Number(meta.valor_actual)} de{' '}
+              {Number(meta.meta_valor)} {meta.unidad} · {pct}%
+            </Text>
+          );
+        })
+      )}
+    </View>
+  );
+
+  const renderEvolucion = (item) => (
+    <View key={item.evolucion_clinica_id} style={styles.cardEvolucion}>
+      <Text style={styles.fecha}>
+        Evolución #{item.evolucion_clinica_id}
+      </Text>
+      <Text>Episodio: #{item.episodio_clinico_id}</Text>
+      <Text>Motivo episodio: {item.motivo_consulta}</Text>
+      {/* El porcentaje sale de las metas del episodio. Si el episodio
+          no tiene metas, no hay nada que medir: decirlo es más claro
+          que mostrar "No informado%". */}
+      <Text>
+        Avance de las metas:{' '}
+        {item.porcentaje_objetivo === null || item.porcentaje_objetivo === undefined
+          ? 'sin metas medidas en este episodio'
+          : `${item.porcentaje_objetivo}%`}
+      </Text>
+      <Text>
+        Respuesta fisiológica:{' '}
+        {item.respuesta_fisiologica || 'No informado'}
+      </Text>
+      <Text>
+        Técnicas aplicadas:{' '}
+        {item.tecnicas_aplicadas || 'No informado'}
+      </Text>
+      <Text>Inalterable: {item.inalterable === 1 ? 'Sí' : 'No'}</Text>
+      <Text>
+        Firma digital:{' '}
+        {item.firma_digital ? 'Registrada' : 'No registrada'}
+      </Text>
+      <Text>Hora firma: {formatearFecha(item.hora_firma_digital)}</Text>
+
+      {/* CU31: correcciones versionadas solo sobre registros cerrados.
+          En un registro abierto se explica dónde cerrarlo: el botón
+          "vivía" en otra pantalla y nadie lograba encontrarlo. */}
+      {item.inalterable !== 1 && (
+        <Text style={styles.pistaCorreccion}>
+          ✏️ Registro abierto: se edita directo. Las correcciones versionadas se
+          habilitan al cerrarlo y firmarlo en Trazabilidad → Inalterabilidad.
+        </Text>
+      )}
+      {item.inalterable === 1 && (
+        <View style={styles.filaVersiones}>
+          <TouchableOpacity
+            onPress={() => alternarVersiones(item.evolucion_clinica_id)}
+          >
+            <Text style={styles.enlaceVersiones}>
+              {versionesPorEvolucion[item.evolucion_clinica_id]
+                ? '▲ Ocultar versiones'
+                : `📑 Versiones (${item.total_versiones || 0})`}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setCorreccionEvolucion(item)}>
+            <Text style={styles.enlaceCorreccion}>➕ Agregar corrección</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {versionesPorEvolucion[item.evolucion_clinica_id] && (
+        <View style={styles.cajaVersiones}>
+          {versionesPorEvolucion[item.evolucion_clinica_id].length === 0 ? (
+            <Text style={styles.textoVersion}>
+              Sin correcciones. El registro original está íntegro.
+            </Text>
+          ) : (
+            versionesPorEvolucion[item.evolucion_clinica_id].map((v) => (
+              <View key={v.version_id} style={styles.itemVersion}>
+                <Text style={styles.tituloVersion}>
+                  Versión {v.numero_version} ·{' '}
+                  {formatearFecha(v.fecha_creacion)} · {v.autor?.trim() || 'Autor no informado'}
+                </Text>
+                <Text style={styles.textoVersion}>{v.texto_correccion}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      )}
+    </View>
+  );
+
   const renderCita = (item) => {
               // Normalizamos el estado actual a mayúsculas para las comparaciones visuales
               const estadoCita = (item.estado || '').toUpperCase();
@@ -957,135 +1087,38 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
           <Text style={styles.seccionTitulo}>Episodios Clínicos</Text>
 
-          {episodios.length === 0 ? (
+          {episodiosOrdenados.length === 0 ? (
             <Text style={styles.sinResultados}>Sin episodios registrados</Text>
           ) : (
-            episodios.map((item) => (
-              <View key={item.episodio_clinico_id} style={styles.cardEpisodio}>
-                <Text style={styles.fecha}>
-                  Episodio #{item.episodio_clinico_id}
-                </Text>
-                <Text>Motivo: {item.motivo_consulta}</Text>
-                <Text>Estado: {item.estado ? etiquetaEstado(item.estado) : 'No informado'}</Text>
-                <Text>Inicio: {formatearFecha(item.fecha_inicio)}</Text>
-                <Text>
-                  Término:{' '}
-                  {item.fecha_terminado
-                    ? formatearFecha(item.fecha_terminado)
-                    : 'En curso · el episodio sigue abierto'}
-                </Text>
-
-                {/* Las metas del episodio, que son las que dan el porcentaje de
-                    avance de cada evolución. */}
-                {(item.metas || []).length === 0 ? (
-                  <Text style={styles.metaEpisodioVacia}>
-                    Sin metas definidas en este episodio
-                  </Text>
-                ) : (
-                  item.metas.map((meta) => {
-                    const pct = Math.min(
-                      100,
-                      Math.round(
-                        (Number(meta.valor_actual || 0) / Number(meta.meta_valor || 1)) * 100
-                      )
-                    );
-                    return (
-                      <Text key={meta.objetivo_terapeutico_id} style={styles.metaEpisodio}>
-                        🎯 {meta.descripcion}: {Number(meta.valor_actual)} de{' '}
-                        {Number(meta.meta_valor)} {meta.unidad} · {pct}%
-                      </Text>
-                    );
-                  })
-                )}
-              </View>
-            ))
+            <>
+              {renderEpisodio(episodiosOrdenados[0])}
+              <SeccionHistorial
+                titulo="Historial de episodios"
+                cantidad={episodiosOrdenados.length - 1}
+                ayuda="Episodios anteriores del paciente"
+              >
+                {episodiosOrdenados.slice(1).map(renderEpisodio)}
+              </SeccionHistorial>
+            </>
           )}
 
           <Text style={styles.seccionTitulo}>Evoluciones Clínicas</Text>
 
-          {evoluciones.length === 0 ? (
+          {evolucionesOrdenadas.length === 0 ? (
             <Text style={styles.sinResultados}>
               Sin evoluciones clínicas registradas
             </Text>
           ) : (
-            evoluciones.map((item) => (
-              <View key={item.evolucion_clinica_id} style={styles.cardEvolucion}>
-                <Text style={styles.fecha}>
-                  Evolución #{item.evolucion_clinica_id}
-                </Text>
-                <Text>Episodio: #{item.episodio_clinico_id}</Text>
-                <Text>Motivo episodio: {item.motivo_consulta}</Text>
-                {/* El porcentaje sale de las metas del episodio. Si el episodio
-                    no tiene metas, no hay nada que medir: decirlo es más claro
-                    que mostrar "No informado%". */}
-                <Text>
-                  Avance de las metas:{' '}
-                  {item.porcentaje_objetivo === null || item.porcentaje_objetivo === undefined
-                    ? 'sin metas medidas en este episodio'
-                    : `${item.porcentaje_objetivo}%`}
-                </Text>
-                <Text>
-                  Respuesta fisiológica:{' '}
-                  {item.respuesta_fisiologica || 'No informado'}
-                </Text>
-                <Text>
-                  Técnicas aplicadas:{' '}
-                  {item.tecnicas_aplicadas || 'No informado'}
-                </Text>
-                <Text>Inalterable: {item.inalterable === 1 ? 'Sí' : 'No'}</Text>
-                <Text>
-                  Firma digital:{' '}
-                  {item.firma_digital ? 'Registrada' : 'No registrada'}
-                </Text>
-                <Text>Hora firma: {formatearFecha(item.hora_firma_digital)}</Text>
-
-                {/* CU31: correcciones versionadas solo sobre registros cerrados.
-                    En un registro abierto se explica dónde cerrarlo: el botón
-                    "vivía" en otra pantalla y nadie lograba encontrarlo. */}
-                {item.inalterable !== 1 && (
-                  <Text style={styles.pistaCorreccion}>
-                    ✏️ Registro abierto: se edita directo. Las correcciones versionadas se
-                    habilitan al cerrarlo y firmarlo en Trazabilidad → Inalterabilidad.
-                  </Text>
-                )}
-                {item.inalterable === 1 && (
-                  <View style={styles.filaVersiones}>
-                    <TouchableOpacity
-                      onPress={() => alternarVersiones(item.evolucion_clinica_id)}
-                    >
-                      <Text style={styles.enlaceVersiones}>
-                        {versionesPorEvolucion[item.evolucion_clinica_id]
-                          ? '▲ Ocultar versiones'
-                          : `📑 Versiones (${item.total_versiones || 0})`}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setCorreccionEvolucion(item)}>
-                      <Text style={styles.enlaceCorreccion}>➕ Agregar corrección</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {versionesPorEvolucion[item.evolucion_clinica_id] && (
-                  <View style={styles.cajaVersiones}>
-                    {versionesPorEvolucion[item.evolucion_clinica_id].length === 0 ? (
-                      <Text style={styles.textoVersion}>
-                        Sin correcciones. El registro original está íntegro.
-                      </Text>
-                    ) : (
-                      versionesPorEvolucion[item.evolucion_clinica_id].map((v) => (
-                        <View key={v.version_id} style={styles.itemVersion}>
-                          <Text style={styles.tituloVersion}>
-                            Versión {v.numero_version} ·{' '}
-                            {formatearFecha(v.fecha_creacion)} · {v.autor?.trim() || 'Autor no informado'}
-                          </Text>
-                          <Text style={styles.textoVersion}>{v.texto_correccion}</Text>
-                        </View>
-                      ))
-                    )}
-                  </View>
-                )}
-              </View>
-            ))
+            <>
+              {renderEvolucion(evolucionesOrdenadas[0])}
+              <SeccionHistorial
+                titulo="Historial de evoluciones"
+                cantidad={evolucionesOrdenadas.length - 1}
+                ayuda="Evoluciones anteriores, con sus versiones y correcciones"
+              >
+                {evolucionesOrdenadas.slice(1).map(renderEvolucion)}
+              </SeccionHistorial>
+            </>
           )}
         </>
       )}

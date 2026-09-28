@@ -406,6 +406,12 @@ export const getEvaluacionesPendientes = async () => {
   return response.data;
 };
 
+// CU10/CU14: perfil público de un profesional (solo lectura, para el paciente).
+export const getPerfilPublicoProfesional = async (profesionalId) => {
+  const response = await apiClient.get(`/profesionales/${profesionalId}/perfil-publico`);
+  return response.data;
+};
+
 export const getResenasProfesional = async (profesionalId) => {
   const response = await apiClient.get(`/profesionales/${profesionalId}/resenas`);
   return response.data;

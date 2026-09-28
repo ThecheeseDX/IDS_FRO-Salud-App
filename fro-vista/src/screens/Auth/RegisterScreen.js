@@ -9,6 +9,7 @@ import { requisitosIncumplidos } from '../../utils/contrasena';
 import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 import CampoContrasena from '../../components/CampoContrasena';
+import RequisitosContrasena from '../../components/RequisitosContrasena';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
 const RegisterScreen = ({ navigation }) => {
@@ -294,6 +295,8 @@ const RegisterScreen = ({ navigation }) => {
                     <Text style={styles.label}>Confirmar contraseña</Text>
                     <CampoContrasena style={[styles.input, errores.confirmar_contrasena && styles.inputError]} placeholder="Repite la contraseña" value={formData.confirmar_contrasena} onChangeText={(v) => handleChange('confirmar_contrasena', v)} />
                 </View>
+                {/* Los requisitos se marcan mientras se escribe, igual que al cambiar o recuperar la contraseña. */}
+                <RequisitosContrasena contrasena={formData.contrasena} confirmacion={formData.confirmar_contrasena} style={styles.requisitos} />
 
                 {!esProfesional && (
                     <View>
@@ -510,6 +513,7 @@ const styles = StyleSheet.create({
         marginBottom: espacio.base,
     },
     campo: { marginBottom: espacio.base },
+    requisitos: { marginTop: -espacio.sm, marginBottom: espacio.base },
     campoMitad: { flex: 1, marginBottom: espacio.base },
     label: { ...piezas.etiqueta },
     comunasFila: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.sm },

@@ -69,6 +69,8 @@ export default function TriajeScreen({ navigation }) {
   const [nodoActual, setNodoActual] = useState(null);
   const [respuestas, setRespuestas] = useState({});
   const [entradaTexto, setEntradaTexto] = useState('');
+  // Al volver atrás, la opción que se había elegido queda marcada.
+  const [respuestaPrevia, setRespuestaPrevia] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [fechaCompletado, setFechaCompletado] = useState(null);
   const [vistaPrevia, setVistaPrevia] = useState('');
@@ -180,6 +182,7 @@ export default function TriajeScreen({ navigation }) {
     respuestasRef.current = nuevas;
     setRespuestas(nuevas);
     setEntradaTexto('');
+    setRespuestaPrevia(null);
 
     // Guardado parcial silencioso: si falla, la entrevista continúa igual y
     // el próximo guardado lo reintenta (Exc.4 del CU23).
@@ -195,6 +198,51 @@ export default function TriajeScreen({ navigation }) {
     } else {
       setNodoActual(siguiente);
     }
+  };
+
+  /** Preguntas ya respondidas que llevan hasta `destino`, en orden. */
+  const caminoHasta = (datosArbol, previas, destino) => {
+    const camino = [];
+    const vistos = new Set();
+    let cursor = datosArbol.inicio;
+    while (cursor && cursor !== 'FIN' && cursor !== destino && !vistos.has(cursor)) {
+      vistos.add(cursor);
+      const nodo = datosArbol.nodos[cursor];
+      if (!nodo || !(nodo.id in previas)) break;
+      camino.push(cursor);
+      cursor =
+        nodo.tipo === 'opciones'
+          ? nodo.opciones.find((o) => o.valor === previas[nodo.id])?.siguiente
+          : nodo.siguiente;
+    }
+    return camino;
+  };
+
+  // ── Volver a la pregunta anterior ──────────────────────────────────────────
+  // Se reabre la pregunta previa con su respuesta a la vista (en las de texto
+  // o número queda escrita para corregirla). Se descartan esa respuesta y las
+  // que venían después: al cambiarla, el camino del árbol puede ser otro.
+  const volverAtras = () => {
+    const camino = caminoHasta(arbol, respuestasRef.current, nodoActual);
+    if (camino.length === 0) return;
+    const anterior = camino[camino.length - 1];
+    const nodoAnterior = arbol.nodos[anterior];
+    const respuestaAnterior = respuestasRef.current[nodoAnterior.id];
+
+    const conservadas = {};
+    camino.slice(0, -1).forEach((clave) => {
+      const id = arbol.nodos[clave].id;
+      conservadas[id] = respuestasRef.current[id];
+    });
+    respuestasRef.current = conservadas;
+    setRespuestas(conservadas);
+    apiClient.put('/clinica/triaje/respuestas', { respuestas: conservadas }).catch(() => {});
+
+    setEntradaTexto(
+      nodoAnterior.tipo !== 'opciones' && respuestaAnterior != null ? String(respuestaAnterior) : ''
+    );
+    setRespuestaPrevia(nodoAnterior.tipo === 'opciones' ? respuestaAnterior : null);
+    setNodoActual(anterior);
   };
 
   // ── CU24: completar e integrar ─────────────────────────────────────────────
@@ -408,10 +456,13 @@ export default function TriajeScreen({ navigation }) {
         nodo.opciones.map((opcion) => (
           <TouchableOpacity
             key={opcion.valor}
-            style={estilos.opcion}
+            style={[estilos.opcion, opcion.valor === respuestaPrevia && estilos.opcionElegida]}
             onPress={() => responder(opcion.valor)}
           >
-            <Text style={estilos.opcionTexto}>{opcion.etiqueta}</Text>
+            <Text style={estilos.opcionTexto}>
+              {opcion.valor === respuestaPrevia ? '✓  ' : ''}
+              {opcion.etiqueta}
+            </Text>
           </TouchableOpacity>
         ))
       ) : (
@@ -428,6 +479,16 @@ export default function TriajeScreen({ navigation }) {
             <Text style={estilos.botonPrimarioTexto}>Continuar</Text>
           </TouchableOpacity>
         </>
+      )}
+
+      {caminoHasta(arbol, respuestas, nodoActual).length > 0 && (
+        <TouchableOpacity
+          style={estilos.botonAtras}
+          onPress={volverAtras}
+          accessibilityRole="button"
+        >
+          <Text style={estilos.botonAtrasTexto}>‹  Pregunta anterior</Text>
+        </TouchableOpacity>
       )}
 
       <Text style={estilos.notaAvance}>
@@ -530,7 +591,12 @@ const estilos = StyleSheet.create({
     padding: 16,
     marginBottom: 10,
   },
+  // Misma fuente en ambos estados: en Android cambiar el grosor del texto de
+  // una opción marcada lo hace desaparecer.
+  opcionElegida: { backgroundColor: colores.primarioSuave, borderWidth: 2, padding: 15 },
   opcionTexto: { color: colores.primario, fontWeight: '600', fontSize: 15 },
+  botonAtras: { ...piezas.botonSecundario, marginTop: espacio.md },
+  botonAtrasTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
   entrada: {
     backgroundColor: colores.superficie,
     borderWidth: 1,
