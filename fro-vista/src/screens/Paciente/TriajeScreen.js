@@ -17,7 +17,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
-import apiClient from '../../api/client';
+import apiClient, { getMiDerivacion } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import { formatearFecha } from '../../utils/fechas';
@@ -82,6 +82,8 @@ export default function TriajeScreen({ navigation }) {
 
       if (data.triaje?.estado === 'COMPLETADO') {
         setFechaCompletado(data.triaje.momento_completado);
+        const vigente = await getMiDerivacion().catch(() => null);
+        setDerivacion(vigente?.hay_triaje ? vigente.derivacion || null : null);
         setFase('completado');
         return;
       }
@@ -241,6 +243,41 @@ export default function TriajeScreen({ navigation }) {
   };
 
   // ── Render por fase ────────────────────────────────────────────────────────
+  // CU26 — Sugerencia de derivación por especialidad clínica: aparece al
+  // terminar la entrevista y queda a la vista mientras siga vigente.
+  const tarjetaDerivacion = derivacion ? (
+    <View style={estilos.tarjetaDerivacion}>
+      <Text style={estilos.derivacionTitulo}>
+        {derivacion.general
+          ? '🧭 Tu entrevista no apunta a una especialidad concreta'
+          : `🎯 Te sugerimos ${derivacion.nombre}`}
+      </Text>
+      <Text style={estilos.derivacionTexto}>
+        {derivacion.general
+          ? 'Contáctate con nosotros para poder guiarte hacia el profesional adecuado.'
+          : derivacion.disponible_en_comuna
+            ? `Es la especialidad que mejor calza con tu motivo de consulta, y hay profesionales que atienden a domicilio en ${derivacion.comuna || 'tu comuna'}.`
+            : derivacion.disponible_online
+              ? 'Es la especialidad que mejor calza con tu motivo de consulta. En tu comuna no hay atención a domicilio, pero sí teleconsulta.'
+              : 'Es la especialidad que mejor calza con tu motivo de consulta, pero por ahora no tenemos profesionales disponibles para tu comuna.'}
+      </Text>
+      {derivacion.alternativas?.length > 0 && (
+        <Text style={estilos.derivacionAlternativas}>
+          Disponibles ahora: {derivacion.alternativas.map((a) => a.nombre).join(', ')}.
+        </Text>
+      )}
+      {/* Sin especialidad clara, el paso útil es hablar con el equipo. */}
+      <TouchableOpacity
+        style={estilos.botonDerivacion}
+        onPress={() => navigation.navigate(derivacion.general ? 'Soporte' : 'BuscarCita')}
+      >
+        <Text style={estilos.botonDerivacionTexto}>
+          {derivacion.general ? 'Contactarnos' : 'Buscar hora ahora'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  ) : null;
+
 
   if (fase === 'cargando') {
     return (
@@ -289,7 +326,7 @@ export default function TriajeScreen({ navigation }) {
 
   if (fase === 'completado') {
     return (
-      <View style={estilos.centrado}>
+      <VistaConTeclado style={estilos.fondo} contentContainerStyle={[estilos.contenido, estilos.contenidoCentrado]}>
         <Text style={estilos.iconoGrande}>✅</Text>
         <Text style={estilos.tituloCentrado}>Ya completaste tu entrevista</Text>
         <Text style={estilos.textoCentrado}>
@@ -299,6 +336,7 @@ export default function TriajeScreen({ navigation }) {
             : ''}.
           Tu profesional las revisará en la consulta.
         </Text>
+        {tarjetaDerivacion}
         <TouchableOpacity
           style={[estilos.botonPrimario, procesando && estilos.deshabilitado]}
           onPress={rehacerTriaje}
@@ -306,7 +344,7 @@ export default function TriajeScreen({ navigation }) {
         >
           <Text style={estilos.botonPrimarioTexto}>Responder una nueva entrevista</Text>
         </TouchableOpacity>
-      </View>
+      </VistaConTeclado>
     );
   }
 
@@ -332,41 +370,17 @@ export default function TriajeScreen({ navigation }) {
             )
           )}
         </View>
-        {/* CU26 — Sugerencia de derivación por especialidad clínica. */}
-        {derivacion && (
-          <View style={estilos.tarjetaDerivacion}>
-            <Text style={estilos.derivacionTitulo}>
-              {derivacion.general
-                ? '🧭 Tu entrevista no apunta a una especialidad concreta'
-                : `🎯 Te sugerimos ${derivacion.nombre}`}
-            </Text>
-            <Text style={estilos.derivacionTexto}>
-              {derivacion.general
-                ? 'Contáctate con nosotros para poder guiarte hacia el profesional adecuado.'
-                : derivacion.disponible_en_comuna
-                  ? `Es la especialidad que mejor calza con tu motivo de consulta, y hay profesionales que atienden a domicilio en ${derivacion.comuna || 'tu comuna'}.`
-                  : derivacion.disponible_online
-                    ? 'Es la especialidad que mejor calza con tu motivo de consulta. En tu comuna no hay atención a domicilio, pero sí teleconsulta.'
-                    : 'Es la especialidad que mejor calza con tu motivo de consulta, pero por ahora no tenemos profesionales disponibles para tu comuna.'}
-            </Text>
-            {derivacion.alternativas?.length > 0 && (
-              <Text style={estilos.derivacionAlternativas}>
-                Disponibles ahora: {derivacion.alternativas.map((a) => a.nombre).join(', ')}.
-              </Text>
-            )}
-            {/* Sin especialidad clara, el paso útil es hablar con el equipo. */}
-            <TouchableOpacity
-              style={estilos.botonDerivacion}
-              onPress={() => navigation.navigate(derivacion.general ? 'Soporte' : 'BuscarCita')}
-            >
-              <Text style={estilos.botonDerivacionTexto}>
-                {derivacion.general ? 'Contactarnos' : 'Buscar hora ahora'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {tarjetaDerivacion}
 
-        <TouchableOpacity style={estilos.botonPrimario} onPress={() => navigation.goBack()}>
+        {/* La pestaña queda en "entrevista completada" (con la sugerencia) para
+            cuando el paciente vuelva a ella. */}
+        <TouchableOpacity
+          style={estilos.botonPrimario}
+          onPress={() => {
+            iniciar();
+            navigation.goBack();
+          }}
+        >
           <Text style={estilos.botonPrimarioTexto}>Volver al inicio</Text>
         </TouchableOpacity>
       </VistaConTeclado>
@@ -438,6 +452,7 @@ const estilos = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 20, paddingBottom: 40 },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  contenidoCentrado: { flexGrow: 1, justifyContent: 'center' },
 
   titulo: { fontSize: 22, fontWeight: 'bold', color: colores.primario, marginBottom: 14 },
   tarjetaLegal: {

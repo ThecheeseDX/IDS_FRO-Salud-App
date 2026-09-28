@@ -12,14 +12,10 @@ import RegisterScreen from '../screens/Auth/RegisterScreen';
 import OTPScreen from '../screens/Auth/OTPScreen';
 import RecuperarContrasenaScreen from '../screens/Auth/RecuperarContrasenaScreen';
 // Pantallas — Paciente
-import DashboardPaciente from '../screens/Paciente/DashboardPaciente';
-import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
-import MisPautasScreen from '../screens/Paciente/MisPautasScreen';
-import MiSeguimientoScreen from '../screens/Paciente/MiSeguimientoScreen';
-import MiProgresoScreen from '../screens/Paciente/MiProgresoScreen';
+import PestanasPaciente from './PestanasPaciente';
+import { PESTANAS_PACIENTE, resolverDestino } from './rutasPaciente';
 import ResenasProfesionalScreen from '../screens/Paciente/ResenasProfesionalScreen';
 import PagarReservaScreen from '../screens/Paciente/PagarReservaScreen';
-import TriajeScreen from '../screens/Paciente/TriajeScreen';
 import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 // Pantallas — Profesional
@@ -96,8 +92,10 @@ export default function AppNavigator() {
       const destino = datos?.pantalla;
       if (!destino || !refNavegacion.isReady()) return;
       const rutasDelRol = refNavegacion.getRootState()?.routeNames || [];
-      if (rutasDelRol.includes(destino)) {
-        refNavegacion.navigate(destino, datos);
+      // Del paciente, varias pantallas ahora viven dentro de la barra inferior.
+      const ruta = resolverDestino(rutasDelRol, destino, datos);
+      if (ruta) {
+        refNavegacion.navigate(...ruta);
       } else {
         console.warn('[notificaciones] pantalla no disponible para este rol:', destino);
       }
@@ -151,35 +149,17 @@ export default function AppNavigator() {
         ) : userData?.rol === 'Paciente' ? (
           // ── ESCENARIO B: Paciente Autenticado ──
           <>
+            {/* Barra inferior: Inicio (Mis citas) · Mi tratamiento · ＋ ·
+                Mensajes · Mi perfil. Lo demás se abre encima de ella. */}
             <Stack.Screen
-              name="DashboardPaciente"
-              component={DashboardPaciente}
-              options={({ navigation }) => ({
-                headerTitle: () => <LogoMarca tamano="sm" />,
-                headerStyle: {
-                  backgroundColor: colores.superficie,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colores.bordeSuave,
-                },
-                headerTintColor: colores.primario,
-                headerBackVisible: false,
-                gestureEnabled: false,
-                // CU52: la campana con el globo de avisos sin leer.
-                headerRight: () => <CampanaNotificaciones navigation={navigation} />,
-              })}
+              name={PESTANAS_PACIENTE}
+              component={PestanasPaciente}
+              options={{ headerShown: false, gestureEnabled: false }}
             />
-            {/* Gestión de citas unificada: listado + reserva desde el botón flotante */}
-            <Stack.Screen name="MisCitas" component={MisCitasScreen} options={{ title: 'Mis Citas' }} />
-            <Stack.Screen name="MisPautas" component={MisPautasScreen} options={{ title: 'Mis Ejercicios' }} />
-            {/* CU50: reporte de evolución del paciente */}
-            <Stack.Screen name="MiSeguimiento" component={MiSeguimientoScreen} options={{ title: 'Mi Seguimiento' }} />
-            {/* CU45: panel gráfico de progreso */}
-            <Stack.Screen name="MiProgreso" component={MiProgresoScreen} options={{ title: 'Mi Progreso' }} />
             {/* CU58: calificación y testimonios de un profesional */}
             <Stack.Screen name="ResenasProfesional" component={ResenasProfesionalScreen} options={{ title: 'Evaluaciones' }} />
             {/* CU73: cobro anticipado antes de confirmar la hora */}
             <Stack.Screen name="PagarReserva" component={PagarReservaScreen} options={{ title: 'Pagar tu hora' }} />
-            <Stack.Screen name="Triaje" component={TriajeScreen} options={{ title: 'Entrevista Previa' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen
@@ -188,12 +168,9 @@ export default function AppNavigator() {
               options={{ title: 'Buscar y Agendar Cita' }}
             />
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
-            {/* CU53: bandeja y conversación cifrada */}
-            <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
             {/* CU60: solicitudes de soporte y su seguimiento */}
-            <Stack.Screen name="Soporte" component={SoporteScreen} options={{ title: 'Soporte' }} />
+            <Stack.Screen name="Soporte" component={SoporteScreen} options={{ title: 'Ayuda y soporte' }} />
             <Stack.Screen name="ChatClinico" component={ChatClinicoScreen} options={{ title: 'Mensajes' }} />
-            <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             {/* CU35: el paciente consulta su repositorio con el visor embebido */}
             <Stack.Screen name="Documentos" component={DocumentosScreen} options={{ title: 'Mis Documentos' }} />
             <Stack.Screen name="VisorDocumento" component={VisorDocumentoScreen} options={{ title: 'Visor de Documento' }} />

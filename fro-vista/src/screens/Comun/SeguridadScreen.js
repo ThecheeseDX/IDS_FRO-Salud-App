@@ -22,11 +22,13 @@ import VistaConTeclado from '../../components/VistaConTeclado';
 import CambioContrasenaOTP from '../../components/CambioContrasenaOTP';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import { formatearFechaHora } from '../../utils/fechas';
-import { colores, espacio, radio, tipografia } from '../../theme';
+import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 
-export default function SeguridadScreen() {
-  const { userData, logoutSession } = useContext(AuthContext);
+// comoPerfil: la pestaña "Mi perfil" del paciente reutiliza esta pantalla,
+// reordenada y con Ayuda y soporte y Cerrar sesión al final.
+export default function SeguridadScreen({ navigation, comoPerfil = false }) {
+  const { userData, logoutSession, confirmarCierreSesion } = useContext(AuthContext);
   const esPaciente = userData?.rol === 'Paciente';
 
   // ── CU08: sesiones ─────────────────────────────────────────────────────────
@@ -160,9 +162,10 @@ export default function SeguridadScreen() {
 
   const formatearFecha = (valor) => formatearFechaHora(valor, '—');
 
-  return (
-    <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>
-      {/* ── CU08: Sesiones activas ── */}
+  // Cada bloque por separado: en "Mi perfil" del paciente cambia el orden.
+  // ── CU08: Sesiones activas ──
+  const bloqueSesiones = (
+    <>
       <Text style={estilos.seccion}>Sesiones activas</Text>
       <Text style={estilos.ayudaSeccion}>
         Estos dispositivos tienen acceso a tu cuenta. Puedes cerrarlos de forma remota.
@@ -208,8 +211,12 @@ export default function SeguridadScreen() {
           </View>
         ))
       )}
+    </>
+  );
 
-      {/* ── CU07: Cambio de contraseña ── */}
+  // ── CU07: Cambio de contraseña ──
+  const bloqueContrasena = (
+    <>
       <Text style={estilos.seccion}>Contraseña</Text>
 
       {!cambioActivo ? (
@@ -253,8 +260,12 @@ export default function SeguridadScreen() {
           </TouchableOpacity>
         </View>
       )}
+    </>
+  );
 
-      {/* ── CU09: Privacidad (solo pacientes) ── */}
+  // ── CU09: Privacidad (solo pacientes) ──
+  const bloquePrivacidad = (
+    <>
       {esPaciente && (
         <>
           <Text style={estilos.seccion}>Privacidad de mis datos</Text>
@@ -310,6 +321,55 @@ export default function SeguridadScreen() {
               </View>
             </View>
           )}
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>
+      {comoPerfil ? (
+        <>
+          {/* Información personal: irá aquí, primero, cuando exista. */}
+          <Text style={estilos.grupo}>Seguridad y privacidad</Text>
+          {bloqueContrasena}
+          {bloqueSesiones}
+          {bloquePrivacidad}
+
+          <Text style={estilos.grupo}>Ayuda y soporte</Text>
+          {/* CU60: el mismo acceso a soporte que tenía el menú del paciente. */}
+          <TouchableOpacity
+            style={estilos.filaMenu}
+            onPress={() => navigation.navigate('Soporte')}
+            activeOpacity={interaccion.opacidadActiva}
+            accessibilityRole="button"
+          >
+            <View style={estilos.menuIconoCaja}>
+              <Text style={estilos.menuIcono}>🎫</Text>
+            </View>
+            <View style={estilos.menuTextos}>
+              <Text style={estilos.menuTitulo}>Ayuda y soporte</Text>
+              <Text style={estilos.menuAyuda}>
+                Reporta un problema y sigue el estado de tus solicitudes.
+              </Text>
+            </View>
+            <Text style={estilos.menuChevron}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={estilos.botonSalir}
+            onPress={confirmarCierreSesion}
+            activeOpacity={interaccion.opacidadActiva}
+            accessibilityRole="button"
+          >
+            <Text style={estilos.botonSalirTexto}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          {bloqueSesiones}
+          {bloqueContrasena}
+          {bloquePrivacidad}
         </>
       )}
       <DialogoConfirmacion
@@ -417,4 +477,39 @@ const estilos = StyleSheet.create({
   preferenciaTexto: { color: colores.texto, fontSize: 15 },
   preferenciaTextos: { flex: 1, paddingRight: espacio.md },
   preferenciaAyuda: { ...tipografia.micro, color: colores.textoTenue, marginTop: 2, letterSpacing: 0 },
+
+  // ── Mi perfil (paciente) ──
+  grupo: {
+    ...tipografia.micro,
+    color: colores.textoSuave,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: espacio.xl,
+    marginBottom: espacio.xs,
+  },
+  filaMenu: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginTop: espacio.sm },
+  menuIconoCaja: {
+    width: 46,
+    height: 46,
+    borderRadius: radio.md,
+    backgroundColor: colores.primarioSuave,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: espacio.base,
+  },
+  menuIcono: { fontSize: 22 },
+  menuTextos: { flex: 1 },
+  menuTitulo: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, marginBottom: 2 },
+  menuAyuda: { ...tipografia.meta, color: colores.textoSuave },
+  menuChevron: { fontSize: 28, color: colores.textoDeshabilitado, marginLeft: espacio.sm },
+  // Cerrar sesión: destructivo pero secundario, contorno y no bloque rojo.
+  botonSalir: {
+    marginTop: espacio.xxl,
+    paddingVertical: espacio.md,
+    borderRadius: radio.md,
+    borderWidth: 1.5,
+    borderColor: colores.error,
+    alignItems: 'center',
+  },
+  botonSalirTexto: { ...tipografia.cuerpoFuerte, color: colores.error },
 });

@@ -4,7 +4,7 @@
 // concentra la acción de reservar en un botón flotante que abre el buscador.
 // Reemplaza el flujo separado de agendamiento/búsqueda por uno continuo.
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import apiClient, {
   salirListaEspera,
   tomarCupoListaEspera,
 } from '../../api/client';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { AuthContext } from '../../context/AuthContext';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
@@ -53,6 +55,8 @@ function vaAlHistorial(cita) {
 }
 
 export default function MisCitasScreen({ navigation, route }) {
+  // Mis citas es el inicio del paciente: aquí va su saludo.
+  const { userData } = useContext(AuthContext);
   // Avisos con el diálogo de la app (el Alert nativo no se estiliza).
   const [aviso, setAviso] = useState(null);
   const [citas, setCitas] = useState([]);
@@ -440,10 +444,34 @@ export default function MisCitasScreen({ navigation, route }) {
     );
   };
 
+  // Saludo del inicio, con el acceso a Pagos y bonos arriba a la derecha.
+  const encabezado = (
+    <View style={styles.saludoFila}>
+      <View style={styles.saludoTextos}>
+        <Text style={styles.saludo}>Hola,</Text>
+        <Text style={styles.saludoNombre} numberOfLines={1}>
+          {userData?.nombres || 'Usuario'}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={styles.botonPagos}
+        onPress={() => navigation.navigate('Pagos')}
+        activeOpacity={interaccion.opacidadActiva}
+        accessibilityRole="button"
+      >
+        <Ionicons name="card-outline" size={18} color={colores.primario} />
+        <Text style={styles.botonPagosTexto}>Pagos y bonos</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   if (cargando) {
     return (
-      <View style={styles.centrado}>
-        <ActivityIndicator size="large" color={colores.primario} />
+      <View style={styles.contenedor}>
+        {encabezado}
+        <View style={styles.centrado}>
+          <ActivityIndicator size="large" color={colores.primario} />
+        </View>
       </View>
     );
   }
@@ -453,17 +481,21 @@ export default function MisCitasScreen({ navigation, route }) {
 
   if (errorRed) {
     return (
-      <View style={styles.centrado}>
-        <ErrorRetry
-          mensaje="No pudimos cargar tus citas. Revisa tu conexión."
-          onRetry={() => cargarCitas(false)}
-        />
+      <View style={styles.contenedor}>
+        {encabezado}
+        <View style={styles.centrado}>
+          <ErrorRetry
+            mensaje="No pudimos cargar tus citas. Revisa tu conexión."
+            onRetry={() => cargarCitas(false)}
+          />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.contenedor}>
+      {encabezado}
       <FlatList
         data={citasVigentes}
         keyExtractor={(item) => String(item.cita_id)}
@@ -559,7 +591,7 @@ export default function MisCitasScreen({ navigation, route }) {
               {citasHistorial.length > 0 ? 'No tienes citas próximas' : 'Aún no tienes citas'}
             </Text>
             <Text style={styles.vacioTexto}>
-              Usa el botón de abajo para buscar disponibilidad y reservar una hora.
+              Toca el botón ＋ de la barra inferior para buscar disponibilidad y reservar una hora.
             </Text>
           </View>
         }
@@ -574,15 +606,6 @@ export default function MisCitasScreen({ navigation, route }) {
           </SeccionHistorial>
         }
       />
-
-      {/* Botón flotante: unifica buscar y agendar en un solo paso. */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('BuscarCita')}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.fabTexto}>＋  Buscar y agendar</Text>
-      </TouchableOpacity>
 
       {/* CU22: la cancelación requiere justificación */}
       <DialogoMotivo
@@ -622,7 +645,34 @@ export default function MisCitasScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: colores.fondo },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  lista: { padding: 16, paddingBottom: 96 },
+  lista: { padding: 16, paddingTop: espacio.xs, paddingBottom: espacio.xxl },
+
+  // Saludo del inicio y acceso a Pagos y bonos.
+  saludoFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.md,
+    paddingHorizontal: espacio.base,
+    paddingTop: espacio.lg,
+    paddingBottom: espacio.md,
+    backgroundColor: colores.fondo,
+  },
+  saludoTextos: { flex: 1 },
+  saludo: { ...tipografia.cuerpo, color: colores.textoSuave },
+  saludoNombre: { ...tipografia.display, color: colores.textoTitulo },
+  botonPagos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.xs,
+    paddingVertical: espacio.sm,
+    paddingHorizontal: espacio.md,
+    borderRadius: radio.completo,
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+    backgroundColor: colores.superficie,
+    ...sombra.suave,
+  },
+  botonPagosTexto: { ...tipografia.metaFuerte, color: colores.primario },
 
   card: {
     backgroundColor: colores.superficie,
@@ -777,15 +827,4 @@ const styles = StyleSheet.create({
   },
   botonSalirListaTexto: { ...tipografia.metaFuerte, color: colores.error },
 
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    backgroundColor: colores.primario,
-    paddingVertical: 16,
-    paddingHorizontal: 22,
-    borderRadius: radio.completo,
-    ...sombra.media,
-  },
-  fabTexto: { color: colores.superficie, fontWeight: 'bold', fontSize: 15 },
 });

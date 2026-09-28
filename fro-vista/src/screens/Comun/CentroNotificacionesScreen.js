@@ -27,6 +27,7 @@ import DialogoAviso from '../../components/DialogoAviso';
 import { registrarPush } from '../../utils/push';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
+import { resolverDestino } from '../../navigation/rutasPaciente';
 
 // Ícono por tipo de aviso: reconocer de un vistazo de qué se trata.
 const ICONOS = {
@@ -85,9 +86,9 @@ export default function CentroNotificacionesScreen({ navigation }) {
     // habría mostrado la pantalla de "ruta no disponible".
     const destino = item?.datos?.pantalla;
     const rutasDelRol = navigation.getState?.()?.routeNames || [];
-    if (destino && rutasDelRol.includes(destino)) {
-      navigation.navigate(destino, item.datos || {});
-    }
+    // Del paciente, varias pantallas ahora viven dentro de la barra inferior.
+    const ruta = resolverDestino(rutasDelRol, destino, item.datos || {});
+    if (ruta) navigation.navigate(...ruta);
   };
 
   const marcarTodas = async () => {

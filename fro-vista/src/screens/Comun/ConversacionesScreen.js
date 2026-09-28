@@ -7,18 +7,24 @@
 // Los episodios cerrados siguen apareciendo, al final y marcados: su
 // conversación queda como historial de solo lectura (Excepción 3).
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, RefreshControl,
   ActivityIndicator, StyleSheet, Image,
 } from 'react-native';
 
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { getMisConversaciones } from '../../api/client';
+import { AuthContext } from '../../context/AuthContext';
 import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
 
 export default function ConversacionesScreen({ navigation }) {
+  // Para el paciente, Mensajes es una pestaña de la barra inferior y arriba de
+  // todo lleva el acceso a sus documentos (CU35).
+  const { userData } = useContext(AuthContext);
+  const esPaciente = userData?.rol === 'Paciente';
   const [conversaciones, setConversaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
@@ -70,6 +76,24 @@ export default function ConversacionesScreen({ navigation }) {
         <RefreshControl refreshing={refrescando} onRefresh={() => cargar(true)} colors={[colores.primario]} />
       }
     >
+      {esPaciente && (
+        <TouchableOpacity
+          style={estilos.botonDocumentos}
+          onPress={() => navigation.navigate('Documentos')}
+          activeOpacity={interaccion.opacidadActiva}
+          accessibilityRole="button"
+        >
+          <View style={estilos.documentosIcono}>
+            <Ionicons name="folder-open-outline" size={22} color={colores.primario} />
+          </View>
+          <View style={estilos.cuerpo}>
+            <Text style={estilos.nombre}>Mis documentos</Text>
+            <Text style={estilos.motivo}>Tus exámenes e informes clínicos, sin descargarlos.</Text>
+          </View>
+          <Text style={estilos.chevron}>›</Text>
+        </TouchableOpacity>
+      )}
+
       <Text style={estilos.intro}>
         Canal directo con tu equipo de tratamiento. Los mensajes viajan cifrados y solo los
         ven los dos participantes.
@@ -146,6 +170,22 @@ const estilos = StyleSheet.create({
   contenido: { padding: espacio.lg, paddingBottom: espacio.xxl },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl, backgroundColor: colores.fondo },
   intro: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.base },
+
+  botonDocumentos: {
+    ...piezas.tarjeta,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: espacio.lg,
+  },
+  documentosIcono: {
+    width: 48,
+    height: 48,
+    borderRadius: radio.md,
+    backgroundColor: colores.primarioSuave,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: espacio.md,
+  },
 
   tarjeta: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginBottom: espacio.md },
   tarjetaCerrada: { backgroundColor: colores.superficieSuave },

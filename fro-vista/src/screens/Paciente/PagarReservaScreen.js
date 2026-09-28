@@ -17,6 +17,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import DialogoAviso from '../../components/DialogoAviso';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
+import { irAPestana } from '../../navigation/rutasPaciente';
 
 // La pasarela es simulada y determinista, igual que en el Incremento 2: cada
 // método provoca un desenlace distinto, y así se pueden probar las excepciones.
@@ -90,7 +91,7 @@ export default function PagarReservaScreen({ route, navigation }) {
         tono: datos.estado === 'EN_TRANSITO' ? 'alerta' : 'ok',
         titulo: datos.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : '¡Pago recibido!',
         mensaje: datos.mensaje,
-        alCerrar: () => navigation.navigate('MisCitas'),
+        alCerrar: () => irAPestana(navigation, 'MisCitas'),
       });
     } catch (err) {
       const respuesta = err.response?.data;
@@ -136,7 +137,7 @@ export default function PagarReservaScreen({ route, navigation }) {
         </Text>
         <TouchableOpacity
           style={estilos.botonPrimario}
-          onPress={() => navigation.navigate('MisCitas')}
+          onPress={() => irAPestana(navigation, 'MisCitas')}
           activeOpacity={interaccion.opacidadActiva}
         >
           <Text style={estilos.botonPrimarioTexto}>Ver mis citas</Text>
