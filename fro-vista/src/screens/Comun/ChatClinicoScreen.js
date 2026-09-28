@@ -240,12 +240,19 @@ export default function ChatClinicoScreen({ route, navigation }) {
         <ScrollView
           ref={refScroll}
           style={estilos.lista}
-          contentContainerStyle={[estilos.listaContenido, esProfesional && estilos.listaBajoCinta]}
+          contentContainerStyle={estilos.listaContenido}
           onContentSizeChange={() => refScroll.current?.scrollToEnd({ animated: true })}
           onLayout={() => refScroll.current?.scrollToEnd({ animated: false })}
           keyboardShouldPersistTaps="handled"
         >
-          {mensajes.length === 0 && pendientes.length === 0 && (
+          {/* Aviso de cifrado: encabeza la conversación y se va al desplazarse. */}
+        {esProfesional && (
+          <View style={estilos.avisoCifrado}>
+            <Text style={estilos.avisoCifradoTexto}>🔒 Conversación cifrada</Text>
+          </View>
+        )}
+
+        {mensajes.length === 0 && pendientes.length === 0 && (
             <Text style={estilos.vacio}>
               Todavía no hay mensajes. Escribe el primero: este canal es solo entre ustedes dos.
             </Text>
@@ -284,15 +291,6 @@ export default function ChatClinicoScreen({ route, navigation }) {
             </View>
           ))}
         </ScrollView>
-
-        {/* Aviso de cifrado: fijo sobre el chat y semitransparente, deja ver
-            los mensajes que pasan por detrás. */}
-        {esProfesional && (
-          <View style={estilos.cintaFlotante} pointerEvents="none">
-            <View style={estilos.cintaFlotanteFondo} />
-            <Text style={estilos.cintaFlotanteTexto}>🔒 Conversación cifrada</Text>
-          </View>
-        )}
       </View>
 
       {puedeEscribir ? (
@@ -361,23 +359,18 @@ const estilos = StyleSheet.create({
   },
   botonFichaTexto: { ...tipografia.metaFuerte, color: colores.textoInverso },
 
-  // Franja semitransparente fija arriba del chat.
-  cintaFlotante: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    paddingVertical: espacio.xs + 2,
+  // Aviso de cifrado al inicio de la conversación (se desplaza con ella).
+  avisoCifrado: {
+    alignSelf: 'center',
+    paddingVertical: espacio.xs,
+    paddingHorizontal: espacio.md,
+    borderRadius: radio.completo,
+    backgroundColor: colores.superficieSuave,
+    borderWidth: 1,
+    borderColor: colores.bordeSuave,
+    marginBottom: espacio.base,
   },
-  cintaFlotanteFondo: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colores.fondo,
-    opacity: 0.8,
-  },
-  cintaFlotanteTexto: { ...tipografia.micro, color: colores.textoSuave, letterSpacing: 0.3 },
-  // El primer mensaje parte bajo la franja, sin quedar tapado.
-  listaBajoCinta: { paddingTop: espacio.xxl + espacio.xs },
+  avisoCifradoTexto: { ...tipografia.micro, color: colores.textoSuave, letterSpacing: 0.3 },
 
   lista: { flex: 1 },
   listaContenido: { padding: espacio.lg, paddingBottom: espacio.base },

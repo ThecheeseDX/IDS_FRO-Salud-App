@@ -595,8 +595,9 @@ const estilos = StyleSheet.create({
   // una opción marcada lo hace desaparecer.
   opcionElegida: { backgroundColor: colores.primarioSuave, borderWidth: 2, padding: 15 },
   opcionTexto: { color: colores.primario, fontWeight: '600', fontSize: 15 },
-  botonAtras: { ...piezas.botonSecundario, marginTop: espacio.md },
-  botonAtrasTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
+  // Relleno con el azul de la marca.
+  botonAtras: { ...piezas.botonPrimario, marginTop: espacio.md },
+  botonAtrasTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   entrada: {
     backgroundColor: colores.superficie,
     borderWidth: 1,

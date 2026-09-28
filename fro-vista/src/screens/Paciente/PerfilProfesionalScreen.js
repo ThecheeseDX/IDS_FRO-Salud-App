@@ -1,32 +1,42 @@
 // Ruta: fro-vista/src/screens/Paciente/PerfilProfesionalScreen.js
 //
-// CU10/CU14 — Perfil público del profesional, tal como él lo ve en "Mi perfil
-// público" pero de solo lectura: foto, especialidad, reseña curricular, áreas
-// de experticia, modalidad, comunas donde atiende y sus valoraciones (CU58).
-// Se abre al tocar su nombre en Buscar y agendar cita.
+// CU10/CU14 — Perfil público del profesional, de solo lectura: foto,
+// especialidad, calificación (al tocar las estrellas se abren sus
+// valoraciones, CU58), modalidad en píldoras, reseña curricular, áreas de
+// experticia y comunas donde atiende. Se abre al tocar su nombre en Buscar y
+// agendar cita.
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 
-import { getPerfilPublicoProfesional, getResenasProfesional } from '../../api/client';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { getPerfilPublicoProfesional } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
-import { formatearFecha } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
 
-const MODALIDAD = {
-  DOMICILIO: 'A domicilio',
-  ONLINE: 'Virtual',
-  AMBOS: 'A domicilio y virtual',
+// Una píldora por modalidad: "AMBOS" muestra las dos.
+const PILDORAS_MODALIDAD = {
+  DOMICILIO: [{ icono: 'home-outline', texto: 'A domicilio' }],
+  ONLINE: [{ icono: 'videocam-outline', texto: 'Virtual' }],
+  AMBOS: [
+    { icono: 'home-outline', texto: 'A domicilio' },
+    { icono: 'videocam-outline', texto: 'Virtual' },
+  ],
 };
 
-// En el perfil se muestran los comentarios más recientes; el resto, en
-// "Ver todas las evaluaciones".
-const RESENAS_VISIBLES = 3;
+// Título de sección con su símbolo.
+function Etiqueta({ icono, children }) {
+  return (
+    <View style={estilos.filaEtiqueta}>
+      <Ionicons name={icono} size={16} color={colores.primario} />
+      <Text style={estilos.etiqueta}>{children}</Text>
+    </View>
+  );
+}
 
 export default function PerfilProfesionalScreen({ route, navigation }) {
   const { profesionalId, nombre } = route?.params || {};
   const [perfil, setPerfil] = useState(null);
-  const [resenas, setResenas] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -37,13 +47,7 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
     setError(false);
     setPerfil(null);
     try {
-      const [datosPerfil, datosResenas] = await Promise.all([
-        getPerfilPublicoProfesional(profesionalId),
-        // Las valoraciones son un complemento: si fallan, el perfil se ve igual.
-        getResenasProfesional(profesionalId).catch(() => null),
-      ]);
-      setPerfil(datosPerfil);
-      setResenas(datosResenas);
+      setPerfil(await getPerfilPublicoProfesional(profesionalId));
     } catch {
       setError(true);
     }
@@ -73,7 +77,7 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
     .join(' ');
   const iniciales = `${perfil.nombres?.[0] || ''}${perfil.apellido_paterno?.[0] || ''}`.toUpperCase();
   const promedio = Number(perfil.calificacion_promedio || 0);
-  const comentarios = resenas?.resenas || [];
+  const pildoras = PILDORAS_MODALIDAD[perfil.tipo_sede] || [];
 
   const verEvaluaciones = () =>
     navigation.navigate('ResenasProfesional', { profesionalId, nombre: nombreCompleto });
@@ -91,36 +95,51 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
         )}
         <View style={estilos.fotoTexto}>
           <Text style={estilos.nombre}>{nombreCompleto}</Text>
-          <Text style={estilos.meta}>
-            {perfil.especialidad || 'Sin especialidad'}
-            {perfil.num_registro_salud ? ` · Reg. ${perfil.num_registro_salud}` : ''}
-          </Text>
+          <Text style={estilos.meta}>{perfil.especialidad || 'Sin especialidad'}</Text>
+          {/* CU58: las valoraciones se abren tocando las estrellas. */}
           {perfil.total_evaluaciones > 0 ? (
-            <Text style={estilos.calificacion}>
-              {'★'.repeat(Math.round(promedio))}
-              {'☆'.repeat(5 - Math.round(promedio))}{'  '}
-              {promedio.toFixed(1)} ({perfil.total_evaluaciones})
-            </Text>
+            <TouchableOpacity
+              onPress={verEvaluaciones}
+              activeOpacity={interaccion.opacidadActiva}
+              accessibilityRole="button"
+              accessibilityLabel={`Calificación ${promedio.toFixed(1)} de 5. Ver valoraciones`}
+            >
+              <Text style={estilos.calificacion}>
+                {'★'.repeat(Math.round(promedio))}
+                {'☆'.repeat(5 - Math.round(promedio))}{'  '}
+                {promedio.toFixed(1)} ({perfil.total_evaluaciones})
+              </Text>
+              <Text style={estilos.verValoraciones}>Ver valoraciones ›</Text>
+            </TouchableOpacity>
           ) : (
             <Text style={estilos.ayuda}>Perfil nuevo · sin evaluaciones aún</Text>
           )}
         </View>
       </View>
 
-      <Text style={estilos.etiqueta}>Reseña curricular</Text>
+      {/* Modalidad: una píldora por forma de atención. */}
+      {pildoras.length > 0 && (
+        <View style={estilos.pildoras}>
+          {pildoras.map((p) => (
+            <View key={p.texto} style={estilos.pildora}>
+              <Ionicons name={p.icono} size={15} color={colores.primario} />
+              <Text style={estilos.pildoraTexto}>{p.texto}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <Etiqueta icono="document-text-outline">Reseña curricular</Etiqueta>
       <Text style={[estilos.valor, !perfil.resena_curricular && estilos.valorVacio]}>
         {perfil.resena_curricular || 'El profesional aún no escribe su reseña.'}
       </Text>
 
-      <Text style={estilos.etiqueta}>Áreas de experticia</Text>
+      <Etiqueta icono="ribbon-outline">Áreas de experticia</Etiqueta>
       <Text style={[estilos.valor, !perfil.areas_experticia && estilos.valorVacio]}>
         {perfil.areas_experticia || 'Sin áreas informadas.'}
       </Text>
 
-      <Text style={estilos.etiqueta}>Modalidad de atención</Text>
-      <Text style={estilos.valor}>{MODALIDAD[perfil.tipo_sede] || 'No informada'}</Text>
-
-      <Text style={estilos.etiqueta}>Comunas donde atiende a domicilio</Text>
+      <Etiqueta icono="location-outline">Comunas donde atiende a domicilio</Etiqueta>
       {perfil.tipo_sede === 'ONLINE' ? (
         <Text style={[estilos.valor, estilos.valorVacio]}>Atiende solo de forma virtual.</Text>
       ) : (perfil.comunas || []).length === 0 ? (
@@ -134,46 +153,6 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
             </View>
           ))}
         </View>
-      )}
-
-      {/* CU58: valoraciones de pacientes atendidos */}
-      <Text style={estilos.etiqueta}>Valoraciones</Text>
-      <View style={estilos.resumen}>
-        <Text style={estilos.numero}>{perfil.total_evaluaciones > 0 ? promedio.toFixed(1) : '—'}</Text>
-        <Text style={estilos.estrellas}>
-          {'★'.repeat(Math.round(promedio))}
-          {'☆'.repeat(5 - Math.round(promedio))}
-        </Text>
-        <Text style={estilos.total}>
-          {perfil.total_evaluaciones > 0
-            ? `${perfil.total_evaluaciones} evaluación(es) de pacientes atendidos`
-            : 'Perfil nuevo: todavía no tiene evaluaciones.'}
-        </Text>
-      </View>
-
-      {comentarios.slice(0, RESENAS_VISIBLES).map((r) => (
-        <View key={r.evaluacion_satisfaccion_id} style={estilos.tarjeta}>
-          <View style={estilos.cabecera}>
-            <Text style={estilos.estrellasChicas}>
-              {'★'.repeat(r.puntuacion)}
-              {'☆'.repeat(5 - r.puntuacion)}
-            </Text>
-            <Text style={estilos.momento}>{formatearFecha(r.momento_creacion)}</Text>
-          </View>
-          <Text style={estilos.texto}>“{r.resena}”</Text>
-          <Text style={estilos.autor}>— {r.autor || 'Paciente'}</Text>
-        </View>
-      ))}
-
-      {comentarios.length > RESENAS_VISIBLES && (
-        <TouchableOpacity
-          style={estilos.botonVerTodas}
-          onPress={verEvaluaciones}
-          activeOpacity={interaccion.opacidadActiva}
-          accessibilityRole="button"
-        >
-          <Text style={estilos.botonVerTodasTexto}>Ver todas las evaluaciones ({comentarios.length})</Text>
-        </TouchableOpacity>
       )}
     </ScrollView>
   );
@@ -195,7 +174,22 @@ const estilos = StyleSheet.create({
   calificacion: { ...tipografia.meta, color: colores.secundarioFuerte },
   ayuda: { ...tipografia.meta, color: colores.textoTenue },
 
-  etiqueta: { ...piezas.etiqueta, marginTop: espacio.lg },
+  verValoraciones: { ...tipografia.micro, color: colores.primario, marginTop: 2 },
+  pildoras: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.sm, marginTop: espacio.xs },
+  pildora: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.xs,
+    paddingVertical: espacio.xs + 2,
+    paddingHorizontal: espacio.md,
+    borderRadius: radio.completo,
+    borderWidth: 1,
+    borderColor: colores.primarioBorde,
+    backgroundColor: colores.superficie,
+  },
+  pildoraTexto: { ...tipografia.metaFuerte, color: colores.primario },
+  filaEtiqueta: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs + 2, marginTop: espacio.lg, marginBottom: espacio.sm },
+  etiqueta: { ...piezas.etiqueta, marginBottom: 0 },
   valor: { ...piezas.tarjeta, ...tipografia.cuerpo, color: colores.texto },
   valorVacio: { color: colores.textoTenue, fontStyle: 'italic' },
 
@@ -209,25 +203,4 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.primarioSuave,
   },
   comunaTexto: { ...tipografia.meta, color: colores.primario, fontWeight: '600' },
-
-  resumen: {
-    ...piezas.tarjeta,
-    alignItems: 'center',
-    marginBottom: espacio.md,
-    backgroundColor: colores.secundarioSuave,
-    borderColor: colores.secundarioBorde,
-  },
-  numero: { ...tipografia.display, fontSize: 44, lineHeight: 50, color: colores.secundarioFuerte },
-  estrellas: { fontSize: 22, color: colores.secundario, letterSpacing: 3 },
-  total: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm, textAlign: 'center' },
-
-  tarjeta: { ...piezas.tarjeta, marginBottom: espacio.md },
-  cabecera: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  estrellasChicas: { fontSize: 15, color: colores.secundario, letterSpacing: 2 },
-  momento: { ...tipografia.micro, color: colores.textoTenue },
-  texto: { ...tipografia.cuerpo, color: colores.texto, marginTop: espacio.sm, fontStyle: 'italic' },
-  autor: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm, fontStyle: 'italic' },
-
-  botonVerTodas: { ...piezas.botonSecundario },
-  botonVerTodasTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
 });

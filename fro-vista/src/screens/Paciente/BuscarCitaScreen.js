@@ -535,8 +535,9 @@ export default function BuscarCitaScreen({ navigation, route }) {
                     >
                       <Text style={styles.nombre}>
                         {item.nombres} {item.apellido_paterno} {item.apellido_materno || ''}
-                        <Text style={styles.verPerfil}>  Ver perfil ›</Text>
                       </Text>
+                      {/* En su propia línea: junto al nombre quedaba cortado. */}
+                      <Text style={styles.verPerfil}>Ver perfil ›</Text>
                     </TouchableOpacity>
                     <Text style={styles.detalle}>🏥  {item.especialidad}</Text>
 
@@ -801,7 +802,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: colores.primarioSuave,
   },
-  verPerfil: { ...tipografia.metaFuerte, color: colores.secundarioFuerte },
+  verPerfil: { ...tipografia.metaFuerte, color: colores.secundarioFuerte, marginBottom: 2 },
   nombre: {
     fontWeight: 'bold',
     fontSize: 17,
