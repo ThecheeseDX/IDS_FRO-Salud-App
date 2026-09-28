@@ -17,7 +17,7 @@ import ErrorRetry from '../../components/ErrorRetry';
 import DialogoAviso from '../../components/DialogoAviso';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
-import { irAPestana } from '../../navigation/rutasPaciente';
+import { irAPestana } from '../../navigation/rutasBarra';
 
 // La pasarela es simulada y determinista, igual que en el Incremento 2: cada
 // método provoca un desenlace distinto, y así se pueden probar las excepciones.

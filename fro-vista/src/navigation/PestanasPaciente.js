@@ -16,11 +16,11 @@ import ConversacionesScreen from '../screens/Comun/ConversacionesScreen';
 import SeguridadScreen from '../screens/Comun/SeguridadScreen';
 import CampanaNotificaciones from '../components/CampanaNotificaciones';
 import LogoMarca from '../components/LogoMarca';
-import { colores, radio, sombra, tipografia } from '../theme';
+import { opcionesDeBarra } from './barraInferior';
+import { colores, radio, sombra } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
-// Ícono de línea cuando la pestaña está inactiva y relleno cuando está activa.
 const ICONOS = {
   Inicio: 'home',
   Tratamiento: 'pulse',
@@ -58,36 +58,7 @@ export default function PestanasPaciente({ navigation }) {
   return (
     <Tab.Navigator
       backBehavior="firstRoute"
-      screenOptions={({ route }) => ({
-        // Las pestañas son pantallas raíz: cabecera clara, como el inicio.
-        headerStyle: {
-          backgroundColor: colores.superficie,
-          borderBottomWidth: 1,
-          borderBottomColor: colores.bordeSuave,
-        },
-        headerShadowVisible: false,
-        headerTitleAlign: 'center',
-        headerTintColor: colores.primario,
-        headerTitleStyle: { ...tipografia.subtitulo, color: colores.textoTitulo },
-        tabBarActiveTintColor: colores.primario,
-        tabBarInactiveTintColor: colores.textoSuave,
-        tabBarLabelStyle: { ...tipografia.micro, fontWeight: '600', letterSpacing: 0 },
-        tabBarStyle: {
-          backgroundColor: colores.superficie,
-          borderTopColor: colores.bordeSuave,
-        },
-        // Al escribir (reporte de seguimiento, entrevista) la barra se esconde
-        // para no quitarle espacio al campo.
-        tabBarHideOnKeyboard: true,
-        tabBarIcon: ({ focused, color, size }) =>
-          ICONOS[route.name] ? (
-            <Ionicons
-              name={focused ? ICONOS[route.name] : `${ICONOS[route.name]}-outline`}
-              size={size}
-              color={color}
-            />
-          ) : null,
-      })}
+      screenOptions={opcionesDeBarra(ICONOS)}
     >
       <Tab.Screen
         name="Inicio"

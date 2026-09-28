@@ -23,7 +23,8 @@ import { getCitasMarcasTemporales } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import EtiquetaEstado from '../../components/EtiquetaEstado';
 import { formatearHora, claveDia } from '../../utils/fechas';
-import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { colores, espacio, piezas, radio, sombra, tipografia, interaccion } from '../../theme';
 import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
 const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -210,6 +211,19 @@ export default function MiJornadaScreen({ navigation }) {
     </View>
   );
 
+  // Bloquear horarios (vacaciones, licencias) se hace desde la jornada.
+  const botonDisponibilidad = (
+    <TouchableOpacity
+      style={estilos.fab}
+      onPress={() => navigation.navigate('GestionDisponibilidad')}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+    >
+      <Ionicons name="calendar-outline" size={18} color={colores.textoInverso} />
+      <Text style={estilos.fabTexto}>Gestionar disponibilidad</Text>
+    </TouchableOpacity>
+  );
+
   if (errorCarga) {
     return (
       <View style={estilos.fondo}>
@@ -217,6 +231,7 @@ export default function MiJornadaScreen({ navigation }) {
         <View style={estilos.centrado}>
           <ErrorRetry mensaje="No se pudo cargar tu jornada." onRetry={() => cargar(false)} />
         </View>
+        {botonDisponibilidad}
       </View>
     );
   }
@@ -292,13 +307,31 @@ export default function MiJornadaScreen({ navigation }) {
           Toca una cita para abrir la ficha del paciente y registrar la atención.
         </Text>
       </ScrollView>
+
+      {botonDisponibilidad}
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: colores.fondo },
-  contenido: { padding: espacio.lg, paddingBottom: espacio.xxl },
+  // Espacio al final para que el botón flotante no tape la última cita.
+  contenido: { padding: espacio.lg, paddingBottom: 96 },
+
+  fab: {
+    position: 'absolute',
+    right: espacio.lg,
+    bottom: espacio.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.sm,
+    backgroundColor: colores.primario,
+    paddingVertical: espacio.md,
+    paddingHorizontal: espacio.lg,
+    borderRadius: radio.completo,
+    ...sombra.media,
+  },
+  fabTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: espacio.xl },
   cargando: { marginTop: espacio.xxl },
 

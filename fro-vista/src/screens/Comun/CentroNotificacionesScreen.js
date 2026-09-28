@@ -27,7 +27,7 @@ import DialogoAviso from '../../components/DialogoAviso';
 import { registrarPush } from '../../utils/push';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
-import { resolverDestino } from '../../navigation/rutasPaciente';
+import { resolverDestino } from '../../navigation/rutasBarra';
 
 // Ícono por tipo de aviso: reconocer de un vistazo de qué se trata.
 const ICONOS = {

@@ -13,17 +13,15 @@ import OTPScreen from '../screens/Auth/OTPScreen';
 import RecuperarContrasenaScreen from '../screens/Auth/RecuperarContrasenaScreen';
 // Pantallas — Paciente
 import PestanasPaciente from './PestanasPaciente';
-import { PESTANAS_PACIENTE, resolverDestino } from './rutasPaciente';
+import { PESTANAS_PACIENTE, PESTANAS_PROFESIONAL, resolverDestino } from './rutasBarra';
 import ResenasProfesionalScreen from '../screens/Paciente/ResenasProfesionalScreen';
 import PagarReservaScreen from '../screens/Paciente/PagarReservaScreen';
 import PagosScreen from '../screens/Paciente/PagosScreen';
 import BuscarCitaScreen from '../screens/Paciente/BuscarCitaScreen';
 // Pantallas — Profesional
-import DashboardProfesional from '../screens/Profesional/DashboardProfesional';
+import PestanasProfesional from './PestanasProfesional';
 import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibilidadScreen';
 import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
-import MiJornadaScreen from '../screens/Profesional/MiJornadaScreen';
-import MiPerfilScreen from '../screens/Profesional/MiPerfilScreen';
 import MisHorariosScreen from '../screens/Profesional/MisHorariosScreen';
 import MisLiquidacionesScreen from '../screens/Profesional/MisLiquidacionesScreen';
 // Pantallas — Administrador
@@ -38,7 +36,6 @@ import LiquidacionesScreen from '../screens/Admin/LiquidacionesScreen';
 // Pantallas — Comunes a los tres roles
 import CentroNotificacionesScreen from '../screens/Comun/CentroNotificacionesScreen';
 import SoporteScreen from '../screens/Comun/SoporteScreen';
-import ConversacionesScreen from '../screens/Comun/ConversacionesScreen';
 import ChatClinicoScreen from '../screens/Comun/ChatClinicoScreen';
 import CampanaNotificaciones from '../components/CampanaNotificaciones';
 import { escucharToques } from '../utils/push';
@@ -178,40 +175,20 @@ export default function AppNavigator() {
         ) : userData?.rol === 'Profesional' ? (
           // ── ESCENARIO C: Profesional Autenticado ──
           <>
-            {/* El dashboard es la lista de pacientes asignados */}
+            {/* Barra inferior: Inicio (fichas y banderas rojas) · Mi jornada ·
+                Mensajes · Perfil. Lo demás se abre encima de ella. */}
             <Stack.Screen
-              name="DashboardProfesional"
-              component={DashboardProfesional}
-              options={({ navigation }) => ({
-                headerTitle: () => <LogoMarca tamano="sm" />,
-                headerStyle: {
-                  backgroundColor: colores.superficie,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colores.bordeSuave,
-                },
-                headerTintColor: colores.primario,
-                headerBackVisible: false,
-                gestureEnabled: false,
-                // CU52: la campana con el globo de avisos sin leer.
-                headerRight: () => <CampanaNotificaciones navigation={navigation} />,
-              })}
+              name={PESTANAS_PROFESIONAL}
+              component={PestanasProfesional}
+              options={{ headerShown: false, gestureEnabled: false }}
             />
             {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
-            {/* Agenda del día: muestra y lleva a la ficha; ya no duplica las
-                acciones de marcar la atención, que viven en la ficha. */}
-            <Stack.Screen
-              name="MiJornada"
-              component={MiJornadaScreen}
-              options={{ title: 'Mi Jornada' }}
-            />
             <Stack.Screen
               name="GestionDisponibilidad"
               component={GestionDisponibilidadScreen}
               options={{ title: 'Gestión de Agenda' }}
             />
-            {/* CU10: catálogo de perfil profesional */}
-            <Stack.Screen name="MiPerfil" component={MiPerfilScreen} options={{ title: 'Mi perfil público' }} />
             {/* Jornada semanal: el profesional gestiona sus bloques horarios */}
             <Stack.Screen name="MisHorarios" component={MisHorariosScreen} options={{ title: 'Mis horarios de atención' }} />
             {/* CU58: el profesional ve sus propias evaluaciones publicadas */}
@@ -219,12 +196,9 @@ export default function AppNavigator() {
             {/* CU75: historial de liquidaciones, solo lectura */}
             <Stack.Screen name="MisLiquidaciones" component={MisLiquidacionesScreen} options={{ title: 'Mis Liquidaciones' }} />
             <Stack.Screen name="Notificaciones" component={CentroNotificacionesScreen} options={{ title: 'Notificaciones' }} />
-            {/* CU53: bandeja y conversación cifrada */}
-            <Stack.Screen name="Conversaciones" component={ConversacionesScreen} options={{ title: 'Mensajes' }} />
             {/* CU60: solicitudes de soporte y su seguimiento */}
-            <Stack.Screen name="Soporte" component={SoporteScreen} options={{ title: 'Soporte' }} />
+            <Stack.Screen name="Soporte" component={SoporteScreen} options={{ title: 'Ayuda y soporte' }} />
             <Stack.Screen name="ChatClinico" component={ChatClinicoScreen} options={{ title: 'Mensajes' }} />
-            <Stack.Screen name="Seguridad" component={SeguridadScreen} options={{ title: 'Seguridad de la Cuenta' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen name="FirmaConformidad" component={FirmaConformidadScreen} options={{ title: 'Firma de Conformidad' }} />
             {/* CU33/CU34/CU35: repositorio multimedia del paciente en atención */}
