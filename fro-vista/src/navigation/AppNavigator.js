@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
 
 import { AuthContext } from '../context/AuthContext';
 
@@ -61,6 +62,17 @@ const ACCIONES_DE_RUTEO = ['NAVIGATE', 'NAVIGATE_DEPRECATED', 'PUSH', 'REPLACE',
 // referencia al navegador.
 export const refNavegacion = createNavigationContainerRef();
 
+// Pantallas cuya parte superior es clara (cabecera blanca o sin cabecera): ahí
+// la hora, la batería y la señal del teléfono van en negro. En el resto la
+// cabecera es azul de marca y van en blanco. Sin esto, algunos teléfonos
+// (Samsung en modo oscuro) los pintaban blancos sobre la cabecera blanca.
+const PANTALLAS_DE_ARRIBA_CLARA = ['Login', PESTANAS_PACIENTE, PESTANAS_PROFESIONAL, 'PanelAdmin'];
+
+function estiloBarraDeEstado(estado) {
+  const ruta = estado?.routes?.[estado.index]?.name;
+  return !ruta || PANTALLAS_DE_ARRIBA_CLARA.includes(ruta) ? 'dark' : 'light';
+}
+
 export default function AppNavigator() {
   const { userToken, userData, isLoading } = useContext(AuthContext);
 
@@ -69,6 +81,8 @@ export default function AppNavigator() {
   // del error y "Recargar aplicación" vuelve a montar la navegación desde la
   // pantalla inicial del rol.
   const [errorNavegacion, setErrorNavegacion] = useState(null);
+  const [estiloBarra, setEstiloBarra] = useState('dark');
+  const actualizarBarra = () => setEstiloBarra(estiloBarraDeEstado(refNavegacion.getRootState?.()));
   const [recargas, setRecargas] = useState(0);
 
   const alFallarNavegacion = (accion) => {
@@ -104,13 +118,21 @@ export default function AppNavigator() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colores.fondo }}>
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color={colores.primario} />
       </View>
     );
   }
 
   return (
-    <NavigationContainer ref={refNavegacion} key={recargas} onUnhandledAction={alFallarNavegacion}>
+    <NavigationContainer
+      ref={refNavegacion}
+      key={recargas}
+      onUnhandledAction={alFallarNavegacion}
+      onReady={actualizarBarra}
+      onStateChange={(estado) => setEstiloBarra(estiloBarraDeEstado(estado))}
+    >
+      <StatusBar style={estiloBarra} />
       <Stack.Navigator
         screenOptions={{
           // Cabecera en el azul de marca en toda la app. Las pantallas de

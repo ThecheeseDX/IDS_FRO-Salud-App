@@ -63,14 +63,26 @@ export default function ChatClinicoScreen({ route, navigation }) {
     navigation.setOptions?.({ title: nombreOtro ? `Chat con ${nombreOtro}` : 'Mensajes' });
   }, [navigation, nombreOtro]);
 
+  // Barra del episodio con un acceso a la derecha: el profesional va a la
+  // ficha clínica del paciente; el paciente, al perfil del profesional.
   const esProfesional = conversacion?.papel === 'PROFESIONAL' && Boolean(conversacion?.paciente_id);
+  const esPaciente = conversacion?.papel === 'PACIENTE' && Boolean(conversacion?.profesional_id);
+  const conBarraEpisodio = esProfesional || esPaciente;
 
-  const abrirFicha = () =>
-    navigation.navigate('FichaClinica', {
-      pacienteId: conversacion.paciente_id,
-      nombrePaciente: conversacion.con || nombreOtro,
-      episodioId: String(conversacion.episodio_clinico_id),
-    });
+  const abrirAcceso = () => {
+    if (esProfesional) {
+      navigation.navigate('FichaClinica', {
+        pacienteId: conversacion.paciente_id,
+        nombrePaciente: conversacion.con || nombreOtro,
+        episodioId: String(conversacion.episodio_clinico_id),
+      });
+    } else if (esPaciente) {
+      navigation.navigate('PerfilProfesional', {
+        profesionalId: conversacion.profesional_id,
+        nombre: conversacion.con || nombreOtro,
+      });
+    }
+  };
 
   /** Trae lo nuevo desde el último mensaje conocido. */
   const consultar = useCallback(
@@ -213,19 +225,18 @@ export default function ChatClinicoScreen({ route, navigation }) {
     // La barra de envío sube hasta el borde del teclado y, con el teclado
     // cerrado, queda por encima de los botones del celular.
     <View style={[estilos.fondo, { paddingBottom: espacioInferior }]}>
-      {esProfesional ? (
-        // El profesional ve de qué episodio es el chat y salta a la ficha.
+      {conBarraEpisodio ? (
         <View style={[estilos.cintaContexto, estilos.cintaEpisodio]}>
           <Text style={[estilos.contextoTexto, estilos.episodioTexto]} numberOfLines={1}>
             Episodio #{conversacion.episodio_clinico_id} · {conversacion.motivo_consulta || 'tratamiento'}
           </Text>
           <TouchableOpacity
             style={estilos.botonFicha}
-            onPress={abrirFicha}
+            onPress={abrirAcceso}
             activeOpacity={interaccion.opacidadActiva}
             accessibilityRole="button"
           >
-            <Text style={estilos.botonFichaTexto}>Ficha clínica ›</Text>
+            <Text style={estilos.botonFichaTexto}>{esProfesional ? 'Ficha clínica ›' : 'Ver perfil ›'}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -246,7 +257,7 @@ export default function ChatClinicoScreen({ route, navigation }) {
           keyboardShouldPersistTaps="handled"
         >
           {/* Aviso de cifrado: encabeza la conversación y se va al desplazarse. */}
-        {esProfesional && (
+        {conBarraEpisodio && (
           <View style={estilos.avisoCifrado}>
             <Text style={estilos.avisoCifradoTexto}>🔒 Conversación cifrada</Text>
           </View>

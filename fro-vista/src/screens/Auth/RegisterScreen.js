@@ -10,6 +10,7 @@ import { colores, espacio, radio, tipografia, piezas } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
 import CampoContrasena from '../../components/CampoContrasena';
 import RequisitosContrasena from '../../components/RequisitosContrasena';
+import EditorBloqueHorario, { BotonAgregarBloque } from '../../components/EditorBloqueHorario';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 
 const RegisterScreen = ({ navigation }) => {
@@ -74,13 +75,11 @@ const RegisterScreen = ({ navigation }) => {
         // El bloque nuevo hereda la modalidad general elegida arriba, pero se
         // puede cambiar por bloque (ej: lunes online, martes a domicilio).
         const modalidadInicial = formData.tipo_sede || 'DOMICILIO';
-        setDisponibilidad([...disponibilidad, { dia_semana: '1', hora_inicio: '08:00', hora_fin: '12:00', modalidad: modalidadInicial }]);
+        setDisponibilidad([...disponibilidad, { dia_semana: 1, hora_inicio: '08:00', hora_fin: '12:00', modalidad: modalidadInicial }]);
     };
 
     const actualizarHorario = (index, campo, valor) => {
-        const nuevosHorarios = [...disponibilidad];
-        nuevosHorarios[index][campo] = valor;
-        setDisponibilidad(nuevosHorarios);
+        setDisponibilidad((previos) => previos.map((b, i) => (i === index ? { ...b, [campo]: valor } : b)));
     };
 
     const eliminarHorario = (index) => {
@@ -126,6 +125,9 @@ const RegisterScreen = ({ navigation }) => {
             if(disponibilidad.length === 0) { 
                 setAviso({ tono: 'error', titulo: "Agenda Vacía", mensaje: "Debe agregar al menos un bloque horario." }); 
                 esValido = false; 
+            } else if (disponibilidad.some((b) => b.hora_inicio >= b.hora_fin)) {
+                setAviso({ tono: 'error', titulo: 'Revisa tus horarios', mensaje: 'En cada bloque, la hora de término debe ser posterior a la de inicio.' });
+                esValido = false;
             }
             // Quien atiende a domicilio tiene que decir dónde: el paciente solo
             // ve a los profesionales que llegan a su comuna.
@@ -415,41 +417,14 @@ const RegisterScreen = ({ navigation }) => {
 
                         <Text style={styles.subHeader}>Matriz de Jornada Laboral</Text>
                         {disponibilidad.map((bloque, index) => (
-                            <View key={index} style={styles.horarioBox}>
-                                <View style={styles.pickerContainerHorario}>
-                                    <Picker selectedValue={bloque.dia_semana} onValueChange={(v) => actualizarHorario(index, 'dia_semana', v)} style={{ height: 55, justifyContent: 'center' }}>
-                                        <Picker.Item label="Lunes" value="1" />
-                                        <Picker.Item label="Martes" value="2" />
-                                        <Picker.Item label="Miércoles" value="3" />
-                                        <Picker.Item label="Jueves" value="4" />
-                                        <Picker.Item label="Viernes" value="5" />
-                                        <Picker.Item label="Sábado" value="6" />
-                                        <Picker.Item label="Domingo" value="7" />
-                                    </Picker>
-                                </View>
-                                <View style={styles.pickerContainerHorario}>
-                                    <Picker selectedValue={bloque.modalidad || 'DOMICILIO'} onValueChange={(v) => actualizarHorario(index, 'modalidad', v)} style={{ height: 55, justifyContent: 'center' }}>
-                                        <Picker.Item label="En este horario: A Domicilio" value="DOMICILIO" />
-                                        <Picker.Item label="En este horario: Online" value="ONLINE" />
-                                        <Picker.Item label="En este horario: Ambas" value="AMBOS" />
-                                    </Picker>
-                                </View>
-                                <View style={styles.row}>
-                                    <View style={styles.campo}>
-                                        <Text style={styles.label}>Inicio</Text>
-                                        <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="08:00" value={bloque.hora_inicio} onChangeText={(v) => actualizarHorario(index, 'hora_inicio', v)} />
-                                    </View>
-                                    <View style={styles.campo}>
-                                        <Text style={styles.label}>Fin</Text>
-                                        <TextInput style={[styles.input, { width: '40%', marginBottom: 0 }]} placeholder="13:00" value={bloque.hora_fin} onChangeText={(v) => actualizarHorario(index, 'hora_fin', v)} />
-                                    </View>
-                                    <TouchableOpacity style={styles.btnEliminar} onPress={() => eliminarHorario(index)}>
-                                        <Text style={{ color: colores.superficie, fontWeight: 'bold' }}>X</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
+                            <EditorBloqueHorario
+                                key={index}
+                                bloque={bloque}
+                                onCambiar={(campo, valor) => actualizarHorario(index, campo, valor)}
+                                onEliminar={() => eliminarHorario(index)}
+                            />
                         ))}
-                        <Button title="+ Añadir Bloque Horario" onPress={agregarBloqueHorario} color={colores.primario} />
+                        <BotonAgregarBloque onPress={agregarBloqueHorario} />
                     </View>
                 )}
 
@@ -546,15 +521,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         paddingHorizontal: espacio.sm,
     },
-    pickerContainerHorario: {
-        backgroundColor: colores.superficie,
-        borderWidth: 1,
-        borderColor: colores.bordeCampo,
-        borderRadius: radio.md,
-        marginBottom: espacio.sm,
-        overflow: 'hidden',
-        paddingHorizontal: espacio.sm,
-    },
 
     btnValidar: {
         ...piezas.botonSecundario,
@@ -564,20 +530,6 @@ const styles = StyleSheet.create({
     },
     txtBtnValidar: { ...tipografia.metaFuerte, color: colores.primario, textAlign: 'center' },
 
-    horarioBox: {
-        ...piezas.tarjeta,
-        padding: espacio.md,
-        marginBottom: espacio.base,
-    },
-    btnEliminar: {
-        width: 48,
-        borderRadius: radio.md,
-        borderWidth: 1.5,
-        borderColor: colores.error,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: espacio.sm,
-    },
 
     buttonContainer: { marginTop: espacio.xl, marginBottom: espacio.xxxl },
 });

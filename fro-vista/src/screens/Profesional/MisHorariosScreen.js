@@ -9,32 +9,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator, StyleSheet,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 
 import apiClient from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import DialogoAviso from '../../components/DialogoAviso';
 import VistaConTeclado from '../../components/VistaConTeclado';
+import EditorBloqueHorario, { BotonAgregarBloque } from '../../components/EditorBloqueHorario';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
-
-const DIAS = [
-  { valor: 1, nombre: 'Lunes' },
-  { valor: 2, nombre: 'Martes' },
-  { valor: 3, nombre: 'Miércoles' },
-  { valor: 4, nombre: 'Jueves' },
-  { valor: 5, nombre: 'Viernes' },
-  { valor: 6, nombre: 'Sábado' },
-  { valor: 7, nombre: 'Domingo' },
-];
-
-const MODALIDADES = [
-  { valor: 'DOMICILIO', nombre: 'A domicilio' },
-  { valor: 'ONLINE', nombre: 'Online' },
-  { valor: 'AMBOS', nombre: 'Ambas' },
-];
-
-// Horas en punto: la agenda se ofrece en bloques de una hora.
-const HORAS = Array.from({ length: 18 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // 06:00 a 23:00
 
 let siguienteClave = 1;
 const conClave = (bloque) => ({ ...bloque, clave: siguienteClave++ });
@@ -150,74 +131,15 @@ export default function MisHorariosScreen() {
         ) : null}
 
         {ordenados.map((b) => (
-          <View key={b.clave} style={estilos.tarjeta}>
-            <View style={estilos.cabecera}>
-              <Text style={estilos.titulo}>
-                {DIAS.find((d) => d.valor === Number(b.dia_semana))?.nombre} · {b.hora_inicio} a {b.hora_fin}
-              </Text>
-              <TouchableOpacity
-                onPress={() => eliminar(b.clave)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Eliminar bloque"
-              >
-                <Text style={estilos.eliminar}>Eliminar</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={estilos.etiqueta}>Día</Text>
-            <View style={estilos.selector}>
-              <Picker selectedValue={Number(b.dia_semana)} onValueChange={(v) => actualizar(b.clave, 'dia_semana', Number(v))}>
-                {DIAS.map((d) => (
-                  <Picker.Item key={d.valor} label={d.nombre} value={d.valor} />
-                ))}
-              </Picker>
-            </View>
-
-            <View style={estilos.fila}>
-              <View style={estilos.columna}>
-                <Text style={estilos.etiqueta}>Desde</Text>
-                <View style={estilos.selector}>
-                  <Picker selectedValue={b.hora_inicio} onValueChange={(v) => actualizar(b.clave, 'hora_inicio', v)}>
-                    {HORAS.slice(0, -1).map((h) => (
-                      <Picker.Item key={h} label={h} value={h} />
-                    ))}
-                  </Picker>
-                </View>
-              </View>
-              <View style={estilos.columna}>
-                <Text style={estilos.etiqueta}>Hasta</Text>
-                <View style={estilos.selector}>
-                  <Picker selectedValue={b.hora_fin} onValueChange={(v) => actualizar(b.clave, 'hora_fin', v)}>
-                    {HORAS.slice(1).map((h) => (
-                      <Picker.Item key={h} label={h} value={h} />
-                    ))}
-                  </Picker>
-                </View>
-              </View>
-            </View>
-            {b.hora_inicio >= b.hora_fin ? (
-              <Text style={estilos.errorTexto}>La hora de término debe ser posterior al inicio.</Text>
-            ) : null}
-
-            <Text style={estilos.etiqueta}>Modalidad en este horario</Text>
-            <View style={estilos.selector}>
-              <Picker selectedValue={b.modalidad} onValueChange={(v) => actualizar(b.clave, 'modalidad', v)}>
-                {MODALIDADES.map((m) => (
-                  <Picker.Item key={m.valor} label={m.nombre} value={m.valor} />
-                ))}
-              </Picker>
-            </View>
-          </View>
+          <EditorBloqueHorario
+            key={b.clave}
+            bloque={b}
+            onCambiar={(campo, valor) => actualizar(b.clave, campo, valor)}
+            onEliminar={() => eliminar(b.clave)}
+          />
         ))}
 
-        <TouchableOpacity
-          style={estilos.botonAgregar}
-          onPress={agregar}
-          activeOpacity={interaccion.opacidadActiva}
-        >
-          <Text style={estilos.botonAgregarTexto}>＋ Agregar bloque horario</Text>
-        </TouchableOpacity>
+        <BotonAgregarBloque onPress={agregar} />
 
         <TouchableOpacity
           style={[estilos.botonGuardar, (!cambios || guardando) && estilos.deshabilitado]}
@@ -251,33 +173,6 @@ const estilos = StyleSheet.create({
   intro: { ...tipografia.meta, color: colores.textoSuave, marginBottom: espacio.base },
   vacio: { ...tipografia.meta, color: colores.textoTenue, fontStyle: 'italic', marginBottom: espacio.base },
 
-  tarjeta: { ...piezas.tarjeta, marginBottom: espacio.md },
-  cabecera: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: espacio.sm },
-  titulo: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, flex: 1 },
-  eliminar: { ...tipografia.metaFuerte, color: colores.error },
-
-  etiqueta: { ...tipografia.micro, color: colores.textoSuave, marginTop: espacio.sm, marginBottom: 4 },
-  selector: {
-    borderWidth: 1,
-    borderColor: colores.bordeCampo,
-    borderRadius: radio.sm,
-    backgroundColor: colores.superficie,
-    overflow: 'hidden',
-  },
-  fila: { flexDirection: 'row', gap: espacio.sm },
-  columna: { flex: 1 },
-  errorTexto: { ...tipografia.micro, color: colores.error, marginTop: espacio.xs, letterSpacing: 0 },
-
-  botonAgregar: {
-    borderWidth: 1.5,
-    borderColor: colores.primario,
-    borderStyle: 'dashed',
-    borderRadius: radio.md,
-    paddingVertical: espacio.md,
-    alignItems: 'center',
-    marginTop: espacio.sm,
-  },
-  botonAgregarTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
   botonGuardar: { ...piezas.botonPrimario, alignItems: 'center', marginTop: espacio.lg },
   botonGuardarTexto: { ...tipografia.cuerpoFuerte, color: colores.textoInverso },
   deshabilitado: { opacity: 0.5 },
