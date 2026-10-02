@@ -76,13 +76,17 @@ def parte_de(ruta, partes):
     return None
 
 
-def generar_script(parte, anterior, fork_url, traer, borrar, mayusculas):
+def generar_script(parte, anterior, fork_url, traer, borrar, mayusculas, prefijo='parte'):
     q = shlex.quote
-    rama = f"parte-{parte['n']}-{parte['slug']}"
-    base = f"origin/parte-{anterior['n']}-{anterior['slug']}" if anterior else 'origin/main'
+    rama = f"{prefijo}-{parte['n']}-{parte['slug']}"
+    base = f"origin/{prefijo}-{anterior['n']}-{anterior['slug']}" if anterior else 'origin/main'
     l = [
         '#!/bin/bash',
-        f"# Parte {parte['n']} — {parte['titulo']}",
+        f"# {prefijo.capitalize()} {parte['n']} — {parte['titulo']}",
+    ]
+    if parte.get('autor'):
+        l.append(f"# Lo sube: {parte['autor']}")
+    l += [
         '#',
         '# Ejecutar dentro de un clon del repositorio OFICIAL.',
         '# Prepara los archivos y NO hace el commit: ese lo haces tu, con tu cuenta.',
@@ -192,7 +196,8 @@ def main():
         if not (r['traer'] or r['borrar']):
             print(f"Parte {parte['n']}: sin cambios, no se genera script")
             continue
-        rama, texto = generar_script(parte, anterior, cfg.FORK_URL, sorted(r['traer']), sorted(r['borrar']), r['mayus'])
+        rama, texto = generar_script(parte, anterior, cfg.FORK_URL, sorted(r['traer']), sorted(r['borrar']), r['mayus'],
+                                     getattr(cfg, 'PREFIJO_RAMA', 'parte'))
         destino = os.path.join(args.salida, f'{rama}.sh')
         with open(destino, 'w') as f:
             f.write(texto)
