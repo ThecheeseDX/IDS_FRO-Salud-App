@@ -14,57 +14,68 @@ def I(label, funcs=(), hijos=(), nota=None):
     return {"t": "i", "label": label, "funcs": list(funcs), "hijos": list(hijos), "nota": nota}
 
 arbol = I("Sistema", hijos=[
-  I("Registro", ["Registrar paciente (CU01)", "Registrar profesional (CU02)", "Controlar unicidad de cuentas (CU03)"], hijos=[
+  I("Registro", ["Registrar paciente (CU01)", "Registrar profesional (CU02)", "Controlar unicidad de cuentas (CU03)", "Validar contraseña en tiempo real (CU01)", "Definir bloques horarios (CU02)"], hijos=[
     I("Activación de Cuenta", ["Verificar identidad OTP (CU04)"], hijos=[
       I("Inicio de Sesión", ["Autenticar usuario (CU05)", "Segregar interfaces por rol (CU79)"], hijos=[
         I("Recuperar Contraseña", ["Solicitar restablecimiento (CU06)", "Ejecutar cambio de contraseña (CU07)"]),
-        I("Seguridad de la Cuenta", ["Gestionar sesiones y tokens (CU08)", "Ejecutar cambio de contraseña (CU07)", "Configurar privacidad de contacto (CU09)", "Nombre o anónimo en reseñas (CU58)"], nota="los tres roles"),
+        I("Seguridad de la Cuenta", ["Gestionar sesiones y tokens (CU08)", "Ejecutar cambio de contraseña (CU07)"], nota="administrador"),
         I("Centro de Notificaciones", ["Emitir y leer avisos multicanal (CU52)", "Configurar canales push y correo (CU52)"], nota="los tres roles, desde la campana"),
         I("Panel de Acceso Restringido", ["Controlar acceso RBAC (CU12)"]),
         I("Consola de Auditoría", ["Registrar bitácora de auditoría (CU13)"]),
-        I("Inicio Paciente", hijos=[
-          I("Mis Citas", ["Transicionar estados de cita (CU20)", "Cancelar cita (CU18)", "Registrar trazabilidad (CU22)", "Confirmar asistencia (CU21)", "Lista de espera y tomar cupo (CU19)", "Calificar la atención (CU55)", "Cambiar sesión a plan (CU74)"], hijos=[
-            I("Agendamiento de Cita", ["Buscar y seleccionar cita (CU14)", "Controlar concurrencia (CU15)", "Reprogramar cita (CU17)", "Inscribirse en bloque ocupado (CU19)", "Ver calificación del profesional (CU58)"], hijos=[
-              I("Pagar tu Hora", ["Pagar sesión o plan anticipado (CU73)"]),
-              I("Evaluaciones del Profesional", ["Ver promedio y reseñas (CU58)"]),
-            ]),
+        I("Inicio Paciente", nota="barra inferior de 5 secciones", hijos=[
+          I("Inicio (Mis Citas)", ["Saludo al paciente", "Transicionar estados de cita (CU20)", "Cancelar cita (CU18)", "Registrar trazabilidad (CU22)", "Confirmar asistencia (CU21)", "Lista de espera y tomar cupo (CU19)", "Calificar la atención (CU55)", "Cambiar sesión a plan (CU74)"], hijos=[
+            I("Pagos y Bonos", ["Validar bonos de cobertura (CU66)", "Registrar copagos y paquetes (CU67)", "Intercambiar con proveedor externo (CU68)", "Registrar bitácora externa (CU69)", "Reintentar ante fallos (CU70)", "Ver devoluciones (CU74)"], nota="botón arriba a la derecha"),
             I("Evidencia de Sesión", ["Validar presencialidad GPS (CU39)", "Registrar evidencia de teleconsulta (CU43)"]),
             I("Confirmación por Correo", ["Confirmar o cancelar por enlace (CU21)"], nota="desde el correo"),
             I("Tomar Cupo por Correo", ["Tomar el cupo liberado (CU19)"], nota="desde el correo"),
           ]),
-          I("Entrevista Previa", ["Aceptar disclaimer legal (CU27)", "Ejecutar triaje automatizado (CU23)", "Estructurar síntomas a ficha (CU24)", "Generar reporte pre-clínico (CU25)", "Sugerir especialidad (CU26)"]),
-          I("Mi Seguimiento", ["Reportar dolor y limitación (CU50)", "Alertar deterioro clínico (CU50)"]),
-          I("Mi Progreso", ["Visualizar panel de progreso (CU45)", "Actualizar índice de adherencia (CU44)"]),
-          I("Mis Ejercicios", ["Registrar cumplimiento diario (CU48)", "Controlar vigencia de pautas (CU49)", "Actualizar índice de adherencia (CU44)"]),
-          I("Pagos y Bonos", ["Validar bonos de cobertura (CU66)", "Registrar copagos y paquetes (CU67)", "Intercambiar con proveedor externo (CU68)", "Registrar bitácora externa (CU69)", "Reintentar ante fallos (CU70)", "Ver devoluciones (CU74)"]),
-          I("Mensajes", ["Listar conversaciones (CU53)"], hijos=[
-            I("Chat Clínico", ["Mensajería cifrada (CU53)", "Filtrar contenido restringido (CU57)"]),
+          I("Mi Tratamiento", ["Abrir la entrevista si está pendiente (CU23)"], nota="pestañas superiores", hijos=[
+            I("Mi Progreso", ["Visualizar panel de progreso (CU45)", "Actualizar índice de adherencia (CU44)"]),
+            I("Mis Ejercicios", ["Registrar cumplimiento diario (CU48)", "Controlar vigencia de pautas (CU49)", "Actualizar índice de adherencia (CU44)"]),
+            I("Mi Seguimiento", ["Reportar dolor y limitación (CU50)", "Alertar deterioro clínico (CU50)"]),
+            I("Entrevista Previa", ["Aceptar disclaimer legal (CU27)", "Ejecutar triaje automatizado (CU23)", "Volver a la pregunta anterior (CU23)", "Estructurar síntomas a ficha (CU24)", "Generar reporte pre-clínico (CU25)", "Sugerir especialidad (CU26)"]),
           ]),
-          I("Soporte", ["Registrar y seguir solicitudes (CU60)", "Enrutar por categoría (CU61)"]),
-          I("Mis Documentos", hijos=[I("Visor de Documento", ["Visualizar con visor embebido (CU35)"])]),
+          I("Agendamiento de Cita", ["Buscar y seleccionar cita (CU14)", "Controlar concurrencia (CU15)", "Reprogramar cita (CU17)", "Inscribirse en bloque ocupado (CU19)", "Ver calificación del profesional (CU58)"], nota="botón ＋ de la barra", hijos=[
+            I("Pagar tu Hora", ["Pagar sesión o plan anticipado (CU73)"]),
+            I("Perfil del Profesional", ["Ver perfil público (CU10)", "Ver modalidad y comunas (CU14)"], hijos=[
+              I("Evaluaciones del Profesional", ["Ver promedio y reseñas (CU58)"]),
+            ]),
+          ]),
+          I("Mensajes", ["Listar conversaciones (CU53)"], hijos=[
+            I("Mis Documentos", hijos=[I("Visor de Documento", ["Visualizar con visor embebido (CU35)"])]),
+            I("Chat Clínico", ["Mensajería cifrada (CU53)", "Filtrar contenido restringido (CU57)"], hijos=[
+              I("Perfil del Profesional", ["Ver perfil público (CU10)", "Ver modalidad y comunas (CU14)"]),
+            ]),
+          ]),
+          I("Mi Perfil", ["Ejecutar cambio de contraseña (CU07)", "Gestionar sesiones y tokens (CU08)", "Configurar privacidad de contacto (CU09)", "Nombre o anónimo en reseñas (CU58)"], hijos=[
+            I("Ayuda y Soporte", ["Registrar y seguir solicitudes (CU60)", "Enrutar por categoría (CU61)"]),
+          ]),
         ]),
-        I("Gestión Profesional", ["Visualizar panel profesional (CU11)", "Ver banderas rojas (CU50)"], hijos=[
-          I("Mi Jornada", ["Consultar agenda del día (CU11)"]),
-          I("Gestión de Disponibilidad", ["Restringir disponibilidad (CU16)"]),
-          I("Mi Perfil Público", ["Administrar catálogo de perfil (CU10)", "Ver mi calificación (CU58)"], hijos=[
+        I("Gestión Profesional", nota="barra inferior de 4 secciones", hijos=[
+          I("Inicio (Fichas)", ["Visualizar panel profesional (CU11)", "Ver y revisar banderas rojas (CU50)"], hijos=[
+            I("Ficha Clínica", ["Consolidar ficha clínica (CU28)"], hijos=[
+              I("Historial (Gestión de Agenda)", ["Transicionar estados de cita (CU20)", "Cancelar cita (CU18)", "Registrar trazabilidad (CU22)", "Ejecutar transacciones de cita (CU76)", "Registrar marcas temporales (CU38)", "Validar sesión multi-factor (CU41)", "Versionar correcciones (CU31)", "Cuadrar sesiones bonificables (CU71)", "Leer reporte pre-clínico (CU25)", "Ver adherencia del paciente (CU44)", "Confirmar hora pagada (CU73)", "Solicitar evaluación al cerrar (CU55)", "Episodio y evolución recientes con historial (CU28)"], hijos=[
+                I("Evidencia de Sesión", ["Validar presencialidad GPS (CU39)", "Registrar evidencia de teleconsulta (CU43)"]),
+                I("Firma de Conformidad", ["Capturar firma manuscrita (CU42)"]),
+                I("Documentos del Paciente", ["Almacenar archivos multimedia (CU33)", "Categorizar documentos (CU34)"], hijos=[I("Visor de Documento", ["Visualizar con visor embebido (CU35)"])]),
+              ]),
+              I("Anamnesis", ["Registrar antecedentes (CU29)", "Renderizar plantillas dinámicas (CU77)"]),
+              I("Episodios", ["Agrupar registros por episodio (CU78)"]),
+              I("Sesión Clínica (Atención Clínica)", ["Documentar intervención (CU40)", "Definir metas y objetivos (CU32)", "Asegurar inalterabilidad (CU30)", "Firmar digitalmente (CU36)"]),
+              I("Pautas", ["Seleccionar material de biblioteca (CU46)", "Prescribir pautas de ejercicio (CU47)", "Controlar vigencia de pautas (CU49)"]),
+            ]),
+          ]),
+          I("Mi Jornada", ["Consultar agenda del día (CU11)"], hijos=[
+            I("Gestión de Disponibilidad", ["Restringir disponibilidad (CU16)"], nota="botón flotante"),
+          ]),
+          I("Mensajes", ["Listar conversaciones (CU53)"], hijos=[
+            I("Chat Clínico", ["Mensajería cifrada (CU53)", "Filtrar contenido restringido (CU57)", "Ir a la ficha clínica (CU28)"]),
+          ]),
+          I("Perfil (Mi Perfil Público)", ["Administrar catálogo de perfil (CU10)", "Ver mi calificación (CU58)", "Ejecutar cambio de contraseña (CU07)", "Gestionar sesiones y tokens (CU08)"], hijos=[
             I("Mis Horarios de Atención", ["Gestionar bloques horarios (CU02)"]),
             I("Evaluaciones del Profesional", ["Ver promedio y reseñas (CU58)"]),
-          ]),
-          I("Mis Liquidaciones", ["Consultar liquidaciones (CU75)"]),
-          I("Mensajes", ["Listar conversaciones (CU53)"], hijos=[
-            I("Chat Clínico", ["Mensajería cifrada (CU53)", "Filtrar contenido restringido (CU57)"]),
-          ]),
-          I("Soporte", ["Registrar y seguir solicitudes (CU60)", "Enrutar por categoría (CU61)"]),
-          I("Ficha Clínica", ["Consolidar ficha clínica (CU28)"], hijos=[
-            I("Historial (Gestión de Agenda)", ["Transicionar estados de cita (CU20)", "Cancelar cita (CU18)", "Registrar trazabilidad (CU22)", "Ejecutar transacciones de cita (CU76)", "Registrar marcas temporales (CU38)", "Validar sesión multi-factor (CU41)", "Versionar correcciones (CU31)", "Cuadrar sesiones bonificables (CU71)", "Leer reporte pre-clínico (CU25)", "Ver adherencia del paciente (CU44)", "Confirmar hora pagada (CU73)", "Solicitar evaluación al cerrar (CU55)"], hijos=[
-              I("Evidencia de Sesión", ["Validar presencialidad GPS (CU39)", "Registrar evidencia de teleconsulta (CU43)"]),
-              I("Firma de Conformidad", ["Capturar firma manuscrita (CU42)"]),
-              I("Documentos del Paciente", ["Almacenar archivos multimedia (CU33)", "Categorizar documentos (CU34)"], hijos=[I("Visor de Documento", ["Visualizar con visor embebido (CU35)"])]),
-            ]),
-            I("Anamnesis", ["Registrar antecedentes (CU29)", "Renderizar plantillas dinámicas (CU77)"]),
-            I("Episodios", ["Agrupar registros por episodio (CU78)"]),
-            I("Sesión Clínica (Atención Clínica)", ["Documentar intervención (CU40)", "Definir metas y objetivos (CU32)", "Asegurar inalterabilidad (CU30)", "Firmar digitalmente (CU36)"]),
-            I("Pautas", ["Seleccionar material de biblioteca (CU46)", "Prescribir pautas de ejercicio (CU47)", "Controlar vigencia de pautas (CU49)"]),
+            I("Mis Liquidaciones", ["Consultar liquidaciones (CU75)"], nota="botón arriba a la derecha"),
+            I("Ayuda y Soporte", ["Registrar y seguir solicitudes (CU60)", "Enrutar por categoría (CU61)"]),
           ]),
         ]),
         I("Panel de Administración", ["Monitorear dashboard de KPIs (CU64)"], hijos=[
