@@ -38,6 +38,19 @@ Decisiones del árbol: las dos páginas del correo (Confirmación por Correo, To
 | `Diagrama de Componentes Inc3 - texto.md` | Texto propuesto para la Vista de Desarrollo, tabla de componentes nuevos y sus nombres en los diagramas de secuencia. |
 | `generar_componentes.py` | Generador (.drawio + SVG); el PNG se captura con Chromium headless. |
 
-## Pendiente
+## Diagrama de despliegue (carpeta `diagrama-despliegue/`)
 
-- Paso 4, tandas 1 a 6: diagramas de secuencia (CU52/21/19 · CU25/26/50/44/45 · CU53/57 · CU55/56/58 · CU60/61/64/63 · CU73/74/75).
+| Archivo | Qué contiene |
+|---|---|
+| `Diagrama de Despliegue Inc3.png` | Figura en alta resolución, mismo estilo del Inc 2, actualizada al Inc 3. |
+| `Diagrama de Despliegue Inc3.drawio` | Fuente editable (el del Inc 2 solo existía en PNG). |
+| `Diagrama de Despliegue Inc3 - texto.md` | Texto propuesto para la sección y tabla de cambios nodo por nodo. |
+| `generar_despliegue.py` | Generador (.drawio + SVG); el PNG se captura con Chromium headless. |
+
+## Modelo relacional y normalización
+
+En `reporte-brechas-inc3.html` las listas del MR, 1FN, 2FN y 3FN marcan las claves: primaria con subrayado continuo y foránea con subrayado discontinuo (tomadas de `schema.sql` y las migraciones). Los Word del Inc 1 y del Inc 2 no traían ninguna clave subrayada.
+
+## Estado
+
+- Paso 4 terminado: diagramas de secuencia de las seis tandas (ver `diagramas-secuencia/README.md`).

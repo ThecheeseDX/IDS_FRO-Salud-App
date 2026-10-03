@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1810" height="1770" viewBox="0 0 1810 1770" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0.5" y="0.5" width="1809" height="1769" fill="none" stroke="#000000"/>
+<text x="30" y="32" font-size="18" font-weight="bold" fill="#000000">Diagrama de Despliegue – Punto Paz Salud, Incremento 3</text>
+<polyline fill="none" stroke="#000" stroke-width="1" points="315,537 420,537"/>
+<text x="368" y="503" font-size="14" text-anchor="middle" fill="#000000">JSON vía</text>
+<text x="368" y="521" font-size="14" text-anchor="middle" fill="#000000">HTTPS</text>
+<polyline fill="none" stroke="#000" stroke-width="1" points="590,420 590,161 830,161"/>
+<text x="715" y="123" font-size="14" text-anchor="middle" fill="#000000">HTML vía HTTPS</text>
+<text x="715" y="141" font-size="14" text-anchor="middle" fill="#000000">(enlaces del correo)</text>
+<polyline fill="none" stroke="#000" stroke-width="1" points="760,563 1000,563"/>
+<text x="880" y="542" font-size="14" text-anchor="middle" fill="#000000">Conexión MySQL</text>
+<polyline fill="none" stroke="#000" stroke-width="1" points="760,944 1655,944 1655,1084"/>
+<text x="875" y="927" font-size="14" text-anchor="middle" fill="#000000">API REST / HTTPS</text>
+<polyline fill="none" stroke="#000" stroke-width="1" points="985,944 985,1084"/>
+<polyline fill="none" stroke="#000" stroke-width="1" points="1325,944 1325,1084"/>
+<polyline fill="none" stroke="#000" stroke-width="1" points="590,974 590,1376 1350,1376 1350,1436"/>
+<text x="680" y="1359" font-size="14" text-anchor="middle" fill="#000000">SDK / HTTPS</text>
+<polyline fill="none" stroke="#000" stroke-width="1" points="960,1376 960,1436"/>
+<rect x="30" y="420" width="285" height="372" fill="white" stroke="#6c8ebf"/>
+<rect x="30" y="420" width="285" height="26" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="172" y="438" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Dispositivo Móvil</text>
+<line x1="30" y1="554.0" x2="315" y2="554.0" stroke="#6c8ebf"/>
+<text x="36" y="464" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="36" y="490" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="36" y="516" font-size="14" fill="#000000">- SO (Android / iOS): string</text>
+<text x="36" y="542" font-size="14" fill="#000000">- Cliente: Expo (React Native): string</text>
+<text x="36" y="576" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="36" y="602" font-size="14" fill="#000000">+ App_ReactNative(): void</text>
+<text x="36" y="628" font-size="14" fill="#000000">+ InterfazUsuario(): void</text>
+<text x="36" y="654" font-size="14" fill="#000000">+ SolicitarCita(): void</text>
+<text x="36" y="680" font-size="14" fill="#000000">+ VisualizarFicha(): void</text>
+<text x="36" y="706" font-size="14" fill="#000000">+ RegistrarTokenPush(): void</text>
+<text x="36" y="732" font-size="14" fill="#000000">+ ConsultarMensajesPeriodicamente(): void</text>
+<text x="36" y="758" font-size="14" fill="#000000">+ RetenerEnviosSinConexion(): void</text>
+<text x="36" y="784" font-size="14" fill="#000000">+ DescargarInformes(): void</text>
+<rect x="830" y="40" width="330" height="242" fill="white" stroke="#82b366"/>
+<rect x="830" y="40" width="330" height="26" fill="#d5e8d4" stroke="#82b366"/>
+<text x="995" y="58" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Navegador Web</text>
+<line x1="830" y1="174.0" x2="1160" y2="174.0" stroke="#82b366"/>
+<text x="836" y="84" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="836" y="110" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="836" y="136" font-size="14" fill="#000000">- Navegador Web: string</text>
+<text x="836" y="162" font-size="14" fill="#000000">- Acceso: enlace recibido por correo</text>
+<text x="836" y="196" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="836" y="222" font-size="14" fill="#000000">+ AbrirEnlaceConfirmacion(): void</text>
+<text x="836" y="248" font-size="14" fill="#000000">+ ConfirmarOCancelarCita(): void</text>
+<text x="836" y="274" font-size="14" fill="#000000">+ TomarCupoLiberado(): void</text>
+<rect x="420" y="420" width="340" height="554" fill="white" stroke="#b85450"/>
+<rect x="420" y="420" width="340" height="26" fill="#f8cecc" stroke="#b85450"/>
+<text x="590" y="438" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor de Aplicaciones Cloud</text>
+<line x1="420" y1="528.0" x2="760" y2="528.0" stroke="#b85450"/>
+<text x="426" y="464" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="426" y="490" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="426" y="516" font-size="14" fill="#000000">- Infraestructura: Render.com PaaS</text>
+<text x="426" y="550" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="426" y="576" font-size="14" fill="#000000">+ NodeJS(): void</text>
+<text x="426" y="602" font-size="14" fill="#000000">+ ExpressJS(): void</text>
+<text x="426" y="628" font-size="14" fill="#000000">+ IniciarAPIREST(): void</text>
+<text x="426" y="654" font-size="14" fill="#000000">+ EjecutarAPIAdapter(): void</text>
+<text x="426" y="680" font-size="14" fill="#000000">+ ValidarSeguridadJWT(): void</text>
+<text x="426" y="706" font-size="14" fill="#000000">+ IniciarMotorAgendamiento(): void</text>
+<text x="426" y="732" font-size="14" fill="#000000">+ FiltrarDisponibilidadPorSede(): void</text>
+<text x="426" y="758" font-size="14" fill="#000000">+ ConectarCapaAccesoDatos(): void</text>
+<text x="426" y="784" font-size="14" fill="#000000">+ DespacharNotificaciones(): void</text>
+<text x="426" y="810" font-size="14" fill="#000000">+ ProgramarTareasAgenda(): void</text>
+<text x="426" y="836" font-size="14" fill="#000000">+ AnalizarTriajeClinico(): void</text>
+<text x="426" y="862" font-size="14" fill="#000000">+ FiltrarContenidoRestringido(): void</text>
+<text x="426" y="888" font-size="14" fill="#000000">+ CifrarMensajesChat(): void</text>
+<text x="426" y="914" font-size="14" fill="#000000">+ ServirConsultaPeriodicaChat(): void</text>
+<text x="426" y="940" font-size="14" fill="#000000">+ GenerarInformes(): void</text>
+<text x="426" y="966" font-size="14" fill="#000000">+ ServirPaginasDeCorreo(): void</text>
+<rect x="1000" y="420" width="345" height="372" fill="white" stroke="#d6b656"/>
+<rect x="1000" y="420" width="345" height="26" fill="#fff2cc" stroke="#d6b656"/>
+<text x="1172" y="438" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor de Base de Datos</text>
+<line x1="1000" y1="580.0" x2="1345" y2="580.0" stroke="#d6b656"/>
+<text x="1006" y="464" font-size="14" fill="#000000">&lt;&lt;DBaaS Aiven.io&gt;&gt;</text>
+<text x="1006" y="490" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="1006" y="516" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="1006" y="542" font-size="14" fill="#000000">- Almacenamiento SSD: string</text>
+<text x="1006" y="568" font-size="14" fill="#000000">- Modelo de servicio: Gestionado en nube</text>
+<text x="1006" y="602" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="1006" y="628" font-size="14" fill="#000000">+ Controlador_MySQL(): void</text>
+<text x="1006" y="654" font-size="14" fill="#000000">+ AlmacenarTransaccion(): void</text>
+<text x="1006" y="680" font-size="14" fill="#000000">+ AlmacenarFichaClinica(): void</text>
+<text x="1006" y="706" font-size="14" fill="#000000">+ AlmacenarMensajesCifrados(): void</text>
+<text x="1006" y="732" font-size="14" fill="#000000">+ AlmacenarNotificaciones(): void</text>
+<text x="1006" y="758" font-size="14" fill="#000000">+ AlmacenarLiquidaciones(): void</text>
+<text x="1006" y="784" font-size="14" fill="#000000">+ EjecutarRutinaRespaldo(): void</text>
+<rect x="850" y="1084" width="270" height="216" fill="white" stroke="#9673a6"/>
+<rect x="850" y="1084" width="270" height="26" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="985" y="1102" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor Pasarela Pago</text>
+<line x1="850" y1="1192.0" x2="1120" y2="1192.0" stroke="#9673a6"/>
+<text x="856" y="1128" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="856" y="1154" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="856" y="1180" font-size="14" fill="#000000">- Modo: simulado (sin cobro real)</text>
+<text x="856" y="1214" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="856" y="1240" font-size="14" fill="#000000">+ AutenticarComercio(): void</text>
+<text x="856" y="1266" font-size="14" fill="#000000">+ ProcesarTransaccion(): void</text>
+<text x="856" y="1292" font-size="14" fill="#000000">+ RetornarComprobante(): void</text>
+<rect x="1160" y="1084" width="330" height="242" fill="white" stroke="#9673a6"/>
+<rect x="1160" y="1084" width="330" height="26" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1325" y="1102" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor de Notificación</text>
+<line x1="1160" y1="1218.0" x2="1490" y2="1218.0" stroke="#9673a6"/>
+<text x="1166" y="1128" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="1166" y="1154" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="1166" y="1180" font-size="14" fill="#000000">- Proveedor de correos: Brevo API</text>
+<text x="1166" y="1206" font-size="14" fill="#000000">- Proveedor de alertas: Expo Push</text>
+<text x="1166" y="1240" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="1166" y="1266" font-size="14" fill="#000000">+ EnviarAlertaPushExpo(): void</text>
+<text x="1166" y="1292" font-size="14" fill="#000000">+ DespacharCorreoRecordatorio(): void</text>
+<text x="1166" y="1318" font-size="14" fill="#000000">+ EnviarEnlaceConfirmacionYCupo(): void</text>
+<rect x="1530" y="1084" width="250" height="190" fill="white" stroke="#9673a6"/>
+<rect x="1530" y="1084" width="250" height="26" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1655" y="1102" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor IMED</text>
+<line x1="1530" y1="1166.0" x2="1780" y2="1166.0" stroke="#9673a6"/>
+<text x="1536" y="1128" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="1536" y="1154" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="1536" y="1188" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="1536" y="1214" font-size="14" fill="#000000">+ ValidarIdentidad(): void</text>
+<text x="1536" y="1240" font-size="14" fill="#000000">+ CalcularCopago(): void</text>
+<text x="1536" y="1266" font-size="14" fill="#000000">+ EmitirBonoElectronico(): void</text>
+<rect x="830" y="1436" width="260" height="190" fill="white" stroke="#9673a6"/>
+<rect x="830" y="1436" width="260" height="26" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="960" y="1454" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor OpenAI</text>
+<line x1="830" y1="1518.0" x2="1090" y2="1518.0" stroke="#9673a6"/>
+<text x="836" y="1480" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="836" y="1506" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="836" y="1540" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="836" y="1566" font-size="14" fill="#000000">+ RecibirPromptClinico(): void</text>
+<text x="836" y="1592" font-size="14" fill="#000000">+ ProcesarTexto(): void</text>
+<text x="836" y="1618" font-size="14" fill="#000000">+ RetornarAnalisis(): void</text>
+<rect x="1150" y="1436" width="400" height="294" fill="white" stroke="#9673a6"/>
+<rect x="1150" y="1436" width="400" height="26" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1350" y="1454" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">Servidor Cloud Storage</text>
+<line x1="1150" y1="1570.0" x2="1550" y2="1570.0" stroke="#9673a6"/>
+<text x="1156" y="1480" font-size="14" fill="#000000">&lt;&lt;SaaS Cloudinary&gt;&gt;</text>
+<text x="1156" y="1506" font-size="14" fill="#000000">&lt;&lt;Requerimiento&gt;&gt;</text>
+<text x="1156" y="1532" font-size="14" fill="#000000">- conectividad de red: boolean</text>
+<text x="1156" y="1558" font-size="14" fill="#000000">- Gestor de almacenamiento: CDN de contenido</text>
+<text x="1156" y="1592" font-size="14" fill="#000000">&lt;&lt;Ejecutable&gt;&gt;</text>
+<text x="1156" y="1618" font-size="14" fill="#000000">+ RecibirArchivoMultimedia(): void</text>
+<text x="1156" y="1644" font-size="14" fill="#000000">+ AlmacenarPDFFirma(): void</text>
+<text x="1156" y="1670" font-size="14" fill="#000000">+ AlmacenarFotoPerfil(): void</text>
+<text x="1156" y="1696" font-size="14" fill="#000000">+ AlmacenarAdjuntoTicket(): void</text>
+<text x="1156" y="1722" font-size="14" fill="#000000">+ GenerarURLLectura(): void</text>
+</svg>

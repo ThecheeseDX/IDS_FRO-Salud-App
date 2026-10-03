@@ -61,6 +61,9 @@ ol.mr li.nueva b::before { content:"NUEVA · "; color:var(--nuevoTexto); font-si
 ol.mr li.repuesta { background:var(--alertaSuave); border-radius:4px; padding:2px 6px; margin-left:-6px }
 ol.mr li.repuesta b::before { content:"FALTABA EN LA 3FN DEL INC 2 · "; color:var(--alerta); font-size:11px; letter-spacing:.06em }
 mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-radius:3px }
+/* Claves del modelo relacional: PK subrayado continuo, FK subrayado discontinuo. */
+u.pk { text-decoration:underline solid; text-decoration-thickness:1.5px; text-underline-offset:3px }
+u.fk { text-decoration:underline dashed; text-decoration-thickness:1.5px; text-underline-offset:3px }
 .leyenda { font-size:13px; color:var(--suave) }
 .leyenda mark, .leyenda .nuevaEj { margin:0 4px }
 .nuevaEj { background:var(--nuevo); color:var(--nuevoTexto); padding:0 6px; border-radius:4px; font-family:"JetBrains Mono", monospace; font-size:12px }
@@ -328,47 +331,47 @@ mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-r
 </ul>
 
 <h3 id="mr">MR con los cambios incorporados</h3>
-<p class="leyenda">Leyenda: <span class="nuevaEj">NUEVA</span> tabla que no estaba en el anexo del Incremento 2; <mark>atributo</mark> agregado a una tabla que ya existía. Se mantiene el estilo del anexo: los grupos repetitivos van entre llaves y se separan en la 1FN.</p>
-<ol class="mr"><li><b>Usuario</b> (usuario_id, rut, nombre_completo, email, telefono, contraseña_hash, rol_acceso, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion, <mark>dispositivos_push {token, plataforma, activo, momento_registro}</mark>, <mark>areas_soporte {categoria}</mark>)</li>
-<li class="nueva"><b>Preferencia_Notificacion</b> (usuario_id, canal_push, canal_email, ultima_modificacion)</li>
-<li><b>Sesion_Usuario</b> (sesion_usuario_id, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, usuario_id)</li>
-<li><b>Paciente</b> (paciente_id, sexo_clinico, direccion, comuna, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_parentesco, privacidad_contacto, <mark>resena_anonima</mark>, usuario_id)</li>
-<li><b>Profesional</b> (profesional_id, num_registro_salud, reseña_curricular, areas_experticia, disponibilidad_horaria {dia, inicio, fin, modalidad}, <mark>comunas_atencion {comuna}</mark>, calificacion_promedio, foto_url, tipo_sede, usuario_id, especialidad_id)</li>
-<li><b>Bloqueo_Agenda</b> (bloqueo_id, fecha_inicio, fecha_fin, motivo, profesional_id)</li>
-<li><b>Profesional_Autorizado</b> (rut_autorizado, habilitado, administrador_id)</li>
-<li><b>Especialidad</b> (especialidad_id, nombre, descripcion)</li>
-<li><b>Sede</b> (sede_id, nombre, horario_operacion, estado_sede)</li>
-<li><b>Sede_Online</b> (sede_id, link, contraseña, codigo)</li>
-<li><b>Sede_Presencial</b> (sede_id, direccion, comuna, infraestructura)</li>
-<li><b>Triaje</b> (triaje_id, estado, respuestas, momento_inicio, momento_completado, integrado, paciente_id)</li>
-<li class="nueva"><b>Reporte_Preclinico</b> (reporte_preclinico_id, resumen, banderas, etiquetas, suficiente, momento_creacion, triaje_id, paciente_id, especialidad_sugerida_id)</li>
-<li><b>Ficha_Clinica</b> (ficha_clinica_id, ultima_actualizacion, antecedentes_quirurgicos, antecedentes_patologicos, anamnesis, plantilla_especialidad, alergias, paciente_id)</li>
-<li><b>Episodio_Clinico</b> (episodio_clinico_id, motivo_consulta, fecha_inicio, fecha_terminado, estado, paciente_id, profesional_id)</li>
-<li><b>Evolucion_Clinica</b> (evolucion_clinica_id, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, correcciones {numero, texto, fecha, profesional}, episodio_clinico_id, profesional_id)</li>
-<li><b>Documento_Clinico</b> (documento_id, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, paciente_id, episodio_clinico_id, profesional_id)</li>
-<li><b>Cita</b> (cita_id, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, paciente_id, profesional_id, sede_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Solicitud_Confirmacion</b> (solicitud_confirmacion_id, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, cita_id)</li>
-<li><b>Lista_Espera</b> (lista_espera_id, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, paciente_id, cita_id)</li>
-<li><b>Pauta_Tratamiento</b> (pauta_tratamiento_id, nombre, estado, fecha_inicio, fecha_expiracion, ejercicios {nombre, series, repeticiones, frecuencia, material, fechas_cumplidas}, episodio_clinico_id)</li>
-<li><b>Material_Terapeutico</b> (material_terapeutico_id, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
-<li class="nueva"><b>Indicador_Adherencia</b> (indicador_adherencia_id, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, paciente_id)</li>
-<li class="nueva"><b>Reporte_Sintoma</b> (reporte_sintoma_id, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, paciente_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Alerta_Clinica</b> (alerta_clinica_id, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, paciente_id, profesional_id, reporte_sintoma_id)</li>
-<li><b>Financiador</b> (financiador_id, nombre_institucion, rut_institucion, convenio_activo)</li>
-<li><b>Bono</b> (bono_id, folio, financiador, monto_cobertura, copago, estado_validacion, payload_respuesta, cita_id, financiador_id)</li>
-<li><b>Transaccion</b> (transaccion_id, monto_total, monto_diferencial, tipo, estado, momento_pago, metodo_pago, cita_id)</li>
-<li class="nueva"><b>Liquidacion</b> (liquidacion_id, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, profesional_id, emitida_por)</li>
-<li><b>Evaluacion_Satisfaccion</b> (evaluacion_satisfaccion_id, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, cita_id, <mark>moderador_id</mark>)</li>
-<li><b>Notificacion</b> (notificacion_id, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, usuario_id)</li>
-<li><b>Ticket_Soporte</b> (ticket_soporte_id, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, usuario_id, <mark>asignado_a</mark>)</li>
-<li><b>Bitacora_Auditoria</b> (bitacora_auditoria_id, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, usuario_id)</li>
-<li><b>Mensaje_Chat</b> (mensaje_id, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, episodio_clinico_id, <mark>remitente_usuario_id</mark>)</li>
-<li class="nueva"><b>Palabra_Restringida</b> (palabra_restringida_id, termino, categoria, activa, momento_creacion, administrador_id)</li>
-<li><b>Objetivo_Terapeutico</b> (objetivo_terapeutico_id, descripcion, meta_valor, valor_actual, unidad, episodio_clinico_id)</li>
-<li><b>Derivacion_Interna</b> (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)</li>
-<li><b>Paquete_Sesiones</b> (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)</li>
-<li><b>Disclaimer</b> (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)</li>
-<li><b>Parametro_Global</b> (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)</li></ol>
+<p class="leyenda">Leyenda: <u class="pk">clave_primaria</u> subrayado continuo; <u class="fk">clave_foranea</u> subrayado discontinuo (si un atributo es a la vez clave primaria y foránea, como <code>sede_id</code> en Sede_Online, lleva la marca de clave primaria); <span class="nuevaEj">NUEVA</span> tabla que no estaba en el anexo del Incremento 2; <mark>atributo</mark> agregado a una tabla que ya existía. Se mantiene el estilo del anexo: los grupos repetitivos van entre llaves y se separan en la 1FN. Las claves salen de <code>schema.sql</code> y de las migraciones.</p>
+<ol class="mr"><li><b>Usuario</b> (<u class="pk">usuario_id</u>, rut, nombre_completo, email, telefono, contraseña_hash, rol_acceso, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion, <mark>dispositivos_push {token, plataforma, activo, momento_registro}</mark>, <mark>areas_soporte {categoria}</mark>)</li>
+<li class="nueva"><b>Preferencia_Notificacion</b> (<u class="pk">usuario_id</u>, canal_push, canal_email, ultima_modificacion)</li>
+<li><b>Sesion_Usuario</b> (<u class="pk">sesion_usuario_id</u>, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, <u class="fk">usuario_id</u>)</li>
+<li><b>Paciente</b> (<u class="pk">paciente_id</u>, sexo_clinico, direccion, comuna, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_parentesco, privacidad_contacto, <mark>resena_anonima</mark>, <u class="fk">usuario_id</u>)</li>
+<li><b>Profesional</b> (<u class="pk">profesional_id</u>, num_registro_salud, reseña_curricular, areas_experticia, disponibilidad_horaria {dia, inicio, fin, modalidad}, <mark>comunas_atencion {comuna}</mark>, calificacion_promedio, foto_url, tipo_sede, <u class="fk">usuario_id</u>, <u class="fk">especialidad_id</u>)</li>
+<li><b>Bloqueo_Agenda</b> (<u class="pk">bloqueo_id</u>, fecha_inicio, fecha_fin, motivo, <u class="fk">profesional_id</u>)</li>
+<li><b>Profesional_Autorizado</b> (<u class="pk">rut_autorizado</u>, habilitado, <u class="fk">administrador_id</u>)</li>
+<li><b>Especialidad</b> (<u class="pk">especialidad_id</u>, nombre, descripcion)</li>
+<li><b>Sede</b> (<u class="pk">sede_id</u>, nombre, horario_operacion, estado_sede)</li>
+<li><b>Sede_Online</b> (<u class="pk">sede_id</u>, link, contraseña, codigo)</li>
+<li><b>Sede_Presencial</b> (<u class="pk">sede_id</u>, direccion, comuna, infraestructura)</li>
+<li><b>Triaje</b> (<u class="pk">triaje_id</u>, estado, respuestas, momento_inicio, momento_completado, integrado, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Preclinico</b> (<u class="pk">reporte_preclinico_id</u>, resumen, banderas, etiquetas, suficiente, momento_creacion, <u class="fk">triaje_id</u>, <u class="fk">paciente_id</u>, <u class="fk">especialidad_sugerida_id</u>)</li>
+<li><b>Ficha_Clinica</b> (<u class="pk">ficha_clinica_id</u>, ultima_actualizacion, antecedentes_quirurgicos, antecedentes_patologicos, anamnesis, plantilla_especialidad, alergias, <u class="fk">paciente_id</u>)</li>
+<li><b>Episodio_Clinico</b> (<u class="pk">episodio_clinico_id</u>, motivo_consulta, fecha_inicio, fecha_terminado, estado, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Clinica</b> (<u class="pk">evolucion_clinica_id</u>, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, correcciones {numero, texto, fecha, profesional}, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Documento_Clinico</b> (<u class="pk">documento_id</u>, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Cita</b> (<u class="pk">cita_id</u>, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">sede_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Solicitud_Confirmacion</b> (<u class="pk">solicitud_confirmacion_id</u>, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, <u class="fk">cita_id</u>)</li>
+<li><b>Lista_Espera</b> (<u class="pk">lista_espera_id</u>, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, <u class="fk">paciente_id</u>, <u class="fk">cita_id</u>)</li>
+<li><b>Pauta_Tratamiento</b> (<u class="pk">pauta_tratamiento_id</u>, nombre, estado, fecha_inicio, fecha_expiracion, ejercicios {nombre, series, repeticiones, frecuencia, material, fechas_cumplidas}, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Material_Terapeutico</b> (<u class="pk">material_terapeutico_id</u>, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
+<li class="nueva"><b>Indicador_Adherencia</b> (<u class="pk">indicador_adherencia_id</u>, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Sintoma</b> (<u class="pk">reporte_sintoma_id</u>, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Alerta_Clinica</b> (<u class="pk">alerta_clinica_id</u>, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">reporte_sintoma_id</u>)</li>
+<li><b>Financiador</b> (<u class="pk">financiador_id</u>, nombre_institucion, rut_institucion, convenio_activo)</li>
+<li><b>Bono</b> (<u class="pk">bono_id</u>, folio, financiador, monto_cobertura, copago, estado_validacion, payload_respuesta, <u class="fk">cita_id</u>, <u class="fk">financiador_id</u>)</li>
+<li><b>Transaccion</b> (<u class="pk">transaccion_id</u>, monto_total, monto_diferencial, tipo, estado, momento_pago, metodo_pago, <u class="fk">cita_id</u>)</li>
+<li class="nueva"><b>Liquidacion</b> (<u class="pk">liquidacion_id</u>, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, <u class="fk">profesional_id</u>, <u class="fk">emitida_por</u>)</li>
+<li><b>Evaluacion_Satisfaccion</b> (<u class="pk">evaluacion_satisfaccion_id</u>, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, <u class="fk">cita_id</u>, <mark><u class="fk">moderador_id</u></mark>)</li>
+<li><b>Notificacion</b> (<u class="pk">notificacion_id</u>, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, <u class="fk">usuario_id</u>)</li>
+<li><b>Ticket_Soporte</b> (<u class="pk">ticket_soporte_id</u>, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, <u class="fk">usuario_id</u>, <mark><u class="fk">asignado_a</u></mark>)</li>
+<li><b>Bitacora_Auditoria</b> (<u class="pk">bitacora_auditoria_id</u>, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, <u class="fk">usuario_id</u>)</li>
+<li><b>Mensaje_Chat</b> (<u class="pk">mensaje_id</u>, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, <u class="fk">episodio_clinico_id</u>, <mark><u class="fk">remitente_usuario_id</u></mark>)</li>
+<li class="nueva"><b>Palabra_Restringida</b> (<u class="pk">palabra_restringida_id</u>, termino, categoria, activa, momento_creacion, <u class="fk">administrador_id</u>)</li>
+<li><b>Objetivo_Terapeutico</b> (<u class="pk">objetivo_terapeutico_id</u>, descripcion, meta_valor, valor_actual, unidad, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Derivacion_Interna</b> (<u class="pk">derivacion_interna_id</u>, estado, justificacion, momento_creacion, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_origen_id</u>, <u class="fk">profesional_destino_id</u>)</li>
+<li><b>Paquete_Sesiones</b> (<u class="pk">paquete_sesiones_id</u>, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, <u class="fk">paciente_id</u>)</li>
+<li><b>Disclaimer</b> (<u class="pk">disclaimer_id</u>, momento_aceptacion, version_disclaimer, <u class="fk">paciente_id</u>)</li>
+<li><b>Parametro_Global</b> (<u class="pk">parametro_id</u>, clave, valor, descripcion, ultima_modificacion, <u class="fk">administrador_id</u>)</li></ol>
 
 <h3 id="fn">Normalización con los cambios incorporados</h3>
 <h4>Qué aporta cada paso en el Incremento 3</h4>
@@ -378,169 +381,169 @@ mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-r
   <li><b>3FN</b> (sin dependencias transitivas): <code>Reporte_Preclinico</code> guarda <code>especialidad_sugerida_id</code> y no el nombre de la especialidad; <code>Alerta_Clinica</code> referencia <code>reporte_sintoma_id</code> en vez de repetir dolor y limitación; <code>Liquidacion.monto_total</code> es derivado (prestaciones + bonificación) pero se conserva a propósito porque la liquidación es una foto inalterable del cálculo del momento (misma razón por la que Bono guarda copago). Además se repone <code>Parametro_Global</code>, que en el anexo del Incremento 2 aparece en 1FN y 2FN pero falta en la 3FN.</li>
 </ul>
 <h4>Primera Forma Normal</h4>
-<ol class="mr"><li><b>Usuario</b> (usuario_id, rut, nombres, apellido_paterno, apellido_materno, email, contraseña_hash, rol_acceso, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion)</li>
-<li><b>Usuario_Telefono</b> (usuario_id, telefono)</li>
-<li class="nueva"><b>Dispositivo_Push</b> (dispositivo_push_id, token, plataforma, activo, momento_registro, usuario_id)</li>
-<li class="nueva"><b>Area_Soporte_Operador</b> (usuario_id, categoria)</li>
-<li class="nueva"><b>Preferencia_Notificacion</b> (usuario_id, canal_push, canal_email, ultima_modificacion)</li>
-<li><b>Sesion_Usuario</b> (sesion_usuario_id, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, usuario_id)</li>
-<li><b>Comuna</b> (comuna_id, nombre_comuna)</li>
-<li><b>Paciente</b> (paciente_id, sexo_clinico, calle, numero_calle, departamento, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_parentesco, privacidad_contacto, <mark>resena_anonima</mark>, usuario_id, comuna_id)</li>
-<li><b>Profesional</b> (profesional_id, num_registro_salud, reseña_curricular, areas_experticia, calificacion_promedio, foto_url, tipo_sede, usuario_id, especialidad_id)</li>
-<li class="nueva"><b>Profesional_Comuna</b> (profesional_id, comuna_id)</li>
-<li><b>Bloqueo_Agenda</b> (bloqueo_id, fecha_inicio, fecha_fin, motivo, profesional_id)</li>
-<li><b>Profesional_Autorizado</b> (rut_autorizado, habilitado, administrador_id)</li>
-<li><b>Profesional_Disponibilidad</b> (profesional_id, dia_semana, hora_inicio, hora_fin, modalidad)</li>
-<li><b>Especialidad</b> (especialidad_id, nombre, descripcion)</li>
-<li><b>Sede</b> (sede_id, nombre, estado_sede)</li>
-<li><b>Sede_Horario</b> (sede_id, dia_semana, hora_apertura, hora_cierre)</li>
-<li><b>Sede_Online</b> (sede_id, link, contraseña, codigo)</li>
-<li><b>Sede_Presencial</b> (sede_id, calle, numero_calle, departamento, infraestructura, comuna_id)</li>
-<li><b>Triaje</b> (triaje_id, estado, respuestas, momento_inicio, momento_completado, integrado, paciente_id)</li>
-<li class="nueva"><b>Reporte_Preclinico</b> (reporte_preclinico_id, resumen, banderas, etiquetas, suficiente, momento_creacion, triaje_id, paciente_id, especialidad_sugerida_id)</li>
-<li><b>Ficha_Clinica</b> (ficha_clinica_id, ultima_actualizacion, anamnesis, plantilla_especialidad, paciente_id)</li>
-<li><b>Ficha_Alergia</b> (ficha_clinica_id, alergia)</li>
-<li><b>Ficha_Antecedente_Quirurgico</b> (ficha_clinica_id, antecedente)</li>
-<li><b>Ficha_Antecedente_Patologico</b> (ficha_clinica_id, antecedente)</li>
-<li><b>Episodio_Clinico</b> (episodio_clinico_id, motivo_consulta, fecha_inicio, fecha_terminado, estado, paciente_id, profesional_id)</li>
-<li><b>Evolucion_Clinica</b> (evolucion_clinica_id, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, episodio_clinico_id, profesional_id)</li>
-<li><b>Evolucion_Version</b> (version_id, numero_version, texto_correccion, fecha_creacion, evolucion_clinica_id, profesional_id)</li>
-<li><b>Documento_Clinico</b> (documento_id, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, paciente_id, episodio_clinico_id, profesional_id)</li>
-<li><b>Cita</b> (cita_id, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, paciente_id, profesional_id, sede_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Solicitud_Confirmacion</b> (solicitud_confirmacion_id, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, cita_id)</li>
-<li><b>Lista_Espera</b> (lista_espera_id, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, paciente_id, cita_id)</li>
-<li><b>Pauta_Tratamiento</b> (pauta_tratamiento_id, nombre, estado, fecha_inicio, fecha_expiracion, episodio_clinico_id)</li>
-<li><b>Pauta_Ejercicio</b> (pauta_ejercicio_id, nombre_ejercicio, series, repeticiones, frecuencia, pauta_tratamiento_id, material_terapeutico_id)</li>
-<li><b>Pauta_Cumplimiento</b> (pauta_cumplimiento_id, fecha, momento_registro, pauta_ejercicio_id)</li>
-<li><b>Material_Terapeutico</b> (material_terapeutico_id, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
-<li class="nueva"><b>Indicador_Adherencia</b> (indicador_adherencia_id, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, paciente_id)</li>
-<li class="nueva"><b>Reporte_Sintoma</b> (reporte_sintoma_id, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, paciente_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Alerta_Clinica</b> (alerta_clinica_id, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, paciente_id, profesional_id, reporte_sintoma_id)</li>
-<li><b>Financiador</b> (financiador_id, nombre_institucion, rut_institucion, convenio_activo)</li>
-<li><b>Bono</b> (bono_id, folio, financiador, monto_cobertura, copago, estado_validacion, payload_respuesta, cita_id)</li>
-<li><b>Transaccion</b> (transaccion_id, monto_total, monto_diferencial, tipo, estado, momento_pago, metodo_pago, cita_id, financiador_id)</li>
-<li class="nueva"><b>Liquidacion</b> (liquidacion_id, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, profesional_id, emitida_por)</li>
-<li><b>Evaluacion_Satisfaccion</b> (evaluacion_satisfaccion_id, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, cita_id, <mark>moderador_id</mark>)</li>
-<li><b>Notificacion</b> (notificacion_id, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, usuario_id)</li>
-<li><b>Ticket_Soporte</b> (ticket_soporte_id, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, usuario_id, <mark>asignado_a</mark>)</li>
-<li><b>Bitacora_Auditoria</b> (bitacora_auditoria_id, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, usuario_id)</li>
-<li><b>Mensaje_Chat</b> (mensaje_id, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, episodio_clinico_id, <mark>remitente_usuario_id</mark>)</li>
-<li class="nueva"><b>Palabra_Restringida</b> (palabra_restringida_id, termino, categoria, activa, momento_creacion, administrador_id)</li>
-<li><b>Objetivo_Terapeutico</b> (objetivo_terapeutico_id, descripcion, meta_valor, valor_actual, unidad, episodio_clinico_id)</li>
-<li><b>Derivacion_Interna</b> (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)</li>
-<li><b>Paquete_Sesiones</b> (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)</li>
-<li><b>Disclaimer</b> (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)</li>
-<li><b>Parametro_Global</b> (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)</li></ol>
+<ol class="mr"><li><b>Usuario</b> (<u class="pk">usuario_id</u>, rut, nombres, apellido_paterno, apellido_materno, email, contraseña_hash, rol_acceso, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion)</li>
+<li><b>Usuario_Telefono</b> (<u class="pk">usuario_id</u>, <u class="pk">telefono</u>)</li>
+<li class="nueva"><b>Dispositivo_Push</b> (<u class="pk">dispositivo_push_id</u>, token, plataforma, activo, momento_registro, <u class="fk">usuario_id</u>)</li>
+<li class="nueva"><b>Area_Soporte_Operador</b> (<u class="pk">usuario_id</u>, <u class="pk">categoria</u>)</li>
+<li class="nueva"><b>Preferencia_Notificacion</b> (<u class="pk">usuario_id</u>, canal_push, canal_email, ultima_modificacion)</li>
+<li><b>Sesion_Usuario</b> (<u class="pk">sesion_usuario_id</u>, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, <u class="fk">usuario_id</u>)</li>
+<li><b>Comuna</b> (<u class="pk">comuna_id</u>, nombre_comuna)</li>
+<li><b>Paciente</b> (<u class="pk">paciente_id</u>, sexo_clinico, calle, numero_calle, departamento, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_parentesco, privacidad_contacto, <mark>resena_anonima</mark>, <u class="fk">usuario_id</u>, <u class="fk">comuna_id</u>)</li>
+<li><b>Profesional</b> (<u class="pk">profesional_id</u>, num_registro_salud, reseña_curricular, areas_experticia, calificacion_promedio, foto_url, tipo_sede, <u class="fk">usuario_id</u>, <u class="fk">especialidad_id</u>)</li>
+<li class="nueva"><b>Profesional_Comuna</b> (<u class="pk">profesional_id</u>, <u class="pk">comuna_id</u>)</li>
+<li><b>Bloqueo_Agenda</b> (<u class="pk">bloqueo_id</u>, fecha_inicio, fecha_fin, motivo, <u class="fk">profesional_id</u>)</li>
+<li><b>Profesional_Autorizado</b> (<u class="pk">rut_autorizado</u>, habilitado, <u class="fk">administrador_id</u>)</li>
+<li><b>Profesional_Disponibilidad</b> (<u class="pk">profesional_id</u>, <u class="pk">dia_semana</u>, <u class="pk">hora_inicio</u>, hora_fin, modalidad)</li>
+<li><b>Especialidad</b> (<u class="pk">especialidad_id</u>, nombre, descripcion)</li>
+<li><b>Sede</b> (<u class="pk">sede_id</u>, nombre, estado_sede)</li>
+<li><b>Sede_Horario</b> (<u class="pk">sede_id</u>, <u class="pk">dia_semana</u>, hora_apertura, hora_cierre)</li>
+<li><b>Sede_Online</b> (<u class="pk">sede_id</u>, link, contraseña, codigo)</li>
+<li><b>Sede_Presencial</b> (<u class="pk">sede_id</u>, calle, numero_calle, departamento, infraestructura, <u class="fk">comuna_id</u>)</li>
+<li><b>Triaje</b> (<u class="pk">triaje_id</u>, estado, respuestas, momento_inicio, momento_completado, integrado, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Preclinico</b> (<u class="pk">reporte_preclinico_id</u>, resumen, banderas, etiquetas, suficiente, momento_creacion, <u class="fk">triaje_id</u>, <u class="fk">paciente_id</u>, <u class="fk">especialidad_sugerida_id</u>)</li>
+<li><b>Ficha_Clinica</b> (<u class="pk">ficha_clinica_id</u>, ultima_actualizacion, anamnesis, plantilla_especialidad, <u class="fk">paciente_id</u>)</li>
+<li><b>Ficha_Alergia</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">alergia</u>)</li>
+<li><b>Ficha_Antecedente_Quirurgico</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">antecedente</u>)</li>
+<li><b>Ficha_Antecedente_Patologico</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">antecedente</u>)</li>
+<li><b>Episodio_Clinico</b> (<u class="pk">episodio_clinico_id</u>, motivo_consulta, fecha_inicio, fecha_terminado, estado, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Clinica</b> (<u class="pk">evolucion_clinica_id</u>, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Version</b> (<u class="pk">version_id</u>, numero_version, texto_correccion, fecha_creacion, <u class="fk">evolucion_clinica_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Documento_Clinico</b> (<u class="pk">documento_id</u>, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Cita</b> (<u class="pk">cita_id</u>, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">sede_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Solicitud_Confirmacion</b> (<u class="pk">solicitud_confirmacion_id</u>, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, <u class="fk">cita_id</u>)</li>
+<li><b>Lista_Espera</b> (<u class="pk">lista_espera_id</u>, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, <u class="fk">paciente_id</u>, <u class="fk">cita_id</u>)</li>
+<li><b>Pauta_Tratamiento</b> (<u class="pk">pauta_tratamiento_id</u>, nombre, estado, fecha_inicio, fecha_expiracion, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Pauta_Ejercicio</b> (<u class="pk">pauta_ejercicio_id</u>, nombre_ejercicio, series, repeticiones, frecuencia, <u class="fk">pauta_tratamiento_id</u>, <u class="fk">material_terapeutico_id</u>)</li>
+<li><b>Pauta_Cumplimiento</b> (<u class="pk">pauta_cumplimiento_id</u>, fecha, momento_registro, <u class="fk">pauta_ejercicio_id</u>)</li>
+<li><b>Material_Terapeutico</b> (<u class="pk">material_terapeutico_id</u>, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
+<li class="nueva"><b>Indicador_Adherencia</b> (<u class="pk">indicador_adherencia_id</u>, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Sintoma</b> (<u class="pk">reporte_sintoma_id</u>, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Alerta_Clinica</b> (<u class="pk">alerta_clinica_id</u>, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">reporte_sintoma_id</u>)</li>
+<li><b>Financiador</b> (<u class="pk">financiador_id</u>, nombre_institucion, rut_institucion, convenio_activo)</li>
+<li><b>Bono</b> (<u class="pk">bono_id</u>, folio, financiador, monto_cobertura, copago, estado_validacion, payload_respuesta, <u class="fk">cita_id</u>)</li>
+<li><b>Transaccion</b> (<u class="pk">transaccion_id</u>, monto_total, monto_diferencial, tipo, estado, momento_pago, metodo_pago, <u class="fk">cita_id</u>, <u class="fk">financiador_id</u>)</li>
+<li class="nueva"><b>Liquidacion</b> (<u class="pk">liquidacion_id</u>, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, <u class="fk">profesional_id</u>, <u class="fk">emitida_por</u>)</li>
+<li><b>Evaluacion_Satisfaccion</b> (<u class="pk">evaluacion_satisfaccion_id</u>, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, <u class="fk">cita_id</u>, <mark><u class="fk">moderador_id</u></mark>)</li>
+<li><b>Notificacion</b> (<u class="pk">notificacion_id</u>, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, <u class="fk">usuario_id</u>)</li>
+<li><b>Ticket_Soporte</b> (<u class="pk">ticket_soporte_id</u>, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, <u class="fk">usuario_id</u>, <mark><u class="fk">asignado_a</u></mark>)</li>
+<li><b>Bitacora_Auditoria</b> (<u class="pk">bitacora_auditoria_id</u>, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, <u class="fk">usuario_id</u>)</li>
+<li><b>Mensaje_Chat</b> (<u class="pk">mensaje_id</u>, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, <u class="fk">episodio_clinico_id</u>, <mark><u class="fk">remitente_usuario_id</u></mark>)</li>
+<li class="nueva"><b>Palabra_Restringida</b> (<u class="pk">palabra_restringida_id</u>, termino, categoria, activa, momento_creacion, <u class="fk">administrador_id</u>)</li>
+<li><b>Objetivo_Terapeutico</b> (<u class="pk">objetivo_terapeutico_id</u>, descripcion, meta_valor, valor_actual, unidad, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Derivacion_Interna</b> (<u class="pk">derivacion_interna_id</u>, estado, justificacion, momento_creacion, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_origen_id</u>, <u class="fk">profesional_destino_id</u>)</li>
+<li><b>Paquete_Sesiones</b> (<u class="pk">paquete_sesiones_id</u>, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, <u class="fk">paciente_id</u>)</li>
+<li><b>Disclaimer</b> (<u class="pk">disclaimer_id</u>, momento_aceptacion, version_disclaimer, <u class="fk">paciente_id</u>)</li>
+<li><b>Parametro_Global</b> (<u class="pk">parametro_id</u>, clave, valor, descripcion, ultima_modificacion, <u class="fk">administrador_id</u>)</li></ol>
 <h4>Segunda Forma Normal</h4>
-<ol class="mr"><li><b>Usuario</b> (usuario_id, rut, nombres, apellido_paterno, apellido_materno, email, contraseña_hash, rol_acceso, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion)</li>
-<li><b>Usuario_Telefono</b> (usuario_id, telefono)</li>
-<li class="nueva"><b>Dispositivo_Push</b> (dispositivo_push_id, token, plataforma, activo, momento_registro, usuario_id)</li>
-<li class="nueva"><b>Area_Soporte_Operador</b> (usuario_id, categoria)</li>
-<li class="nueva"><b>Preferencia_Notificacion</b> (usuario_id, canal_push, canal_email, ultima_modificacion)</li>
-<li><b>Sesion_Usuario</b> (sesion_usuario_id, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, usuario_id)</li>
-<li><b>Comuna</b> (comuna_id, nombre_comuna)</li>
-<li><b>Paciente</b> (paciente_id, sexo_clinico, calle, numero_calle, departamento, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_parentesco, privacidad_contacto, <mark>resena_anonima</mark>, usuario_id, comuna_id)</li>
-<li><b>Profesional</b> (profesional_id, num_registro_salud, reseña_curricular, areas_experticia, calificacion_promedio, foto_url, tipo_sede, usuario_id, especialidad_id)</li>
-<li class="nueva"><b>Profesional_Comuna</b> (profesional_id, comuna_id)</li>
-<li><b>Bloqueo_Agenda</b> (bloqueo_id, fecha_inicio, fecha_fin, motivo, profesional_id)</li>
-<li><b>Profesional_Autorizado</b> (rut_autorizado, habilitado, administrador_id)</li>
-<li><b>Profesional_Disponibilidad</b> (profesional_id, dia_semana, hora_inicio, hora_fin, modalidad)</li>
-<li><b>Especialidad</b> (especialidad_id, nombre, descripcion)</li>
-<li><b>Sede</b> (sede_id, nombre, estado_sede)</li>
-<li><b>Sede_Horario</b> (sede_id, dia_semana, hora_apertura, hora_cierre)</li>
-<li><b>Sede_Online</b> (sede_id, link, contraseña, codigo)</li>
-<li><b>Sede_Presencial</b> (sede_id, calle, numero_calle, departamento, infraestructura, comuna_id)</li>
-<li><b>Triaje</b> (triaje_id, estado, respuestas, momento_inicio, momento_completado, integrado, paciente_id)</li>
-<li class="nueva"><b>Reporte_Preclinico</b> (reporte_preclinico_id, resumen, banderas, etiquetas, suficiente, momento_creacion, triaje_id, paciente_id, especialidad_sugerida_id)</li>
-<li><b>Ficha_Clinica</b> (ficha_clinica_id, ultima_actualizacion, anamnesis, plantilla_especialidad, paciente_id)</li>
-<li><b>Ficha_Alergia</b> (ficha_clinica_id, alergia)</li>
-<li><b>Ficha_Antecedente_Quirurgico</b> (ficha_clinica_id, antecedente)</li>
-<li><b>Ficha_Antecedente_Patologico</b> (ficha_clinica_id, antecedente)</li>
-<li><b>Episodio_Clinico</b> (episodio_clinico_id, motivo_consulta, fecha_inicio, fecha_terminado, estado, paciente_id, profesional_id)</li>
-<li><b>Evolucion_Clinica</b> (evolucion_clinica_id, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, episodio_clinico_id, profesional_id)</li>
-<li><b>Evolucion_Version</b> (version_id, numero_version, texto_correccion, fecha_creacion, evolucion_clinica_id, profesional_id)</li>
-<li><b>Documento_Clinico</b> (documento_id, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, paciente_id, episodio_clinico_id, profesional_id)</li>
-<li><b>Cita</b> (cita_id, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, paciente_id, profesional_id, sede_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Solicitud_Confirmacion</b> (solicitud_confirmacion_id, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, cita_id)</li>
-<li><b>Lista_Espera</b> (lista_espera_id, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, paciente_id, cita_id)</li>
-<li><b>Pauta_Tratamiento</b> (pauta_tratamiento_id, nombre, estado, fecha_inicio, fecha_expiracion, episodio_clinico_id)</li>
-<li><b>Pauta_Ejercicio</b> (pauta_ejercicio_id, nombre_ejercicio, series, repeticiones, frecuencia, pauta_tratamiento_id, material_terapeutico_id)</li>
-<li><b>Pauta_Cumplimiento</b> (pauta_cumplimiento_id, fecha, momento_registro, pauta_ejercicio_id)</li>
-<li><b>Material_Terapeutico</b> (material_terapeutico_id, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
-<li class="nueva"><b>Indicador_Adherencia</b> (indicador_adherencia_id, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, paciente_id)</li>
-<li class="nueva"><b>Reporte_Sintoma</b> (reporte_sintoma_id, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, paciente_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Alerta_Clinica</b> (alerta_clinica_id, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, paciente_id, profesional_id, reporte_sintoma_id)</li>
-<li><b>Financiador</b> (financiador_id, nombre_institucion, rut_institucion, convenio_activo)</li>
-<li><b>Bono</b> (bono_id, folio, financiador, monto_cobertura, copago, estado_validacion, payload_respuesta, cita_id)</li>
-<li><b>Transaccion</b> (transaccion_id, monto_total, monto_diferencial, tipo, estado, momento_pago, metodo_pago, cita_id, financiador_id)</li>
-<li class="nueva"><b>Liquidacion</b> (liquidacion_id, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, profesional_id, emitida_por)</li>
-<li><b>Evaluacion_Satisfaccion</b> (evaluacion_satisfaccion_id, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, cita_id, <mark>moderador_id</mark>)</li>
-<li><b>Notificacion</b> (notificacion_id, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, usuario_id)</li>
-<li><b>Ticket_Soporte</b> (ticket_soporte_id, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, usuario_id, <mark>asignado_a</mark>)</li>
-<li><b>Bitacora_Auditoria</b> (bitacora_auditoria_id, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, usuario_id)</li>
-<li><b>Mensaje_Chat</b> (mensaje_id, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, episodio_clinico_id, <mark>remitente_usuario_id</mark>)</li>
-<li class="nueva"><b>Palabra_Restringida</b> (palabra_restringida_id, termino, categoria, activa, momento_creacion, administrador_id)</li>
-<li><b>Objetivo_Terapeutico</b> (objetivo_terapeutico_id, descripcion, meta_valor, valor_actual, unidad, episodio_clinico_id)</li>
-<li><b>Derivacion_Interna</b> (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)</li>
-<li><b>Paquete_Sesiones</b> (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)</li>
-<li><b>Disclaimer</b> (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)</li>
-<li><b>Parametro_Global</b> (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)</li></ol>
+<ol class="mr"><li><b>Usuario</b> (<u class="pk">usuario_id</u>, rut, nombres, apellido_paterno, apellido_materno, email, contraseña_hash, rol_acceso, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion)</li>
+<li><b>Usuario_Telefono</b> (<u class="pk">usuario_id</u>, <u class="pk">telefono</u>)</li>
+<li class="nueva"><b>Dispositivo_Push</b> (<u class="pk">dispositivo_push_id</u>, token, plataforma, activo, momento_registro, <u class="fk">usuario_id</u>)</li>
+<li class="nueva"><b>Area_Soporte_Operador</b> (<u class="pk">usuario_id</u>, <u class="pk">categoria</u>)</li>
+<li class="nueva"><b>Preferencia_Notificacion</b> (<u class="pk">usuario_id</u>, canal_push, canal_email, ultima_modificacion)</li>
+<li><b>Sesion_Usuario</b> (<u class="pk">sesion_usuario_id</u>, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, <u class="fk">usuario_id</u>)</li>
+<li><b>Comuna</b> (<u class="pk">comuna_id</u>, nombre_comuna)</li>
+<li><b>Paciente</b> (<u class="pk">paciente_id</u>, sexo_clinico, calle, numero_calle, departamento, contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_parentesco, privacidad_contacto, <mark>resena_anonima</mark>, <u class="fk">usuario_id</u>, <u class="fk">comuna_id</u>)</li>
+<li><b>Profesional</b> (<u class="pk">profesional_id</u>, num_registro_salud, reseña_curricular, areas_experticia, calificacion_promedio, foto_url, tipo_sede, <u class="fk">usuario_id</u>, <u class="fk">especialidad_id</u>)</li>
+<li class="nueva"><b>Profesional_Comuna</b> (<u class="pk">profesional_id</u>, <u class="pk">comuna_id</u>)</li>
+<li><b>Bloqueo_Agenda</b> (<u class="pk">bloqueo_id</u>, fecha_inicio, fecha_fin, motivo, <u class="fk">profesional_id</u>)</li>
+<li><b>Profesional_Autorizado</b> (<u class="pk">rut_autorizado</u>, habilitado, <u class="fk">administrador_id</u>)</li>
+<li><b>Profesional_Disponibilidad</b> (<u class="pk">profesional_id</u>, <u class="pk">dia_semana</u>, <u class="pk">hora_inicio</u>, hora_fin, modalidad)</li>
+<li><b>Especialidad</b> (<u class="pk">especialidad_id</u>, nombre, descripcion)</li>
+<li><b>Sede</b> (<u class="pk">sede_id</u>, nombre, estado_sede)</li>
+<li><b>Sede_Horario</b> (<u class="pk">sede_id</u>, <u class="pk">dia_semana</u>, hora_apertura, hora_cierre)</li>
+<li><b>Sede_Online</b> (<u class="pk">sede_id</u>, link, contraseña, codigo)</li>
+<li><b>Sede_Presencial</b> (<u class="pk">sede_id</u>, calle, numero_calle, departamento, infraestructura, <u class="fk">comuna_id</u>)</li>
+<li><b>Triaje</b> (<u class="pk">triaje_id</u>, estado, respuestas, momento_inicio, momento_completado, integrado, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Preclinico</b> (<u class="pk">reporte_preclinico_id</u>, resumen, banderas, etiquetas, suficiente, momento_creacion, <u class="fk">triaje_id</u>, <u class="fk">paciente_id</u>, <u class="fk">especialidad_sugerida_id</u>)</li>
+<li><b>Ficha_Clinica</b> (<u class="pk">ficha_clinica_id</u>, ultima_actualizacion, anamnesis, plantilla_especialidad, <u class="fk">paciente_id</u>)</li>
+<li><b>Ficha_Alergia</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">alergia</u>)</li>
+<li><b>Ficha_Antecedente_Quirurgico</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">antecedente</u>)</li>
+<li><b>Ficha_Antecedente_Patologico</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">antecedente</u>)</li>
+<li><b>Episodio_Clinico</b> (<u class="pk">episodio_clinico_id</u>, motivo_consulta, fecha_inicio, fecha_terminado, estado, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Clinica</b> (<u class="pk">evolucion_clinica_id</u>, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Version</b> (<u class="pk">version_id</u>, numero_version, texto_correccion, fecha_creacion, <u class="fk">evolucion_clinica_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Documento_Clinico</b> (<u class="pk">documento_id</u>, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Cita</b> (<u class="pk">cita_id</u>, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">sede_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Solicitud_Confirmacion</b> (<u class="pk">solicitud_confirmacion_id</u>, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, <u class="fk">cita_id</u>)</li>
+<li><b>Lista_Espera</b> (<u class="pk">lista_espera_id</u>, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, <u class="fk">paciente_id</u>, <u class="fk">cita_id</u>)</li>
+<li><b>Pauta_Tratamiento</b> (<u class="pk">pauta_tratamiento_id</u>, nombre, estado, fecha_inicio, fecha_expiracion, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Pauta_Ejercicio</b> (<u class="pk">pauta_ejercicio_id</u>, nombre_ejercicio, series, repeticiones, frecuencia, <u class="fk">pauta_tratamiento_id</u>, <u class="fk">material_terapeutico_id</u>)</li>
+<li><b>Pauta_Cumplimiento</b> (<u class="pk">pauta_cumplimiento_id</u>, fecha, momento_registro, <u class="fk">pauta_ejercicio_id</u>)</li>
+<li><b>Material_Terapeutico</b> (<u class="pk">material_terapeutico_id</u>, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
+<li class="nueva"><b>Indicador_Adherencia</b> (<u class="pk">indicador_adherencia_id</u>, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Sintoma</b> (<u class="pk">reporte_sintoma_id</u>, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Alerta_Clinica</b> (<u class="pk">alerta_clinica_id</u>, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">reporte_sintoma_id</u>)</li>
+<li><b>Financiador</b> (<u class="pk">financiador_id</u>, nombre_institucion, rut_institucion, convenio_activo)</li>
+<li><b>Bono</b> (<u class="pk">bono_id</u>, folio, financiador, monto_cobertura, copago, estado_validacion, payload_respuesta, <u class="fk">cita_id</u>)</li>
+<li><b>Transaccion</b> (<u class="pk">transaccion_id</u>, monto_total, monto_diferencial, tipo, estado, momento_pago, metodo_pago, <u class="fk">cita_id</u>, <u class="fk">financiador_id</u>)</li>
+<li class="nueva"><b>Liquidacion</b> (<u class="pk">liquidacion_id</u>, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, <u class="fk">profesional_id</u>, <u class="fk">emitida_por</u>)</li>
+<li><b>Evaluacion_Satisfaccion</b> (<u class="pk">evaluacion_satisfaccion_id</u>, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, <u class="fk">cita_id</u>, <mark><u class="fk">moderador_id</u></mark>)</li>
+<li><b>Notificacion</b> (<u class="pk">notificacion_id</u>, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, <u class="fk">usuario_id</u>)</li>
+<li><b>Ticket_Soporte</b> (<u class="pk">ticket_soporte_id</u>, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, <u class="fk">usuario_id</u>, <mark><u class="fk">asignado_a</u></mark>)</li>
+<li><b>Bitacora_Auditoria</b> (<u class="pk">bitacora_auditoria_id</u>, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, <u class="fk">usuario_id</u>)</li>
+<li><b>Mensaje_Chat</b> (<u class="pk">mensaje_id</u>, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, <u class="fk">episodio_clinico_id</u>, <mark><u class="fk">remitente_usuario_id</u></mark>)</li>
+<li class="nueva"><b>Palabra_Restringida</b> (<u class="pk">palabra_restringida_id</u>, termino, categoria, activa, momento_creacion, <u class="fk">administrador_id</u>)</li>
+<li><b>Objetivo_Terapeutico</b> (<u class="pk">objetivo_terapeutico_id</u>, descripcion, meta_valor, valor_actual, unidad, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Derivacion_Interna</b> (<u class="pk">derivacion_interna_id</u>, estado, justificacion, momento_creacion, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_origen_id</u>, <u class="fk">profesional_destino_id</u>)</li>
+<li><b>Paquete_Sesiones</b> (<u class="pk">paquete_sesiones_id</u>, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, <u class="fk">paciente_id</u>)</li>
+<li><b>Disclaimer</b> (<u class="pk">disclaimer_id</u>, momento_aceptacion, version_disclaimer, <u class="fk">paciente_id</u>)</li>
+<li><b>Parametro_Global</b> (<u class="pk">parametro_id</u>, clave, valor, descripcion, ultima_modificacion, <u class="fk">administrador_id</u>)</li></ol>
 <h4>Tercera Forma Normal</h4>
-<ol class="mr"><li><b>Rol</b> (rol_id, nombre_rol)</li>
-<li><b>Usuario</b> (usuario_id, rut, nombres, apellido_paterno, apellido_materno, email, contraseña_hash, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion, rol_id)</li>
-<li><b>Usuario_Telefono</b> (usuario_id, telefono)</li>
-<li class="nueva"><b>Dispositivo_Push</b> (dispositivo_push_id, token, plataforma, activo, momento_registro, usuario_id)</li>
-<li class="nueva"><b>Area_Soporte_Operador</b> (usuario_id, categoria)</li>
-<li class="nueva"><b>Preferencia_Notificacion</b> (usuario_id, canal_push, canal_email, ultima_modificacion)</li>
-<li><b>Sesion_Usuario</b> (sesion_usuario_id, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, usuario_id)</li>
-<li><b>Comuna</b> (comuna_id, nombre_comuna)</li>
-<li><b>Contacto_Emergencia</b> (contacto_emergencia_id, nombre, telefono, parentesco)</li>
-<li><b>Paciente</b> (paciente_id, sexo_clinico, calle, numero_calle, departamento, privacidad_contacto, <mark>resena_anonima</mark>, contacto_emergencia_id, usuario_id, comuna_id)</li>
-<li><b>Profesional</b> (profesional_id, num_registro_salud, reseña_curricular, areas_experticia, calificacion_promedio, foto_url, tipo_sede, usuario_id, especialidad_id)</li>
-<li class="nueva"><b>Profesional_Comuna</b> (profesional_id, comuna_id)</li>
-<li><b>Bloqueo_Agenda</b> (bloqueo_id, fecha_inicio, fecha_fin, motivo, profesional_id)</li>
-<li><b>Profesional_Autorizado</b> (rut_autorizado, habilitado, administrador_id)</li>
-<li><b>Profesional_Disponibilidad</b> (profesional_id, dia_semana, hora_inicio, hora_fin, modalidad)</li>
-<li><b>Especialidad</b> (especialidad_id, nombre, descripcion)</li>
-<li><b>Sede</b> (sede_id, nombre, estado_sede)</li>
-<li><b>Sede_Horario</b> (sede_id, dia_semana, hora_apertura, hora_cierre)</li>
-<li><b>Sede_Online</b> (sede_id, link, contraseña, codigo)</li>
-<li><b>Sede_Presencial</b> (sede_id, calle, numero_calle, departamento, infraestructura, comuna_id)</li>
-<li><b>Triaje</b> (triaje_id, estado, respuestas, momento_inicio, momento_completado, integrado, paciente_id)</li>
-<li class="nueva"><b>Reporte_Preclinico</b> (reporte_preclinico_id, resumen, banderas, etiquetas, suficiente, momento_creacion, triaje_id, paciente_id, especialidad_sugerida_id)</li>
-<li><b>Ficha_Clinica</b> (ficha_clinica_id, ultima_actualizacion, anamnesis, plantilla_especialidad, paciente_id)</li>
-<li><b>Ficha_Alergia</b> (ficha_clinica_id, alergia)</li>
-<li><b>Ficha_Antecedente_Quirurgico</b> (ficha_clinica_id, antecedente)</li>
-<li><b>Ficha_Antecedente_Patologico</b> (ficha_clinica_id, antecedente)</li>
-<li><b>Episodio_Clinico</b> (episodio_clinico_id, motivo_consulta, fecha_inicio, fecha_terminado, estado, paciente_id, profesional_id)</li>
-<li><b>Evolucion_Clinica</b> (evolucion_clinica_id, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, episodio_clinico_id, profesional_id)</li>
-<li><b>Evolucion_Version</b> (version_id, numero_version, texto_correccion, fecha_creacion, evolucion_clinica_id, profesional_id)</li>
-<li><b>Documento_Clinico</b> (documento_id, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, paciente_id, episodio_clinico_id, profesional_id)</li>
-<li><b>Cita</b> (cita_id, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, paciente_id, profesional_id, sede_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Solicitud_Confirmacion</b> (solicitud_confirmacion_id, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, cita_id)</li>
-<li><b>Lista_Espera</b> (lista_espera_id, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, paciente_id, cita_id)</li>
-<li><b>Pauta_Tratamiento</b> (pauta_tratamiento_id, nombre, estado, fecha_inicio, fecha_expiracion, episodio_clinico_id)</li>
-<li><b>Pauta_Ejercicio</b> (pauta_ejercicio_id, nombre_ejercicio, series, repeticiones, frecuencia, pauta_tratamiento_id, material_terapeutico_id)</li>
-<li><b>Pauta_Cumplimiento</b> (pauta_cumplimiento_id, fecha, momento_registro, pauta_ejercicio_id)</li>
-<li><b>Material_Terapeutico</b> (material_terapeutico_id, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
-<li class="nueva"><b>Indicador_Adherencia</b> (indicador_adherencia_id, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, paciente_id)</li>
-<li class="nueva"><b>Reporte_Sintoma</b> (reporte_sintoma_id, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, paciente_id, episodio_clinico_id)</li>
-<li class="nueva"><b>Alerta_Clinica</b> (alerta_clinica_id, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, paciente_id, profesional_id, reporte_sintoma_id)</li>
-<li><b>Financiador</b> (financiador_id, nombre_institucion, rut_institucion, convenio_activo)</li>
-<li><b>Bono</b> (bono_id, folio, monto_cobertura, copago, estado_validacion, payload_respuesta, cita_id, financiador_id)</li>
-<li><b>Transaccion</b> (transaccion_id, monto_total, tipo, estado, momento_pago, metodo_pago, cita_id)</li>
-<li class="nueva"><b>Liquidacion</b> (liquidacion_id, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, profesional_id, emitida_por)</li>
-<li><b>Evaluacion_Satisfaccion</b> (evaluacion_satisfaccion_id, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, cita_id, <mark>moderador_id</mark>)</li>
-<li><b>Notificacion</b> (notificacion_id, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, usuario_id)</li>
-<li><b>Ticket_Soporte</b> (ticket_soporte_id, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, usuario_id, <mark>asignado_a</mark>)</li>
-<li><b>Bitacora_Auditoria</b> (bitacora_auditoria_id, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, usuario_id)</li>
-<li><b>Mensaje_Chat</b> (mensaje_id, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, episodio_clinico_id, <mark>remitente_usuario_id</mark>)</li>
-<li class="nueva"><b>Palabra_Restringida</b> (palabra_restringida_id, termino, categoria, activa, momento_creacion, administrador_id)</li>
-<li><b>Objetivo_Terapeutico</b> (objetivo_terapeutico_id, descripcion, meta_valor, valor_actual, unidad, episodio_clinico_id)</li>
-<li><b>Derivacion_Interna</b> (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)</li>
-<li><b>Paquete_Sesiones</b> (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)</li>
-<li><b>Disclaimer</b> (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)</li>
-<li class="repuesta"><b>Parametro_Global</b> (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)</li></ol>
+<ol class="mr"><li><b>Rol</b> (<u class="pk">rol_id</u>, nombre_rol)</li>
+<li><b>Usuario</b> (<u class="pk">usuario_id</u>, rut, nombres, apellido_paterno, apellido_materno, email, contraseña_hash, cuenta_activo, hora_creacion, otp_codigo, otp_expiracion, <u class="fk">rol_id</u>)</li>
+<li><b>Usuario_Telefono</b> (<u class="pk">usuario_id</u>, <u class="pk">telefono</u>)</li>
+<li class="nueva"><b>Dispositivo_Push</b> (<u class="pk">dispositivo_push_id</u>, token, plataforma, activo, momento_registro, <u class="fk">usuario_id</u>)</li>
+<li class="nueva"><b>Area_Soporte_Operador</b> (<u class="pk">usuario_id</u>, <u class="pk">categoria</u>)</li>
+<li class="nueva"><b>Preferencia_Notificacion</b> (<u class="pk">usuario_id</u>, canal_push, canal_email, ultima_modificacion)</li>
+<li><b>Sesion_Usuario</b> (<u class="pk">sesion_usuario_id</u>, jti, dispositivo, dispositivo_id, ip_origen, momento_inicio, activa, <u class="fk">usuario_id</u>)</li>
+<li><b>Comuna</b> (<u class="pk">comuna_id</u>, nombre_comuna)</li>
+<li><b>Contacto_Emergencia</b> (<u class="pk">contacto_emergencia_id</u>, nombre, telefono, parentesco)</li>
+<li><b>Paciente</b> (<u class="pk">paciente_id</u>, sexo_clinico, calle, numero_calle, departamento, privacidad_contacto, <mark>resena_anonima</mark>, <u class="fk">contacto_emergencia_id</u>, <u class="fk">usuario_id</u>, <u class="fk">comuna_id</u>)</li>
+<li><b>Profesional</b> (<u class="pk">profesional_id</u>, num_registro_salud, reseña_curricular, areas_experticia, calificacion_promedio, foto_url, tipo_sede, <u class="fk">usuario_id</u>, <u class="fk">especialidad_id</u>)</li>
+<li class="nueva"><b>Profesional_Comuna</b> (<u class="pk">profesional_id</u>, <u class="pk">comuna_id</u>)</li>
+<li><b>Bloqueo_Agenda</b> (<u class="pk">bloqueo_id</u>, fecha_inicio, fecha_fin, motivo, <u class="fk">profesional_id</u>)</li>
+<li><b>Profesional_Autorizado</b> (<u class="pk">rut_autorizado</u>, habilitado, <u class="fk">administrador_id</u>)</li>
+<li><b>Profesional_Disponibilidad</b> (<u class="pk">profesional_id</u>, <u class="pk">dia_semana</u>, <u class="pk">hora_inicio</u>, hora_fin, modalidad)</li>
+<li><b>Especialidad</b> (<u class="pk">especialidad_id</u>, nombre, descripcion)</li>
+<li><b>Sede</b> (<u class="pk">sede_id</u>, nombre, estado_sede)</li>
+<li><b>Sede_Horario</b> (<u class="pk">sede_id</u>, <u class="pk">dia_semana</u>, hora_apertura, hora_cierre)</li>
+<li><b>Sede_Online</b> (<u class="pk">sede_id</u>, link, contraseña, codigo)</li>
+<li><b>Sede_Presencial</b> (<u class="pk">sede_id</u>, calle, numero_calle, departamento, infraestructura, <u class="fk">comuna_id</u>)</li>
+<li><b>Triaje</b> (<u class="pk">triaje_id</u>, estado, respuestas, momento_inicio, momento_completado, integrado, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Preclinico</b> (<u class="pk">reporte_preclinico_id</u>, resumen, banderas, etiquetas, suficiente, momento_creacion, <u class="fk">triaje_id</u>, <u class="fk">paciente_id</u>, <u class="fk">especialidad_sugerida_id</u>)</li>
+<li><b>Ficha_Clinica</b> (<u class="pk">ficha_clinica_id</u>, ultima_actualizacion, anamnesis, plantilla_especialidad, <u class="fk">paciente_id</u>)</li>
+<li><b>Ficha_Alergia</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">alergia</u>)</li>
+<li><b>Ficha_Antecedente_Quirurgico</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">antecedente</u>)</li>
+<li><b>Ficha_Antecedente_Patologico</b> (<u class="pk">ficha_clinica_id</u>, <u class="pk">antecedente</u>)</li>
+<li><b>Episodio_Clinico</b> (<u class="pk">episodio_clinico_id</u>, motivo_consulta, fecha_inicio, fecha_terminado, estado, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Clinica</b> (<u class="pk">evolucion_clinica_id</u>, inalterable, hora_firma_digital, firma_digital, porcentaje_objetivo, respuesta_fisiologica, tecnicas_aplicadas, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Evolucion_Version</b> (<u class="pk">version_id</u>, numero_version, texto_correccion, fecha_creacion, <u class="fk">evolucion_clinica_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Documento_Clinico</b> (<u class="pk">documento_id</u>, nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud, paginas, fecha_carga, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_id</u>)</li>
+<li><b>Cita</b> (<u class="pk">cita_id</u>, fecha_hora_inicio, fecha_hora_fin, checkin_profesional, checkin_paciente, estado, motivo_cancelacion, coordenadas_gps_paciente, coordenadas_gps_profesional, modalidad, evidencia_presencial, firma_conformidad_datos, sesion_certificada_en, certificacion_tipo, sesion_suspendida_en, motivo_suspension, firma_conformidad_url, metadatos_teleconsulta, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">sede_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Solicitud_Confirmacion</b> (<u class="pk">solicitud_confirmacion_id</u>, token, momento_envio, momento_expira, momento_respuesta, respuesta, canal_respuesta, <u class="fk">cita_id</u>)</li>
+<li><b>Lista_Espera</b> (<u class="pk">lista_espera_id</u>, momento_inscripcion, posicion, notificado, <mark>estado</mark>, <mark>momento_notificacion</mark>, <mark>momento_expira</mark>, <mark>token_cupo</mark>, <u class="fk">paciente_id</u>, <u class="fk">cita_id</u>)</li>
+<li><b>Pauta_Tratamiento</b> (<u class="pk">pauta_tratamiento_id</u>, nombre, estado, fecha_inicio, fecha_expiracion, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Pauta_Ejercicio</b> (<u class="pk">pauta_ejercicio_id</u>, nombre_ejercicio, series, repeticiones, frecuencia, <u class="fk">pauta_tratamiento_id</u>, <u class="fk">material_terapeutico_id</u>)</li>
+<li><b>Pauta_Cumplimiento</b> (<u class="pk">pauta_cumplimiento_id</u>, fecha, momento_registro, <u class="fk">pauta_ejercicio_id</u>)</li>
+<li><b>Material_Terapeutico</b> (<u class="pk">material_terapeutico_id</u>, nombre, tipo, url_archivo, categoria, formato, disponibilidad)</li>
+<li class="nueva"><b>Indicador_Adherencia</b> (<u class="pk">indicador_adherencia_id</u>, fecha, porcentaje, tareas_programadas, tareas_cumplidas, momento_calculo, <u class="fk">paciente_id</u>)</li>
+<li class="nueva"><b>Reporte_Sintoma</b> (<u class="pk">reporte_sintoma_id</u>, nivel_dolor, limitacion_funcional, comentario, clave_envio, momento_registro, <u class="fk">paciente_id</u>, <u class="fk">episodio_clinico_id</u>)</li>
+<li class="nueva"><b>Alerta_Clinica</b> (<u class="pk">alerta_clinica_id</u>, tipo, severidad, motivo, datos, estado, momento_creacion, momento_revision, <u class="fk">paciente_id</u>, <u class="fk">profesional_id</u>, <u class="fk">reporte_sintoma_id</u>)</li>
+<li><b>Financiador</b> (<u class="pk">financiador_id</u>, nombre_institucion, rut_institucion, convenio_activo)</li>
+<li><b>Bono</b> (<u class="pk">bono_id</u>, folio, monto_cobertura, copago, estado_validacion, payload_respuesta, <u class="fk">cita_id</u>, <u class="fk">financiador_id</u>)</li>
+<li><b>Transaccion</b> (<u class="pk">transaccion_id</u>, monto_total, tipo, estado, momento_pago, metodo_pago, <u class="fk">cita_id</u>)</li>
+<li class="nueva"><b>Liquidacion</b> (<u class="pk">liquidacion_id</u>, anio, mes, sesiones_validadas, monto_prestaciones, bonificacion, monto_total, observacion, momento_emision, <u class="fk">profesional_id</u>, <u class="fk">emitida_por</u>)</li>
+<li><b>Evaluacion_Satisfaccion</b> (<u class="pk">evaluacion_satisfaccion_id</u>, puntuacion, reseña, estado_moderacion, <mark>motivo_rechazo</mark>, <mark>momento_moderacion</mark>, momento_creacion, <u class="fk">cita_id</u>, <mark><u class="fk">moderador_id</u></mark>)</li>
+<li><b>Notificacion</b> (<u class="pk">notificacion_id</u>, canal, tipo, <mark>titulo</mark>, contenido, <mark>datos</mark>, momento_envio, leida, <u class="fk">usuario_id</u>)</li>
+<li><b>Ticket_Soporte</b> (<u class="pk">ticket_soporte_id</u>, categoria, descripcion, estado, momento_creacion, <mark>momento_enrutamiento</mark>, momento_resuelto, <mark>adjunto_url</mark>, <mark>resolucion</mark>, <u class="fk">usuario_id</u>, <mark><u class="fk">asignado_a</u></mark>)</li>
+<li><b>Bitacora_Auditoria</b> (<u class="pk">bitacora_auditoria_id</u>, accion, entidad_afectada, ip_origen, momento_evento, datos_adicionales, <u class="fk">usuario_id</u>)</li>
+<li><b>Mensaje_Chat</b> (<u class="pk">mensaje_id</u>, contenido_cifrado, bloqueado, <mark>leido</mark>, momento_envio, <u class="fk">episodio_clinico_id</u>, <mark><u class="fk">remitente_usuario_id</u></mark>)</li>
+<li class="nueva"><b>Palabra_Restringida</b> (<u class="pk">palabra_restringida_id</u>, termino, categoria, activa, momento_creacion, <u class="fk">administrador_id</u>)</li>
+<li><b>Objetivo_Terapeutico</b> (<u class="pk">objetivo_terapeutico_id</u>, descripcion, meta_valor, valor_actual, unidad, <u class="fk">episodio_clinico_id</u>)</li>
+<li><b>Derivacion_Interna</b> (<u class="pk">derivacion_interna_id</u>, estado, justificacion, momento_creacion, <u class="fk">episodio_clinico_id</u>, <u class="fk">profesional_origen_id</u>, <u class="fk">profesional_destino_id</u>)</li>
+<li><b>Paquete_Sesiones</b> (<u class="pk">paquete_sesiones_id</u>, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, <u class="fk">paciente_id</u>)</li>
+<li><b>Disclaimer</b> (<u class="pk">disclaimer_id</u>, momento_aceptacion, version_disclaimer, <u class="fk">paciente_id</u>)</li>
+<li class="repuesta"><b>Parametro_Global</b> (<u class="pk">parametro_id</u>, clave, valor, descripcion, ultima_modificacion, <u class="fk">administrador_id</u>)</li></ol>
 
 <h3 id="fisico">Modelo físico</h3>
 <p>Tipos y restricciones reales de MySQL, tomados de <code>schema.sql</code> y de las migraciones. En el diagrama del modelo físico (<code>Modelo_Físico.drawio.png</code>) hay que agregar las 11 cajas nuevas con sus columnas, dibujar las llaves foráneas indicadas y agregar las columnas nuevas a las 6 cajas modificadas (Notificacion, Lista_Espera, Mensaje_Chat, Evaluacion_Satisfaccion, Ticket_Soporte, Paciente). Las cajas <b>Preferencia_Notificacion</b> y <b>Dispositivo_Push</b> van junto a Notificacion (arriba); <b>Solicitud_Confirmacion</b> bajo Cita; <b>Reporte_Preclinico</b> junto a Triaje; <b>Reporte_Sintoma</b>, <b>Alerta_Clinica</b> e <b>Indicador_Adherencia</b> entre Paciente y Episodio_Clinico; <b>Palabra_Restringida</b> junto a Parametro_Global; <b>Area_Soporte_Operador</b> junto a Ticket_Soporte; <b>Liquidacion</b> junto a Profesional; <b>Profesional_Comuna</b> entre Profesional y Comuna.</p>
@@ -568,10 +571,12 @@ mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-r
   <li>Se mantienen las diferencias de nombre ya reportadas en el Incremento 2 (el documento escribe <code>nombre_comuna</code>, <code>contraseña_hash</code> y <code>reseña</code>; el esquema físico usa <code>Comuna.nombre</code>, <code>contrasena_hash</code> y <code>resena</code>). Da lo mismo cuál se adopte, pero conviene que MR, normalización y modelo físico usen el mismo.</li>
   <li>El anexo del Incremento 2 omite <code>Parametro_Global</code> en la 3FN (está en 1FN y 2FN). Se repone en la lista de arriba.</li>
   <li><code>schema.sql</code> tenía una clave foránea pegada por error en <code>Solicitud_Confirmacion</code> (a <code>moderador_id</code>, columna de Evaluacion_Satisfaccion). Producción no la sufrió porque la tabla la crea la migración; ya está corregida en el código (commit <code>4e01994b</code>). No afecta a los documentos.</li>
+  <li><b>Subrayados de las claves.</b> En los Word entregados (Incremento 1 e Incremento 2) el MR y la 1FN, 2FN y 3FN están como texto sin subrayar: ninguna clave aparece marcada. Las listas de este reporte ya las traen (primaria continua, foránea discontinua) y se pueden copiar tal cual; al pegarlas en Word, conviene usar subrayado simple para la primaria y subrayado de guiones para la foránea.</li>
+  <li><code>Sede_Horario</code>: en <code>schema.sql</code> su clave primaria es solo <code>sede_id</code>, lo que permitiría un único horario por sede. En la normalización la clave correcta es la pareja (<code>sede_id</code>, <code>dia_semana</code>), y así se marca arriba. Viene del Incremento 2 y no afecta a la app (las sedes no tienen pantalla que edite su horario).</li>
   <li>La aplicación se llama ahora <b>Punto Paz Salud</b>; los informes siguen diciendo FRO Salud. Decisión del equipo si se actualiza el nombre y el logo en los documentos.</li>
 </ul>
 
-<p class="leyenda" style="margin-top:48px">Generado por <code>generar_reporte.py</code> el 26-09-2026 a partir del commit <code>4e01994b</code>.</p>
+<p class="leyenda" style="margin-top:48px">Generado por <code>generar_reporte.py</code> el 26-09-2026 a partir del commit <code>4e01994b</code>; claves del modelo relacional agregadas el 03-10-2026.</p>
 </main>
 </body>
 </html>

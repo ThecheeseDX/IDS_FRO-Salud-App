@@ -174,21 +174,98 @@ Disclaimer (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)
 """
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  Claves: la PK va con subrayado continuo y la FK con subrayado discontinuo.
+#  Salen de schema.sql y de las migraciones (lo que existe en la base); lo que
+#  el esquema no declara se completa con el criterio del modelo lógico.
+# ─────────────────────────────────────────────────────────────────────────────
+import os
+
+def _claves_del_esquema():
+    raiz = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'fro-controlador')
+    esquema = open(os.path.join(raiz, 'src/database/mysql/schema.sql'), encoding='utf-8').read()
+    pks, fks = {}, {}
+    for m in re.finditer(r'CREATE TABLE (?:IF NOT EXISTS )?`?(\w+)`?\s*\((.*?)\n\)\s*[^;]*;', esquema, re.S):
+        tabla, cuerpo = m.group(1), m.group(2)
+        for linea in cuerpo.split('\n'):
+            linea = linea.strip()
+            u = re.match(r'`?(\w+)`?\s+\w+.*PRIMARY KEY', linea)
+            if u: pks[tabla] = [u.group(1).lower()]
+            u = re.match(r'PRIMARY KEY\s*\(([^)]*)\)', linea)
+            if u: pks[tabla] = [x.strip(' `').lower() for x in u.group(1).split(',')]
+            for u in re.finditer(r'FOREIGN KEY\s*\(`?(\w+)`?\)', linea):
+                fks.setdefault(tabla, set()).add(u.group(1))
+    # Claves foráneas agregadas por migración: ALTER TABLE X ... FOREIGN KEY (col)
+    migraciones = open(os.path.join(raiz, 'scripts/migrar-db.js'), encoding='utf-8').read()
+    for m in re.finditer(r'ALTER TABLE `?(\w+)`?[^;`]*?FOREIGN KEY\s*\(`?(\w+)`?\)', migraciones, re.S):
+        fks.setdefault(m.group(1), set()).add(m.group(2))
+    return pks, fks
+
+PK_ESQUEMA, FK_ESQUEMA = _claves_del_esquema()
+
+# Donde el modelo lógico difiere del esquema o el esquema no lo declara.
+PK_LOGICA = {
+    # En schema.sql la clave es solo sede_id (una sede tendría un único
+    # horario): en la normalización la clave es la pareja sede/día.
+    'Sede_Horario': ['sede_id', 'dia_semana'],
+}
+# Columnas que referencian a otra tabla aunque el esquema no declare la FK.
+FK_LOGICA = {'administrador_id', 'moderador_id', 'financiador_id', 'rol_id', 'contacto_emergencia_id',
+             'comuna_id', 'especialidad_id', 'usuario_id', 'paciente_id', 'profesional_id', 'cita_id',
+             'episodio_clinico_id', 'sede_id', 'triaje_id', 'ficha_clinica_id', 'evolucion_clinica_id',
+             'pauta_tratamiento_id', 'pauta_ejercicio_id', 'material_terapeutico_id', 'reporte_sintoma_id'}
+
+
+def _atributos(cuerpo):
+    """Separa los atributos del primer nivel (los grupos {…} quedan enteros)."""
+    partes, nivel, actual = [], 0, ''
+    for c in cuerpo:
+        if c == '{': nivel += 1
+        if c == '}': nivel -= 1
+        if c == ',' and nivel == 0:
+            partes.append(actual.strip()); actual = ''
+        else:
+            actual += c
+    if actual.strip(): partes.append(actual.strip())
+    return partes
+
+
+def _marcar(atributo, pk, fk):
+    """Atributo simple → subrayado según su papel; los grupos no llevan marca."""
+    if '{' in atributo:
+        return html.escape(atributo)
+    nombre = atributo.strip()
+    if nombre.lower() in pk:
+        return f'<u class="pk">{html.escape(nombre)}</u>'
+    if nombre in fk:
+        return f'<u class="fk">{html.escape(nombre)}</u>'
+    return html.escape(nombre)
+
+
 def lista_relacional(texto):
-    """Convierte las líneas del MR en HTML, marcando tablas y atributos nuevos."""
+    """Convierte las líneas del MR en HTML: claves subrayadas y cambios marcados."""
     filas = []
     for linea in texto.strip().split('\n'):
         nueva_tabla = linea.startswith('+')
         repuesta = linea.startswith('=')   # estaba en 1FN/2FN del anexo pero faltaba en su 3FN
         if nueva_tabla or repuesta:
             linea = linea[1:]
-        # La PK es lo que va hasta la primera coma dentro del paréntesis
-        # (o la pareja usuario_id/… en las tablas con clave compuesta).
-        seg = html.escape(linea)
-        seg = re.sub(r'\{\+([^{}]*(?:\{[^{}]*\}[^{}]*)?)\}', r'<mark>\1</mark>', seg)
-        nombre, resto = seg.split(' (', 1)
+        nombre, cuerpo = linea.split(' (', 1)
+        cuerpo = cuerpo.rsplit(')', 1)[0]
+        attrs = _atributos(cuerpo)
+        limpios = [a[2:-1].strip() if a.startswith('{+') else a for a in attrs]
+        simples = [a for a in limpios if '{' not in a]
+        pk = PK_LOGICA.get(nombre) or PK_ESQUEMA.get(nombre) or simples[:1]
+        pk = [x.lower() for x in pk]
+        fk = set(FK_ESQUEMA.get(nombre, ())) | {a for a in simples if a in FK_LOGICA and a.lower() not in pk}
+        # La PK que además referencia a otra tabla (Sede_Online.sede_id) se
+        # marca como PK: es la marca que manda.
+        piezas = []
+        for original, limpio in zip(attrs, limpios):
+            marcado = _marcar(limpio, pk, fk)
+            piezas.append(f'<mark>{marcado}</mark>' if original.startswith('{+') else marcado)
         clase = ' class="nueva"' if nueva_tabla else (' class="repuesta"' if repuesta else '')
-        filas.append(f'<li{clase}><b>{nombre}</b> ({resto}</li>')
+        filas.append(f'<li{clase}><b>{html.escape(nombre)}</b> ({", ".join(piezas)})</li>')
     return '<ol class="mr">' + '\n'.join(filas) + '</ol>'
 
 
@@ -590,6 +667,9 @@ ol.mr li.nueva b::before {{ content:"NUEVA · "; color:var(--nuevoTexto); font-s
 ol.mr li.repuesta {{ background:var(--alertaSuave); border-radius:4px; padding:2px 6px; margin-left:-6px }}
 ol.mr li.repuesta b::before {{ content:"FALTABA EN LA 3FN DEL INC 2 · "; color:var(--alerta); font-size:11px; letter-spacing:.06em }}
 mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-radius:3px }}
+/* Claves del modelo relacional: PK subrayado continuo, FK subrayado discontinuo. */
+u.pk {{ text-decoration:underline solid; text-decoration-thickness:1.5px; text-underline-offset:3px }}
+u.fk {{ text-decoration:underline dashed; text-decoration-thickness:1.5px; text-underline-offset:3px }}
 .leyenda {{ font-size:13px; color:var(--suave) }}
 .leyenda mark, .leyenda .nuevaEj {{ margin:0 4px }}
 .nuevaEj {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 6px; border-radius:4px; font-family:"JetBrains Mono", monospace; font-size:12px }}
@@ -711,7 +791,7 @@ mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-
 </ul>
 
 <h3 id="mr">MR con los cambios incorporados</h3>
-<p class="leyenda">Leyenda: <span class="nuevaEj">NUEVA</span> tabla que no estaba en el anexo del Incremento 2; <mark>atributo</mark> agregado a una tabla que ya existía. Se mantiene el estilo del anexo: los grupos repetitivos van entre llaves y se separan en la 1FN.</p>
+<p class="leyenda">Leyenda: <u class="pk">clave_primaria</u> subrayado continuo; <u class="fk">clave_foranea</u> subrayado discontinuo (si un atributo es a la vez clave primaria y foránea, como <code>sede_id</code> en Sede_Online, lleva la marca de clave primaria); <span class="nuevaEj">NUEVA</span> tabla que no estaba en el anexo del Incremento 2; <mark>atributo</mark> agregado a una tabla que ya existía. Se mantiene el estilo del anexo: los grupos repetitivos van entre llaves y se separan en la 1FN. Las claves salen de <code>schema.sql</code> y de las migraciones.</p>
 {lista_relacional(MR)}
 
 <h3 id="fn">Normalización con los cambios incorporados</h3>
@@ -737,10 +817,12 @@ mark {{ background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-
   <li>Se mantienen las diferencias de nombre ya reportadas en el Incremento 2 (el documento escribe <code>nombre_comuna</code>, <code>contraseña_hash</code> y <code>reseña</code>; el esquema físico usa <code>Comuna.nombre</code>, <code>contrasena_hash</code> y <code>resena</code>). Da lo mismo cuál se adopte, pero conviene que MR, normalización y modelo físico usen el mismo.</li>
   <li>El anexo del Incremento 2 omite <code>Parametro_Global</code> en la 3FN (está en 1FN y 2FN). Se repone en la lista de arriba.</li>
   <li><code>schema.sql</code> tenía una clave foránea pegada por error en <code>Solicitud_Confirmacion</code> (a <code>moderador_id</code>, columna de Evaluacion_Satisfaccion). Producción no la sufrió porque la tabla la crea la migración; ya está corregida en el código (commit <code>4e01994b</code>). No afecta a los documentos.</li>
+  <li><b>Subrayados de las claves.</b> En los Word entregados (Incremento 1 e Incremento 2) el MR y la 1FN, 2FN y 3FN están como texto sin subrayar: ninguna clave aparece marcada. Las listas de este reporte ya las traen (primaria continua, foránea discontinua) y se pueden copiar tal cual; al pegarlas en Word, conviene usar subrayado simple para la primaria y subrayado de guiones para la foránea.</li>
+  <li><code>Sede_Horario</code>: en <code>schema.sql</code> su clave primaria es solo <code>sede_id</code>, lo que permitiría un único horario por sede. En la normalización la clave correcta es la pareja (<code>sede_id</code>, <code>dia_semana</code>), y así se marca arriba. Viene del Incremento 2 y no afecta a la app (las sedes no tienen pantalla que edite su horario).</li>
   <li>La aplicación se llama ahora <b>Punto Paz Salud</b>; los informes siguen diciendo FRO Salud. Decisión del equipo si se actualiza el nombre y el logo en los documentos.</li>
 </ul>
 
-<p class="leyenda" style="margin-top:48px">Generado por <code>generar_reporte.py</code> el 26-09-2026 a partir del commit <code>4e01994b</code>.</p>
+<p class="leyenda" style="margin-top:48px">Generado por <code>generar_reporte.py</code> el 26-09-2026 a partir del commit <code>4e01994b</code>; claves del modelo relacional agregadas el 03-10-2026.</p>
 </main>
 </body>
 </html>
