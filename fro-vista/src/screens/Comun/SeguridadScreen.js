@@ -18,7 +18,7 @@ import {
 
 import apiClient from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../../components/Icono';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import CambioContrasenaOTP from '../../components/CambioContrasenaOTP';
 import DialogoConfirmacion from '../../components/DialogoConfirmacion';
@@ -378,7 +378,7 @@ function SeccionesSeguridad({ contrasenaPrimero = false }) {
 function FranjaSeccion({ icono, titulo, alInicio = false }) {
   return (
     <View style={[estilos.franja, alInicio && estilos.franjaAlInicio]} accessibilityRole="header">
-      <Ionicons name={icono} size={16} color={colores.primario} />
+      <Icono name={icono} size={16} color={colores.primario} />
       <Text style={estilos.franjaTexto}>{titulo}</Text>
     </View>
   );

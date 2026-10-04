@@ -26,7 +26,7 @@ import apiClient, {
   salirListaEspera,
   tomarCupoListaEspera,
 } from '../../api/client';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../../components/Icono';
 import { AuthContext } from '../../context/AuthContext';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
@@ -459,7 +459,7 @@ export default function MisCitasScreen({ navigation, route }) {
         activeOpacity={interaccion.opacidadActiva}
         accessibilityRole="button"
       >
-        <Ionicons name="card-outline" size={18} color={colores.primario} />
+        <Icono name="card-outline" size={18} color={colores.primario} />
         <Text style={styles.botonPagosTexto}>Pagos y bonos</Text>
       </TouchableOpacity>
     </View>

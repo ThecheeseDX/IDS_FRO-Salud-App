@@ -4,7 +4,7 @@
 // para que ambas se vean y se comporten igual.
 
 import React from 'react';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../components/Icono';
 
 import { colores, tipografia } from '../theme';
 
@@ -23,7 +23,7 @@ export const cabeceraDePestana = {
 
 /**
  * screenOptions del Tab.Navigator. `iconos` asocia cada ruta a un ícono de
- * Ionicons: de línea cuando la pestaña está inactiva y relleno cuando está
+ * Ionicons (dibujado con Icono): de línea cuando la pestaña está inactiva y relleno cuando está
  * activa. Una ruta sin ícono (el "+" del paciente) dibuja su propio botón.
  */
 export function opcionesDeBarra(iconos) {
@@ -40,7 +40,7 @@ export function opcionesDeBarra(iconos) {
     tabBarHideOnKeyboard: true,
     tabBarIcon: ({ focused, color, size }) =>
       iconos[route.name] ? (
-        <Ionicons
+        <Icono
           name={focused ? iconos[route.name] : `${iconos[route.name]}-outline`}
           size={size}
           color={color}

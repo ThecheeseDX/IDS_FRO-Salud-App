@@ -9,7 +9,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../../components/Icono';
 import { getPerfilPublicoProfesional } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
@@ -28,7 +28,7 @@ const PILDORAS_MODALIDAD = {
 function Etiqueta({ icono, children }) {
   return (
     <View style={estilos.filaEtiqueta}>
-      <Ionicons name={icono} size={16} color={colores.primario} />
+      <Icono name={icono} size={16} color={colores.primario} />
       <Text style={estilos.etiqueta}>{children}</Text>
     </View>
   );
@@ -122,7 +122,7 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
         <View style={estilos.pildoras}>
           {pildoras.map((p) => (
             <View key={p.texto} style={estilos.pildora}>
-              <Ionicons name={p.icono} size={15} color={colores.primario} />
+              <Icono name={p.icono} size={15} color={colores.primario} />
               <Text style={estilos.pildoraTexto}>{p.texto}</Text>
             </View>
           ))}

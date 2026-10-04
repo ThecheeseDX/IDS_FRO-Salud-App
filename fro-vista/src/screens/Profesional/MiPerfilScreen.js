@@ -22,7 +22,7 @@ import apiClient, { getComunas } from '../../api/client';
 import VistaConTeclado from '../../components/VistaConTeclado';
 import ErrorRetry from '../../components/ErrorRetry';
 import DialogoAviso from '../../components/DialogoAviso';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../../components/Icono';
 import { PieDePerfil } from '../Comun/SeguridadScreen';
 import { colores, espacio, radio, sombra, tipografia, piezas, interaccion } from '../../theme';
 
@@ -179,7 +179,7 @@ export default function MiPerfilScreen({ navigation, comoPestana = false }) {
             activeOpacity={interaccion.opacidadActiva}
             accessibilityRole="button"
           >
-            <Ionicons name="wallet-outline" size={18} color={colores.primario} />
+            <Icono name="wallet-outline" size={18} color={colores.primario} />
             <Text style={estilos.botonLiquidacionesTexto}>Mis liquidaciones</Text>
           </TouchableOpacity>
         )}

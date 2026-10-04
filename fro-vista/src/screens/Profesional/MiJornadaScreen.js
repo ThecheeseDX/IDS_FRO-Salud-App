@@ -23,7 +23,7 @@ import { getCitasMarcasTemporales } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import EtiquetaEstado from '../../components/EtiquetaEstado';
 import { formatearHora, claveDia } from '../../utils/fechas';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../../components/Icono';
 import { colores, espacio, piezas, radio, sombra, tipografia, interaccion } from '../../theme';
 import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
@@ -219,7 +219,7 @@ export default function MiJornadaScreen({ navigation }) {
       activeOpacity={0.85}
       accessibilityRole="button"
     >
-      <Ionicons name="calendar-outline" size={18} color={colores.textoInverso} />
+      <Icono name="calendar-outline" size={18} color={colores.textoInverso} />
       <Text style={estilos.fabTexto}>Gestionar disponibilidad</Text>
     </TouchableOpacity>
   );

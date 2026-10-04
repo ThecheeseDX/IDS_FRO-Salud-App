@@ -13,7 +13,7 @@ import {
   ActivityIndicator, StyleSheet, Image,
 } from 'react-native';
 
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../../components/Icono';
 import { getMisConversaciones } from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import ErrorRetry from '../../components/ErrorRetry';
@@ -84,7 +84,7 @@ export default function ConversacionesScreen({ navigation }) {
           accessibilityRole="button"
         >
           <View style={estilos.documentosIcono}>
-            <Ionicons name="folder-open-outline" size={22} color={colores.primario} />
+            <Icono name="folder-open-outline" size={22} color={colores.primario} />
           </View>
           <View style={estilos.cuerpo}>
             <Text style={estilos.nombre}>Mis documentos</Text>

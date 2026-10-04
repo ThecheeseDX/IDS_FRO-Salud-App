@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Icono from '../components/Icono';
 
 import MisCitasScreen from '../screens/Paciente/MisCitasScreen';
 import MiTratamientoScreen from '../screens/Paciente/MiTratamientoScreen';
@@ -48,7 +48,7 @@ function BotonAgendar({ onPress }) {
         accessibilityRole="button"
         accessibilityLabel="Buscar y agendar cita"
       >
-        <Ionicons name="add" size={30} color={colores.textoInverso} />
+        <Icono name="add" size={30} color={colores.textoInverso} />
       </TouchableOpacity>
     </View>
   );
