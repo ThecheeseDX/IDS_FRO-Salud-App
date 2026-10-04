@@ -170,7 +170,7 @@ Objetivo_Terapeutico (objetivo_terapeutico_id, descripcion, meta_valor, valor_ac
 Derivacion_Interna (derivacion_interna_id, estado, justificacion, momento_creacion, episodio_clinico_id, profesional_origen_id, profesional_destino_id)
 Paquete_Sesiones (paquete_sesiones_id, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, paciente_id)
 Disclaimer (disclaimer_id, momento_aceptacion, version_disclaimer, paciente_id)
-=Parametro_Global (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)
+Parametro_Global (parametro_id, clave, valor, descripcion, ultima_modificacion, administrador_id)
 """
 
 
@@ -799,7 +799,7 @@ u.fk {{ text-decoration:underline dashed; text-decoration-thickness:1.5px; text-
 <ul>
   <li><b>1FN</b> (atomicidad, sin grupos repetitivos): los tres grupos multivaluados nuevos pasan a tablas propias: <code>dispositivos_push</code> de Usuario → <code>Dispositivo_Push</code>; <code>areas_soporte</code> de Usuario → <code>Area_Soporte_Operador</code>; <code>comunas_atencion</code> de Profesional → <code>Profesional_Comuna</code>. Las demás tablas nuevas ya llegan atómicas (banderas, etiquetas y datos se guardan como JSON, igual que respuestas y privacidad_contacto en el anexo actual).</li>
   <li><b>2FN</b> (sin dependencias parciales): las tablas nuevas con clave compuesta (<code>Area_Soporte_Operador</code>, <code>Profesional_Comuna</code>) no tienen atributos fuera de la clave, así que no hay nada que separar. Igual que en el anexo del Incremento 2, la 2FN queda idéntica a la 1FN.</li>
-  <li><b>3FN</b> (sin dependencias transitivas): <code>Reporte_Preclinico</code> guarda <code>especialidad_sugerida_id</code> y no el nombre de la especialidad; <code>Alerta_Clinica</code> referencia <code>reporte_sintoma_id</code> en vez de repetir dolor y limitación; <code>Liquidacion.monto_total</code> es derivado (prestaciones + bonificación) pero se conserva a propósito porque la liquidación es una foto inalterable del cálculo del momento (misma razón por la que Bono guarda copago). Además se repone <code>Parametro_Global</code>, que en el anexo del Incremento 2 aparece en 1FN y 2FN pero falta en la 3FN.</li>
+  <li><b>3FN</b> (sin dependencias transitivas): <code>Reporte_Preclinico</code> guarda <code>especialidad_sugerida_id</code> y no el nombre de la especialidad; <code>Alerta_Clinica</code> referencia <code>reporte_sintoma_id</code> en vez de repetir dolor y limitación; <code>Liquidacion.monto_total</code> es derivado (prestaciones + bonificación) pero se conserva a propósito porque la liquidación es una foto inalterable del cálculo del momento (misma razón por la que Bono guarda copago).</li>
 </ul>
 <h4>Primera Forma Normal</h4>
 {lista_relacional(FN1)}
@@ -815,7 +815,6 @@ u.fk {{ text-decoration:underline dashed; text-decoration-thickness:1.5px; text-
 <h3 id="nombres">Diferencias de nombres, omisiones y erratas</h3>
 <ul>
   <li>Se mantienen las diferencias de nombre ya reportadas en el Incremento 2 (el documento escribe <code>nombre_comuna</code>, <code>contraseña_hash</code> y <code>reseña</code>; el esquema físico usa <code>Comuna.nombre</code>, <code>contrasena_hash</code> y <code>resena</code>). Da lo mismo cuál se adopte, pero conviene que MR, normalización y modelo físico usen el mismo.</li>
-  <li>El anexo del Incremento 2 omite <code>Parametro_Global</code> en la 3FN (está en 1FN y 2FN). Se repone en la lista de arriba.</li>
   <li><code>schema.sql</code> tenía una clave foránea pegada por error en <code>Solicitud_Confirmacion</code> (a <code>moderador_id</code>, columna de Evaluacion_Satisfaccion). Producción no la sufrió porque la tabla la crea la migración; ya está corregida en el código (commit <code>4e01994b</code>). No afecta a los documentos.</li>
   <li><b>Subrayados de las claves.</b> En los Word entregados (Incremento 1 e Incremento 2) el MR y la 1FN, 2FN y 3FN están como texto sin subrayar: ninguna clave aparece marcada. Las listas de este reporte ya las traen (primaria continua, foránea discontinua) y se pueden copiar tal cual; al pegarlas en Word, conviene usar subrayado simple para la primaria y subrayado de guiones para la foránea.</li>
   <li><code>Sede_Horario</code>: en <code>schema.sql</code> su clave primaria es solo <code>sede_id</code>, lo que permitiría un único horario por sede. En la normalización la clave correcta es la pareja (<code>sede_id</code>, <code>dia_semana</code>), y así se marca arriba. Viene del Incremento 2 y no afecta a la app (las sedes no tienen pantalla que edite su horario).</li>
