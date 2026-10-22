@@ -6,9 +6,9 @@
 > app andando. Son tres pasos: clonar, crear un archivo `.env` con la dirección
 > del servidor, y `npx expo start -c`.
 >
-> Esta guía de abajo sirve si necesitas montar **todo el entorno local**
-> (backend + base de datos en tu propio computador), por ejemplo para
-> desarrollar el servidor.
+> Para montar **todo el entorno local** (servidor + base de datos en tu propio
+> computador) sigue la [**Guía local**](GUIA-LOCAL.md): está paso a paso y
+> en lenguaje simple. La guía de abajo es la versión detallada original.
 
 Esta guía detalla los pasos necesarios para instalar, configurar y ejecutar el entorno de desarrollo local de la aplicación Punto Paz Salud (Vista y Controlador).
 
