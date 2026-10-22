@@ -26,6 +26,7 @@ import GestionDisponibilidadScreen from '../screens/Profesional/GestionDisponibi
 import FichaClinicaScreen from '../screens/Profesional/FichaClinica/FichaClinicaScreen';
 import MisHorariosScreen from '../screens/Profesional/MisHorariosScreen';
 import MisLiquidacionesScreen from '../screens/Profesional/MisLiquidacionesScreen';
+import InformeAltaScreen from '../screens/Profesional/InformeAltaScreen';
 // Pantallas — Administrador
 import ParametrosScreen from '../screens/Admin/ParametrosScreen';
 import SesionesSuspendidasScreen from '../screens/Admin/SesionesSuspendidasScreen';
@@ -209,6 +210,8 @@ export default function AppNavigator() {
             />
             {/* Ficha clínica consolidada: historial, anamnesis, episodios, evolución e intervención */}
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
+            {/* CU37: informe de alta y cierre del episodio, desde la pestaña Episodios */}
+            <Stack.Screen name="InformeAlta" component={InformeAltaScreen} options={{ title: 'Informe de alta' }} />
             <Stack.Screen
               name="GestionDisponibilidad"
               component={GestionDisponibilidadScreen}

@@ -46,6 +46,8 @@ const TIPOS = {
   ALERTA_DETERIORO:       { titulo: 'Bandera roja de un paciente',  pantalla: 'DashboardProfesional' },
   SESION_SUSPENDIDA:      { titulo: 'Sesión derivada a revisión',    pantalla: 'SesionesSuspendidas' },
   PAUTA_ASIGNADA:         { titulo: 'Tienes ejercicios nuevos',      pantalla: 'MisPautas' },
+  PREPARACION_ALTA:       { titulo: 'Preparación para el alta',      pantalla: 'PreparacionAlta' },
+  ALTA_EMITIDA:           { titulo: 'Tu informe de alta está listo', pantalla: 'Documentos' },
 };
 
 /** Datos de contacto y preferencias del destinatario, en una sola consulta. */

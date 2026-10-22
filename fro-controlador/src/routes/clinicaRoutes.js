@@ -5,6 +5,7 @@ const { verifyToken } = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const { auditarAccesoClinico } = require('../middlewares/auditarAcceso');
 const episodioController = require('../controllers/clinico/episodioController');
+const altaController = require('../controllers/clinico/altaController');
 const fichaClinicaController = require('../controllers/clinico/fichaClinicaController');
 //  CU32: Objetivos terapéuticos y avance 
 const objetivoController = require('../controllers/clinico/objetivoController');
@@ -63,6 +64,22 @@ router.post('/episodio/:episodio_id/objetivos',
 router.put('/episodio/:episodio_id/avance',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']),
     evolucionController.actualizarAvance
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU51 / CU37 — Preparación para el alta e informe de alta
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/mi-alta',
+    verifyToken, authorizeRoles(['Paciente']),
+    altaController.miAlta
+);
+router.get('/episodio/:episodio_id/informe-alta',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']), auditarAccesoClinico,
+    altaController.resumenInformeAlta
+);
+router.post('/episodio/:episodio_id/informe-alta',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']), auditarAccesoClinico,
+    altaController.emitirInformeAlta
 );
 
 // ─────────────────────────────────────────────────────────────────────────────

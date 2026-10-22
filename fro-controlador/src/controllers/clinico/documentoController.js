@@ -19,6 +19,7 @@ const CATEGORIAS = [
   { clave: 'INFORME_MEDICO', nombre: 'Informe médico externo' },
   { clave: 'RECETA', nombre: 'Receta o indicación' },
   { clave: 'CONSENTIMIENTO', nombre: 'Consentimiento firmado' },
+  { clave: 'INFORME_ALTA', nombre: 'Informe de alta' },
   { clave: 'OTRO', nombre: 'Otro documento clínico' },
   { clave: 'SIN_CLASIFICAR', nombre: 'Sin clasificar' },
 ];

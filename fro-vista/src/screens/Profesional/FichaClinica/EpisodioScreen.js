@@ -118,27 +118,10 @@ export default function EpisodioScreen({ route, navigation }) {
     }
   };
 
-  // ─ CIERRE (D12 / CU78): PUT /api/clinica/episodio/:id { estado: 'CERRADO' }
-  // Un episodio cerrado deja de admitir sesiones, metas, pautas y documentos.
-  const [cerrando, setCerrando] = useState(false);
+  // ─ CIERRE (CU37 / CU78): el cierre vive en la pantalla Informe de alta,
+  // que valida evoluciones sin firmar y citas futuras, emite el PDF o cierra
+  // sin informe. Un episodio cerrado deja de admitir registros.
   const episodioCerrado = String(episodio?.estado || '').toUpperCase() === 'CERRADO';
-
-  const cerrarEpisodio = async () => {
-    setCerrando(true);
-    try {
-      const { data } = await apiClient.put(`/clinica/episodio/${episodio.episodio_clinico_id}`, {
-        estado: 'CERRADO',
-      });
-      setEpisodio({ ...episodio, estado: 'CERRADO' });
-      if (onEpisodiosCambiaron) onEpisodiosCambiaron();
-      setAviso({ tono: 'ok', titulo: 'Episodio cerrado', mensaje: data.mensaje });
-    } catch (error) {
-      const err = error.response?.data;
-      setAviso({ tono: 'error', titulo: 'No se pudo cerrar', mensaje: err?.mensaje || err?.error || 'Intenta nuevamente.' });
-    } finally {
-      setCerrando(false);
-    }
-  };
 
   // ─ CREACIÓN: POST /api/clinica/episodio ──────────────────────────────────
   // Dispara: CREACION_EPISODIO_CLINICO en Bitacora_Auditoria
@@ -245,17 +228,15 @@ export default function EpisodioScreen({ route, navigation }) {
                   <TouchableOpacity
                     style={styles.botonCerrar}
                     onPress={() =>
-                      setConfirmacion({
-                        titulo: 'Cerrar episodio',
-                        mensaje: `El episodio #${episodio.episodio_clinico_id} quedará cerrado y no admitirá nuevos registros clínicos. ¿Confirmas el cierre?`,
-                        etiqueta: 'Cerrar episodio',
-                        accion: cerrarEpisodio,
+                      navigation.navigate('InformeAlta', {
+                        episodioId: episodio.episodio_clinico_id,
+                        pacienteId,
+                        nombrePaciente,
                       })
                     }
-                    disabled={cerrando}
                   >
                     <Text style={styles.botonCerrarTexto}>
-                      {cerrando ? 'Cerrando…' : '🔒 Cerrar episodio (alta del tratamiento)'}
+                      📄 Informe de alta y cierre del episodio
                     </Text>
                   </TouchableOpacity>
                 </>

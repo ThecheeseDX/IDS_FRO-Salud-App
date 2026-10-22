@@ -32,6 +32,7 @@ export const PESTANA_DE_TRATAMIENTO = {
   MisPautas: 'ejercicios',
   MiSeguimiento: 'seguimiento',
   Triaje: 'entrevista',
+  PreparacionAlta: 'alta',
 };
 
 // La barra ya está abierta debajo de cualquier otra pantalla: hay que volver

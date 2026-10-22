@@ -309,6 +309,24 @@ export const getMiDerivacion = async () => {
   return response.data;
 };
 
+// CU51: avance hacia el umbral de egreso, contenidos de prevención e informe de alta.
+export const getMiAlta = async () => {
+  const response = await apiClient.get('/clinica/mi-alta');
+  return response.data;
+};
+
+// CU37: resumen del episodio antes de emitir el alta, y la emisión.
+export const getInformeAlta = async (episodioId) => {
+  const response = await apiClient.get(`/clinica/episodio/${episodioId}/informe-alta`);
+  return response.data;
+};
+export const emitirInformeAlta = async (episodioId, pautasContinuidad) => {
+  const response = await apiClient.post(`/clinica/episodio/${episodioId}/informe-alta`, {
+    pautas_continuidad: pautasContinuidad,
+  });
+  return response.data;
+};
+
 export const enviarReporteSintomas = async (payload) => {
   const response = await apiClient.post('/clinica/sintomas', payload);
   return response.data;

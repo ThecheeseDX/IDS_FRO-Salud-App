@@ -5,6 +5,7 @@ const {
   rechazarSiAjeno,
   porcentajeObjetivosEpisodio,
 } = require('../../services/clinico/episodioService');
+const { evaluarPreparacionAlta } = require('../../services/clinico/altaService');
 
 // CU32
 
@@ -120,6 +121,17 @@ exports.actualizarAvance = async (req, res) => {
 
     await connection.commit();
 
+    // CU51: con la meta actualizada, ¿el paciente ya alcanzó el umbral de
+    // egreso? Si falla, el avance ya quedó guardado: no se revierte.
+    let preparacionAlta = null;
+    try {
+      preparacionAlta = await evaluarPreparacionAlta(pool, episodioId, {
+        registrar: true, usuarioId: usuario_id, ip: obtenerIP(req),
+      });
+    } catch (errorAlta) {
+      console.error('[actualizarAvance] evaluación del alta:', errorAlta.message);
+    }
+
     // Porcentaje calculado para el panel gráfico (la Excepción 4 se maneja en frontend)
     const porcentaje = metaValor > 0 ? Math.round((nuevoValor / metaValor) * 100) : 0;
 
@@ -129,7 +141,11 @@ exports.actualizarAvance = async (req, res) => {
       valor_actual: nuevoValor,
       meta_valor: metaValor,
       porcentaje_cumplimiento: porcentaje,
-      porcentaje_episodio: porcentajeEpisodio
+      porcentaje_episodio: porcentajeEpisodio,
+      // CU51: para que la pantalla avise cuando se habilita la preparación.
+      umbral_egreso: preparacionAlta?.umbral ?? null,
+      preparacion_alta_habilitada: Boolean(preparacionAlta?.habilitada),
+      preparacion_alta_recien_habilitada: Boolean(preparacionAlta?.recien_habilitada),
     });
 
   } catch (error) {

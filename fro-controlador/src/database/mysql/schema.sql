@@ -389,6 +389,12 @@ CREATE TABLE Episodio_Clinico (
     fecha_terminado TIMESTAMP NULL DEFAULT NULL,
     -- CU78: ABIERTO admite nuevos registros; CERRADO los rechaza (D12).
     estado VARCHAR(255) DEFAULT 'ABIERTO',
+    -- CU51: momento en que el paciente alcanzó el umbral de egreso.
+    preparacion_alta_en TIMESTAMP NULL DEFAULT NULL,
+    -- CU37: informe de alta (PDF en Documento_Clinico) y pautas de continuidad.
+    pautas_continuidad TEXT NULL,
+    informe_alta_documento_id INT NULL,
+    informe_alta_emitido_en TIMESTAMP NULL DEFAULT NULL,
     paciente_id INT,
     profesional_id INT,
     FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
@@ -502,7 +508,10 @@ CREATE TABLE Material_Terapeutico(
     url_archivo VARCHAR(255),
     categoria VARCHAR(50) NOT NULL,
     formato VARCHAR(20) NOT NULL,
-    disponibilidad BOOLEAN NOT NULL DEFAULT TRUE
+    disponibilidad BOOLEAN NOT NULL DEFAULT TRUE,
+    -- CU51: TRATAMIENTO (se prescribe en pautas) o PREVENCION (post-alta).
+    proposito VARCHAR(20) NOT NULL DEFAULT 'TRATAMIENTO',
+    imagen_url VARCHAR(255) NULL
 );
 
 CREATE TABLE Pauta_Tratamiento(

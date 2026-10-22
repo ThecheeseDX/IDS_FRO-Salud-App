@@ -13,6 +13,7 @@ import MiProgresoScreen from './MiProgresoScreen';
 import MisPautasScreen from './MisPautasScreen';
 import MiSeguimientoScreen from './MiSeguimientoScreen';
 import TriajeScreen from './TriajeScreen';
+import PreparacionAltaScreen from './PreparacionAltaScreen';
 import { PESTANA_DE_TRATAMIENTO } from '../../navigation/rutasBarra';
 import { colores } from '../../theme';
 
@@ -21,7 +22,12 @@ const PESTANAS = [
   { key: 'ejercicios',  titulo: 'Mis ejercicios',    icono: '🏋️', Componente: MisPautasScreen },
   { key: 'seguimiento', titulo: 'Mi seguimiento',    icono: '📈', Componente: MiSeguimientoScreen },
   { key: 'entrevista',  titulo: 'Entrevista previa', icono: '🩺', Componente: TriajeScreen },
+  { key: 'alta',        titulo: 'Prevención y alta', icono: '🌱', Componente: PreparacionAltaScreen },
 ];
+
+// Pestañas de solo lectura: se vuelven a montar al abrirlas para mostrar lo
+// recién registrado (ejercicios marcados, metas actualizadas).
+const SE_RECARGAN = new Set(['progreso', 'alta']);
 
 export default function MiTratamientoScreen({ route, navigation }) {
   const pedida = route?.params?.pestana;
@@ -31,9 +37,7 @@ export default function MiTratamientoScreen({ route, navigation }) {
   // Las pestañas ya abiertas se mantienen montadas: la entrevista a medio
   // responder o el reporte a medio escribir no se pierden al cambiar.
   const [visitadas, setVisitadas] = useState(() => new Set(pedida ? [pedida] : []));
-  // "Mi progreso" solo muestra gráficos: se vuelve a montar cada vez que se
-  // abre, para que refleje el reporte o los ejercicios recién registrados.
-  const [vueltasProgreso, setVueltasProgreso] = useState(0);
+  const [vueltas, setVueltas] = useState({});
 
   // Si el paciente ya eligió una pestaña, la consulta inicial no la pisa.
   const yaEligio = useRef(Boolean(pedida));
@@ -42,7 +46,7 @@ export default function MiTratamientoScreen({ route, navigation }) {
     yaEligio.current = true;
     setTabActiva(key);
     setVisitadas((previas) => new Set(previas).add(key));
-    if (key === 'progreso') setVueltasProgreso((n) => n + 1);
+    if (SE_RECARGAN.has(key)) setVueltas((previas) => ({ ...previas, [key]: (previas[key] || 0) + 1 }));
   };
 
   useEffect(() => {
@@ -100,7 +104,7 @@ export default function MiTratamientoScreen({ route, navigation }) {
           const { Componente } = tab;
           return (
             <View
-              key={tab.key === 'progreso' ? `progreso-${vueltasProgreso}` : tab.key}
+              key={SE_RECARGAN.has(tab.key) ? `${tab.key}-${vueltas[tab.key] || 0}` : tab.key}
               style={activa ? styles.panelActivo : styles.panelOculto}
               pointerEvents={activa ? 'auto' : 'none'}
             >

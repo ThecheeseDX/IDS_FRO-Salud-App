@@ -1,5 +1,6 @@
 const pool = require('../../config/database');
 const { ESTADO_ABIERTO, ESTADO_CERRADO } = require('../../services/clinico/episodioService');
+const { resumenCierre, impedimentoDeCierre } = require('../../services/clinico/altaService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTROLADOR: Episodio Clínico
@@ -114,6 +115,14 @@ exports.actualizarEpisodio = async (req, res) => {
 
         // Cerrar fija la fecha de término si no viene explícita.
         const cierre = estado === ESTADO_CERRADO;
+
+        // CU37 (Exc. 2 y 4): tampoco el cierre sin informe deja evoluciones
+        // sin firmar ni citas futuras colgando del episodio.
+        if (cierre) {
+            const resumen = await resumenCierre(pool, episodio_id);
+            const impedimento = resumen && impedimentoDeCierre(resumen);
+            if (impedimento) return res.status(409).json(impedimento);
+        }
         // mysql2 rechaza los parámetros undefined: el cierre manda solo el
         // estado, así que el resto tiene que viajar como NULL explícito.
         const motivo = motivo_consulta ?? null;

@@ -1160,6 +1160,82 @@ const MIGRACIONES = [
       );
     },
   },
+  // ── Incremento 4 ──────────────────────────────────────────────────────────
+  {
+    nombre: 'Alta del tratamiento en Episodio_Clinico (CU51/CU37)',
+    descripcion: 'Preparación para el alta, pautas de continuidad e informe de alta del episodio',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Episodio_Clinico' AND COLUMN_NAME = 'preparacion_alta_en'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Episodio_Clinico
+           ADD COLUMN preparacion_alta_en TIMESTAMP NULL DEFAULT NULL,
+           ADD COLUMN pautas_continuidad TEXT NULL,
+           ADD COLUMN informe_alta_documento_id INT NULL,
+           ADD COLUMN informe_alta_emitido_en TIMESTAMP NULL DEFAULT NULL,
+           ADD CONSTRAINT fk_episodio_informe_alta FOREIGN KEY (informe_alta_documento_id) REFERENCES Documento_Clinico(documento_id)`
+      );
+    },
+  },
+  {
+    nombre: 'Material_Terapeutico.proposito e imagen (CU51)',
+    descripcion: 'Distingue el material de tratamiento del de prevención y mantenimiento post-alta',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Material_Terapeutico' AND COLUMN_NAME = 'proposito'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Material_Terapeutico
+           ADD COLUMN proposito VARCHAR(20) NOT NULL DEFAULT 'TRATAMIENTO',
+           ADD COLUMN imagen_url VARCHAR(255) NULL`
+      );
+    },
+  },
+  {
+    nombre: 'Catalogo de prevencion y mantenimiento (CU51)',
+    descripcion: 'Siembra los contenidos que se habilitan al alcanzar el umbral de egreso',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(`SELECT 1 FROM Material_Terapeutico WHERE proposito = 'PREVENCION' LIMIT 1`);
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Material_Terapeutico (nombre, tipo, url_archivo, categoria, formato, disponibilidad, proposito, imagen_url) VALUES
+         ('Rutina de mantenimiento articular', 'GUIA', 'https://biblioteca.frosalud.cl/mantenimiento-articular', 'Kinesiología', 'PDF', TRUE, 'PREVENCION', 'https://res.cloudinary.com/demo/image/upload/w_800/sample.jpg'),
+         ('Estiramientos para prevenir recaídas', 'VIDEO', 'https://biblioteca.frosalud.cl/estiramientos-prevencion', 'Kinesiología', 'MP4', TRUE, 'PREVENCION', NULL),
+         ('Higiene postural en el trabajo y el hogar', 'GUIA', 'https://biblioteca.frosalud.cl/higiene-postural', 'Kinesiología', 'PDF', TRUE, 'PREVENCION', NULL),
+         ('Ejercicios respiratorios de mantención', 'VIDEO', 'https://biblioteca.frosalud.cl/respiratorios-mantencion', 'Kinesiología Respiratoria', 'MP4', TRUE, 'PREVENCION', 'https://res.cloudinary.com/demo/image/upload/w_800/sample.jpg'),
+         ('Señales de alarma respiratoria: cuándo consultar', 'GUIA', 'https://biblioteca.frosalud.cl/alarma-respiratoria', 'Kinesiología Respiratoria', 'PDF', TRUE, 'PREVENCION', NULL),
+         ('Hábitos para mantener un peso saludable', 'GUIA', 'https://biblioteca.frosalud.cl/peso-saludable', 'Nutrición', 'PDF', TRUE, 'PREVENCION', NULL),
+         ('Lista de compras saludable', 'PLANTILLA', 'https://biblioteca.frosalud.cl/lista-compras', 'Nutrición', 'PDF', TRUE, 'PREVENCION', NULL)`
+      );
+    },
+  },
+  {
+    nombre: 'Parametro UMBRAL_EGRESO_CLINICO (CU51/CU37)',
+    descripcion: 'Porcentaje de cumplimiento de metas que habilita la preparación para el alta',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(`SELECT 1 FROM Parametro_Global WHERE clave = 'UMBRAL_EGRESO_CLINICO'`);
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('UMBRAL_EGRESO_CLINICO', '80', 'Porcentaje promedio de cumplimiento de las metas del episodio a partir del cual el paciente ve sus contenidos de prevención y el profesional puede emitir el informe de alta.', 1)`
+      );
+    },
+  },
 ];
 
 /**
