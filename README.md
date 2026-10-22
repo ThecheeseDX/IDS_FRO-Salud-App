@@ -78,18 +78,26 @@ JWT_SECRET=tu_clave # puede ser otra contraseña sin necesidad que sea la misma 
 ```
 ### Paso 2.3: Inicialización de la Base de Datos
 
-**Opción A (recomendada, sin instalar nada extra):** con el `.env` ya configurado,
+**Opción A (recomendada, un solo comando):** con MySQL instalado y encendido,
 ejecute dentro de `fro-controlador`:
 
 ```
-npm run db:importar
+npm run db:local
 ```
 
-Esto crea la base `fro_salud_db`, todas las tablas y los datos iniciales. Si su
-base ya existe y solo quiere cargar las tablas dentro de ella, agregue
-`-- --sin-crear-base` al final del comando.
+El script (`src/database/mysql/iniciar-db-local.js`, junto a `schema.sql`) hace
+todo solo: crea el `.env` si no existe y le pregunta el usuario y la contraseña
+de MySQL, crea la base `fro_salud_db`, carga `schema.sql` (tablas y datos
+iniciales), aplica las migraciones pendientes y verifica que todo quedó en
+orden. Se puede volver a ejecutar las veces que quiera: si la base ya existe no
+la toca. Para partir de cero: `npm run db:local -- --reiniciar`.
 
-**Opción B (manual):**
+**Opción B (solo el esquema):** con el `.env` ya configurado a mano,
+`npm run db:importar` carga únicamente `schema.sql` (las migraciones se aplican
+solas al arrancar el servidor). Si su base ya existe y solo quiere cargar las
+tablas dentro de ella, agregue `-- --sin-crear-base` al final del comando.
+
+**Opción C (manual):**
 
 1. Abra su gestor de bases de datos y conéctese a su servidor local (localhost).
 
