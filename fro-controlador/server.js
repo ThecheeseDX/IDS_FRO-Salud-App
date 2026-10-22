@@ -9,6 +9,17 @@ dotenv.config();
 // debe razonar en ese mismo huso, incluido el cambio de horario de verano.
 process.env.TZ = process.env.TZ || 'America/Santiago';
 
+// Sin esta clave el servidor arranca, pero todo inicio de sesión falla con
+// "secretOrPrivateKey must have a value". Mejor decirlo aquí, de entrada.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'xxxxxxxxxxxxxxx') {
+  console.error(
+    '❌ Falta JWT_SECRET en el archivo .env (la clave con que se firman las sesiones).\n' +
+    '   Agrega una línea como:  JWT_SECRET=una_clave_larga_cualquiera\n' +
+    '   o ejecuta  npm run db:local  para que la genere por ti.'
+  );
+  process.exit(1);
+}
+
 const app = require('./src/app');
 
 // Requerir la configuración de la base de datos para forzar la validación de conexión al arrancar

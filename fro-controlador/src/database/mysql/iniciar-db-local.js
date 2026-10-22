@@ -9,7 +9,8 @@
  * Qué hace, en orden:
  *   1. Si no existe el archivo .env, lo crea a partir de .env.example.
  *   2. Pregunta el usuario y la contraseña de MySQL si no están en el .env y
- *      los deja guardados ahí para la próxima vez.
+ *      los deja guardados ahí para la próxima vez. Si falta JWT_SECRET (clave
+ *      de sesión), la genera.
  *   3. Prueba la conexión al servidor MySQL local.
  *   4. Crea la base de datos (fro_salud_db) si no existe y carga schema.sql
  *      (tablas + datos iniciales). Si ya tiene tablas, no las toca; con
@@ -102,6 +103,13 @@ async function prepararEnv() {
   }
 
   const env = leerEnv();
+
+  // Un .env hecho a mano suele venir sin la clave de sesión: sin ella el
+  // servidor arranca pero ningún inicio de sesión funciona.
+  if (!env.JWT_SECRET || env.JWT_SECRET === 'xxxxxxxxxxxxxxx') {
+    guardarEnEnv('JWT_SECRET', require('crypto').randomBytes(48).toString('hex'));
+    console.log('   Faltaba JWT_SECRET (clave de sesión): se generó una y quedó guardada.');
+  }
 
   if (env.DATABASE_URL) {
     console.log(
