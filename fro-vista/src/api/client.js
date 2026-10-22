@@ -482,6 +482,16 @@ export const crearTicketSoporte = async ({ categoria, descripcion, adjunto }) =>
   return response.data;
 };
 
+// CU62: bandeja de eventos críticos (administrador) y acuse de recibo.
+export const getEventosCriticos = async (estado = 'PENDIENTE') => {
+  const response = await apiClient.get('/gestion/eventos-criticos', { params: { estado } });
+  return response.data;
+};
+export const acusarEventoCritico = async (eventoId) => {
+  const response = await apiClient.post(`/gestion/eventos-criticos/${eventoId}/acuse`);
+  return response.data;
+};
+
 export const getBandejaSoporte = async ({ estado = '', soloMios = false } = {}) => {
   const response = await apiClient.get('/soporte/bandeja', {
     params: { estado, solo_mios: soloMios ? 1 : 0 },

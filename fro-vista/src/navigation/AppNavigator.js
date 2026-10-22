@@ -34,6 +34,7 @@ import PalabrasRestringidasScreen from '../screens/Admin/PalabrasRestringidasScr
 import ModeracionResenasScreen from '../screens/Admin/ModeracionResenasScreen';
 import PanelAdminScreen from '../screens/Admin/PanelAdminScreen';
 import BandejaSoporteScreen from '../screens/Admin/BandejaSoporteScreen';
+import EventosCriticosScreen from '../screens/Admin/EventosCriticosScreen';
 import ReportesScreen from '../screens/Admin/ReportesScreen';
 import LiquidacionesScreen from '../screens/Admin/LiquidacionesScreen';
 // Pantallas — Comunes a los tres roles
@@ -266,6 +267,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Parametros" component={ParametrosScreen} options={{ title: 'Parámetros Globales' }} />
             {/* CU61: bandeja de tickets enrutados al operador */}
             <Stack.Screen name="BandejaSoporte" component={BandejaSoporteScreen} options={{ title: 'Soporte' }} />
+            {/* CU62: eventos críticos escalados a supervisión */}
+            <Stack.Screen name="EventosCriticos" component={EventosCriticosScreen} options={{ title: 'Eventos críticos' }} />
             {/* CU63: informes operativos exportables */}
             <Stack.Screen name="Reportes" component={ReportesScreen} options={{ title: 'Informes' }} />
             {/* CU75: liquidación mensual de los profesionales */}

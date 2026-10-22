@@ -8,6 +8,7 @@
  */
 
 const pool = require('../../config/database');
+const { escalar } = require('../../services/clinico/escalamientoService');
 const {
   analizarTriaje,
   resolverDerivacion,
@@ -358,6 +359,14 @@ exports.registrarSintomas = async (req, res) => {
     }
 
     await conexion.commit();
+
+    // CU62: el comentario libre puede traer términos críticos → escalamiento.
+    if (comentario) {
+      escalar(pool, {
+        texto: comentario, origen: 'SINTOMAS', entidad: 'Reporte_Sintoma', entidadId: creado.insertId,
+        usuarioOrigenId: req.user.usuario_id, pacienteId,
+      }).catch(() => {});
+    }
 
     return res.status(201).json({
       mensaje: evaluacion.critico

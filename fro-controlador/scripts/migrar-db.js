@@ -1236,6 +1236,80 @@ const MIGRACIONES = [
       );
     },
   },
+  {
+    nombre: 'Preferencia_Notificacion.refuerzos (CU54)',
+    descripcion: 'El paciente activa o desactiva los mensajes de refuerzo positivo',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Preferencia_Notificacion' AND COLUMN_NAME = 'refuerzos'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Preferencia_Notificacion ADD COLUMN refuerzos BOOLEAN NOT NULL DEFAULT TRUE`
+      );
+    },
+  },
+  {
+    nombre: 'Tabla Evento_Critico (CU62)',
+    descripcion: 'Eventos escalados a supervisión por términos críticos, con acuse de recibo',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Evento_Critico'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `CREATE TABLE Evento_Critico (
+           evento_critico_id INT PRIMARY KEY AUTO_INCREMENT,
+           origen VARCHAR(20) NOT NULL,
+           entidad VARCHAR(50) NOT NULL,
+           entidad_id INT NULL,
+           termino VARCHAR(80) NOT NULL,
+           terminos JSON NULL,
+           extracto VARCHAR(300) NULL,
+           estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+           momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+           momento_acuse TIMESTAMP NULL DEFAULT NULL,
+           usuario_origen_id INT NULL,
+           paciente_id INT NULL,
+           acusado_por INT NULL,
+           FOREIGN KEY (usuario_origen_id) REFERENCES Usuario(usuario_id),
+           FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+           FOREIGN KEY (acusado_por) REFERENCES Usuario(usuario_id),
+           INDEX idx_evento_critico_estado (estado, momento_creacion)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Terminos criticos del diccionario (CU62)',
+    descripcion: 'Categoría CRITICO: no bloquea el texto, lo escala a supervisión',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(`SELECT 1 FROM Palabra_Restringida WHERE categoria = 'CRITICO' LIMIT 1`);
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT IGNORE INTO Palabra_Restringida (termino, categoria, administrador_id) VALUES
+         ('suicidarme', 'CRITICO', 1),
+         ('matarme', 'CRITICO', 1),
+         ('quitarme la vida', 'CRITICO', 1),
+         ('no quiero vivir', 'CRITICO', 1),
+         ('me quiero morir', 'CRITICO', 1),
+         ('dolor en el pecho', 'CRITICO', 1),
+         ('no puedo respirar', 'CRITICO', 1),
+         ('me desmaye', 'CRITICO', 1),
+         ('sangrado', 'CRITICO', 1),
+         ('emergencia', 'CRITICO', 1)`
+      );
+    },
+  },
 ];
 
 /**

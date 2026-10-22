@@ -208,6 +208,18 @@ export default function PanelAdminScreen({ navigation }) {
       <View style={estilos.tarjeta}>
         <Text style={estilos.tituloTarjeta}>Pendientes de gestión</Text>
 
+        {/* CU62: lo más urgente va primero. */}
+        <TouchableOpacity
+          style={estilos.pendiente}
+          onPress={() => navigation.navigate('EventosCriticos')}
+          activeOpacity={interaccion.opacidadActiva}
+        >
+          <Text style={estilos.pendienteTexto}>🚨 Eventos críticos por acusar</Text>
+          <Text style={[estilos.pendienteNumero, (datos?.operacion?.eventos_criticos_pendientes ?? 0) > 0 && estilos.pendienteUrgente]}>
+            {datos?.operacion?.eventos_criticos_pendientes ?? 0}
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={estilos.pendiente}
           onPress={() => navigation.navigate('BandejaSoporte')}
@@ -280,7 +292,8 @@ export default function PanelAdminScreen({ navigation }) {
         { titulo: 'Informes operativos', icono: '📊', destino: 'Reportes', sub: 'Asistencia, recaudación y adherencia, exportables.' },
         { titulo: 'Parámetros globales', icono: '⚙️', destino: 'Parametros', sub: 'Plazos, umbrales, aranceles y disponibilidad.' },
         { titulo: 'Moderar testimonios', icono: '📝', destino: 'ModeracionResenas', sub: 'Qué comentarios se publican en los perfiles.' },
-        { titulo: 'Términos restringidos', icono: '🚫', destino: 'PalabrasRestringidas', sub: 'Diccionario que filtra el chat y las reseñas.' },
+        { titulo: 'Eventos críticos', icono: '🚨', destino: 'EventosCriticos', sub: 'Textos escalados por términos críticos, con acuse de recibo.' },
+        { titulo: 'Términos restringidos', icono: '🚫', destino: 'PalabrasRestringidas', sub: 'Diccionario que filtra el chat y las reseñas, y escala los términos críticos.' },
         { titulo: 'Seguridad de la cuenta', icono: '🔐', destino: 'Seguridad', sub: 'Contraseña y sesiones activas.' },
       ].map((h) => (
         <TouchableOpacity
@@ -365,6 +378,7 @@ const estilos = StyleSheet.create({
   },
   pendienteTexto: { ...tipografia.meta, color: colores.texto },
   pendienteNumero: { ...tipografia.cuerpoFuerte, color: colores.primario },
+  pendienteUrgente: { color: colores.error },
 
   seccion: { ...tipografia.subtitulo, color: colores.textoTitulo, marginTop: espacio.lg, marginBottom: espacio.md },
   herramienta: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginBottom: espacio.md },

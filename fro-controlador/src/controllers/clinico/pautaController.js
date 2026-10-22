@@ -8,7 +8,8 @@
 
 const pool = require('../../config/database');
 const { estaCerrado } = require('../../services/clinico/episodioService');
-const { actualizarIndicador } = require('../../services/clinico/adherenciaService');
+const { actualizarIndicador, ultimoIndicador } = require('../../services/clinico/adherenciaService');
+const { evaluarRefuerzo } = require('../../services/clinico/refuerzoService');
 
 const FRECUENCIAS_VALIDAS = ['DIARIA', 'SEMANAL'];
 
@@ -416,12 +417,24 @@ exports.marcarCumplimiento = async (req, res) => {
 
     // CU44: marcar una tarea mueve el índice de adherencia. Se recalcula acá
     // mismo para que el panel de progreso muestre el dato al instante.
+    const anterior = await ultimoIndicador(pool, ejercicio.paciente_id);
     const adherencia = await actualizarIndicador(pool, ejercicio.paciente_id);
+
+    // CU54: si el índice subió, un mensaje de ánimo (máximo uno al día). Una
+    // marca repetida (Exc. 1) no cuenta: affectedRows es 0.
+    let refuerzo = null;
+    if (resultado.affectedRows > 0) {
+      refuerzo = await evaluarRefuerzo(pool, {
+        pacienteId: ejercicio.paciente_id, usuarioId: req.user.usuario_id,
+        anterior: anterior?.porcentaje ?? null, actual: adherencia?.porcentaje ?? null,
+      });
+    }
 
     return res.status(200).json({
       mensaje: resultado.affectedRows > 0 ? '¡Ejercicio registrado!' : 'Ya estaba registrado hoy.',
       cumplido_hoy: true,
       adherencia: adherencia?.porcentaje ?? null,
+      refuerzo: refuerzo?.enviado ? refuerzo.mensaje : null,
     });
   } catch (error) {
     console.error('[marcarCumplimiento]', error);

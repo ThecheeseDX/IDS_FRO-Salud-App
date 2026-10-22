@@ -24,7 +24,8 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import ErrorRetry from '../../components/ErrorRetry';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
 
-const CATEGORIAS = ['GENERAL', 'OFENSA', 'DESCALIFICACION', 'DATOS_SENSIBLES'];
+// CU62: CRITICO no bloquea el texto; lo escala a la bandeja de eventos críticos.
+const CATEGORIAS = ['GENERAL', 'OFENSA', 'DESCALIFICACION', 'DATOS_SENSIBLES', 'CRITICO'];
 
 export default function PalabrasRestringidasScreen() {
   const [palabras, setPalabras] = useState([]);
@@ -165,6 +166,13 @@ export default function PalabrasRestringidasScreen() {
           ))}
         </View>
 
+        {categoria === 'CRITICO' && (
+          <Text style={estilos.ayudaCritico}>
+            Los términos críticos no bloquean el mensaje: se guardan igual y el caso se escala a la bandeja de
+            Eventos críticos, avisando a los administradores con sesión activa.
+          </Text>
+        )}
+
         <TouchableOpacity
           style={[estilos.boton, guardando && estilos.deshabilitado]}
           onPress={agregar}
@@ -237,6 +245,7 @@ const estilos = StyleSheet.create({
   etiqueta: { ...piezas.etiqueta },
   campo: { ...piezas.campo },
   ayuda: { ...tipografia.meta, color: colores.textoTenue, marginTop: espacio.md },
+  ayudaCritico: { ...tipografia.meta, color: colores.error, marginTop: espacio.sm },
 
   filaCategorias: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.sm, marginTop: espacio.md },
   categoria: {

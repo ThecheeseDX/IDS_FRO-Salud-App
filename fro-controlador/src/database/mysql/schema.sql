@@ -51,8 +51,31 @@ CREATE TABLE Preferencia_Notificacion (
     usuario_id INT PRIMARY KEY,
     canal_push BOOLEAN NOT NULL DEFAULT TRUE,
     canal_email BOOLEAN NOT NULL DEFAULT TRUE,
+    -- CU54: mensajes de refuerzo positivo por los ejercicios.
+    refuerzos BOOLEAN NOT NULL DEFAULT TRUE,
     ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
+
+-- CU62: eventos escalados a supervisión por términos críticos del diccionario.
+CREATE TABLE Evento_Critico (
+    evento_critico_id INT PRIMARY KEY AUTO_INCREMENT,
+    origen VARCHAR(20) NOT NULL,           -- CHAT, SINTOMAS, RESENA, TICKET
+    entidad VARCHAR(50) NOT NULL,
+    entidad_id INT NULL,
+    termino VARCHAR(80) NOT NULL,
+    terminos JSON NULL,
+    extracto VARCHAR(300) NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',   -- PENDIENTE, ACUSADO
+    momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    momento_acuse TIMESTAMP NULL DEFAULT NULL,
+    usuario_origen_id INT NULL,
+    paciente_id INT NULL,
+    acusado_por INT NULL,
+    FOREIGN KEY (usuario_origen_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+    FOREIGN KEY (acusado_por) REFERENCES Usuario(usuario_id),
+    INDEX idx_evento_critico_estado (estado, momento_creacion)
 );
 
 -- CU52: tokens de notificación push del usuario, uno por dispositivo.

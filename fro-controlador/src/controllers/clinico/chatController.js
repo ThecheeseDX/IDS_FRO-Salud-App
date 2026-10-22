@@ -16,6 +16,7 @@
 const pool = require('../../config/database');
 const { cifrar, descifrar } = require('../../services/clinico/cifradoService');
 const { revisar } = require('../../services/clinico/filtroContenidoService');
+const { escalar } = require('../../services/clinico/escalamientoService');
 const { notificarUsuario } = require('../../services/agenda/agendaService');
 const { estaCerrado } = require('../../services/clinico/episodioService');
 
@@ -274,6 +275,12 @@ exports.enviarMensaje = async (req, res) => {
        VALUES (?, ?, ?)`,
       [cifrar(contenido.trim()), req.user.usuario_id, episodio_id]
     );
+
+    // CU62: un término crítico no bloquea el mensaje, pero escala al administrador.
+    escalar(pool, {
+      texto: contenido, origen: 'CHAT', entidad: 'Mensaje_Chat', entidadId: resultado.insertId,
+      usuarioOrigenId: req.user.usuario_id, pacienteId: contexto.paciente_id,
+    }).catch(() => {});
 
     // Aviso a la otra parte por los canales del CU52.
     const destinatario =

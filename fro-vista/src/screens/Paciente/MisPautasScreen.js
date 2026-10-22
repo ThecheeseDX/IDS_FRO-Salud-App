@@ -100,6 +100,8 @@ export default function MisPautasScreen() {
         : await apiClient.post(`/clinica/pautas/ejercicios/${ejercicio.pauta_ejercicio_id}/cumplimiento`);
       if (data?.adherencia !== null && data?.adherencia !== undefined) {
         setAdherencia(data.adherencia);
+        // CU54: el refuerzo también se muestra al instante, además de llegar a la campana.
+        if (data.refuerzo) setAviso({ tono: 'ok', titulo: '¡Sigue así!', mensaje: data.refuerzo });
       }
       await cargarPautas(true);
     } catch (err) {

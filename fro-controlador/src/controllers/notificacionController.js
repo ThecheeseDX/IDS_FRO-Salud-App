@@ -87,6 +87,17 @@ exports.marcarLeida = async (req, res) => {
     if (resultado.affectedRows === 0) {
       return res.status(404).json({ error: 'NOTIFICACION_NO_ENCONTRADA' });
     }
+    // CU54 (paso 4): la lectura del refuerzo queda en el registro de telemetría.
+    const [[aviso]] = await pool.query(
+      `SELECT tipo FROM Notificacion WHERE notificacion_id = ? LIMIT 1`, [req.params.id]
+    );
+    if (aviso?.tipo === 'REFUERZO_POSITIVO') {
+      await pool.query(
+        `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
+         VALUES ('REFUERZO_POSITIVO_LEIDO', 'Notificacion', ?, ?, ?)`,
+        [req.ip || null, JSON.stringify({ notificacion_id: Number(req.params.id) }), req.user.usuario_id]
+      ).catch(() => {});
+    }
     return res.status(200).json({ mensaje: 'Aviso marcado como leído.' });
   } catch (error) {
     console.error('[marcarLeida]', error);
@@ -112,13 +123,15 @@ exports.marcarTodasLeidas = async (req, res) => {
 exports.obtenerPreferencias = async (req, res) => {
   try {
     const [[fila]] = await pool.query(
-      `SELECT canal_push, canal_email FROM Preferencia_Notificacion WHERE usuario_id = ? LIMIT 1`,
+      `SELECT canal_push, canal_email, refuerzos FROM Preferencia_Notificacion WHERE usuario_id = ? LIMIT 1`,
       [req.user.usuario_id]
     );
     return res.status(200).json({
       // Sin fila guardada, todo activo: es el comportamiento por defecto.
       canal_push: fila ? Boolean(fila.canal_push) : true,
       canal_email: fila ? Boolean(fila.canal_email) : true,
+      // CU54: mensajes de ánimo por los ejercicios.
+      refuerzos: fila ? Boolean(fila.refuerzos) : true,
     });
   } catch (error) {
     console.error('[obtenerPreferencias]', error);
@@ -126,17 +139,19 @@ exports.obtenerPreferencias = async (req, res) => {
   }
 };
 
-/** PUT /api/notificaciones/preferencias  { canal_push, canal_email } */
+/** PUT /api/notificaciones/preferencias  { canal_push, canal_email, refuerzos } */
 exports.guardarPreferencias = async (req, res) => {
   const push = req.body?.canal_push !== false;
   const email = req.body?.canal_email !== false;
+  const refuerzos = req.body?.refuerzos !== false;
 
   try {
     await pool.query(
-      `INSERT INTO Preferencia_Notificacion (usuario_id, canal_push, canal_email)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE canal_push = VALUES(canal_push), canal_email = VALUES(canal_email)`,
-      [req.user.usuario_id, push, email]
+      `INSERT INTO Preferencia_Notificacion (usuario_id, canal_push, canal_email, refuerzos)
+       VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE canal_push = VALUES(canal_push), canal_email = VALUES(canal_email),
+                               refuerzos = VALUES(refuerzos)`,
+      [req.user.usuario_id, push, email, refuerzos]
     );
 
     await pool
@@ -144,7 +159,7 @@ exports.guardarPreferencias = async (req, res) => {
         `INSERT INTO Bitacora_Auditoria
             (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
          VALUES ('CAMBIO_PREFERENCIA_NOTIFICACION', 'Preferencia_Notificacion', ?, ?, ?)`,
-        [req.ip || null, JSON.stringify({ canal_push: push, canal_email: email }), req.user.usuario_id]
+        [req.ip || null, JSON.stringify({ canal_push: push, canal_email: email, refuerzos }), req.user.usuario_id]
       )
       .catch(() => {});
 
@@ -152,6 +167,7 @@ exports.guardarPreferencias = async (req, res) => {
       mensaje: 'Preferencias guardadas.',
       canal_push: push,
       canal_email: email,
+      refuerzos,
     });
   } catch (error) {
     console.error('[guardarPreferencias]', error);

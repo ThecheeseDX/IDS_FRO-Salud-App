@@ -9,7 +9,7 @@
 // Al tocar un aviso se marca como leído y se salta a la pantalla que
 // corresponde (Excepción 3 y 4 del CU: la redirección profunda al módulo).
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, RefreshControl, Switch,
   ActivityIndicator, StyleSheet,
@@ -22,6 +22,7 @@ import {
   getPreferenciasNotificacion,
   guardarPreferenciasNotificacion,
 } from '../../api/client';
+import { AuthContext } from '../../context/AuthContext';
 import ErrorRetry from '../../components/ErrorRetry';
 import DialogoAviso from '../../components/DialogoAviso';
 import { registrarPush } from '../../utils/push';
@@ -49,7 +50,8 @@ export default function CentroNotificacionesScreen({ navigation }) {
   const [aviso, setAviso] = useState(null);
 
   const [verAjustes, setVerAjustes] = useState(false);
-  const [preferencias, setPreferencias] = useState({ canal_push: true, canal_email: true });
+  const [preferencias, setPreferencias] = useState({ canal_push: true, canal_email: true, refuerzos: true });
+  const { userData } = useContext(AuthContext);
   const [guardando, setGuardando] = useState(false);
 
   const cargar = useCallback(async (esRefresco = false) => {
@@ -206,6 +208,25 @@ export default function CentroNotificacionesScreen({ navigation }) {
               thumbColor={preferencias.canal_email ? colores.primario : colores.superficie}
             />
           </View>
+
+          {/* CU54: solo el paciente recibe mensajes de ánimo por sus ejercicios. */}
+          {userData?.rol === 'Paciente' && (
+            <View style={estilos.filaAjuste}>
+              <View style={estilos.textoAjuste}>
+                <Text style={estilos.ajusteNombre}>Mensajes de ánimo</Text>
+                <Text style={estilos.ajusteAyuda}>
+                  Un refuerzo cuando tu cumplimiento de ejercicios sube (máximo uno al día).
+                </Text>
+              </View>
+              <Switch
+                value={preferencias.refuerzos !== false}
+                onValueChange={(v) => cambiarPreferencia('refuerzos', v)}
+                disabled={guardando}
+                trackColor={{ false: colores.borde, true: colores.azul[300] }}
+                thumbColor={preferencias.refuerzos !== false ? colores.primario : colores.superficie}
+              />
+            </View>
+          )}
 
           <Text style={estilos.ajusteNota}>
             Esta bandeja siempre recibe todos los avisos: es tu registro dentro de la app.

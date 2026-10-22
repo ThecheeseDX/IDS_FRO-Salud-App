@@ -79,9 +79,31 @@ async function revisar(texto) {
     };
   }
 
-  const normalizado = normalizar(original);
+  const { bloqueantes, criticos } = await coincidenciasDe(original);
+
+  // Excepción 2: sin coincidencias, el texto se autoriza y se inserta. Los
+  // términos CRITICO (CU62) no bloquean: se escalan aparte.
+  if (bloqueantes.length === 0) {
+    return { permitido: true, coincidencias: [], criticos };
+  }
+
+  return {
+    permitido: false,
+    motivo: 'CONTENIDO_RESTRINGIDO',
+    mensaje:
+      'Tu mensaje contiene términos que no están permitidos en el canal clínico. ' +
+      'Reescríbelo y vuelve a enviarlo.',
+    coincidencias: bloqueantes,
+    criticos,
+  };
+}
+
+/** Términos del diccionario presentes en el texto, separados por su papel. */
+async function coincidenciasDe(texto) {
+  const normalizado = normalizar(texto);
   const terminos = await diccionario();
-  const coincidencias = [];
+  const bloqueantes = [];
+  const criticos = [];
 
   for (const entrada of terminos) {
     if (!entrada.normalizado) continue;
@@ -91,23 +113,16 @@ async function revisar(texto) {
       'u'
     );
     if (patron.test(normalizado)) {
-      coincidencias.push(entrada.termino);
+      (entrada.categoria === 'CRITICO' ? criticos : bloqueantes).push(entrada.termino);
     }
   }
-
-  // Excepción 2: sin coincidencias, el texto se autoriza y se inserta.
-  if (coincidencias.length === 0) {
-    return { permitido: true, coincidencias: [] };
-  }
-
-  return {
-    permitido: false,
-    motivo: 'CONTENIDO_RESTRINGIDO',
-    mensaje:
-      'Tu mensaje contiene términos que no están permitidos en el canal clínico. ' +
-      'Reescríbelo y vuelve a enviarlo.',
-    coincidencias,
-  };
+  return { bloqueantes, criticos };
 }
 
-module.exports = { revisar, diccionario, refrescar, normalizar };
+/** CU62: solo los términos críticos (vulnerabilidad clínica u operativa). */
+async function detectarCriticos(texto) {
+  if (!String(texto ?? '').trim()) return [];
+  return (await coincidenciasDe(String(texto))).criticos;
+}
+
+module.exports = { revisar, detectarCriticos, diccionario, refrescar, normalizar };

@@ -11,6 +11,7 @@
 
 const pool = require('./../config/database');
 const { revisar } = require('../services/clinico/filtroContenidoService');
+const { escalar } = require('../services/clinico/escalamientoService');
 const { notificarUsuario } = require('../services/agenda/agendaService');
 
 const ESTADOS = { PENDIENTE: 'PENDIENTE', APROBADA: 'APROBADA', RECHAZADA: 'RECHAZADA' };
@@ -139,7 +140,7 @@ exports.registrarEvaluacion = async (req, res) => {
 
     await conexion.beginTransaction();
 
-    await conexion.execute(
+    const [evaluacionCreada] = await conexion.execute(
       `INSERT INTO Evaluacion_Satisfaccion (puntuacion, resena, estado_moderacion, cita_id)
        VALUES (?, ?, ?, ?)`,
       [puntuacion, resena || null, resena ? ESTADOS.PENDIENTE : ESTADOS.APROBADA, id]
@@ -165,6 +166,14 @@ exports.registrarEvaluacion = async (req, res) => {
     );
 
     await conexion.commit();
+
+    // CU62: una reseña con términos críticos se escala al administrador.
+    if (resena) {
+      escalar(pool, {
+        texto: resena, origen: 'RESENA', entidad: 'Evaluacion_Satisfaccion', entidadId: evaluacionCreada.insertId,
+        usuarioOrigenId: req.user.usuario_id,
+      }).catch(() => {});
+    }
 
     return res.status(201).json({
       mensaje: resenaBloqueada

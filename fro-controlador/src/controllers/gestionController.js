@@ -91,6 +91,7 @@ exports.kpis = async (req, res) => {
           (SELECT COUNT(*) FROM Alerta_Clinica WHERE estado = 'ABIERTA') AS alertas_abiertas,
           (SELECT COUNT(*) FROM Evaluacion_Satisfaccion
             WHERE estado_moderacion = 'PENDIENTE' AND resena IS NOT NULL) AS testimonios_pendientes,
+          (SELECT COUNT(*) FROM Evento_Critico WHERE estado = 'PENDIENTE') AS eventos_criticos_pendientes,
           (SELECT COUNT(*) FROM Profesional p JOIN Usuario u ON u.usuario_id = p.usuario_id
             WHERE u.cuenta_activo = TRUE) AS profesionales_activos`
     );
@@ -142,6 +143,7 @@ exports.kpis = async (req, res) => {
         tickets_abiertos: Number(operacion?.tickets_abiertos || 0),
         alertas_abiertas: Number(operacion?.alertas_abiertas || 0),
         testimonios_pendientes: Number(operacion?.testimonios_pendientes || 0),
+        eventos_criticos_pendientes: Number(operacion?.eventos_criticos_pendientes || 0),
         profesionales_activos: Number(operacion?.profesionales_activos || 0),
       },
       serie_citas: serie.map((f) => ({
@@ -493,4 +495,76 @@ exports.auditarDescarga = async (req, res, next) => {
     console.error('[auditarDescarga CU63]', error.message);
   }
   next();
+};
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU62 — Bandeja de eventos críticos escalados a supervisión (Incremento 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** GET /api/gestion/eventos-criticos?estado=PENDIENTE|ACUSADO|TODOS */
+exports.listarEventosCriticos = async (req, res) => {
+  const estado = String(req.query?.estado || 'PENDIENTE').toUpperCase();
+  const filtro = estado === 'TODOS' ? '' : 'WHERE e.estado = ?';
+  try {
+    const [eventos] = await pool.query(
+      `SELECT e.evento_critico_id, e.origen, e.entidad, e.entidad_id, e.termino, e.terminos, e.extracto,
+              e.estado, e.momento_creacion, e.momento_acuse, e.paciente_id,
+              CONCAT_WS(' ', uo.nombres, uo.apellido_paterno) AS usuario_origen,
+              ro.nombre_rol AS rol_origen,
+              CONCAT_WS(' ', up.nombres, up.apellido_paterno) AS paciente,
+              CONCAT_WS(' ', ua.nombres, ua.apellido_paterno) AS acusado_por
+         FROM Evento_Critico e
+         LEFT JOIN Usuario uo ON uo.usuario_id = e.usuario_origen_id
+         LEFT JOIN Rol ro ON ro.rol_id = uo.rol_id
+         LEFT JOIN Paciente pa ON pa.paciente_id = e.paciente_id
+         LEFT JOIN Usuario up ON up.usuario_id = pa.usuario_id
+         LEFT JOIN Usuario ua ON ua.usuario_id = e.acusado_por
+         ${filtro}
+        ORDER BY (e.estado = 'PENDIENTE') DESC, e.momento_creacion DESC
+        LIMIT 100`,
+      estado === 'TODOS' ? [] : [estado]
+    );
+    const [[conteo]] = await pool.query(`SELECT COUNT(*) AS pendientes FROM Evento_Critico WHERE estado = 'PENDIENTE'`);
+    return res.status(200).json({
+      eventos: eventos.map((e) => ({
+        ...e,
+        terminos: typeof e.terminos === 'string' ? JSON.parse(e.terminos || '[]') : e.terminos || [],
+      })),
+      pendientes: Number(conteo?.pendientes || 0),
+    });
+  } catch (error) {
+    console.error('[listarEventosCriticos CU62]', error);
+    return res.status(500).json({ error: 'No se pudo cargar la bandeja de eventos críticos.' });
+  }
+};
+
+/** POST /api/gestion/eventos-criticos/:id/acuse */
+exports.acusarEventoCritico = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [resultado] = await pool.query(
+      `UPDATE Evento_Critico
+          SET estado = 'ACUSADO', acusado_por = ?, momento_acuse = NOW()
+        WHERE evento_critico_id = ? AND estado = 'PENDIENTE'`,
+      [req.user.usuario_id, id]
+    );
+    if (resultado.affectedRows === 0) {
+      const [[existe]] = await pool.query(
+        `SELECT estado, acusado_por FROM Evento_Critico WHERE evento_critico_id = ? LIMIT 1`, [id]
+      );
+      if (!existe) return res.status(404).json({ error: 'EVENTO_NO_ENCONTRADO', mensaje: 'El evento no existe.' });
+      return res.status(409).json({ error: 'YA_ACUSADO', mensaje: 'Otro administrador ya acusó recibo de este evento.' });
+    }
+    // Poscondición: el acuse queda como atributo inmutable del registro.
+    await pool.query(
+      `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
+       VALUES ('EVENTO_CRITICO_ACUSADO', 'Evento_Critico', ?, ?, ?)`,
+      [req.ip || null, JSON.stringify({ evento_critico_id: Number(id) }), req.user.usuario_id]
+    ).catch(() => {});
+    return res.status(200).json({ mensaje: 'Acuse de recibo registrado.', evento_critico_id: Number(id) });
+  } catch (error) {
+    console.error('[acusarEventoCritico CU62]', error);
+    return res.status(500).json({ error: 'NO_SE_PUDO_ACUSAR', mensaje: 'No se pudo registrar el acuse. Se reintentará.' });
+  }
 };

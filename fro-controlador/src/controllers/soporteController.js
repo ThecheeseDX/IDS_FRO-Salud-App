@@ -8,6 +8,7 @@
  */
 
 const pool = require('./../config/database');
+const { escalar } = require('../services/clinico/escalamientoService');
 const { leerParametroEntero } = require('../services/agenda/agendaService');
 const { notificarUsuario } = require('../services/agenda/agendaService');
 const { subirBuffer, cloudinaryConfigurado } = require('../config/cloudinary');
@@ -131,6 +132,12 @@ exports.crearTicket = async (req, res) => {
       [categoria, descripcion.slice(0, 5000), adjuntoUrl, req.user.usuario_id]
     );
     const ticketId = creado.insertId;
+
+    // CU62: una solicitud con términos críticos se escala a la supervisión.
+    escalar(pool, {
+      texto: descripcion, origen: 'TICKET', entidad: 'Ticket_Soporte', entidadId: ticketId,
+      usuarioOrigenId: req.user.usuario_id,
+    }).catch(() => {});
 
     // CU61: el enrutamiento ocurre como consecuencia directa de la inserción.
     const operador = await operadorParaCategoria(conexion, categoria);

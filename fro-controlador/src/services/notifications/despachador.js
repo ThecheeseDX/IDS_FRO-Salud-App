@@ -48,6 +48,8 @@ const TIPOS = {
   PAUTA_ASIGNADA:         { titulo: 'Tienes ejercicios nuevos',      pantalla: 'MisPautas' },
   PREPARACION_ALTA:       { titulo: 'Preparación para el alta',      pantalla: 'PreparacionAlta' },
   ALTA_EMITIDA:           { titulo: 'Tu informe de alta está listo', pantalla: 'Documentos' },
+  REFUERZO_POSITIVO:      { titulo: '¡Sigue así!',                   pantalla: 'MiProgreso' },
+  EVENTO_CRITICO:         { titulo: 'Evento crítico escalado',       pantalla: 'EventosCriticos' },
 };
 
 /** Datos de contacto y preferencias del destinatario, en una sola consulta. */

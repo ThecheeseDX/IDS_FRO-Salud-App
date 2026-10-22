@@ -21,4 +21,13 @@ router.get('/informes/:tipo',
   gestionController.auditarDescarga,
   gestionController.exportarInforme);
 
+// CU62 — Eventos críticos escalados a supervisión (el Administrador, D1 del Inc 4).
+router.get('/eventos-criticos',
+  verifyToken, authorizeRoles(['Administrador']),
+  gestionController.listarEventosCriticos);
+
+router.post('/eventos-criticos/:id/acuse',
+  verifyToken, authorizeRoles(['Administrador']),
+  gestionController.acusarEventoCritico);
+
 module.exports = router;
