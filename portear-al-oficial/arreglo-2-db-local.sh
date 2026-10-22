@@ -66,6 +66,15 @@ aplica las migraciones pendientes y verifica que todo quedó en orden. Se puede
 repetir las veces que quiera: si la base ya existe no la toca. Para partir de
 cero: \`npm run db:local -- --reiniciar\`.
 
+Además deja tres cuentas de prueba activas para entrar desde la app sin pasar
+por el correo de verificación (RUT / contraseña):
+
+| Rol | RUT | Contraseña |
+|---|---|---|
+| Administrador | \`111111111\` | \`Prueba.2026\` |
+| Profesional | \`222222222\` | \`Prueba.2026\` |
+| Paciente | \`333333333\` | \`Prueba.2026\` |
+
 > Si su \`.env\` tiene \`DATABASE_URL\` (la base de Aiven), el script se detiene
 > para no confundir las dos bases: comente esa línea con \`#\` mientras trabaje
 > en local y vuelva a activarla después.

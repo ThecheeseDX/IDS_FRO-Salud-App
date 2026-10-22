@@ -16,7 +16,9 @@
  *      --reiniciar las borra y parte de cero.
  *   5. Aplica las migraciones pendientes (scripts/migrar-db.js), las mismas
  *      que el servidor aplica al arrancar.
- *   6. Verifica que todo quedó en orden y dice cómo seguir.
+ *   6. Crea tres cuentas de prueba activas (administrador, profesional y
+ *      paciente) con la contraseña Prueba.2026, si no existen.
+ *   7. Verifica que todo quedó en orden y dice cómo seguir.
  *
  * Requisitos: Node 20+ y un MySQL 8 instalado y encendido en este computador.
  * No hace falta MySQL Workbench ni el cliente de consola: usa la misma
@@ -247,10 +249,102 @@ async function aplicarMigraciones(datos) {
   }
 }
 
-// ── 5. Verificación ──────────────────────────────────────────────────────────
+// ── 5. Cuentas de prueba ─────────────────────────────────────────────────────
+// En local no hay correo configurado, así que registrarse desde la app (que
+// exige el código OTP) no es práctico. Se dejan tres cuentas activas, una por
+// rol, con la misma contraseña. Solo se crean si no existen.
+
+const CLAVE_PRUEBA = 'Prueba.2026';
+const CUENTAS_PRUEBA = [
+  { rol: 'Administrador', rut: '111111111', nombres: 'Ana', apellido_paterno: 'Admin', apellido_materno: 'Prueba', email: 'admin.prueba@puntopaz.cl' },
+  { rol: 'Profesional',   rut: '222222222', nombres: 'Pedro', apellido_paterno: 'Profesional', apellido_materno: 'Prueba', email: 'profesional.prueba@puntopaz.cl' },
+  { rol: 'Paciente',      rut: '333333333', nombres: 'Paula', apellido_paterno: 'Paciente', apellido_materno: 'Prueba', email: 'paciente.prueba@puntopaz.cl' },
+];
+
+async function crearCuentasPrueba(datos) {
+  paso(5, 'Cuentas de prueba (una por rol)');
+  const bcrypt = require('bcrypt');
+  const hash = await bcrypt.hash(CLAVE_PRUEBA, 10);
+  const conexion = await conectar(datos, true);
+  try {
+    const [[comuna]] = await conexion.query('SELECT comuna_id FROM Comuna ORDER BY comuna_id LIMIT 1');
+    const [[especialidad]] = await conexion.query('SELECT especialidad_id FROM Especialidad ORDER BY especialidad_id LIMIT 1');
+    const [[adminSistema]] = await conexion.query(
+      `SELECT u.usuario_id FROM Usuario u JOIN Rol r ON r.rol_id = u.rol_id
+        WHERE r.nombre_rol = 'Administrador' ORDER BY u.usuario_id LIMIT 1`
+    );
+
+    for (const cuenta of CUENTAS_PRUEBA) {
+      const [[existe]] = await conexion.query('SELECT usuario_id FROM Usuario WHERE rut = ? LIMIT 1', [cuenta.rut]);
+      if (existe) {
+        console.log(`   ${cuenta.rol.padEnd(13)} ya existía (RUT ${cuenta.rut}).`);
+        continue;
+      }
+      const [[rol]] = await conexion.query('SELECT rol_id FROM Rol WHERE nombre_rol = ? LIMIT 1', [cuenta.rol]);
+      if (!rol) throw new Error(`No existe el rol ${cuenta.rol} en la tabla Rol.`);
+
+      await conexion.beginTransaction();
+      try {
+        const [usuario] = await conexion.query(
+          `INSERT INTO Usuario (rut, nombres, apellido_paterno, apellido_materno, email, contrasena_hash, cuenta_activo, rol_id)
+           VALUES (?, ?, ?, ?, ?, ?, TRUE, ?)`,
+          [cuenta.rut, cuenta.nombres, cuenta.apellido_paterno, cuenta.apellido_materno, cuenta.email, hash, rol.rol_id]
+        );
+        const usuarioId = usuario.insertId;
+        await conexion.query('INSERT INTO Usuario_Telefono (usuario_id, telefono) VALUES (?, ?)', [usuarioId, '+56912345678']);
+
+        if (cuenta.rol === 'Paciente') {
+          const [contacto] = await conexion.query(
+            `INSERT INTO Contacto_Emergencia (nombre, telefono, parentesco) VALUES ('Carlos Prueba', '+56987654321', 'Hermano')`
+          );
+          await conexion.query(
+            `INSERT INTO Paciente (sexo_clinico, calle, numero_calle, departamento, contacto_emergencia_id, usuario_id, comuna_id)
+             VALUES ('Femenino', 'Av. Siempre Viva', '742', NULL, ?, ?, ?)`,
+            [contacto.insertId, usuarioId, comuna.comuna_id]
+          );
+        }
+
+        if (cuenta.rol === 'Profesional') {
+          // El RUT tiene que estar autorizado por un administrador (CU02).
+          await conexion.query(
+            `INSERT IGNORE INTO Profesional_Autorizado (rut_autorizado, habilitado, administrador_id) VALUES (?, TRUE, ?)`,
+            [cuenta.rut, adminSistema?.usuario_id || usuarioId]
+          );
+          const [profesional] = await conexion.query(
+            `INSERT INTO Profesional (num_registro_salud, reseña_curricular, calificacion_promedio, foto_url, tipo_sede, areas_experticia, usuario_id, especialidad_id)
+             VALUES ('REG-PRUEBA-1', 'Profesional de prueba para el entorno local.', 0.00, 'default.jpg', 'AMBOS', 'Rehabilitación general', ?, ?)`,
+            [usuarioId, especialidad.especialidad_id]
+          );
+          await conexion.query(
+            'INSERT INTO Profesional_Comuna (profesional_id, comuna_id) VALUES (?, ?)',
+            [profesional.insertId, comuna.comuna_id]
+          );
+          // Lunes a viernes, 09:00 a 18:00, en ambas modalidades (1 = lunes).
+          for (let dia = 1; dia <= 5; dia++) {
+            await conexion.query(
+              `INSERT INTO Profesional_Disponibilidad (profesional_id, dia_semana, hora_inicio, hora_fin, modalidad)
+               VALUES (?, ?, '09:00:00', '18:00:00', 'AMBOS')`,
+              [profesional.insertId, dia]
+            );
+          }
+        }
+        await conexion.commit();
+        console.log(`   ${cuenta.rol.padEnd(13)} creado: RUT ${cuenta.rut}`);
+      } catch (error) {
+        await conexion.rollback();
+        throw error;
+      }
+    }
+    console.log(`   Contraseña de las tres cuentas: ${CLAVE_PRUEBA}`);
+  } finally {
+    await conexion.end();
+  }
+}
+
+// ── 6. Verificación ──────────────────────────────────────────────────────────
 
 async function verificar(datos, totalMigraciones) {
-  paso(5, 'Verificación');
+  paso(6, 'Verificación');
   const conexion = await conectar(datos, true);
   try {
     const [[tablas]] = await conexion.query(
@@ -301,11 +395,15 @@ async function main() {
 
   await cargarEsquema(datos);
   const total = await aplicarMigraciones(datos);
+  await crearCuentasPrueba(datos);
   await verificar(datos, total);
 
   console.log('\n✅ Base de datos lista. Para levantar el servidor:');
   console.log('   npm run dev');
-  console.log('   y abre http://localhost:3000/api/diagnostico/base-datos para comprobarlo.\n');
+  console.log('   y abre http://localhost:3000/api/diagnostico/base-datos para comprobarlo.');
+  console.log('\n   Para entrar desde la app (RUT / contraseña):');
+  for (const c of CUENTAS_PRUEBA) console.log(`     ${c.rol.padEnd(13)} ${c.rut}  /  ${CLAVE_PRUEBA}`);
+  console.log('');
 }
 
 main().catch((error) => {
