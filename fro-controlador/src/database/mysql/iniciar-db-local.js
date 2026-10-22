@@ -211,7 +211,15 @@ async function cargarEsquema(datos) {
     }
 
     console.log('   Cargando schema.sql (tablas y datos iniciales)…');
-    await conexion.query(sql);
+    // Sin la comprobación de llaves foráneas mientras se carga: así una tabla
+    // puede referenciar a otra que el archivo crea más abajo (pasaba con
+    // Solicitud_Confirmacion → Cita). Al final se vuelve a activar.
+    await conexion.query('SET FOREIGN_KEY_CHECKS = 0');
+    try {
+      await conexion.query(sql);
+    } finally {
+      await conexion.query('SET FOREIGN_KEY_CHECKS = 1').catch(() => {});
+    }
     const [creadas] = await conexion.query('SHOW TABLES');
     console.log(`   ✅ ${creadas.length} tablas creadas.`);
     return { creada: true };
