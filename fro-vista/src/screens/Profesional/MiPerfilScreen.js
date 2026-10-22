@@ -184,6 +184,20 @@ export default function MiPerfilScreen({ navigation, comoPestana = false }) {
           </TouchableOpacity>
         )}
       </View>
+      {/* CU72: si el financiador no responde, los bonos se ingresan a mano. */}
+      <View style={estilos.filaIntro}>
+        {comoPestana && (
+          <TouchableOpacity
+            style={[estilos.botonLiquidaciones, estilos.botonContingencia]}
+            onPress={() => navigation.navigate('ContingenciaBonos')}
+            activeOpacity={interaccion.opacidadActiva}
+            accessibilityRole="button"
+          >
+            <Icono name="card-outline" size={18} color={colores.primario} />
+            <Text style={estilos.botonLiquidacionesTexto}>Bonos por contingencia</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {error ? (
         <View style={estilos.estadoEnLinea}>
@@ -374,6 +388,7 @@ const estilos = StyleSheet.create({
     ...sombra.suave,
   },
   botonLiquidacionesTexto: { ...tipografia.metaFuerte, color: colores.primario },
+  botonContingencia: { marginLeft: 'auto', marginBottom: espacio.base },
   estadoEnLinea: { paddingVertical: espacio.xxl, alignItems: 'center' },
 
   bloqueFoto: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginBottom: espacio.lg },

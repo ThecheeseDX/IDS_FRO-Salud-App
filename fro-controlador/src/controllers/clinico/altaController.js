@@ -4,6 +4,7 @@
 const pool = require('../../config/database');
 const { cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
 const { notificarUsuario } = require('../../services/agenda/agendaService');
+const { cerrarDerivacionesDelEpisodio } = require('../../services/clinico/accesoClinicoService');
 const { rechazarSiAjeno, ESTADO_CERRADO } = require('../../services/clinico/episodioService');
 const {
   LIMITE_PAUTAS_CONTINUIDAD,
@@ -189,6 +190,8 @@ exports.emitirInformeAlta = async (req, res) => {
           WHERE episodio_clinico_id = ?`,
         [ESTADO_CERRADO, pautas || null, doc.insertId, episodio_id]
       );
+      // CU65: al cerrar el episodio se retira el acceso de los derivados.
+      await cerrarDerivacionesDelEpisodio(conexion, episodio_id);
       await conexion.query(
         `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
          VALUES ('INFORME_ALTA_EMITIDO', 'Episodio_Clinico', ?, ?, ?)`,

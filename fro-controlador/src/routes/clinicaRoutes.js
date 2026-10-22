@@ -6,6 +6,7 @@ const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const { auditarAccesoClinico } = require('../middlewares/auditarAcceso');
 const episodioController = require('../controllers/clinico/episodioController');
 const altaController = require('../controllers/clinico/altaController');
+const derivacionController = require('../controllers/clinico/derivacionController');
 const fichaClinicaController = require('../controllers/clinico/fichaClinicaController');
 //  CU32: Objetivos terapéuticos y avance 
 const objetivoController = require('../controllers/clinico/objetivoController');
@@ -80,6 +81,34 @@ router.get('/episodio/:episodio_id/informe-alta',
 router.post('/episodio/:episodio_id/informe-alta',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']), auditarAccesoClinico,
     altaController.emitirInformeAlta
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Derivaciones internas entre especialidades
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/episodio/:episodio_id/derivaciones/opciones',
+    verifyToken, authorizeRoles(['Profesional']),
+    derivacionController.opciones
+);
+router.get('/episodio/:episodio_id/derivaciones',
+    verifyToken, authorizeRoles(['Profesional', 'Administrador']), auditarAccesoClinico,
+    derivacionController.delEpisodio
+);
+router.post('/episodio/:episodio_id/derivaciones',
+    verifyToken, authorizeRoles(['Profesional']), auditarAccesoClinico,
+    derivacionController.crear
+);
+router.get('/derivaciones/recibidas',
+    verifyToken, authorizeRoles(['Profesional']),
+    derivacionController.recibidas
+);
+router.post('/derivaciones/:id/respuesta',
+    verifyToken, authorizeRoles(['Profesional']),
+    derivacionController.responder
+);
+router.post('/derivaciones/:id/cierre',
+    verifyToken, authorizeRoles(['Profesional']),
+    derivacionController.cerrar
 );
 
 // ─────────────────────────────────────────────────────────────────────────────

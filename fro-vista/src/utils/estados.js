@@ -27,6 +27,14 @@ export const ESTADOS = {
   DEVOLUCION:   { color: colores.primario,    etiqueta: 'Devolución',   orden: 3 },
   VALIDADO:     { color: colores.exito,       etiqueta: 'Validado',     orden: 3 },
   RECHAZADO:    { color: colores.error,       etiqueta: 'Rechazado',    orden: 5 },
+  NO_VALIDADO:  { color: colores.error,       etiqueta: 'No validado',  orden: 5 },
+  // CU72: bono ingresado a mano durante una contingencia del financiador.
+  PROVISORIO:   { color: colores.advertencia, etiqueta: 'Provisorio',   orden: 2 },
+
+  // CU65: derivaciones internas
+  ACEPTADA:     { color: colores.exito,       etiqueta: 'Aceptada',     orden: 1 },
+  RECHAZADA:    { color: colores.error,       etiqueta: 'Rechazada',    orden: 4 },
+  CERRADA:      { color: colores.textoSuave,  etiqueta: 'Cerrada',      orden: 4 },
 
   // Pautas de ejercicio
   VIGENTE:      { color: colores.exito,       etiqueta: 'Vigente',      orden: 1 },

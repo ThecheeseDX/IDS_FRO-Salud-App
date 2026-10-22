@@ -175,7 +175,7 @@ exports.registrarBono = async (req, res) => {
         error: errorAdapter.code || 'FINANCIADOR_NO_DISPONIBLE',
         mensaje:
           status === 503
-            ? 'El financiador no respondió tras varios intentos. Tu bono no se registró: inténtalo más tarde.'
+            ? 'El financiador no respondió tras varios intentos. Tu bono no se registró: inténtalo más tarde o pídele a tu profesional que lo ingrese en modo contingencia.'
             : 'La respuesta del financiador no pudo procesarse. Inténtalo más tarde.',
       });
     }
@@ -263,7 +263,7 @@ exports.resumenPagos = async (req, res) => {
       `SELECT c.cita_id, c.fecha_hora_inicio, c.estado,
               CONCAT(u.nombres, ' ', u.apellido_paterno) AS nombre_profesional,
               b.bono_id, b.folio, b.estado_validacion, b.monto_cobertura, b.copago,
-              f.nombre_institucion
+              COALESCE(f.nombre_institucion, b.financiador_manual) AS nombre_institucion
          FROM Cita c
          JOIN Paciente pac ON pac.paciente_id = c.paciente_id
          JOIN Profesional prof ON prof.profesional_id = c.profesional_id
@@ -329,8 +329,9 @@ exports.resumenPagos = async (req, res) => {
       citas: citas.map((cita) => {
         const pagos = porCita.get(cita.cita_id) || [];
         const pagada = pagos.some((t) => t.estado === 'PAGADA' && t.tipo !== 'DEVOLUCION');
+        // CU72: el bono provisorio de contingencia también fija el copago.
         const copagoExigible =
-          cita.estado_validacion === 'VALIDADO' ? cita.copago : arancel;
+          ['VALIDADO', 'PROVISORIO'].includes(cita.estado_validacion) ? cita.copago : arancel;
         return {
           ...cita,
           transacciones: pagos,
@@ -394,7 +395,7 @@ exports.pagarCopago = async (req, res) => {
       });
     }
 
-    const copago = bono?.estado_validacion === 'VALIDADO' ? bono.copago : arancel;
+    const copago = ['VALIDADO', 'PROVISORIO'].includes(bono?.estado_validacion) ? bono.copago : arancel;
 
     const [pagosPrevios] = await pool.query(
       `SELECT transaccion_id, estado FROM Transaccion
@@ -574,6 +575,8 @@ exports.cuadraturaCoberturas = async (req, res) => {
       // Excepción 2: lo ejecutado excede lo autorizado.
       discrepancia_saldo: sesionesRealizadas > sesionesAutorizadas,
       realizadas_sin_bono: realizadasSinBono.map((fila) => fila.cita_id),
+      // CU72: bonos ingresados a mano durante una contingencia, aún sin validar.
+      bonos_provisorios: bonos.filter((fila) => fila.estado_validacion === 'PROVISORIO').map((fila) => fila.cita_id),
       citas: bonos,
     });
   } catch (error) {

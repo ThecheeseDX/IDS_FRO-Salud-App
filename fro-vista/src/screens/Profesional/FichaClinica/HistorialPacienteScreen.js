@@ -1044,6 +1044,20 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     bono registrado (citas #{cuadratura.realizadas_sin_bono.join(', #')}).
                   </Text>
                 )}
+                {/* CU72: bonos ingresados a mano mientras el financiador no respondía. */}
+                {(cuadratura.bonos_provisorios || []).length > 0 && (
+                  <Text style={styles.lineaCuadratura}>
+                    ⏳ {cuadratura.bonos_provisorios.length} bono(s) provisorio(s) por contingencia, pendientes
+                    de validar con el financiador.
+                  </Text>
+                )}
+                {cuadratura.realizadas_sin_bono.length > 0 && (
+                  <TouchableOpacity onPress={() => navigation.navigate('ContingenciaBonos')}>
+                    <Text style={styles.descartarCuadratura}>
+                      ¿El financiador no responde? Ingresar bono por contingencia
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 {!cuadratura.discrepancia_saldo && cuadratura.realizadas_sin_bono.length === 0 && (
                   <Text style={styles.okCuadratura}>
                     ✅ El registro contable está alineado con las autorizaciones.

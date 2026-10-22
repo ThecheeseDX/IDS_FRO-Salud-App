@@ -481,6 +481,10 @@ CREATE TABLE Derivacion_Interna (
     episodio_clinico_id INT NOT NULL,
     profesional_origen_id INT NOT NULL,
     profesional_destino_id INT NOT NULL,
+    -- CU65: respuesta del profesional derivado y cierre del puente de acceso.
+    momento_respuesta TIMESTAMP NULL DEFAULT NULL,
+    comentario_respuesta VARCHAR(255) NULL,
+    momento_cierre TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
     FOREIGN KEY (profesional_origen_id) REFERENCES Profesional(profesional_id),
     FOREIGN KEY (profesional_destino_id) REFERENCES Profesional(profesional_id)
@@ -696,9 +700,16 @@ CREATE TABLE Bono(
     estado_validacion VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
     payload_respuesta JSON,
     cita_id INT NOT NULL UNIQUE,
-    financiador_id INT NOT NULL,
+    -- CU72: NULL cuando el bono de contingencia se registró con el
+    -- financiador escrito a mano (catálogo no disponible).
+    financiador_id INT NULL,
+    financiador_manual VARCHAR(100) NULL,
+    registrado_por_usuario_id INT NULL,
+    momento_registro_manual TIMESTAMP NULL DEFAULT NULL,
+    regularizado_en TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (cita_id) REFERENCES Cita(cita_id),
-    FOREIGN KEY (financiador_id) REFERENCES Financiador(financiador_id)
+    FOREIGN KEY (financiador_id) REFERENCES Financiador(financiador_id),
+    FOREIGN KEY (registrado_por_usuario_id) REFERENCES Usuario(usuario_id)
 );
 
 CREATE TABLE Parametro_Global(

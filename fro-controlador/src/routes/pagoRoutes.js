@@ -4,6 +4,7 @@ const router = express.Router();
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 const pagoController = require('../controllers/pagoController');
+const contingenciaController = require('../controllers/contingenciaController');
 
 // ── CU67 — Resumen financiero del paciente ──
 router.get('/resumen',
@@ -29,5 +30,19 @@ router.post('/paquetes',
 router.get('/cuadratura/:paciente_id',
   verifyToken, authorizeRoles(['Profesional']),
   pagoController.cuadraturaCoberturas);
+
+// ── CU72 — Interfaz de contingencia de bonos ──
+router.get('/contingencia',
+  verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+  contingenciaController.obtener);
+router.post('/citas/:id/bono-contingencia',
+  verifyToken, authorizeRoles(['Profesional', 'Administrador']),
+  contingenciaController.registrar);
+router.put('/contingencia/modo',
+  verifyToken, authorizeRoles(['Administrador']),
+  contingenciaController.cambiarModo);
+router.post('/bonos/:id/regularizar',
+  verifyToken, authorizeRoles(['Administrador']),
+  contingenciaController.regularizar);
 
 module.exports = router;

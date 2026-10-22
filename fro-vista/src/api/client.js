@@ -482,6 +482,50 @@ export const crearTicketSoporte = async ({ categoria, descripcion, adjunto }) =>
   return response.data;
 };
 
+// CU65: derivaciones internas entre especialidades.
+export const getOpcionesDerivacion = async (episodioId) => {
+  const response = await apiClient.get(`/clinica/episodio/${episodioId}/derivaciones/opciones`);
+  return response.data;
+};
+export const getDerivacionesEpisodio = async (episodioId) => {
+  const response = await apiClient.get(`/clinica/episodio/${episodioId}/derivaciones`);
+  return response.data;
+};
+export const crearDerivacion = async (episodioId, datos) => {
+  const response = await apiClient.post(`/clinica/episodio/${episodioId}/derivaciones`, datos);
+  return response.data;
+};
+export const getDerivacionesRecibidas = async () => {
+  const response = await apiClient.get('/clinica/derivaciones/recibidas');
+  return response.data;
+};
+export const responderDerivacion = async (derivacionId, accion, comentario) => {
+  const response = await apiClient.post(`/clinica/derivaciones/${derivacionId}/respuesta`, { accion, comentario });
+  return response.data;
+};
+export const cerrarDerivacion = async (derivacionId) => {
+  const response = await apiClient.post(`/clinica/derivaciones/${derivacionId}/cierre`);
+  return response.data;
+};
+
+// CU72: interfaz de contingencia de bonos (profesional y administrador).
+export const getContingenciaBonos = async () => {
+  const response = await apiClient.get('/pagos/contingencia');
+  return response.data;
+};
+export const registrarBonoContingencia = async (citaId, datos) => {
+  const response = await apiClient.post(`/pagos/citas/${citaId}/bono-contingencia`, datos);
+  return response.data;
+};
+export const cambiarModoContingencia = async (activo) => {
+  const response = await apiClient.put('/pagos/contingencia/modo', { activo });
+  return response.data;
+};
+export const regularizarBono = async (bonoId, financiadorId) => {
+  const response = await apiClient.post(`/pagos/bonos/${bonoId}/regularizar`, financiadorId ? { financiador_id: financiadorId } : {});
+  return response.data;
+};
+
 // CU62: bandeja de eventos críticos (administrador) y acuse de recibo.
 export const getEventosCriticos = async (estado = 'PENDIENTE') => {
   const response = await apiClient.get('/gestion/eventos-criticos', { params: { estado } });

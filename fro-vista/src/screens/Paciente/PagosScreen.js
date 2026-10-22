@@ -168,6 +168,7 @@ export default function PagosScreen() {
   const renderCitaPago = (cita) => {
     const procesando = procesandoId === cita.cita_id;
     const bonoValidado = cita.estado_validacion === 'VALIDADO';
+    const bonoProvisorio = cita.estado_validacion === 'PROVISORIO';
     const enTransito = cita.transacciones?.some((t) => t.estado === 'EN_TRANSITO');
 
     return (
@@ -189,10 +190,12 @@ export default function PagosScreen() {
         {cita.folio ? (
           <Text style={estilos.detalle}>
             Bono {cita.folio} ({cita.nombre_institucion}):{' '}
-            <Text style={{ color: bonoValidado ? colores.exito : colores.error, fontWeight: '700' }}>
+            <Text style={{ color: bonoValidado ? colores.exito : bonoProvisorio ? colores.advertencia : colores.error, fontWeight: '700' }}>
               {etiquetaEstado(cita.estado_validacion)}
             </Text>
-            {bonoValidado ? ` · cobertura ${pesos(cita.monto_cobertura)}` : ''}
+            {bonoValidado || bonoProvisorio ? ` · cobertura ${pesos(cita.monto_cobertura)}` : ''}
+            {/* CU72: registrado a mano mientras el financiador no respondía. */}
+            {bonoProvisorio ? ' · ingresado por contingencia, se validará con el financiador' : ''}
           </Text>
         ) : (
           <Text style={estilos.detalle}>Sin bono registrado.</Text>

@@ -50,6 +50,9 @@ const TIPOS = {
   ALTA_EMITIDA:           { titulo: 'Tu informe de alta está listo', pantalla: 'Documentos' },
   REFUERZO_POSITIVO:      { titulo: '¡Sigue así!',                   pantalla: 'MiProgreso' },
   EVENTO_CRITICO:         { titulo: 'Evento crítico escalado',       pantalla: 'EventosCriticos' },
+  DERIVACION_RECIBIDA:    { titulo: 'Nueva derivación interna',      pantalla: 'DerivacionesRecibidas' },
+  DERIVACION_RESPONDIDA:  { titulo: 'Respuesta a tu derivación',     pantalla: 'FichaClinica' },
+  BONO_PROVISORIO:        { titulo: 'Bono registrado en contingencia', pantalla: 'Pagos' },
 };
 
 /** Datos de contacto y preferencias del destinatario, en una sola consulta. */

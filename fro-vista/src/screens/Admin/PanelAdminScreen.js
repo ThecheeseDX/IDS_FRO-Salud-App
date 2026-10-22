@@ -289,6 +289,7 @@ export default function PanelAdminScreen({ navigation }) {
 
       {[
         { titulo: 'Liquidaciones', icono: '💼', destino: 'Liquidaciones', sub: 'Ganancias mensuales de cada profesional.' },
+        { titulo: 'Contingencia de bonos', icono: '🧾', destino: 'ContingenciaBonos', sub: 'Ingreso manual de bonos si el financiador no responde, y su regularización.' },
         { titulo: 'Informes operativos', icono: '📊', destino: 'Reportes', sub: 'Asistencia, recaudación y adherencia, exportables.' },
         { titulo: 'Parámetros globales', icono: '⚙️', destino: 'Parametros', sub: 'Plazos, umbrales, aranceles y disponibilidad.' },
         { titulo: 'Moderar testimonios', icono: '📝', destino: 'ModeracionResenas', sub: 'Qué comentarios se publican en los perfiles.' },

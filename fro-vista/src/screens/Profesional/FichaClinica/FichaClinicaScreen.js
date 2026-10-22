@@ -278,6 +278,24 @@ export default function FichaClinicaScreen({ route, navigation }) {
                       booleano, el 0 se cuela como texto suelto dentro de la vista
                       y React Native corta la pantalla con "Text strings must be
                       rendered within a <Text> component". */}
+                  {/* CU65 (Exc. 1): en un episodio cerrado el control no se muestra. */}
+                  {Boolean(episodioElegido.es_propio) &&
+                    String(episodioElegido.estado || '').toUpperCase() !== 'CERRADO' && (
+                      <TouchableOpacity
+                        activeOpacity={interaccion.opacidadActiva}
+                        onPress={() =>
+                          navigation.navigate('DerivacionInterna', {
+                            episodioId: episodioElegido.episodio_clinico_id,
+                            pacienteId,
+                            nombrePaciente,
+                            motivoEpisodio: episodioElegido.motivo_consulta,
+                          })
+                        }
+                      >
+                        <Text style={styles.enlaceCrear}>↗ Derivar</Text>
+                      </TouchableOpacity>
+                    )}
+
                   {Boolean(episodioElegido.es_propio) &&
                     String(episodioElegido.estado || '').toUpperCase() !== 'CERRADO' && (
                       <TouchableOpacity

@@ -35,6 +35,9 @@ import ModeracionResenasScreen from '../screens/Admin/ModeracionResenasScreen';
 import PanelAdminScreen from '../screens/Admin/PanelAdminScreen';
 import BandejaSoporteScreen from '../screens/Admin/BandejaSoporteScreen';
 import EventosCriticosScreen from '../screens/Admin/EventosCriticosScreen';
+import DerivacionInternaScreen from '../screens/Profesional/DerivacionInternaScreen';
+import DerivacionesRecibidasScreen from '../screens/Profesional/DerivacionesRecibidasScreen';
+import ContingenciaBonosScreen from '../screens/Comun/ContingenciaBonosScreen';
 import ReportesScreen from '../screens/Admin/ReportesScreen';
 import LiquidacionesScreen from '../screens/Admin/LiquidacionesScreen';
 // Pantallas — Comunes a los tres roles
@@ -213,6 +216,10 @@ export default function AppNavigator() {
             <Stack.Screen name="FichaClinica" component={FichaClinicaScreen} options={{ title: 'Ficha Clínica' }} />
             {/* CU37: informe de alta y cierre del episodio, desde la pestaña Episodios */}
             <Stack.Screen name="InformeAlta" component={InformeAltaScreen} options={{ title: 'Informe de alta' }} />
+            {/* CU65: derivaciones internas; CU72: bonos por contingencia */}
+            <Stack.Screen name="DerivacionInterna" component={DerivacionInternaScreen} options={{ title: 'Derivación interna' }} />
+            <Stack.Screen name="DerivacionesRecibidas" component={DerivacionesRecibidasScreen} options={{ title: 'Derivaciones recibidas' }} />
+            <Stack.Screen name="ContingenciaBonos" component={ContingenciaBonosScreen} options={{ title: 'Bonos por contingencia' }} />
             <Stack.Screen
               name="GestionDisponibilidad"
               component={GestionDisponibilidadScreen}
@@ -269,6 +276,8 @@ export default function AppNavigator() {
             <Stack.Screen name="BandejaSoporte" component={BandejaSoporteScreen} options={{ title: 'Soporte' }} />
             {/* CU62: eventos críticos escalados a supervisión */}
             <Stack.Screen name="EventosCriticos" component={EventosCriticosScreen} options={{ title: 'Eventos críticos' }} />
+            {/* CU72: contingencia de bonos */}
+            <Stack.Screen name="ContingenciaBonos" component={ContingenciaBonosScreen} options={{ title: 'Contingencia de bonos' }} />
             {/* CU63: informes operativos exportables */}
             <Stack.Screen name="Reportes" component={ReportesScreen} options={{ title: 'Informes' }} />
             {/* CU75: liquidación mensual de los profesionales */}

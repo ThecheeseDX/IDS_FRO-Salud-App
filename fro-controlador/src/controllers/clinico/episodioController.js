@@ -1,4 +1,5 @@
 const pool = require('../../config/database');
+const { cerrarDerivacionesDelEpisodio } = require('../../services/clinico/accesoClinicoService');
 const { ESTADO_ABIERTO, ESTADO_CERRADO } = require('../../services/clinico/episodioService');
 const { resumenCierre, impedimentoDeCierre } = require('../../services/clinico/altaService');
 
@@ -142,6 +143,10 @@ exports.actualizarEpisodio = async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Episodio clínico no encontrado.' });
         }
+
+        // CU65: el puente de acceso de las derivaciones termina con el episodio.
+        if (cierre) await cerrarDerivacionesDelEpisodio(pool, episodio_id).catch((e) =>
+            console.error('[actualizarEpisodio] derivaciones sin cerrar:', e.message));
 
         // return(filas_afectadas) → return(confirmacion_update)
         // → return(operacion_clinica_exitosa) → return(HTTP 200 OK y confirmacion_accion)

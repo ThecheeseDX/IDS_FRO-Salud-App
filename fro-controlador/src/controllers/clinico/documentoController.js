@@ -8,6 +8,7 @@
 // El binario del archivo vive en Cloudinary; la base guarda URL y metadatos.
 
 const pool = require('../../config/database');
+const { profesionalTratante } = require('../../services/clinico/accesoClinicoService');
 const { cloudinary, cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
 const { leerParametroEntero } = require('../../services/agenda/agendaService');
 const { rechazarSiCerrado } = require('../../services/clinico/episodioService');
@@ -68,24 +69,8 @@ async function puedeAccederAPaciente(req, pacienteId) {
   }
 
   if (rol === 'Profesional') {
-    const [filas] = await pool.query(
-      `SELECT 1 FROM Paciente p
-        WHERE p.paciente_id = ? AND (
-          p.paciente_id IN (
-            SELECT ec.paciente_id FROM Episodio_Clinico ec
-             INNER JOIN Profesional pr ON pr.profesional_id = ec.profesional_id
-             WHERE pr.usuario_id = ?
-          )
-          OR p.paciente_id IN (
-            SELECT c.paciente_id FROM Cita c
-             INNER JOIN Profesional pr ON pr.profesional_id = c.profesional_id
-             WHERE pr.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
-          )
-        )
-        LIMIT 1`,
-      [pacienteId, usuarioId, usuarioId]
-    );
-    return filas.length > 0;
+    // Criterio único: episodio, cita vigente o derivación interna (CU65).
+    return profesionalTratante(pool, usuarioId, pacienteId);
   }
 
   return false;

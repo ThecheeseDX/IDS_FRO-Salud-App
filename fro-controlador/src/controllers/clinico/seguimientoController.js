@@ -8,6 +8,7 @@
  */
 
 const pool = require('../../config/database');
+const accesoClinico = require('../../services/clinico/accesoClinicoService');
 const { escalar } = require('../../services/clinico/escalamientoService');
 const {
   analizarTriaje,
@@ -38,25 +39,9 @@ async function pacienteDeUsuario(usuarioId) {
   return fila?.paciente_id || null;
 }
 
-/** Mismo criterio de acceso clínico que el repositorio de documentos (CU35). */
+/** Criterio único de acceso clínico (incluye derivaciones internas, CU65). */
 async function profesionalTratante(usuarioId, pacienteId) {
-  const [filas] = await pool.query(
-    `SELECT 1 FROM Paciente p
-      WHERE p.paciente_id = ? AND (
-        p.paciente_id IN (
-          SELECT ec.paciente_id FROM Episodio_Clinico ec
-           JOIN Profesional pr ON pr.profesional_id = ec.profesional_id
-           WHERE pr.usuario_id = ?
-        )
-        OR p.paciente_id IN (
-          SELECT c.paciente_id FROM Cita c
-           JOIN Profesional pr ON pr.profesional_id = c.profesional_id
-           WHERE pr.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
-        )
-      ) LIMIT 1`,
-    [pacienteId, usuarioId, usuarioId]
-  );
-  return filas.length > 0;
+  return accesoClinico.profesionalTratante(pool, usuarioId, pacienteId);
 }
 
 async function auditar(req, accion, entidad, datos) {

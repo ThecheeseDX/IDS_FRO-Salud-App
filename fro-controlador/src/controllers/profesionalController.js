@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { profesionalTratante } = require('../services/clinico/accesoClinicoService');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LISTAR PACIENTES ASIGNADOS (Por Profesional ID)
@@ -25,13 +26,26 @@ exports.listarPacientesAsignados = async (req, res) => {
              THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
-        MAX(ec.fecha_inicio) AS ultima_atencion
+        MAX(ec.fecha_inicio) AS ultima_atencion,
+        -- CU65: paciente que llegó por una derivación interna vigente.
+        EXISTS(
+          SELECT 1 FROM Derivacion_Interna di
+            JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
+           WHERE ed.paciente_id = p.paciente_id AND di.profesional_destino_id = ?
+             AND di.estado IN ('PENDIENTE', 'ACEPTADA') AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+        ) AS por_derivacion
       FROM Paciente p
       LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
       LEFT JOIN Episodio_Clinico ec ON ec.paciente_id = p.paciente_id AND ec.profesional_id = ?
       WHERE (
           ec.paciente_id IS NOT NULL 
           OR p.paciente_id IN (SELECT paciente_id FROM Cita WHERE profesional_id = ? AND estado NOT LIKE 'CANCELADA%')
+          OR p.paciente_id IN (
+            SELECT ed.paciente_id FROM Derivacion_Interna di
+              JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
+             WHERE di.profesional_destino_id = ? AND di.estado IN ('PENDIENTE', 'ACEPTADA')
+               AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+          )
         )
         AND (
           u.nombres LIKE ?
@@ -56,7 +70,7 @@ exports.listarPacientesAsignados = async (req, res) => {
         p.comuna_id
       ORDER BY ultima_atencion DESC
       `,
-      [profesionalId, profesionalId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
+      [profesionalId, profesionalId, profesionalId, profesionalId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
     );
 
     res.json({ ok: true, pacientes });
@@ -79,25 +93,8 @@ exports.obtenerHistorialPaciente = async (req, res) => {
     // clientes antiguos, y nunca puede suplantar a la sesión.
     const usuarioId = req.user?.usuario_id || req.query.usuarioId;
 
-    // Modificado para validar asignación tanto por episodio como por cita vigente
-    const [[asignacion]] = await db.query(
-      `
-      SELECT 1 AS asignado
-      FROM Paciente p
-      WHERE p.paciente_id = ? AND (
-        p.paciente_id IN (
-          SELECT ec.paciente_id FROM Episodio_Clinico ec 
-          INNER JOIN Profesional pr ON pr.profesional_id = ec.profesional_id WHERE pr.usuario_id = ?
-        )
-        OR p.paciente_id IN (
-          SELECT c.paciente_id FROM Cita c 
-          INNER JOIN Profesional pr ON pr.profesional_id = c.profesional_id WHERE pr.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
-        )
-      )
-      LIMIT 1
-      `,
-      [pacienteId, usuarioId, usuarioId]
-    );
+    // Criterio único de acceso: episodio, cita vigente o derivación interna (CU65).
+    const asignacion = await profesionalTratante(db, usuarioId, pacienteId);
 
     if (!asignacion) {
       return res.status(403).json({
@@ -306,7 +303,15 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
              THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
-        MAX(ec.fecha_inicio) AS ultima_atencion
+        MAX(ec.fecha_inicio) AS ultima_atencion,
+        -- CU65: paciente que llegó por una derivación interna vigente.
+        EXISTS(
+          SELECT 1 FROM Derivacion_Interna di
+            JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
+            JOIN Profesional pd ON pd.profesional_id = di.profesional_destino_id
+           WHERE ed.paciente_id = p.paciente_id AND pd.usuario_id = ?
+             AND di.estado IN ('PENDIENTE', 'ACEPTADA') AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+        ) AS por_derivacion
       FROM Paciente p
       LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
       LEFT JOIN Episodio_Clinico ec ON ec.paciente_id = p.paciente_id
@@ -318,6 +323,13 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
             FROM Cita c 
             JOIN Profesional pr ON c.profesional_id = pr.profesional_id 
             WHERE pr.usuario_id = ? AND c.estado NOT LIKE 'CANCELADA%'
+          )
+          OR p.paciente_id IN (
+            SELECT ed.paciente_id FROM Derivacion_Interna di
+              JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
+              JOIN Profesional pd ON pd.profesional_id = di.profesional_destino_id
+             WHERE pd.usuario_id = ? AND di.estado IN ('PENDIENTE', 'ACEPTADA')
+               AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
           )
         )
         AND (
@@ -343,7 +355,7 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         p.comuna_id
       ORDER BY ultima_atencion DESC
       `,
-      [usuarioId, usuarioId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
+      [usuarioId, usuarioId, usuarioId, usuarioId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
     );
 
     res.json({ ok: true, pacientes });

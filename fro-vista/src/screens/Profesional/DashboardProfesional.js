@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 
 import { AuthContext } from '../../context/AuthContext';
-import apiClient, { getAlertasClinicas, revisarAlertaClinica } from '../../api/client';
+import apiClient, { getAlertasClinicas, revisarAlertaClinica, getDerivacionesRecibidas } from '../../api/client';
 import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
 import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
 
@@ -32,6 +32,7 @@ export default function DashboardProfesional({ navigation }) {
   const [error, setError] = useState('');
   // CU50: banderas rojas de los pacientes a cargo, lo primero que debe verse.
   const [alertas, setAlertas] = useState([]);
+  const [derivacionesPendientes, setDerivacionesPendientes] = useState(0);
 
   const cargarPacientes = async (isRefresh = false) => {
     try {
@@ -75,6 +76,13 @@ export default function DashboardProfesional({ navigation }) {
     } catch {
       setAlertas([]);
     }
+    // CU65: derivaciones que otros profesionales te enviaron y esperan respuesta.
+    try {
+      const { pendientes } = await getDerivacionesRecibidas();
+      setDerivacionesPendientes(pendientes || 0);
+    } catch {
+      setDerivacionesPendientes(0);
+    }
   };
 
   useEffect(() => {
@@ -107,6 +115,9 @@ export default function DashboardProfesional({ navigation }) {
   const renderPaciente = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => abrirFicha(item)}>
       <Text style={styles.nombre}>{item.nombre_completo}</Text>
+      {Boolean(item.por_derivacion) && (
+        <Text style={styles.insigniaDerivado}>Derivado a ti · solo consulta</Text>
+      )}
       <Text style={styles.dato}>RUT: {item.rut}</Text>
       <Text style={styles.dato}>Sexo clínico: {item.sexo_clinico || 'No informado'}</Text>
       <Text style={styles.dato}>Total atenciones: {item.total_atenciones}</Text>
@@ -156,6 +167,19 @@ export default function DashboardProfesional({ navigation }) {
           ))}
         </View>
       )}
+
+      <TouchableOpacity
+        style={[styles.derivaciones, derivacionesPendientes > 0 && styles.derivacionesPendientes]}
+        onPress={() => navigation.navigate('DerivacionesRecibidas')}
+        activeOpacity={interaccion.opacidadActiva}
+      >
+        <Text style={styles.derivacionesTexto}>
+          {derivacionesPendientes > 0
+            ? `📨 ${derivacionesPendientes} derivación(es) por responder`
+            : '📨 Derivaciones recibidas'}
+        </Text>
+        <Text style={styles.alertaEnlace}>Ver →</Text>
+      </TouchableOpacity>
 
       <Text style={styles.subtitle}>Pacientes asignados</Text>
 
@@ -273,6 +297,28 @@ const styles = StyleSheet.create({
   // Botón delineado: el texto va en el azul de marca, no en blanco (quedaba invisible).
   boton: { ...piezas.botonSecundario, marginTop: espacio.md, paddingVertical: espacio.md },
   botonSecundarioTexto: { ...tipografia.cuerpoFuerte, color: colores.primario },
+
+  // CU65
+  derivaciones: {
+    ...piezas.tarjeta,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: espacio.base,
+    paddingVertical: espacio.md,
+  },
+  derivacionesPendientes: { borderColor: colores.primario, backgroundColor: colores.primarioSuave },
+  derivacionesTexto: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo, flex: 1 },
+  insigniaDerivado: {
+    ...tipografia.micro,
+    color: colores.info,
+    alignSelf: 'flex-start',
+    backgroundColor: colores.infoSuave,
+    borderRadius: radio.completo,
+    paddingHorizontal: espacio.sm,
+    paddingVertical: 2,
+    marginBottom: espacio.xs,
+  },
 
   pantalla: { flex: 1, backgroundColor: colores.fondo },
 });

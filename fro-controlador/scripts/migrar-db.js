@@ -1310,6 +1310,67 @@ const MIGRACIONES = [
       );
     },
   },
+  {
+    nombre: 'Derivacion_Interna: respuesta y cierre (CU65)',
+    descripcion: 'Momento y comentario de la respuesta del profesional derivado, y momento de cierre',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Derivacion_Interna' AND COLUMN_NAME = 'momento_respuesta'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Derivacion_Interna
+           ADD COLUMN momento_respuesta TIMESTAMP NULL DEFAULT NULL,
+           ADD COLUMN comentario_respuesta VARCHAR(255) NULL,
+           ADD COLUMN momento_cierre TIMESTAMP NULL DEFAULT NULL`
+      );
+    },
+  },
+  {
+    nombre: 'Bono: registro manual por contingencia (CU72)',
+    descripcion: 'Bono PROVISORIO ingresado a mano: financiador escrito a mano, quién y cuándo lo registró, regularización',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Bono' AND COLUMN_NAME = 'registrado_por_usuario_id'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      // Exc. 2: sin catálogo de financiadores el bono se registra con texto libre.
+      await conexion.query(`ALTER TABLE Bono MODIFY COLUMN financiador_id INT NULL`);
+      await conexion.query(
+        `ALTER TABLE Bono
+           ADD COLUMN financiador_manual VARCHAR(100) NULL,
+           ADD COLUMN registrado_por_usuario_id INT NULL,
+           ADD COLUMN momento_registro_manual TIMESTAMP NULL DEFAULT NULL,
+           ADD COLUMN regularizado_en TIMESTAMP NULL DEFAULT NULL,
+           ADD CONSTRAINT fk_bono_registrado_por FOREIGN KEY (registrado_por_usuario_id) REFERENCES Usuario(usuario_id)`
+      );
+    },
+  },
+  {
+    nombre: 'Parametros de contingencia del financiador (CU72)',
+    descripcion: 'Modo de contingencia forzado y ventana de detección automática',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave IN ('MODO_CONTINGENCIA_FINANCIADOR', 'VENTANA_CONTINGENCIA_MINUTOS')`
+      );
+      return filas.length >= 2;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT IGNORE INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('MODO_CONTINGENCIA_FINANCIADOR', '0', 'Con 1 se habilita a mano el ingreso de bonos por contingencia aunque el financiador responda; con 0 se activa solo cuando el financiador no responde.', 1),
+         ('VENTANA_CONTINGENCIA_MINUTOS', '30', 'Minutos que dura la contingencia automática después de que el financiador deja de responder (se apaga antes si vuelve a responder).', 1)`
+      );
+    },
+  },
 ];
 
 /**
