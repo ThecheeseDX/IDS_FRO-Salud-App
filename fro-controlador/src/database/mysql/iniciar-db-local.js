@@ -260,7 +260,11 @@ async function verificar(datos, totalMigraciones) {
     }
     console.log(`   Tablas: ${tablas.n} · roles: ${roles.n} · administradores: ${admins.n} · migraciones pendientes: ${pendientes}/${totalMigraciones}`);
     if (roles.n === 0 || admins.n === 0 || pendientes > 0) {
-      throw new Error('La base quedó incompleta. Vuelve a ejecutar con --reiniciar y revisa los mensajes.');
+      throw new Error(
+        'La base quedó incompleta (suele pasar cuando ya existía una base antigua con otro esquema).\n' +
+        '   Para borrarla y crearla de nuevo, ejecuta exactamente este comando:\n' +
+        '     npm run db:local -- --reiniciar'
+      );
     }
   } finally {
     await conexion.end();
