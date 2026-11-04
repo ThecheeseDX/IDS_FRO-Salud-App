@@ -512,6 +512,23 @@ exports.transicionarEstadoCita = async (req, res) => {
     return res.status(400).json({ error: 'El campo "evento" es requerido.' });
   }
 
+  // Iniciar y finalizar la atención pasan por las marcas temporales (CU38),
+  // que registran la hora, el GPS (CU39) y la certificación (CU41). Por aquí
+  // se saltaban todo eso.
+  if (evento === 'INICIAR' || evento === 'FINALIZAR') {
+    return res.status(409).json({
+      error: 'USAR_MARCAS_TEMPORALES',
+      mensaje: 'Inicia y finaliza la atención con los botones "Iniciar" y "Finalizar atención" del historial del paciente.',
+    });
+  }
+  // El paciente solo confirma o cancela su cita; el resto lo hace su profesional.
+  if (rolActor === 'Paciente' && !['CONFIRMAR', 'CANCELAR'].includes(evento)) {
+    return res.status(403).json({
+      error: 'EVENTO_NO_PERMITIDO',
+      mensaje: 'Desde tu cuenta solo puedes confirmar o cancelar tus citas.',
+    });
+  }
+
   // CU22 — Excepción 3: una cancelación sin justificación no se guarda.
   if (evento === 'CANCELAR' && !motivo) {
     return res.status(400).json({

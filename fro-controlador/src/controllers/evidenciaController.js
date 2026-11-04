@@ -491,23 +491,32 @@ exports.validarSesion = async (req, res) => {
 
     // Excepción 2: discrepancias críticas (estaban lejos) suspenden la
     // validación y el caso se deriva al Administrador (D11).
+    // La derivación se hace una sola vez (al finalizar o en el primer intento):
+    // los reintentos no vuelven a avisar a los administradores. En ambos casos
+    // el profesional puede cerrar la sesión con una justificación.
     if (hayDiscrepancia && !cierreManual) {
-      await auditar(req, 'SESION_SUSPENDIDA', {
-        cita_id: Number(id), factores_fallidos: fallidos.map((f) => f.factor),
-      });
+      const yaDerivada = Boolean(cita.sesion_suspendida_en);
       let administradoresAvisados = 0;
-      try {
-        administradoresAvisados = await derivarAAdministracion(req, id, fallidos);
-      } catch (errorDerivacion) {
-        console.error('[validarSesion] derivación fallida:', errorDerivacion.message);
+      if (!yaDerivada) {
+        await auditar(req, 'SESION_SUSPENDIDA', {
+          cita_id: Number(id), factores_fallidos: fallidos.map((f) => f.factor),
+        });
+        try {
+          administradoresAvisados = await derivarAAdministracion(req, id, fallidos);
+        } catch (errorDerivacion) {
+          console.error('[validarSesion] derivación fallida:', errorDerivacion.message);
+        }
       }
       return res.status(409).json({
         error: 'VALIDACION_SUSPENDIDA',
         certificada: false,
+        requiere_cierre_manual: true,
+        ya_derivada: yaDerivada,
         factores,
         administradores_avisados: administradoresAvisados,
-        mensaje:
-          'Se detectaron discrepancias críticas entre los factores. La sesión quedó suspendida y fue derivada al Administrador para su revisión.',
+        mensaje: yaDerivada
+          ? 'La sesión sigue suspendida por discrepancias y el Administrador ya está avisado. Puedes cerrarla con una justificación.'
+          : 'Se detectaron discrepancias críticas entre los factores. La sesión quedó suspendida y fue derivada al Administrador para su revisión. Puedes cerrarla con una justificación.',
       });
     }
 

@@ -413,7 +413,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         return;
       }
 
-      // Excepción 1: falta el término del paciente → cierre manual justificado.
+      // Excepción 1: falta una ubicación → cierre manual justificado.
       if (data.requiere_cierre_manual) {
         setConfirmacion({
           tono: 'peligro',
@@ -439,8 +439,17 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     } catch (err) {
       const respuesta = err.response?.data;
       // Excepción 2: discrepancias críticas suspenden la validación.
+      // El caso queda en manos del Administrador, y el profesional puede
+      // igual cerrar la sesión con una justificación.
       if (respuesta?.error === 'VALIDACION_SUSPENDIDA') {
-        setAviso({ tono: 'info', titulo: 'Validación suspendida', mensaje: `${respuesta.mensaje}\n\n${textoFactores(respuesta.factores)}` });
+        setConfirmacion({
+          tono: 'peligro',
+          titulo: 'Validación suspendida',
+          mensaje: `${respuesta.mensaje}\n\n${textoFactores(respuesta.factores)}`,
+          etiqueta: 'Cierre manual',
+          etiquetaCancelar: 'Volver',
+          accion: () => setCierreManualCita(citaId),
+        });
         return;
       }
       setAviso({ tono: 'error', titulo: 'No se pudo validar', mensaje: respuesta?.mensaje || 'El cierre quedó encolado. Reintenta en unos minutos.' });
@@ -1228,11 +1237,11 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         onCancelar={() => setCorreccionEvolucion(null)}
       />
 
-      {/* CU41: cierre manual auditado cuando falta la marca del paciente */}
+      {/* CU41: cierre manual auditado cuando falta una ubicación o estaban lejos */}
       <DialogoMotivo
         visible={cierreManualCita !== null}
         titulo="Cierre manual auditado"
-        descripcion="Justifica el cierre sin la marca de término del paciente:"
+        descripcion="Justifica por qué la presencialidad no pudo validarse:"
         etiquetaConfirmar="Certificar sesión"
         colorConfirmar={colores.primario}
         onConfirmar={(motivo) => {

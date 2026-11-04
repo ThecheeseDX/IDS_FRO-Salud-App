@@ -24,7 +24,7 @@ exports.finalizarEvolucion = async (req, res) => {
 
     // 1. CU36 - Flujo Principal: Capturar datos del autor desde su perfil
     const [profData] = await connection.execute(
-      `SELECT u.nombres, u.apellido_paterno, u.apellido_materno, u.rut, p.num_registro_salud 
+      `SELECT u.nombres, u.apellido_paterno, u.apellido_materno, u.rut, p.num_registro_salud, p.profesional_id
        FROM Usuario u
        INNER JOIN Profesional p ON p.usuario_id = u.usuario_id
        WHERE u.usuario_id = ?`,
@@ -48,7 +48,7 @@ exports.finalizarEvolucion = async (req, res) => {
 
     // 4. Verificar el estado de la evolución
     const [rows] = await connection.execute(
-      `SELECT evolucion_clinica_id, inalterable, episodio_clinico_id, porcentaje_objetivo
+      `SELECT evolucion_clinica_id, inalterable, episodio_clinico_id, porcentaje_objetivo, profesional_id
        FROM Evolucion_Clinica
        WHERE evolucion_clinica_id = ?
        FOR UPDATE`,
@@ -63,11 +63,23 @@ exports.finalizarEvolucion = async (req, res) => {
       });
     }
 
+    // Solo el profesional que escribió la evolución la firma o la modifica:
+    // la firma lleva su nombre y su registro de la Superintendencia.
+    if (Number(rows[0].profesional_id) !== Number(prof.profesional_id)) {
+      await connection.rollback();
+      return res.status(403).json({
+        error: 'EVOLUCION_AJENA',
+        mensaje: 'Esta evolución la registró otro profesional: solo su autor puede firmarla.'
+      });
+    }
+
     if (rows[0].inalterable === 1) {
-      await registrarAuditoria(connection, req, 'INTENTO_FINALIZAR_REGISTRO_INALTERABLE', 'evolucion_clinica', {
+      // El intento se anota después del rollback: dentro de la transacción
+      // revertida se perdía (CU30, "registra el intento en el log inmutable").
+      await connection.rollback();
+      await registrarAuditoria(pool, req, 'INTENTO_FINALIZAR_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId
       });
-      await connection.rollback();
       return res.status(409).json({
         error: 'REGISTRO_YA_INALTERABLE',
         mensaje: 'La evolución clínica ya se encuentra finalizada e inalterable.'
@@ -143,11 +155,12 @@ exports.editarEvolucion = async (req, res) => {
     await connection.beginTransaction();
 
     const [rows] = await connection.execute(
-      `SELECT evolucion_clinica_id, inalterable
-       FROM Evolucion_Clinica
-       WHERE evolucion_clinica_id = ?
+      `SELECT ec.evolucion_clinica_id, ec.inalterable, (p.usuario_id = ?) AS es_autor
+       FROM Evolucion_Clinica ec
+       JOIN Profesional p ON p.profesional_id = ec.profesional_id
+       WHERE ec.evolucion_clinica_id = ?
        FOR UPDATE`,
-      [evolucionId]
+      [req.user?.usuario_id || null, evolucionId]
     );
 
     if (rows.length === 0) {
@@ -158,13 +171,24 @@ exports.editarEvolucion = async (req, res) => {
       });
     }
 
+    // Solo el profesional que escribió la evolución la firma o la modifica:
+    // la firma lleva su nombre y su registro de la Superintendencia.
+    if (!Number(rows[0].es_autor)) {
+      await connection.rollback();
+      return res.status(403).json({
+        error: 'EVOLUCION_AJENA',
+        mensaje: 'Esta evolución la registró otro profesional: solo su autor puede editarla.'
+      });
+    }
+
     if (rows[0].inalterable === 1) {
-      await registrarAuditoria(connection, req, 'INTENTO_EDICION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
+      // El intento se anota después del rollback: dentro de la transacción
+      // revertida se perdía (CU30, "registra el intento en el log inmutable").
+      await connection.rollback();
+      await registrarAuditoria(pool, req, 'INTENTO_EDICION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId,
         intento: req.body
       });
-
-      await connection.rollback();
 
       return res.status(403).json({
         error: 'REGISTRO_INALTERABLE',
@@ -217,11 +241,12 @@ exports.eliminarEvolucion = async (req, res) => {
     await connection.beginTransaction();
 
     const [rows] = await connection.execute(
-      `SELECT evolucion_clinica_id, inalterable
-       FROM Evolucion_Clinica
-       WHERE evolucion_clinica_id = ?
+      `SELECT ec.evolucion_clinica_id, ec.inalterable, (p.usuario_id = ?) AS es_autor
+       FROM Evolucion_Clinica ec
+       JOIN Profesional p ON p.profesional_id = ec.profesional_id
+       WHERE ec.evolucion_clinica_id = ?
        FOR UPDATE`,
-      [evolucionId]
+      [req.user?.usuario_id || null, evolucionId]
     );
 
     if (rows.length === 0) {
@@ -232,12 +257,23 @@ exports.eliminarEvolucion = async (req, res) => {
       });
     }
 
+    // Solo el profesional que escribió la evolución la firma o la modifica:
+    // la firma lleva su nombre y su registro de la Superintendencia.
+    if (!Number(rows[0].es_autor)) {
+      await connection.rollback();
+      return res.status(403).json({
+        error: 'EVOLUCION_AJENA',
+        mensaje: 'Esta evolución la registró otro profesional: solo su autor puede eliminarla.'
+      });
+    }
+
     if (rows[0].inalterable === 1) {
-      await registrarAuditoria(connection, req, 'INTENTO_ELIMINACION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
+      // El intento se anota después del rollback: dentro de la transacción
+      // revertida se perdía (CU30, "registra el intento en el log inmutable").
+      await connection.rollback();
+      await registrarAuditoria(pool, req, 'INTENTO_ELIMINACION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId
       });
-
-      await connection.rollback();
 
       return res.status(403).json({
         error: 'REGISTRO_INALTERABLE',

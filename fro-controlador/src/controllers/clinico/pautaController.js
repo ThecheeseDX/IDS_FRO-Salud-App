@@ -165,6 +165,9 @@ async function componerPautas(pautas) {
 //  GET /clinica/materiales?buscar=texto
 // ─────────────────────────────────────────────────────────────────────────────
 
+// La biblioteca de las pautas muestra solo material de tratamiento: los
+// recursos de prevención los habilita solo el CU51 al acercarse el alta, y el
+// profesional suma sus propios archivos a cada ejercicio (CU47).
 exports.buscarMateriales = async (req, res) => {
   const buscar = String(req.query?.buscar || '').trim();
 
@@ -175,7 +178,7 @@ exports.buscarMateriales = async (req, res) => {
       [filas] = await pool.query(
         `SELECT material_terapeutico_id, nombre, tipo, categoria, formato, disponibilidad
            FROM Material_Terapeutico
-          WHERE disponibilidad = TRUE
+          WHERE disponibilidad = TRUE AND proposito <> 'PREVENCION'
             AND (? = '' OR nombre LIKE ? OR categoria LIKE ? OR tipo LIKE ?)
           ORDER BY categoria, nombre`,
         [buscar, patron, patron, patron]
@@ -186,7 +189,7 @@ exports.buscarMateriales = async (req, res) => {
       console.error('[buscarMateriales] Falla del filtro, catálogo completo:', errorBusqueda.message);
       [filas] = await pool.query(
         `SELECT material_terapeutico_id, nombre, tipo, categoria, formato, disponibilidad
-           FROM Material_Terapeutico WHERE disponibilidad = TRUE ORDER BY categoria, nombre`
+           FROM Material_Terapeutico WHERE disponibilidad = TRUE AND proposito <> 'PREVENCION' ORDER BY categoria, nombre`
       );
     }
 
@@ -294,7 +297,8 @@ exports.crearPauta = async (req, res) => {
     if (materialesIds.length > 0) {
       const [materiales] = await connection.query(
         `SELECT material_terapeutico_id, nombre, disponibilidad
-           FROM Material_Terapeutico WHERE material_terapeutico_id IN (?)`,
+           FROM Material_Terapeutico
+          WHERE material_terapeutico_id IN (?) AND proposito <> 'PREVENCION'`,
         [materialesIds]
       );
       const porId = new Map(materiales.map((m) => [m.material_terapeutico_id, m]));

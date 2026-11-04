@@ -136,12 +136,11 @@ def seccion_bd():
 
 
 HALLAZGOS = [
-    ('Falla · CU41', 'Si la distancia supera los 100 m, "Validar sesión" deja la sesión suspendida, pero la app nunca abre el cierre manual justificado que el aviso promete. Además, cada intento vuelve a avisar a los administradores. La ficha describe el comportamiento correcto (con cierre manual); propongo corregir el código.'),
-    ('Falla · CU30', 'El intento de editar o borrar un registro sellado se anota en la bitácora dentro de la misma transacción que después se revierte, así que no queda registro. La ficha dice "registra el intento en el log inmutable"; propongo corregir el código.'),
-    ('Seguridad', 'Cuatro puntos a cerrar: (1) la nómina del profesional toma el usuario desde la URL y no desde la sesión; (2) firmar una evolución no verifica que sea del profesional que firma; (3) la lista de derivaciones de un episodio no verifica el vínculo con el paciente; (4) /citas/:id/transicionar acepta INICIAR y FINALIZAR sin pasar por las marcas ni el GPS, y no revisa el rol. Ninguno cambia las fichas.'),
-    ('Por confirmar · CU46', 'El buscador de la biblioteca y el selector de material de la pauta muestran también los 7 recursos de prevención del CU51, así que se pueden prescribir como material de tratamiento. ¿Es intencional?'),
-    ('Por confirmar · ubicación de la descarga de la ficha', 'La dejé en el CU35 (visor de archivos), como te lo informé al entregar las correcciones. La alternativa es el CU28, pero ese CU es del profesional.'),
-    ('Por confirmar · foto de perfil', 'La dejé en el CU09 (datos y privacidad del paciente), junto con "Editar mis datos".'),
+    ('Arreglado · CU41', 'Si la distancia superaba los 100 m, "Validar sesión" dejaba la sesión suspendida sin ofrecer el cierre manual justificado, y cada intento volvía a avisar a los administradores. Ahora la app ofrece "Cierre manual" y la derivación al administrador se hace una sola vez.'),
+    ('Arreglado · CU30', 'El intento de editar o borrar un registro sellado se anotaba dentro de la transacción revertida y se perdía. Ahora queda en la bitácora.'),
+    ('Arreglado · seguridad', '(1) La nómina del profesional solo se entrega a su dueño (o al administrador). (2) Solo el autor firma, edita o elimina su evolución. (3) Las derivaciones de un episodio solo se listan a quien tiene acceso al paciente. (4) Iniciar y finalizar la atención solo pasan por las marcas temporales (con GPS y certificación), y el paciente solo confirma o cancela sus citas.'),
+    ('Arreglado · CU46', 'La biblioteca de las pautas ya no muestra los recursos de prevención del CU51: esos se habilitan solos al acercarse el alta, y el profesional suma su propio material a cada ejercicio (CU47). La ficha del CU46 no cambia.'),
+    ('Decidido', 'La descarga de la ficha en PDF queda en el CU35 (visor de archivos) y la foto de perfil en el CU09 (datos y privacidad).'),
     ('Sin cambio de ficha', 'CU12 (RBAC), CU20/CU76 (máquina de estados), CU42 (firma, sigue opcional), CU43 (teleconsulta) y CU46 (biblioteca) no cambian de texto con estos ajustes.'),
 ]
 
@@ -188,7 +187,7 @@ button.copiar:focus-visible { outline:2px solid var(--acento); outline-offset:2p
 <b>Incremento 4 - para copiar y pegar.docx</b>: trae las 27 fichas con el formato de las tablas del informe del Incremento 3, y las listas MR/1FN/2FN/3FN completas con las claves subrayadas.
 La línea "Qué cambió" va fuera de la tabla: no se copia.</div>
 <nav class="indice"><a href="#hallazgos">Hallazgos</a> <a href="#inc4">CU del Inc 4</a> <a href="#previos">CU anteriores</a> <a href="#bd">Base de datos</a><br>{indice}</nav>
-<h2 id="hallazgos">Hallazgos al revisar el código</h2>
+<h2 id="hallazgos">Hallazgos al revisar el código (ya resueltos)</h2>
 {hall}
 <h2 id="inc4">Casos de uso del Incremento 4 (6)</h2>
 {inc4}

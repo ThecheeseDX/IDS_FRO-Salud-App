@@ -1,12 +1,24 @@
 const db = require('../config/database');
 const { profesionalTratante } = require('../services/clinico/accesoClinicoService');
 
+// Un profesional solo puede pedir su propia nómina: el id de la URL tiene que
+// ser el suyo (el Administrador puede consultar la de cualquiera).
+const esAdministrador = (req) => req.user?.nombre_rol === 'Administrador';
+const NOMINA_AJENA = {
+  error: 'NOMINA_AJENA',
+  mensaje: 'Solo puedes consultar la nómina de tus propios pacientes.',
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // LISTAR PACIENTES ASIGNADOS (Por Profesional ID)
 // ─────────────────────────────────────────────────────────────────────────────
 exports.listarPacientesAsignados = async (req, res) => {
   try {
     const { profesionalId } = req.params;
+    if (!esAdministrador(req)) {
+      const [[propio]] = await db.query('SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1', [req.user.usuario_id]);
+      if (!propio || Number(propio.profesional_id) !== Number(profesionalId)) return res.status(403).json(NOMINA_AJENA);
+    }
     const { buscar = '' } = req.query;
     const busqueda = `%${buscar}%`;
 
@@ -293,6 +305,9 @@ exports.obtenerHistorialPaciente = async (req, res) => {
 exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
   try {
     const { usuarioId } = req.params;
+    if (!esAdministrador(req) && Number(usuarioId) !== Number(req.user.usuario_id)) {
+      return res.status(403).json(NOMINA_AJENA);
+    }
     const { buscar = '' } = req.query;
     const busqueda = `%${buscar}%`;
 

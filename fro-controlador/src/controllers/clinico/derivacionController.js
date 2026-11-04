@@ -18,6 +18,7 @@
 const pool = require('../../config/database');
 const { notificarUsuario } = require('../../services/agenda/agendaService');
 const { obtenerEpisodio, estaCerrado } = require('../../services/clinico/episodioService');
+const { profesionalTratante } = require('../../services/clinico/accesoClinicoService');
 
 const LARGO_MINIMO_JUSTIFICACION = 10;
 const LARGO_MAXIMO_JUSTIFICACION = 255;
@@ -120,6 +121,14 @@ exports.opciones = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.delEpisodio = async (req, res) => {
   try {
+    // El profesional solo ve las derivaciones de pacientes a los que tiene
+    // acceso; el Administrador ve todas.
+    if (req.user?.nombre_rol !== 'Administrador') {
+      const episodio = await obtenerEpisodio(pool, req.params.episodio_id);
+      if (!episodio || !(await profesionalTratante(pool, req.user.usuario_id, episodio.paciente_id))) {
+        return res.status(404).json({ error: 'EPISODIO_NO_ENCONTRADO', mensaje: 'El episodio clínico no existe o no tienes acceso a él.' });
+      }
+    }
     const [derivaciones] = await pool.query(
       `SELECT di.derivacion_interna_id, di.estado, di.justificacion, di.momento_creacion,
               di.momento_respuesta, di.comentario_respuesta, di.momento_cierre,
