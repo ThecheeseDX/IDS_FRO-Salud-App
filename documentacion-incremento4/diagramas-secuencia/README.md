@@ -1,30 +1,38 @@
 # Diagramas de secuencia: Incremento 4
 
-Son 24 diagramas de 16 CU, en el formato legible acordado con Pablo el 04-11-2026:
-- 4 o 5 líneas de vida: el actor, la vista, "Servidor" (agrupa C_API_REST y los controladores), "Base de datos" (C_MYSQL) y, cuando corresponde, un servicio externo en la última columna.
-- A lo más 16 mensajes por camino.
-- Etiquetas cortas.
-- Un solo bloque alternativo, sin anidar.
+Son **85 páginas de 16 CU** en el mismo formato y con las mismas reglas del Incremento 3:
+- todos los componentes y las tablas como líneas de vida;
+- mensajes técnicos, con el SQL sin `?` ni `WHERE`;
+- ningún mensaje se salta una línea de vida y cada llamada vuelve por el mismo camino;
+- una página por excepción, que retoma el flujo principal;
+- páginas separadas por actor cuando el CU tiene más de uno.
 
-Los errores menores quedan en el texto del CU.
+**Lo único que cambia es el tamaño, para que se lean mejor** (pedido de Pablo, 04-11-2026):
+- letra de 17 puntos (antes 12);
+- cajas, flechas, barras de activación y notas más grandes;
+- más espacio entre mensajes;
+- separación entre líneas de vida calculada para que ningún texto se salga de su tramo.
 
-Cada carpeta `CUxx/` trae un `.drawio` con una página por diagrama (se abre en app.diagrams.net) y un PNG por página.
+Cada carpeta trae un `.drawio` con una página por diagrama (se abre en app.diagrams.net) y un PNG por página.
 
-| Grupo | CU | Diagramas |
+| Grupo | CU | Páginas |
 |---|---|---|
-| CU del Incremento 4 | CU37 · CU51 · CU54 | 1 cada uno |
-| | CU62 | 2: escalar · acusar recibo |
-| | CU65 | 2: derivar · responder |
-| | CU72 | 2: registrar · regularizar |
-| Rehechos: el flujo anterior ya no existe | CU38 · CU40 · CU41 | 1 cada uno. **Reemplazan** todas las páginas anteriores del CU |
-| | CU39 | 2: ubicación del paciente · validar en cada marca. **Reemplazan** las anteriores |
-| | CU47 | 2: prescribir · material de apoyo. **Reemplazan** las anteriores |
-| | CU53 | 2: mensaje · adjunto. **Reemplazan** las anteriores |
-| | CU55 | 2: sesión · tratamiento. **Reemplazan** las anteriores |
-| Flujo nuevo: el diagrama anterior sigue vigente | CU09 | 2 nuevos: editar mis datos · foto de perfil |
-| | CU35 | 1 nuevo: descargar mi ficha |
-| | CU78 | 1 nuevo: cerrar el episodio |
+| CU del Incremento 4 | CU37 · CU51 · CU54 · CU47 | 5 cada uno |
+| | CU62 (Paciente que dispara + Administrador) | 6 |
+| | CU65 (Profesional que deriva + Profesional que recibe) | 7 |
+| | CU72 (Profesional + Administrador) | 6 |
+| Rehechos: reemplazan **todas** las páginas anteriores del CU | CU38 · CU40 | 5 cada uno |
+| | CU39 · CU41 (dos actores) | 6 cada uno |
+| | CU53 (Paciente y Profesional) | 10 |
+| | CU55 | 5 |
+| Flujo nuevo: se suman a los diagramas que ya tiene el CU | CU09 (datos y foto) | 4 |
+| | CU35 (descarga de la ficha) | 2 |
+| | CU78 (cierre del episodio) | 3 |
+
+En los CU del flujo nuevo solo van las excepciones de la ficha que aplican a ese flujo; los comentarios de cada tanda dicen cuáles.
 
 Los demás CU que cambiaron de texto (CU11, CU28, CU30, CU44, CU48, CU49, CU56, CU57, CU58, CU66 y CU71) conservan sus diagramas, porque los pasos son los mismos.
 
-Para regenerarlos: `python3 generador/diagramas_inc4.py`. Con `--sin-png` solo valida. El motor (`generador/motor_legible.py`) no dibuja nada si un diagrama rompe alguna regla.
+**Para regenerarlos:** `python3 generador/tandaA.py` (lo mismo con `tandaB` y `tandaC`). Con `--sin-png` solo valida.
+
+El motor es el del Incremento 3 con el tamaño ajustado. `comun.py` suma los componentes nuevos del diagrama de componentes del Incremento 4.
