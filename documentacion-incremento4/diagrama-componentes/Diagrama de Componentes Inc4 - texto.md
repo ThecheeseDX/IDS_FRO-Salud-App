@@ -35,4 +35,4 @@ Los diagramas de secuencia legibles del Incremento 4 agrupan los componentes del
 
 ## Diagrama de despliegue
 
-No cambia. El servidor, la base de datos y los servicios externos siguen en los mismos nodos. El GPS es una capacidad del teléfono que ya estaba en el nodo del cliente móvil.
+Se actualizó en `../diagrama-despliegue/`. Conserva los nueve nodos, y el servidor, el dispositivo móvil, la base de datos, Cloudinary y el servidor de notificaciones suman sus capacidades nuevas.

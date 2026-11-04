@@ -132,7 +132,36 @@ def seccion_bd():
                   f'<h4>Primera Forma Normal <small>{len(M.FN1)} tablas (Inc 3: 53)</small></h4>' + lista_html(M.FN1, 'FN1') +
                   f'<h4>Segunda Forma Normal <small>{len(M.FN2)} tablas (Inc 3: 53)</small></h4>' + lista_html(M.FN2, 'FN2') +
                   f'<h4>Tercera Forma Normal <small>{len(M.FN3)} tablas (Inc 3: 55)</small></h4>' + lista_html(M.FN3, 'FN3'))
+    partes.append(seccion_fisico())
     return '\n'.join(partes)
+
+
+def seccion_fisico():
+    def tabla(cabeza, filas):
+        th = ''.join(f'<th>{e(c)}</th>' for c in cabeza)
+        tr = ''.join('<tr>' + ''.join(f'<td>{c}</td>' for c in f) + '</tr>' for f in filas)
+        return f'<div class="tabla-scroll"><table><tr>{th}</tr>{tr}</table></div>'
+    code = lambda x: f'<code>{e(x)}</code>'
+    p = ['<h3 id="fisico">7 · Modelo físico (MySQL)</h3>',
+         '<p>Es lo que cambia en el diagrama del modelo físico del anexo (<code>Modelo_Físico_Inc3.drawio.png</code>), con los tipos y '
+         'restricciones reales de la base. Sale de las migraciones 47 a 63 y coincide con <code>schema.sql</code>.</p>',
+         '<h4>Cómo actualizar el diagrama</h4><ol>' + ''.join(f'<li>{e(x)}</li>' for x in B.MF_DIBUJO) + '</ol>']
+    for t, motivo, cols in B.CLASES_NUEVAS:
+        p.append(f'<h4>Tabla nueva: {e(t)} <small>{e(motivo)}</small></h4>' + tabla(['Columna', 'Tipo', 'Restricciones'],
+                 [(code(c), e(ti), e(r)) for c, ti, r in cols]))
+    filas = [(e(t), code(c), e(ti), e(r)) for t, _, cols in B.ATRIBUTOS_NUEVOS for c, ti, r in cols if not r.startswith('CAMBIA')]
+    p.append(f'<h4>Columnas nuevas en tablas existentes <small>{len(filas)} columnas en 10 tablas</small></h4>'
+             + tabla(['Tabla', 'Columna', 'Tipo', 'Restricciones y uso'], filas))
+    p.append('<h4>Columnas que cambian de definición</h4>' + tabla(['Tabla', 'Columna', 'Antes', 'Ahora', 'Por qué'],
+             [(e(t), code(c), code(a), code(b), e(x)) for t, c, a, b, x in B.COLUMNAS_QUE_CAMBIAN]))
+    p.append(f'<h4>Claves foráneas nuevas <small>{len(B.FK_NUEVAS)}</small></h4>' + tabla(['Tabla', 'Columna', 'Referencia', 'Restricción', 'Cardinalidad'],
+             [(e(t), code(c), code(r), code(n), e(k)) for t, c, r, n, k in B.FK_NUEVAS]))
+    p.append('<h4>Índices y restricciones únicas nuevas</h4>' + tabla(['Tabla', 'Índice', 'Tipo', 'Para qué'],
+             [(e(t), code(i), e(ti), e(x)) for t, i, ti, x in B.INDICES_NUEVOS]))
+    p.append('<h4>Script SQL equivalente</h4><p class="leyenda">Las mismas sentencias que aplican las migraciones, por si el anexo muestra el script.</p>'
+             f'<pre class="ddl">{e(B.DDL)}</pre>')
+    p.append('<h4>Párrafo para la Vista Lógica del informe</h4>' f'<div class="caja">{e(B.PARRAFO_VISTA_LOGICA)}</div>')
+    return '\n'.join(p)
 
 
 HALLAZGOS = [
@@ -163,6 +192,7 @@ button.copiar { position:absolute; right:0; top:10px; font:600 13px "Source Sans
 button.copiar:focus-visible { outline:2px solid var(--acento); outline-offset:2px }
 .hallazgo { display:grid; grid-template-columns:200px 1fr; gap:12px; padding:10px 0; border-top:1px solid var(--borde) }
 .hallazgo b { color:var(--alerta) }
+pre.ddl { font:12.5px/1.5 "JetBrains Mono", monospace; background:var(--superficie); border:1px solid var(--borde); border-radius:8px; padding:14px; overflow-x:auto; color:var(--texto) }
 @media (max-width:640px) { .hallazgo { grid-template-columns:1fr } button.copiar { position:static; margin-bottom:8px } }
 </style>''')
     inc4 = '\n'.join(bloque_cu(cu, i) for i, cu in enumerate(C.INC4, 2))
@@ -186,7 +216,7 @@ button.copiar:focus-visible { outline:2px solid var(--acento); outline-offset:2p
 <div class="caja"><b>Cómo copiar.</b> Cada ficha trae un botón <b>Copiar ficha</b> que copia la tabla para pegarla en Word. La forma más fiel es el archivo
 <b>Incremento 4 - para copiar y pegar.docx</b>: trae las 27 fichas con el formato de las tablas del informe del Incremento 3, y las listas MR/1FN/2FN/3FN completas con las claves subrayadas.
 La línea "Qué cambió" va fuera de la tabla: no se copia.</div>
-<nav class="indice"><a href="#hallazgos">Hallazgos</a> <a href="#inc4">CU del Inc 4</a> <a href="#previos">CU anteriores</a> <a href="#bd">Base de datos</a><br>{indice}</nav>
+<nav class="indice"><a href="#hallazgos">Hallazgos</a> <a href="#inc4">CU del Inc 4</a> <a href="#previos">CU anteriores</a> <a href="#bd">Base de datos</a> <a href="#fisico">Modelo físico</a><br>{indice}</nav>
 <h2 id="hallazgos">Hallazgos al revisar el código (ya resueltos)</h2>
 {hall}
 <h2 id="inc4">Casos de uso del Incremento 4 (6)</h2>
@@ -233,6 +263,19 @@ def documento():
         for linea in lista:
             nombre, pk, fk = claves(linea, nivel)
             x.append(W.linea_relacional(M.limpio(linea), pk, fk))
+    x.append(W.encabezado('Modelo físico: cambios del Incremento 4', 1))
+    x.append(W.nota(B.PARRAFO_VISTA_LOGICA))
+    for t, motivo, cols in B.CLASES_NUEVAS:
+        x += [W.encabezado(f'Tabla nueva: {t}', 2), W.tabla_simple(['Columna', 'Tipo', 'Restricciones'], cols)]
+    x += [W.encabezado('Columnas nuevas en tablas existentes', 2),
+          W.tabla_simple(['Tabla', 'Columna', 'Tipo', 'Restricciones y uso'],
+                         [(t, c, ti, r) for t, _, cols in B.ATRIBUTOS_NUEVOS for c, ti, r in cols if not r.startswith('CAMBIA')]),
+          W.encabezado('Columnas que cambian de definición', 2),
+          W.tabla_simple(['Tabla', 'Columna', 'Antes', 'Ahora', 'Por qué'], B.COLUMNAS_QUE_CAMBIAN),
+          W.encabezado('Claves foráneas nuevas', 2),
+          W.tabla_simple(['Tabla', 'Columna', 'Referencia', 'Restricción', 'Cardinalidad'], B.FK_NUEVAS),
+          W.encabezado('Índices y restricciones únicas nuevas', 2),
+          W.tabla_simple(['Tabla', 'Índice', 'Tipo', 'Para qué'], B.INDICES_NUEVOS)]
     W.escribir(os.path.join(AQUI, 'Incremento 4 - para copiar y pegar.docx'), ''.join(x))
 
 

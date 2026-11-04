@@ -84,6 +84,7 @@ button.copiar { position:absolute; right:0; top:10px; font:600 13px "Source Sans
 button.copiar:focus-visible { outline:2px solid var(--acento); outline-offset:2px }
 .hallazgo { display:grid; grid-template-columns:200px 1fr; gap:12px; padding:10px 0; border-top:1px solid var(--borde) }
 .hallazgo b { color:var(--alerta) }
+pre.ddl { font:12.5px/1.5 "JetBrains Mono", monospace; background:var(--superficie); border:1px solid var(--borde); border-radius:8px; padding:14px; overflow-x:auto; color:var(--texto) }
 @media (max-width:640px) { .hallazgo { grid-template-columns:1fr } button.copiar { position:static; margin-bottom:8px } }
 </style>
 </head>
@@ -95,7 +96,7 @@ button.copiar:focus-visible { outline:2px solid var(--acento); outline-offset:2p
 <div class="caja"><b>Cómo copiar.</b> Cada ficha trae un botón <b>Copiar ficha</b> que copia la tabla para pegarla en Word. La forma más fiel es el archivo
 <b>Incremento 4 - para copiar y pegar.docx</b>: trae las 27 fichas con el formato de las tablas del informe del Incremento 3, y las listas MR/1FN/2FN/3FN completas con las claves subrayadas.
 La línea "Qué cambió" va fuera de la tabla: no se copia.</div>
-<nav class="indice"><a href="#hallazgos">Hallazgos</a> <a href="#inc4">CU del Inc 4</a> <a href="#previos">CU anteriores</a> <a href="#bd">Base de datos</a><br><a href="#CU37">CU37</a> <a href="#CU51">CU51</a> <a href="#CU54">CU54</a> <a href="#CU62">CU62</a> <a href="#CU65">CU65</a> <a href="#CU72">CU72</a> <a href="#CU09">CU09</a> <a href="#CU11">CU11</a> <a href="#CU28">CU28</a> <a href="#CU30">CU30</a> <a href="#CU35">CU35</a> <a href="#CU38">CU38</a> <a href="#CU39">CU39</a> <a href="#CU40">CU40</a> <a href="#CU41">CU41</a> <a href="#CU44">CU44</a> <a href="#CU47">CU47</a> <a href="#CU48">CU48</a> <a href="#CU49">CU49</a> <a href="#CU53">CU53</a> <a href="#CU55">CU55</a> <a href="#CU56">CU56</a> <a href="#CU57">CU57</a> <a href="#CU58">CU58</a> <a href="#CU66">CU66</a> <a href="#CU71">CU71</a> <a href="#CU78">CU78</a></nav>
+<nav class="indice"><a href="#hallazgos">Hallazgos</a> <a href="#inc4">CU del Inc 4</a> <a href="#previos">CU anteriores</a> <a href="#bd">Base de datos</a> <a href="#fisico">Modelo físico</a><br><a href="#CU37">CU37</a> <a href="#CU51">CU51</a> <a href="#CU54">CU54</a> <a href="#CU62">CU62</a> <a href="#CU65">CU65</a> <a href="#CU72">CU72</a> <a href="#CU09">CU09</a> <a href="#CU11">CU11</a> <a href="#CU28">CU28</a> <a href="#CU30">CU30</a> <a href="#CU35">CU35</a> <a href="#CU38">CU38</a> <a href="#CU39">CU39</a> <a href="#CU40">CU40</a> <a href="#CU41">CU41</a> <a href="#CU44">CU44</a> <a href="#CU47">CU47</a> <a href="#CU48">CU48</a> <a href="#CU49">CU49</a> <a href="#CU53">CU53</a> <a href="#CU55">CU55</a> <a href="#CU56">CU56</a> <a href="#CU57">CU57</a> <a href="#CU58">CU58</a> <a href="#CU66">CU66</a> <a href="#CU71">CU71</a> <a href="#CU78">CU78</a></nav>
 <h2 id="hallazgos">Hallazgos al revisar el código (ya resueltos)</h2>
 <div class="hallazgo"><b>Arreglado · CU41</b><div>Si la distancia superaba los 100 m, &quot;Validar sesión&quot; dejaba la sesión suspendida sin ofrecer el cierre manual justificado, y cada intento volvía a avisar a los administradores. Ahora la app ofrece &quot;Cierre manual&quot; y la derivación al administrador se hace una sola vez.</div></div><div class="hallazgo"><b>Arreglado · CU30</b><div>El intento de editar o borrar un registro sellado se anotaba dentro de la transacción revertida y se perdía. Ahora queda en la bitácora.</div></div><div class="hallazgo"><b>Arreglado · seguridad</b><div>(1) La nómina del profesional solo se entrega a su dueño (o al administrador). (2) Solo el autor firma, edita o elimina su evolución. (3) Las derivaciones de un episodio solo se listan a quien tiene acceso al paciente. (4) Iniciar y finalizar la atención solo pasan por las marcas temporales (con GPS y certificación), y el paciente solo confirma o cancela sus citas.</div></div><div class="hallazgo"><b>Arreglado · CU46</b><div>La biblioteca de las pautas ya no muestra los recursos de prevención del CU51: esos se habilitan solos al acercarse el alta, y el profesional suma su propio material a cada ejercicio (CU47). La ficha del CU46 no cambia.</div></div><div class="hallazgo"><b>Decidido</b><div>La descarga de la ficha en PDF queda en el CU35 (visor de archivos) y la foto de perfil en el CU09 (datos y privacidad).</div></div><div class="hallazgo"><b>Sin cambio de ficha</b><div>CU12 (RBAC), CU20/CU76 (máquina de estados), CU42 (firma, sigue opcional), CU43 (teleconsulta) y CU46 (biblioteca) no cambian de texto con estos ajustes.</div></div>
 <h2 id="inc4">Casos de uso del Incremento 4 (6)</h2>
@@ -577,6 +578,112 @@ La línea "Qué cambió" va fuera de la tabla: no se copia.</div>
 <li><b>Paquete_Sesiones</b> (<u class="pk">paquete_sesiones_id</u>, sesiones_total, sesiones_usadas, estado, precio_total, momento_adquisicion, <u class="fk">paciente_id</u>)</li>
 <li><b>Disclaimer</b> (<u class="pk">disclaimer_id</u>, momento_aceptacion, version_disclaimer, <u class="fk">paciente_id</u>)</li>
 <li><b>Parametro_Global</b> (<u class="pk">parametro_id</u>, clave, valor, descripcion, ultima_modificacion, <u class="fk">administrador_id</u>)</li></ol>
+<h3 id="fisico">7 · Modelo físico (MySQL)</h3>
+<p>Es lo que cambia en el diagrama del modelo físico del anexo (<code>Modelo_Físico_Inc3.drawio.png</code>), con los tipos y restricciones reales de la base. Sale de las migraciones 47 a 63 y coincide con <code>schema.sql</code>.</p>
+<h4>Cómo actualizar el diagrama</h4><ol><li>Agregar 2 tablas nuevas: Evento_Critico (13 columnas) y Pauta_Ejercicio_Material (11 columnas), con sus tipos, la PK marcada y las FK de la tabla siguiente.</li><li>Sumar 31 columnas nuevas en 10 tablas existentes, con su tipo y si admiten NULL (tabla &quot;Columnas nuevas&quot;).</li><li>Cambiar a NULL las 4 columnas de la tabla &quot;Columnas que cambian&quot; (Bono.financiador_id, Mensaje_Chat.episodio_clinico_id, Evaluacion_Satisfaccion.puntuacion y .cita_id).</li><li>Dibujar las 12 relaciones nuevas de la tabla &quot;Claves foráneas nuevas&quot;, con la misma notación de patas de gallo del anexo. Las que salen de Evento_Critico y de Pauta_Ejercicio_Material conectan las tablas nuevas; las demás unen tablas que ya estaban.</li><li>Marcar los 3 índices nuevos (idx_evento_critico_estado, idx_chat_pareja, uq_eval_episodio) si el diagrama del anexo muestra índices.</li><li>El modelo físico no lleva las tablas que la 3FN separa solo en el modelo lógico (Pauta_Ejercicio_Dia, Evento_Critico_Termino, Origen_Evento_Critico, Evaluacion_Sesion y Evaluacion_Tratamiento): en MySQL esos datos viven en Pauta_Ejercicio.dias_semana, Evento_Critico.terminos (JSON), Evento_Critico.origen/entidad y Evaluacion_Satisfaccion.tipo.</li></ol>
+<h4>Tabla nueva: Evento_Critico <small>CU62 · evento escalado a supervisión por un término crítico</small></h4><div class="tabla-scroll"><table><tr><th>Columna</th><th>Tipo</th><th>Restricciones</th></tr><tr><td><code>evento_critico_id</code></td><td>INT</td><td>PK, AUTO_INCREMENT</td></tr><tr><td><code>origen</code></td><td>VARCHAR(20)</td><td>NOT NULL · SINTOMAS / RESENA / TICKET</td></tr><tr><td><code>entidad</code></td><td>VARCHAR(50)</td><td>NOT NULL · tabla del registro de origen</td></tr><tr><td><code>entidad_id</code></td><td>INT</td><td>NULL · id del registro de origen</td></tr><tr><td><code>termino</code></td><td>VARCHAR(80)</td><td>NOT NULL · primer término crítico detectado</td></tr><tr><td><code>terminos</code></td><td>JSON</td><td>NULL · todos los términos que coincidieron</td></tr><tr><td><code>extracto</code></td><td>VARCHAR(300)</td><td>NULL · fragmento del texto alrededor del término</td></tr><tr><td><code>estado</code></td><td>VARCHAR(20)</td><td>NOT NULL, DEFAULT &#x27;PENDIENTE&#x27; · PENDIENTE / ACUSADO</td></tr><tr><td><code>momento_creacion</code></td><td>TIMESTAMP</td><td>DEFAULT CURRENT_TIMESTAMP</td></tr><tr><td><code>momento_acuse</code></td><td>TIMESTAMP</td><td>NULL</td></tr><tr><td><code>usuario_origen_id</code></td><td>INT</td><td>NULL, FK → Usuario (quien escribió el texto)</td></tr><tr><td><code>paciente_id</code></td><td>INT</td><td>NULL, FK → Paciente (paciente involucrado)</td></tr><tr><td><code>acusado_por</code></td><td>INT</td><td>NULL, FK → Usuario (administrador que acusó recibo)</td></tr></table></div>
+<h4>Tabla nueva: Pauta_Ejercicio_Material <small>CU47 · archivo de apoyo subido por el profesional a un ejercicio</small></h4><div class="tabla-scroll"><table><tr><th>Columna</th><th>Tipo</th><th>Restricciones</th></tr><tr><td><code>pauta_ejercicio_material_id</code></td><td>INT</td><td>PK, AUTO_INCREMENT</td></tr><tr><td><code>pauta_ejercicio_id</code></td><td>INT</td><td>NOT NULL, FK → Pauta_Ejercicio</td></tr><tr><td><code>nombre_original</code></td><td>VARCHAR(255)</td><td>NOT NULL</td></tr><tr><td><code>formato</code></td><td>VARCHAR(10)</td><td>NOT NULL · pdf, docx, jpg, mp4…</td></tr><tr><td><code>tipo_recurso</code></td><td>VARCHAR(10)</td><td>NOT NULL · image / video / raw (Cloudinary)</td></tr><tr><td><code>url_publica</code></td><td>VARCHAR(500)</td><td>NOT NULL</td></tr><tr><td><code>public_id_cloud</code></td><td>VARCHAR(255)</td><td>NOT NULL</td></tr><tr><td><code>tamano_bytes</code></td><td>INT</td><td>NOT NULL</td></tr><tr><td><code>paginas</code></td><td>INT</td><td>NULL · solo PDF</td></tr><tr><td><code>momento_carga</code></td><td>TIMESTAMP</td><td>DEFAULT CURRENT_TIMESTAMP</td></tr><tr><td><code>usuario_id</code></td><td>INT</td><td>NOT NULL, FK → Usuario (quien lo subió)</td></tr></table></div>
+<h4>Columnas nuevas en tablas existentes <small>31 columnas en 10 tablas</small></h4><div class="tabla-scroll"><table><tr><th>Tabla</th><th>Columna</th><th>Tipo</th><th>Restricciones y uso</th></tr><tr><td>Episodio_Clinico</td><td><code>preparacion_alta_en</code></td><td>TIMESTAMP</td><td>NULL · momento en que las metas cruzaron el umbral de egreso</td></tr><tr><td>Episodio_Clinico</td><td><code>pautas_continuidad</code></td><td>TEXT</td><td>NULL · indicaciones del informe de alta (máx. 1000 caracteres en la app)</td></tr><tr><td>Episodio_Clinico</td><td><code>informe_alta_documento_id</code></td><td>INT</td><td>NULL, FK → Documento_Clinico (PDF del informe de alta)</td></tr><tr><td>Episodio_Clinico</td><td><code>informe_alta_emitido_en</code></td><td>TIMESTAMP</td><td>NULL</td></tr><tr><td>Material_Terapeutico</td><td><code>proposito</code></td><td>VARCHAR(20)</td><td>NOT NULL, DEFAULT &#x27;TRATAMIENTO&#x27; · TRATAMIENTO / PREVENCION</td></tr><tr><td>Material_Terapeutico</td><td><code>imagen_url</code></td><td>VARCHAR(255)</td><td>NULL · portada del recurso</td></tr><tr><td>Preferencia_Notificacion</td><td><code>refuerzos</code></td><td>BOOLEAN</td><td>NOT NULL, DEFAULT TRUE · switch &quot;Mensajes de ánimo&quot;</td></tr><tr><td>Derivacion_Interna</td><td><code>momento_respuesta</code></td><td>TIMESTAMP</td><td>NULL · cuando el receptor aceptó o rechazó</td></tr><tr><td>Derivacion_Interna</td><td><code>comentario_respuesta</code></td><td>VARCHAR(255)</td><td>NULL</td></tr><tr><td>Derivacion_Interna</td><td><code>momento_cierre</code></td><td>TIMESTAMP</td><td>NULL · cancelación o cierre del episodio</td></tr><tr><td>Bono</td><td><code>financiador_manual</code></td><td>VARCHAR(100)</td><td>NULL · nombre escrito a mano si el catálogo no responde</td></tr><tr><td>Bono</td><td><code>registrado_por_usuario_id</code></td><td>INT</td><td>NULL, FK → Usuario (profesional o administrador que lo ingresó)</td></tr><tr><td>Bono</td><td><code>momento_registro_manual</code></td><td>TIMESTAMP</td><td>NULL</td></tr><tr><td>Bono</td><td><code>regularizado_en</code></td><td>TIMESTAMP</td><td>NULL · cuando el administrador lo regularizó</td></tr><tr><td>Mensaje_Chat</td><td><code>paciente_id</code></td><td>INT</td><td>NULL, FK → Paciente · la conversación es por pareja paciente–profesional</td></tr><tr><td>Mensaje_Chat</td><td><code>profesional_id</code></td><td>INT</td><td>NULL, FK → Profesional</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_url</code></td><td>VARCHAR(500)</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_public_id</code></td><td>VARCHAR(255)</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_nombre</code></td><td>VARCHAR(255)</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_formato</code></td><td>VARCHAR(10)</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_tipo_recurso</code></td><td>VARCHAR(10)</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_bytes</code></td><td>INT</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>adjunto_paginas</code></td><td>INT</td><td>NULL</td></tr><tr><td>Mensaje_Chat</td><td><code>documento_id</code></td><td>INT</td><td>NULL, FK → Documento_Clinico (documento de la ficha enviado al chat)</td></tr><tr><td>Paciente</td><td><code>foto_url</code></td><td>VARCHAR(500)</td><td>NULL · sin foto se muestran las iniciales</td></tr><tr><td>Cita</td><td><code>documentacion_pendiente</code></td><td>BOOLEAN</td><td>NOT NULL, DEFAULT FALSE</td></tr><tr><td>Pauta_Ejercicio</td><td><code>dias_semana</code></td><td>VARCHAR(20)</td><td>NULL · días ISO separados por coma (&quot;1,3,5&quot;); NULL = todos los días</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>tipo</code></td><td>VARCHAR(20)</td><td>NOT NULL, DEFAULT &#x27;SESION&#x27; · SESION / TRATAMIENTO</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>satisfecho</code></td><td>BOOLEAN</td><td>NULL · respuesta de la evaluación de sesión</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>episodio_clinico_id</code></td><td>INT</td><td>NULL, UNIQUE, FK → Episodio_Clinico (evaluación de tratamiento)</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>profesional_id</code></td><td>INT</td><td>NULL, FK → Profesional (profesional evaluado)</td></tr></table></div>
+<h4>Columnas que cambian de definición</h4><div class="tabla-scroll"><table><tr><th>Tabla</th><th>Columna</th><th>Antes</th><th>Ahora</th><th>Por qué</th></tr><tr><td>Bono</td><td><code>financiador_id</code></td><td><code>INT NOT NULL</code></td><td><code>INT NULL</code></td><td>El bono por contingencia puede no tener financiador del catálogo</td></tr><tr><td>Mensaje_Chat</td><td><code>episodio_clinico_id</code></td><td><code>INT NOT NULL</code></td><td><code>INT NULL</code></td><td>La conversación es por pareja; el episodio queda como contexto</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>puntuacion</code></td><td><code>TINYINT NOT NULL</code></td><td><code>TINYINT NULL</code></td><td>La evaluación de sesión no lleva estrellas</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>cita_id</code></td><td><code>INT NOT NULL</code></td><td><code>INT NULL</code></td><td>La evaluación de tratamiento no tiene cita</td></tr></table></div>
+<h4>Claves foráneas nuevas <small>12</small></h4><div class="tabla-scroll"><table><tr><th>Tabla</th><th>Columna</th><th>Referencia</th><th>Restricción</th><th>Cardinalidad</th></tr><tr><td>Evento_Critico</td><td><code>usuario_origen_id</code></td><td><code>Usuario(usuario_id)</code></td><td><code>FK sin nombre</code></td><td>N:1, opcional</td></tr><tr><td>Evento_Critico</td><td><code>paciente_id</code></td><td><code>Paciente(paciente_id)</code></td><td><code>FK sin nombre</code></td><td>N:1, opcional</td></tr><tr><td>Evento_Critico</td><td><code>acusado_por</code></td><td><code>Usuario(usuario_id)</code></td><td><code>FK sin nombre</code></td><td>N:1, opcional</td></tr><tr><td>Pauta_Ejercicio_Material</td><td><code>pauta_ejercicio_id</code></td><td><code>Pauta_Ejercicio(pauta_ejercicio_id)</code></td><td><code>FK sin nombre</code></td><td>N:1, obligatoria</td></tr><tr><td>Pauta_Ejercicio_Material</td><td><code>usuario_id</code></td><td><code>Usuario(usuario_id)</code></td><td><code>FK sin nombre</code></td><td>N:1, obligatoria</td></tr><tr><td>Episodio_Clinico</td><td><code>informe_alta_documento_id</code></td><td><code>Documento_Clinico(documento_id)</code></td><td><code>fk_episodio_informe_alta</code></td><td>1:0..1, opcional</td></tr><tr><td>Bono</td><td><code>registrado_por_usuario_id</code></td><td><code>Usuario(usuario_id)</code></td><td><code>fk_bono_registrado_por</code></td><td>N:1, opcional</td></tr><tr><td>Mensaje_Chat</td><td><code>paciente_id</code></td><td><code>Paciente(paciente_id)</code></td><td><code>fk_chat_paciente</code></td><td>N:1</td></tr><tr><td>Mensaje_Chat</td><td><code>profesional_id</code></td><td><code>Profesional(profesional_id)</code></td><td><code>fk_chat_profesional</code></td><td>N:1</td></tr><tr><td>Mensaje_Chat</td><td><code>documento_id</code></td><td><code>Documento_Clinico(documento_id)</code></td><td><code>fk_chat_documento</code></td><td>N:1, opcional</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>episodio_clinico_id</code></td><td><code>Episodio_Clinico(episodio_clinico_id)</code></td><td><code>fk_eval_episodio</code></td><td>1:0..1 (UNIQUE), opcional</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>profesional_id</code></td><td><code>Profesional(profesional_id)</code></td><td><code>fk_eval_profesional</code></td><td>N:1, opcional</td></tr></table></div>
+<h4>Índices y restricciones únicas nuevas</h4><div class="tabla-scroll"><table><tr><th>Tabla</th><th>Índice</th><th>Tipo</th><th>Para qué</th></tr><tr><td>Evento_Critico</td><td><code>idx_evento_critico_estado (estado, momento_creacion)</code></td><td>INDEX</td><td>La bandeja lista primero los pendientes y los más recientes</td></tr><tr><td>Mensaje_Chat</td><td><code>idx_chat_pareja (paciente_id, profesional_id, mensaje_id)</code></td><td>INDEX</td><td>Lee la conversación de una pareja en orden</td></tr><tr><td>Evaluacion_Satisfaccion</td><td><code>uq_eval_episodio (episodio_clinico_id)</code></td><td>UNIQUE</td><td>Un tratamiento se califica una sola vez</td></tr></table></div>
+<h4>Script SQL equivalente</h4><p class="leyenda">Las mismas sentencias que aplican las migraciones, por si el anexo muestra el script.</p><pre class="ddl">CREATE TABLE Evento_Critico (
+  evento_critico_id INT PRIMARY KEY AUTO_INCREMENT,
+  origen VARCHAR(20) NOT NULL,
+  entidad VARCHAR(50) NOT NULL,
+  entidad_id INT NULL,
+  termino VARCHAR(80) NOT NULL,
+  terminos JSON NULL,
+  extracto VARCHAR(300) NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT &#x27;PENDIENTE&#x27;,
+  momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  momento_acuse TIMESTAMP NULL DEFAULT NULL,
+  usuario_origen_id INT NULL,
+  paciente_id INT NULL,
+  acusado_por INT NULL,
+  FOREIGN KEY (usuario_origen_id) REFERENCES Usuario(usuario_id),
+  FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+  FOREIGN KEY (acusado_por) REFERENCES Usuario(usuario_id),
+  INDEX idx_evento_critico_estado (estado, momento_creacion)
+);
+
+CREATE TABLE Pauta_Ejercicio_Material (
+  pauta_ejercicio_material_id INT PRIMARY KEY AUTO_INCREMENT,
+  pauta_ejercicio_id INT NOT NULL,
+  nombre_original VARCHAR(255) NOT NULL,
+  formato VARCHAR(10) NOT NULL,
+  tipo_recurso VARCHAR(10) NOT NULL,
+  url_publica VARCHAR(500) NOT NULL,
+  public_id_cloud VARCHAR(255) NOT NULL,
+  tamano_bytes INT NOT NULL,
+  paginas INT NULL,
+  momento_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  usuario_id INT NOT NULL,
+  FOREIGN KEY (pauta_ejercicio_id) REFERENCES Pauta_Ejercicio(pauta_ejercicio_id),
+  FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
+
+ALTER TABLE Episodio_Clinico
+  ADD COLUMN preparacion_alta_en TIMESTAMP NULL DEFAULT NULL,
+  ADD COLUMN pautas_continuidad TEXT NULL,
+  ADD COLUMN informe_alta_documento_id INT NULL,
+  ADD COLUMN informe_alta_emitido_en TIMESTAMP NULL DEFAULT NULL,
+  ADD CONSTRAINT fk_episodio_informe_alta FOREIGN KEY (informe_alta_documento_id) REFERENCES Documento_Clinico(documento_id);
+
+ALTER TABLE Material_Terapeutico
+  ADD COLUMN proposito VARCHAR(20) NOT NULL DEFAULT &#x27;TRATAMIENTO&#x27;,
+  ADD COLUMN imagen_url VARCHAR(255) NULL;
+
+ALTER TABLE Preferencia_Notificacion
+  ADD COLUMN refuerzos BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE Derivacion_Interna
+  ADD COLUMN momento_respuesta TIMESTAMP NULL DEFAULT NULL,
+  ADD COLUMN comentario_respuesta VARCHAR(255) NULL,
+  ADD COLUMN momento_cierre TIMESTAMP NULL DEFAULT NULL;
+
+ALTER TABLE Bono
+  MODIFY COLUMN financiador_id INT NULL,
+  ADD COLUMN financiador_manual VARCHAR(100) NULL,
+  ADD COLUMN registrado_por_usuario_id INT NULL,
+  ADD COLUMN momento_registro_manual TIMESTAMP NULL DEFAULT NULL,
+  ADD COLUMN regularizado_en TIMESTAMP NULL DEFAULT NULL,
+  ADD CONSTRAINT fk_bono_registrado_por FOREIGN KEY (registrado_por_usuario_id) REFERENCES Usuario(usuario_id);
+
+ALTER TABLE Mensaje_Chat
+  MODIFY COLUMN episodio_clinico_id INT NULL,
+  ADD COLUMN paciente_id INT NULL,
+  ADD COLUMN profesional_id INT NULL,
+  ADD COLUMN adjunto_url VARCHAR(500) NULL,
+  ADD COLUMN adjunto_public_id VARCHAR(255) NULL,
+  ADD COLUMN adjunto_nombre VARCHAR(255) NULL,
+  ADD COLUMN adjunto_formato VARCHAR(10) NULL,
+  ADD COLUMN adjunto_tipo_recurso VARCHAR(10) NULL,
+  ADD COLUMN adjunto_bytes INT NULL,
+  ADD COLUMN adjunto_paginas INT NULL,
+  ADD COLUMN documento_id INT NULL,
+  ADD KEY idx_chat_pareja (paciente_id, profesional_id, mensaje_id),
+  ADD CONSTRAINT fk_chat_paciente FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+  ADD CONSTRAINT fk_chat_profesional FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+  ADD CONSTRAINT fk_chat_documento FOREIGN KEY (documento_id) REFERENCES Documento_Clinico(documento_id);
+
+ALTER TABLE Paciente ADD COLUMN foto_url VARCHAR(500) NULL;
+
+ALTER TABLE Cita ADD COLUMN documentacion_pendiente BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE Pauta_Ejercicio ADD COLUMN dias_semana VARCHAR(20) NULL;
+
+ALTER TABLE Evaluacion_Satisfaccion
+  MODIFY COLUMN puntuacion TINYINT NULL,
+  MODIFY COLUMN cita_id INT NULL,
+  ADD COLUMN tipo VARCHAR(20) NOT NULL DEFAULT &#x27;SESION&#x27;,
+  ADD COLUMN satisfecho BOOLEAN NULL,
+  ADD COLUMN episodio_clinico_id INT NULL,
+  ADD COLUMN profesional_id INT NULL,
+  ADD UNIQUE KEY uq_eval_episodio (episodio_clinico_id),
+  ADD CONSTRAINT fk_eval_episodio FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
+  ADD CONSTRAINT fk_eval_profesional FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id);</pre>
+<h4>Párrafo para la Vista Lógica del informe</h4><div class="caja">Para el Incremento 4, el modelo físico suma dos tablas y amplía diez. Evento_Critico guarda los textos que el filtro escala a supervisión, con su estado y el acuse del administrador. Pauta_Ejercicio_Material guarda los archivos de apoyo que el profesional sube a cada ejercicio. Episodio_Clinico incorpora la preparación y el informe de alta. Material_Terapeutico distingue los recursos de prevención. Derivacion_Interna registra la respuesta y el cierre. Bono admite el registro manual por contingencia. Mensaje_Chat pasa a agruparse por paciente y profesional y acepta adjuntos. Evaluacion_Satisfaccion separa la evaluación de cada sesión de la calificación del tratamiento. Paciente, Cita, Pauta_Ejercicio y Preferencia_Notificacion suman la foto de perfil, la documentación pendiente, los días de la semana y la preferencia de los mensajes de ánimo.</div>
 </main>
 <script>
 document.querySelectorAll('button.copiar').forEach(function (b) {

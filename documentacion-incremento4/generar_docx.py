@@ -78,6 +78,19 @@ def tabla_cu(cu):
     return TBL_INICIO + ''.join(filas) + '</w:tbl>'
 
 
+def tabla_simple(cabeza, filas):
+    """Tabla con encabezado en negrita y bordes simples (modelo físico)."""
+    n = len(cabeza)
+    ancho = int(9390 / n)
+    grid = ''.join(f'<w:gridCol w:w="{ancho}"/>' for _ in range(n))
+    def celda(txt, negrita=False):
+        return _tc(_p([_run(str(txt), negrita=negrita, tam=18)], line=240), ancho, True, True)
+    filas_xml = '<w:tr>' + ''.join(celda(c, True) for c in cabeza) + '</w:tr>'
+    filas_xml += ''.join('<w:tr>' + ''.join(celda(c) for c in f) + '</w:tr>' for f in filas)
+    return (f'<w:tbl><w:tblPr><w:tblW w:w="9390" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr>'
+            f'<w:tblGrid>{grid}</w:tblGrid>{filas_xml}</w:tbl>' + _p([_run('')]))
+
+
 def titulo_tabla(texto):
     return _p([_run(texto, cursiva=True, tam=18)], jc='center', estilo='Heading5')
 
