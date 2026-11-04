@@ -7,6 +7,7 @@ const { auditarAccesoClinico } = require('../middlewares/auditarAcceso');
 const episodioController = require('../controllers/clinico/episodioController');
 const altaController = require('../controllers/clinico/altaController');
 const derivacionController = require('../controllers/clinico/derivacionController');
+const evaluacionController = require('../controllers/evaluacionController');
 const fichaClinicaController = require('../controllers/clinico/fichaClinicaController');
 //  CU32: Objetivos terapéuticos y avance 
 const objetivoController = require('../controllers/clinico/objetivoController');
@@ -86,6 +87,18 @@ router.get('/episodio/:episodio_id/informe-alta',
 router.post('/episodio/:episodio_id/informe-alta',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']), auditarAccesoClinico,
     altaController.emitirInformeAlta
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CU55 (correcciones Inc 4) — Calificación general al terminar el tratamiento
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/tratamientos/por-evaluar',
+    verifyToken, authorizeRoles(['Paciente']),
+    evaluacionController.tratamientosPorEvaluar
+);
+router.post('/episodio/:episodio_id/evaluacion',
+    verifyToken, authorizeRoles(['Paciente']),
+    evaluacionController.registrarEvaluacionTratamiento
 );
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -7,6 +7,14 @@
  * distintas. La nota entra siempre en el promedio del profesional apenas se
  * registra; lo que pasa por moderación es la reseña escrita, que es lo único
  * que se publica hacia afuera.
+ *
+ * Correcciones Inc 4: hay dos momentos de evaluación.
+ *   - SESION: después de cada cita solo se pregunta si la atención satisfizo
+ *     las necesidades del paciente (sí/no) y se ofrece un comentario.
+ *   - TRATAMIENTO: la calificación general del profesional (1 a 5 estrellas
+ *     y reseña) se pide una sola vez, al cerrarse el episodio.
+ * El promedio del profesional sale de las notas en estrellas (las de
+ * tratamiento y las de sesión anteriores a este cambio, que se conservan).
  */
 
 const pool = require('./../config/database');
@@ -40,10 +48,9 @@ async function recalcularPromedio(conexion, profesionalId) {
   );
 
   const [[resumen]] = await conexion.execute(
-    `SELECT COUNT(*) AS total, COALESCE(AVG(e.puntuacion), 0) AS promedio
+    `SELECT COUNT(e.puntuacion) AS total, COALESCE(AVG(e.puntuacion), 0) AS promedio
        FROM Evaluacion_Satisfaccion e
-       JOIN Cita c ON c.cita_id = e.cita_id
-      WHERE c.profesional_id = ?`,
+      WHERE e.profesional_id = ? AND e.puntuacion IS NOT NULL`,
     [profesionalId]
   );
 
@@ -57,21 +64,21 @@ async function recalcularPromedio(conexion, profesionalId) {
 }
 
 /**
- * POST /api/citas/:id/evaluacion   { puntuacion, resena }
+ * POST /api/citas/:id/evaluacion   { satisfecho: true|false, resena? }
  *
- * La puede enviar el paciente desde su teléfono o el profesional entregándole
- * el suyo al cerrar la sesión: los dos son parte de esa cita. Queda registrado
- * quién la envió.
+ * Evaluación de cada sesión: solo si la atención satisfizo las necesidades
+ * del paciente, más un comentario opcional. Sin estrellas: la calificación
+ * general se pide al cerrar el tratamiento.
  */
 exports.registrarEvaluacion = async (req, res) => {
   const { id } = req.params;
-  const puntuacion = Number(req.body?.puntuacion);
+  const satisfecho = req.body?.satisfecho;
   const resenaCruda = sanear(req.body?.resena);
 
-  if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+  if (typeof satisfecho !== 'boolean') {
     return res.status(400).json({
-      error: 'PUNTUACION_INVALIDA',
-      mensaje: 'La calificación va de 1 a 5 estrellas.',
+      error: 'RESPUESTA_INVALIDA',
+      mensaje: 'Indica si la atención satisfizo tus necesidades.',
     });
   }
 
@@ -141,12 +148,11 @@ exports.registrarEvaluacion = async (req, res) => {
     await conexion.beginTransaction();
 
     const [evaluacionCreada] = await conexion.execute(
-      `INSERT INTO Evaluacion_Satisfaccion (puntuacion, resena, estado_moderacion, cita_id)
-       VALUES (?, ?, ?, ?)`,
-      [puntuacion, resena || null, resena ? ESTADOS.PENDIENTE : ESTADOS.APROBADA, id]
+      `INSERT INTO Evaluacion_Satisfaccion
+         (tipo, satisfecho, puntuacion, resena, estado_moderacion, cita_id, profesional_id)
+       VALUES ('SESION', ?, NULL, ?, ?, ?, ?)`,
+      [satisfecho, resena || null, resena ? ESTADOS.PENDIENTE : ESTADOS.APROBADA, id, cita.profesional_id]
     );
-
-    const promedio = await recalcularPromedio(conexion, cita.profesional_id);
 
     await conexion.execute(
       `INSERT INTO Bitacora_Auditoria
@@ -156,7 +162,8 @@ exports.registrarEvaluacion = async (req, res) => {
         req.ip || null,
         JSON.stringify({
           cita_id: Number(id),
-          puntuacion,
+          tipo: 'SESION',
+          satisfecho,
           con_resena: Boolean(resena),
           resena_bloqueada: resenaBloqueada,
           registrada_por: esPaciente ? 'PACIENTE' : 'PROFESIONAL',
@@ -177,14 +184,12 @@ exports.registrarEvaluacion = async (req, res) => {
 
     return res.status(201).json({
       mensaje: resenaBloqueada
-        ? 'No se pudo registrar el mensaje porque incluye términos no permitidos.'
+        ? 'Tu respuesta quedó registrada, pero no el comentario porque incluye términos no permitidos.'
         : resena
-          ? 'Gracias. Tu calificación quedó registrada y tu comentario pasará por revisión antes de publicarse.'
-          : 'Gracias. Tu calificación quedó registrada.',
-      puntuacion,
+          ? 'Gracias. Tu respuesta quedó registrada y tu comentario pasará por revisión antes de publicarse.'
+          : 'Gracias. Tu respuesta quedó registrada.',
+      satisfecho,
       resena_bloqueada: resenaBloqueada,
-      promedio_profesional: promedio.promedio,
-      total_evaluaciones: promedio.total,
     });
   } catch (error) {
     await conexion.rollback().catch(() => {});
@@ -195,6 +200,159 @@ exports.registrarEvaluacion = async (req, res) => {
     });
   } finally {
     conexion.release();
+  }
+};
+
+/**
+ * POST /api/clinica/episodio/:episodio_id/evaluacion   { puntuacion, resena? }  (Paciente)
+ *
+ * Calificación general del profesional, una sola vez por tratamiento, cuando
+ * el episodio ya está cerrado. Esta nota entra al promedio público (CU58).
+ */
+exports.registrarEvaluacionTratamiento = async (req, res) => {
+  const { episodio_id } = req.params;
+  const puntuacion = Number(req.body?.puntuacion);
+  const resenaCruda = sanear(req.body?.resena);
+
+  if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+    return res.status(400).json({ error: 'PUNTUACION_INVALIDA', mensaje: 'La calificación va de 1 a 5 estrellas.' });
+  }
+
+  const conexion = await pool.getConnection();
+  try {
+    const [[episodio]] = await conexion.execute(
+      `SELECT ec.episodio_clinico_id, ec.estado, ec.profesional_id, pa.usuario_id AS usuario_paciente
+         FROM Episodio_Clinico ec JOIN Paciente pa ON pa.paciente_id = ec.paciente_id
+        WHERE ec.episodio_clinico_id = ? LIMIT 1`,
+      [episodio_id]
+    );
+    if (!episodio || Number(episodio.usuario_paciente) !== Number(req.user.usuario_id)) {
+      return res.status(404).json({ error: 'EPISODIO_NO_ENCONTRADO', mensaje: 'Ese tratamiento no existe o no es tuyo.' });
+    }
+    if (String(episodio.estado || '').toUpperCase() !== 'CERRADO') {
+      return res.status(409).json({
+        error: 'TRATAMIENTO_EN_CURSO',
+        mensaje: 'La calificación general se habilita cuando tu profesional cierra el tratamiento.',
+      });
+    }
+    const [[yaExiste]] = await conexion.execute(
+      `SELECT 1 AS si FROM Evaluacion_Satisfaccion WHERE episodio_clinico_id = ? LIMIT 1`,
+      [episodio_id]
+    );
+    if (yaExiste) {
+      return res.status(409).json({ error: 'YA_EVALUADA', mensaje: 'Ya calificaste este tratamiento. Gracias por tu respuesta.' });
+    }
+
+    let resena = resenaCruda;
+    let resenaBloqueada = false;
+    if (resena) {
+      const revision = await revisar(resena);
+      if (!revision.permitido) {
+        resena = null;
+        resenaBloqueada = true;
+      }
+    }
+
+    await conexion.beginTransaction();
+    const [creada] = await conexion.execute(
+      `INSERT INTO Evaluacion_Satisfaccion
+         (tipo, puntuacion, resena, estado_moderacion, episodio_clinico_id, profesional_id)
+       VALUES ('TRATAMIENTO', ?, ?, ?, ?, ?)`,
+      [puntuacion, resena || null, resena ? ESTADOS.PENDIENTE : ESTADOS.APROBADA, episodio_id, episodio.profesional_id]
+    );
+    const promedio = await recalcularPromedio(conexion, episodio.profesional_id);
+    await conexion.execute(
+      `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
+       VALUES ('EVALUACION_TRATAMIENTO', 'Evaluacion_Satisfaccion', ?, ?, ?)`,
+      [req.ip || null, JSON.stringify({ episodio_clinico_id: Number(episodio_id), puntuacion, con_resena: Boolean(resena), resena_bloqueada: resenaBloqueada }), req.user.usuario_id]
+    );
+    await conexion.commit();
+
+    if (resena) {
+      escalar(pool, {
+        texto: resena, origen: 'RESENA', entidad: 'Evaluacion_Satisfaccion', entidadId: creada.insertId,
+        usuarioOrigenId: req.user.usuario_id,
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({
+      mensaje: resenaBloqueada
+        ? 'Tu calificación quedó registrada, pero no el comentario porque incluye términos no permitidos.'
+        : resena
+          ? 'Gracias. Tu calificación quedó registrada y tu reseña pasará por revisión antes de publicarse.'
+          : 'Gracias. Tu calificación quedó registrada.',
+      puntuacion,
+      resena_bloqueada: resenaBloqueada,
+      promedio_profesional: promedio.promedio,
+      total_evaluaciones: promedio.total,
+    });
+  } catch (error) {
+    await conexion.rollback().catch(() => {});
+    console.error('[registrarEvaluacionTratamiento CU55]', error);
+    return res.status(500).json({ error: 'NO_SE_PUDO_EVALUAR', mensaje: 'No pudimos registrar tu calificación. Vuelve a intentarlo.' });
+  } finally {
+    conexion.release();
+  }
+};
+
+/**
+ * GET /api/clinica/tratamientos/por-evaluar   (Paciente)
+ * Tratamientos cerrados que el paciente todavía no califica.
+ */
+exports.tratamientosPorEvaluar = async (req, res) => {
+  try {
+    const [tratamientos] = await pool.query(
+      `SELECT ec.episodio_clinico_id, ec.motivo_consulta, ec.fecha_inicio, ec.fecha_terminado,
+              ec.profesional_id,
+              COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno)), ''),
+                       CONCAT('Profesional #', ec.profesional_id)) AS profesional,
+              es.nombre AS especialidad
+         FROM Episodio_Clinico ec
+         JOIN Paciente pa ON pa.paciente_id = ec.paciente_id
+         JOIN Profesional pr ON pr.profesional_id = ec.profesional_id
+         LEFT JOIN Usuario u ON u.usuario_id = pr.usuario_id
+         LEFT JOIN Especialidad es ON es.especialidad_id = pr.especialidad_id
+         LEFT JOIN Evaluacion_Satisfaccion e ON e.episodio_clinico_id = ec.episodio_clinico_id
+        WHERE pa.usuario_id = ? AND UPPER(COALESCE(ec.estado, '')) = 'CERRADO'
+          AND e.evaluacion_satisfaccion_id IS NULL
+        ORDER BY ec.fecha_terminado DESC
+        LIMIT 10`,
+      [req.user.usuario_id]
+    );
+    return res.status(200).json({ tratamientos });
+  } catch (error) {
+    console.error('[tratamientosPorEvaluar CU55]', error);
+    return res.status(200).json({ tratamientos: [] });
+  }
+};
+
+/**
+ * Al cerrarse un episodio se le pide al paciente la calificación general del
+ * tratamiento. Nunca lanza: el cierre no puede depender del aviso.
+ */
+exports.pedirEvaluacionTratamiento = async (conexion, episodioId) => {
+  try {
+    const [[fila]] = await conexion.query(
+      `SELECT pa.usuario_id, ec.motivo_consulta,
+              TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno)) AS profesional
+         FROM Episodio_Clinico ec
+         JOIN Paciente pa ON pa.paciente_id = ec.paciente_id
+         JOIN Profesional pr ON pr.profesional_id = ec.profesional_id
+         JOIN Usuario u ON u.usuario_id = pr.usuario_id
+        WHERE ec.episodio_clinico_id = ? LIMIT 1`,
+      [episodioId]
+    );
+    if (!fila) return false;
+    return notificarUsuario(
+      conexion,
+      fila.usuario_id,
+      'EVALUAR_TRATAMIENTO',
+      `Terminó tu tratamiento con ${fila.profesional || 'tu profesional'}. ¿Cómo lo calificarías? Tu opinión ayuda a otros pacientes a elegir.`,
+      { datos: { pantalla: 'MisCitas', evaluar_episodio_id: Number(episodioId) } }
+    );
+  } catch (error) {
+    console.error('[pedirEvaluacionTratamiento]', error.message);
+    return false;
   }
 };
 
@@ -242,15 +400,14 @@ exports.resenasPublicas = async (req, res) => {
   const { profesional_id } = req.params;
   try {
     const [[resumen]] = await pool.query(
-      `SELECT COUNT(*) AS total, COALESCE(AVG(e.puntuacion), 0) AS promedio
+      `SELECT COUNT(e.puntuacion) AS total, COALESCE(AVG(e.puntuacion), 0) AS promedio
          FROM Evaluacion_Satisfaccion e
-         JOIN Cita c ON c.cita_id = e.cita_id
-        WHERE c.profesional_id = ?`,
+        WHERE e.profesional_id = ? AND e.puntuacion IS NOT NULL`,
       [profesional_id]
     );
 
     const [resenas] = await pool.query(
-      `SELECT e.evaluacion_satisfaccion_id, e.puntuacion, e.resena, e.momento_creacion,
+      `SELECT e.evaluacion_satisfaccion_id, e.tipo, e.satisfecho, e.puntuacion, e.resena, e.momento_creacion,
               -- Nombre y la inicial del apellido, salvo que el paciente haya
               -- pedido aparecer como anónimo (Seguridad y privacidad).
               CASE WHEN pa.resena_anonima THEN 'Anónimo'
@@ -260,10 +417,11 @@ exports.resenasPublicas = async (req, res) => {
                      'Paciente')
               END AS autor
          FROM Evaluacion_Satisfaccion e
-         JOIN Cita c ON c.cita_id = e.cita_id
-         JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+         LEFT JOIN Cita c ON c.cita_id = e.cita_id
+         LEFT JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = e.episodio_clinico_id
+         JOIN Paciente pa ON pa.paciente_id = COALESCE(c.paciente_id, ec.paciente_id)
          LEFT JOIN Usuario u ON u.usuario_id = pa.usuario_id
-        WHERE c.profesional_id = ?
+        WHERE e.profesional_id = ?
           AND e.estado_moderacion = 'APROBADA'
           AND e.resena IS NOT NULL
         ORDER BY e.momento_creacion DESC
@@ -299,22 +457,23 @@ exports.bandejaModeracion = async (req, res) => {
 
   try {
     const [filas] = await pool.query(
-      `SELECT e.evaluacion_satisfaccion_id, e.puntuacion, e.resena, e.estado_moderacion,
+      `SELECT e.evaluacion_satisfaccion_id, e.tipo, e.satisfecho, e.puntuacion, e.resena, e.estado_moderacion,
               e.motivo_rechazo, e.momento_creacion, e.momento_moderacion,
-              c.cita_id, c.fecha_hora_inicio,
+              c.cita_id, COALESCE(c.fecha_hora_inicio, ec.fecha_terminado) AS fecha_hora_inicio,
               COALESCE(
                 NULLIF(TRIM(CONCAT_WS(' ', pu.nombres, pu.apellido_paterno)), ''),
-                CONCAT('Profesional #', c.profesional_id)
+                CONCAT('Profesional #', e.profesional_id)
               ) AS profesional,
               COALESCE(
                 NULLIF(TRIM(CONCAT_WS(' ', au.nombres, au.apellido_paterno)), ''),
-                CONCAT('Paciente #', c.paciente_id)
+                'Paciente'
               ) AS paciente
          FROM Evaluacion_Satisfaccion e
-         JOIN Cita c ON c.cita_id = e.cita_id
-         JOIN Profesional pr ON pr.profesional_id = c.profesional_id
+         LEFT JOIN Cita c ON c.cita_id = e.cita_id
+         LEFT JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = e.episodio_clinico_id
+         JOIN Profesional pr ON pr.profesional_id = e.profesional_id
          LEFT JOIN Usuario pu ON pu.usuario_id = pr.usuario_id
-         JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+         JOIN Paciente pa ON pa.paciente_id = COALESCE(c.paciente_id, ec.paciente_id)
          LEFT JOIN Usuario au ON au.usuario_id = pa.usuario_id
         WHERE e.estado_moderacion = ?
           AND e.resena IS NOT NULL
@@ -365,9 +524,8 @@ exports.moderarResena = async (req, res) => {
     await conexion.beginTransaction();
 
     const [[evaluacion]] = await conexion.execute(
-      `SELECT e.evaluacion_satisfaccion_id, e.estado_moderacion, c.profesional_id
+      `SELECT e.evaluacion_satisfaccion_id, e.estado_moderacion, e.profesional_id
          FROM Evaluacion_Satisfaccion e
-         JOIN Cita c ON c.cita_id = e.cita_id
         WHERE e.evaluacion_satisfaccion_id = ? LIMIT 1 FOR UPDATE`,
       [req.params.id]
     );

@@ -1493,6 +1493,40 @@ const MIGRACIONES = [
           WHERE clave = 'RADIO_PRESENCIALIDAD_METROS'`
       );
     },
+  },  {
+    nombre: 'Evaluación por sesión (satisfacción) y por tratamiento (estrellas) (CU55)',
+    descripcion: 'Por cita solo sí/no y comentario; la nota en estrellas se pide al cerrar el episodio',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Evaluacion_Satisfaccion' AND COLUMN_NAME = 'tipo'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Evaluacion_Satisfaccion
+           MODIFY COLUMN puntuacion TINYINT NULL,
+           MODIFY COLUMN cita_id INT NULL,
+           ADD COLUMN tipo VARCHAR(20) NOT NULL DEFAULT 'SESION',
+           ADD COLUMN satisfecho BOOLEAN NULL,
+           ADD COLUMN episodio_clinico_id INT NULL,
+           ADD COLUMN profesional_id INT NULL`
+      );
+      // Las evaluaciones anteriores eran por cita y con estrellas: se conservan
+      // y siguen contando en el promedio del profesional.
+      await conexion.query(
+        `UPDATE Evaluacion_Satisfaccion e JOIN Cita c ON c.cita_id = e.cita_id
+            SET e.profesional_id = c.profesional_id`
+      );
+      await conexion.query(
+        `ALTER TABLE Evaluacion_Satisfaccion
+           ADD UNIQUE KEY uq_eval_episodio (episodio_clinico_id),
+           ADD CONSTRAINT fk_eval_episodio FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
+           ADD CONSTRAINT fk_eval_profesional FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)`
+      );
+    },
   },
 ];
 

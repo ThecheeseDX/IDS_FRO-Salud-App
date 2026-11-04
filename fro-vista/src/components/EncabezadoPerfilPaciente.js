@@ -14,7 +14,7 @@ import DialogoAviso from './DialogoAviso';
 import DialogoConfirmacion from './DialogoConfirmacion';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../theme';
 
-export default function EncabezadoPerfilPaciente() {
+export default function EncabezadoPerfilPaciente({ navigation }) {
   const [perfil, setPerfil] = useState(null);
   const [subiendo, setSubiendo] = useState(false);
   const [aviso, setAviso] = useState(null);
@@ -111,6 +111,16 @@ export default function EncabezadoPerfilPaciente() {
             </TouchableOpacity>
           ) : null}
         </View>
+        {navigation && (
+          <TouchableOpacity
+            style={estilos.botonDatos}
+            onPress={() => navigation.navigate('MisDatos')}
+            activeOpacity={interaccion.opacidadActiva}
+            accessibilityRole="button"
+          >
+            <Text style={estilos.botonDatosTexto}>Editar mis datos</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <DialogoConfirmacion
@@ -148,4 +158,6 @@ const estilos = StyleSheet.create({
   acciones: { flexDirection: 'row', gap: espacio.lg, marginTop: espacio.sm },
   enlace: { ...tipografia.metaFuerte, color: colores.primario },
   enlaceQuitar: { ...tipografia.metaFuerte, color: colores.error },
+  botonDatos: { ...piezas.botonSecundario, paddingVertical: espacio.sm, paddingHorizontal: espacio.base, marginTop: espacio.md, alignSelf: 'flex-start' },
+  botonDatosTexto: { ...tipografia.metaFuerte, color: colores.primario },
 });

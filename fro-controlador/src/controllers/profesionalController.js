@@ -440,10 +440,9 @@ async function perfilDonde(condicion, valor) {
   // CU58: la calificación que ven los pacientes, para que el profesional sepa
   // cómo aparece. Sin evaluaciones el promedio no significa nada.
   const [[evaluaciones]] = await db.query(
-    `SELECT COUNT(*) AS total
+    `SELECT COUNT(es.puntuacion) AS total
        FROM Evaluacion_Satisfaccion es
-       JOIN Cita c ON c.cita_id = es.cita_id
-      WHERE c.profesional_id = ?`,
+      WHERE es.profesional_id = ? AND es.puntuacion IS NOT NULL`,
     [perfil.profesional_id]
   );
   perfil.total_evaluaciones = Number(evaluaciones.total) || 0;

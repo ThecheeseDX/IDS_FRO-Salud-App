@@ -212,6 +212,8 @@ exports.emitirInformeAlta = async (req, res) => {
         { datos: { pantalla: 'Documentos' } }
       );
       await conexion.commit();
+      // CU55 (correcciones Inc 4): al terminar el tratamiento se pide la calificación general.
+      require('../evaluacionController').pedirEvaluacionTratamiento(pool, episodio_id);
 
       return res.status(201).json({
         mensaje: truncada

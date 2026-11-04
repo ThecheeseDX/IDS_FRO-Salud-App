@@ -414,8 +414,19 @@ export const eliminarPalabraRestringida = async (id) => {
 //  CU55 / CU56 / CU58 — Evaluación, moderación y calificación
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const registrarEvaluacion = async (citaId, { puntuacion, resena }) => {
-  const response = await apiClient.post(`/citas/${citaId}/evaluacion`, { puntuacion, resena });
+// Por sesión: { satisfecho, resena }. La nota en estrellas va por tratamiento.
+export const registrarEvaluacion = async (citaId, datos) => {
+  const response = await apiClient.post(`/citas/${citaId}/evaluacion`, datos);
+  return response.data;
+};
+
+// CU55 (correcciones Inc 4): calificación general al cerrar el tratamiento.
+export const getTratamientosPorEvaluar = async () => {
+  const response = await apiClient.get('/clinica/tratamientos/por-evaluar');
+  return response.data;
+};
+export const registrarEvaluacionTratamiento = async (episodioId, { puntuacion, resena }) => {
+  const response = await apiClient.post(`/clinica/episodio/${episodioId}/evaluacion`, { puntuacion, resena });
   return response.data;
 };
 

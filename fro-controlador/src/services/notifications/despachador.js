@@ -40,7 +40,7 @@ const TIPOS = {
   TICKET_SIN_OPERADOR:    { titulo: 'Ticket sin operador',          pantalla: 'BandejaSoporte' },
   TICKET_RESUELTO:        { titulo: 'Tu solicitud fue atendida',    pantalla: 'Soporte' },
   LIQUIDACION_EMITIDA:    { titulo: 'Liquidación emitida',           pantalla: 'MisLiquidaciones' },
-  EVALUAR_SESION:         { titulo: 'Califica tu atención',          pantalla: 'MisCitas' },
+  EVALUAR_SESION:         { titulo: '¿Cómo fue tu sesión?',          pantalla: 'MisCitas' },
   RECORDATORIO_PAGO:      { titulo: 'Paga tu hora',                 pantalla: 'MisCitas' },
   DEVOLUCION_PAGO:        { titulo: 'Te devolvimos el pago',         pantalla: 'Pagos' },
   ALERTA_DETERIORO:       { titulo: 'Bandera roja de un paciente',  pantalla: 'DashboardProfesional' },
@@ -52,6 +52,7 @@ const TIPOS = {
   EVENTO_CRITICO:         { titulo: 'Evento crítico escalado',       pantalla: 'EventosCriticos' },
   DERIVACION_RECIBIDA:    { titulo: 'Nueva derivación interna',      pantalla: 'DerivacionesRecibidas' },
   DERIVACION_RESPONDIDA:  { titulo: 'Respuesta a tu derivación',     pantalla: 'FichaClinica' },
+  EVALUAR_TRATAMIENTO:    { titulo: 'Califica tu tratamiento',      pantalla: 'MisCitas' },
   BONO_PROVISORIO:        { titulo: 'Bono registrado en contingencia', pantalla: 'Pagos' },
 };
 

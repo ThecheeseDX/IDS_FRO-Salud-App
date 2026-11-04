@@ -38,6 +38,7 @@ import EventosCriticosScreen from '../screens/Admin/EventosCriticosScreen';
 import DerivacionInternaScreen from '../screens/Profesional/DerivacionInternaScreen';
 import DerivacionesRecibidasScreen from '../screens/Profesional/DerivacionesRecibidasScreen';
 import ContingenciaBonosScreen from '../screens/Comun/ContingenciaBonosScreen';
+import MisDatosScreen from '../screens/Paciente/MisDatosScreen';
 import ReportesScreen from '../screens/Admin/ReportesScreen';
 import LiquidacionesScreen from '../screens/Admin/LiquidacionesScreen';
 // Pantallas — Comunes a los tres roles
@@ -188,6 +189,8 @@ export default function AppNavigator() {
             {/* CU73: cobro anticipado antes de confirmar la hora */}
             <Stack.Screen name="PagarReserva" component={PagarReservaScreen} options={{ title: 'Pagar tu hora' }} />
             <Stack.Screen name="Pagos" component={PagosScreen} options={{ title: 'Pagos y Bonos' }} />
+            {/* Datos de contacto editables del paciente (dentro del CU09) */}
+            <Stack.Screen name="MisDatos" component={MisDatosScreen} options={{ title: 'Mis datos' }} />
             <Stack.Screen name="EvidenciaSesion" component={EvidenciaSesionScreen} options={{ title: 'Evidencia de Sesión' }} />
             <Stack.Screen
               name="BuscarCita"

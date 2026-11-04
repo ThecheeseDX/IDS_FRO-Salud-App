@@ -700,7 +700,12 @@ CREATE TABLE Liquidacion (
 
 CREATE TABLE Evaluacion_Satisfaccion(
     evaluacion_satisfaccion_id INT PRIMARY KEY AUTO_INCREMENT,
-    puntuacion TINYINT NOT NULL,
+    -- CU55 (correcciones Inc 4): SESION = después de cada cita, solo si la
+    -- atención satisfizo (sí/no) y comentario; TRATAMIENTO = al cerrar el
+    -- episodio, la nota en estrellas que entra al promedio del profesional.
+    tipo VARCHAR(20) NOT NULL DEFAULT 'SESION',
+    satisfecho BOOLEAN NULL,
+    puntuacion TINYINT NULL,
     resena VARCHAR(300),
     -- CU56: la nota cuenta siempre para el promedio; lo que se modera es el
     -- TEXTO. PENDIENTE no se publica, APROBADA sí, RECHAZADA queda oculta con
@@ -710,8 +715,13 @@ CREATE TABLE Evaluacion_Satisfaccion(
     moderador_id INT NULL,
     momento_moderacion TIMESTAMP NULL,
     momento_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    cita_id INT NOT NULL UNIQUE,
-    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id)
+    cita_id INT NULL UNIQUE,
+    episodio_clinico_id INT NULL,
+    profesional_id INT NULL,
+    UNIQUE KEY uq_eval_episodio (episodio_clinico_id),
+    FOREIGN KEY (cita_id) REFERENCES Cita(cita_id),
+    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)
 );
 
 CREATE TABLE Transaccion(

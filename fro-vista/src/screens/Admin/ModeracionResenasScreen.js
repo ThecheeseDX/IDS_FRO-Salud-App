@@ -134,7 +134,12 @@ export default function ModeracionResenasScreen() {
             evaluaciones.map((e) => (
               <View key={e.evaluacion_satisfaccion_id} style={estilos.tarjeta}>
                 <View style={estilos.cabecera}>
-                  <Text style={estilos.estrellas}>{'★'.repeat(e.puntuacion)}{'☆'.repeat(5 - e.puntuacion)}</Text>
+                  {/* Correcciones Inc 4: los comentarios de sesión no llevan estrellas. */}
+                  <Text style={estilos.estrellas}>
+                    {e.puntuacion
+                      ? `${'★'.repeat(e.puntuacion)}${'☆'.repeat(5 - e.puntuacion)} · tratamiento`
+                      : `Sesión · ${Number(e.satisfecho) ? '👍 satisfizo sus necesidades' : '👎 no las satisfizo'}`}
+                  </Text>
                   <Text style={estilos.momento}>{formatearFechaHora(e.momento_creacion)}</Text>
                 </View>
 

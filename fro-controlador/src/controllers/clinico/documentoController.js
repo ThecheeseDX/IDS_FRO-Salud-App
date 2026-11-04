@@ -34,10 +34,14 @@ async function prepararVisor(archivo, guardarPaginas = async () => {}) {
   // documentos de Google incrustado, que lee la URL pública del archivo.
   else if (archivo.formato === 'docx') visor = 'documento';
 
+  // HEIC (fotos de iPhone) no se dibuja en todos los teléfonos: el visor la
+  // pide convertida a JPG; el original se sigue descargando tal cual.
   const urlVisor =
     visor === 'documento'
       ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(archivo.url_publica)}`
-      : archivo.url_publica;
+      : visor === 'imagen' && archivo.formato === 'heic' && archivo.public_id_cloud
+        ? cloudinary.url(archivo.public_id_cloud, { resource_type: 'image', format: 'jpg', secure: true })
+        : archivo.url_publica;
 
   const paginasUrls = [];
   let paginas = archivo.paginas;

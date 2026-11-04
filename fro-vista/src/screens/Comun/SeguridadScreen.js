@@ -437,7 +437,7 @@ export default function SeguridadScreen({ navigation, comoPerfil = false }) {
       {comoPerfil ? (
         <>
           {/* Foto de perfil opcional del paciente (sin foto, sus iniciales). */}
-          <EncabezadoPerfilPaciente />
+          <EncabezadoPerfilPaciente navigation={navigation} />
           <PieDePerfil navigation={navigation} tituloSeguridad="Seguridad y privacidad" alInicio />
         </>
       ) : (

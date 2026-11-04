@@ -58,11 +58,14 @@ exports.kpis = async (req, res) => {
     );
 
     const [[satisfaccion]] = await pool.query(
-      `SELECT COUNT(*) AS evaluaciones, COALESCE(AVG(puntuacion), 0) AS promedio
+      `SELECT COUNT(e.puntuacion) AS evaluaciones, COALESCE(AVG(e.puntuacion), 0) AS promedio,
+              -- Correcciones Inc 4: respuestas por sesión (¿satisfizo sus necesidades?).
+              COUNT(e.satisfecho) AS respuestas_sesion,
+              COALESCE(SUM(e.satisfecho = TRUE), 0) AS sesiones_satisfechas
          FROM Evaluacion_Satisfaccion e
-         JOIN Cita c ON c.cita_id = e.cita_id
-        WHERE (? IS NULL OR DATE(c.fecha_hora_inicio) >= ?)
-          AND (? IS NULL OR DATE(c.fecha_hora_inicio) <= ?)`,
+         LEFT JOIN Cita c ON c.cita_id = e.cita_id
+        WHERE (? IS NULL OR DATE(COALESCE(c.fecha_hora_inicio, e.momento_creacion)) >= ?)
+          AND (? IS NULL OR DATE(COALESCE(c.fecha_hora_inicio, e.momento_creacion)) <= ?)`,
       [desde, desde, hasta, hasta]
     );
 
@@ -130,6 +133,8 @@ exports.kpis = async (req, res) => {
       satisfaccion: {
         promedio: Number(Number(satisfaccion?.promedio || 0).toFixed(2)),
         evaluaciones: Number(satisfaccion?.evaluaciones || 0),
+        respuestas_sesion: Number(satisfaccion?.respuestas_sesion || 0),
+        sesiones_satisfechas: Number(satisfaccion?.sesiones_satisfechas || 0),
       },
       adherencia: {
         promedio: Math.round(Number(adherencia?.promedio || 0)),

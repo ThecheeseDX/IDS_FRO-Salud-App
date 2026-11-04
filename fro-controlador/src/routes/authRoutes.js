@@ -59,6 +59,9 @@ function manejarErrorFoto(err, req, res, next) {
 router.get('/mi-foto', verifyToken, authorizeRoles(['Paciente']), perfilPacienteController.obtener);
 router.post('/mi-foto', verifyToken, authorizeRoles(['Paciente']), cargaFoto.single('foto'), manejarErrorFoto, perfilPacienteController.subir);
 router.delete('/mi-foto', verifyToken, authorizeRoles(['Paciente']), perfilPacienteController.quitar);
+// Datos de contacto editables del paciente (dirección, teléfono, contacto de emergencia).
+router.get('/mi-perfil-paciente', verifyToken, authorizeRoles(['Paciente']), perfilPacienteController.obtenerDatos);
+router.put('/mi-perfil-paciente', verifyToken, authorizeRoles(['Paciente']), perfilPacienteController.actualizarDatos);
 
 router.get('/mi-perfil', verifyToken, (req, res) => {
     res.status(200).json({ 

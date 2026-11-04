@@ -78,9 +78,11 @@ export default function ResenasProfesionalScreen({ route, navigation }) {
         datos.resenas.map((r) => (
           <View key={r.evaluacion_satisfaccion_id} style={estilos.tarjeta}>
             <View style={estilos.cabecera}>
+              {/* Correcciones Inc 4: los comentarios de sesión no llevan estrellas. */}
               <Text style={estilos.estrellasChicas}>
-                {'★'.repeat(r.puntuacion)}
-                {'☆'.repeat(5 - r.puntuacion)}
+                {r.puntuacion
+                  ? `${'★'.repeat(r.puntuacion)}${'☆'.repeat(5 - r.puntuacion)}`
+                  : Number(r.satisfecho) ? '👍 Sesión: satisfizo sus necesidades' : '👎 Sesión: no las satisfizo'}
               </Text>
               <Text style={estilos.momento}>{formatearFecha(r.momento_creacion)}</Text>
             </View>

@@ -1,5 +1,6 @@
 const pool = require('../../config/database');
 const { cerrarDerivacionesDelEpisodio } = require('../../services/clinico/accesoClinicoService');
+const { pedirEvaluacionTratamiento } = require('../evaluacionController');
 const { ESTADO_ABIERTO, ESTADO_CERRADO } = require('../../services/clinico/episodioService');
 const { resumenCierre, impedimentoDeCierre } = require('../../services/clinico/altaService');
 
@@ -147,6 +148,8 @@ exports.actualizarEpisodio = async (req, res) => {
         // CU65: el puente de acceso de las derivaciones termina con el episodio.
         if (cierre) await cerrarDerivacionesDelEpisodio(pool, episodio_id).catch((e) =>
             console.error('[actualizarEpisodio] derivaciones sin cerrar:', e.message));
+        // CU55 (correcciones Inc 4): al terminar el tratamiento se pide la calificación general.
+        if (cierre) pedirEvaluacionTratamiento(pool, episodio_id);
 
         // return(filas_afectadas) → return(confirmacion_update)
         // → return(operacion_clinica_exitosa) → return(HTTP 200 OK y confirmacion_accion)

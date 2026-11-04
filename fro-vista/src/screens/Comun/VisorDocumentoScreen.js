@@ -156,7 +156,9 @@ export default function VisorDocumentoScreen({ route }) {
       ) : documento.visor === 'imagen' ? (
         <Image
           key={claveVisor}
-          source={{ uri: documento.url_publica }}
+          // Los adjuntos del chat y el material de los ejercicios no traen
+          // url_publica: su dirección viaja en url_visor (igual que en la ficha).
+          source={{ uri: documento.url_visor || documento.url_publica }}
           style={estilos.imagen}
           resizeMode="contain"
           onError={() => setErrorVisor(true)}
