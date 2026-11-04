@@ -72,6 +72,7 @@ def caminos(elementos):
 def validar(nombre, participantes, elementos):
     p = []
     ids = [x['id'] for x in participantes]
+    tipos = {x['id']: x['tipo'] for x in participantes}
     if len(participantes) > MAX_LINEAS_VIDA:
         p.append(f'{len(participantes)} líneas de vida (máximo {MAX_LINEAS_VIDA})')
     if sum(e['tipo'] == 'alt' for e in elementos) > 1:
@@ -94,7 +95,10 @@ def validar(nombre, participantes, elementos):
                 if x not in ids: p.append(f'participante no declarado: {x}')
             if not pila and m['de'] != ids[0]:
                 p.append(f'"{m["texto"]}" no nace del actor')
-            if m['tipo'] != 'self' and abs(ids.index(m['de']) - ids.index(m['a'])) != 1:
+            # Los servicios externos van en la última columna (convención del
+            # CU68): el servidor les habla directo, cruzando la base de datos.
+            externo = 'externo' in (tipos.get(m['de']), tipos.get(m['a']))
+            if m['tipo'] != 'self' and not externo and abs(ids.index(m['de']) - ids.index(m['a'])) != 1:
                 p.append(f'"{m["texto"]}" salta una línea de vida')
             if m['tipo'] == 'call':
                 pila.append((m['de'], m['a']))
@@ -152,10 +156,11 @@ def construir(nombre, titulo, participantes, elementos):
         if m['tipo'] == 'alt':
             al_abrir_alt = dict(abiertas); continue
         if m['tipo'] == 'else':
-            # la segunda rama parte del mismo estado que la primera
-            for pid, y0 in list(abiertas.items()):
-                barras[pid].append((y0, m['y'] - 10))
-            abiertas = {pid: m['y'] + 10 for pid in al_abrir_alt}; continue
+            # La segunda rama parte del mismo estado que la primera: se
+            # reabren solo las barras que la primera rama alcanzó a cerrar.
+            for pid in al_abrir_alt:
+                abiertas.setdefault(pid, m['y'] + 10)
+            continue
         if m['tipo'] == 'end':
             continue
         if m['tipo'] == 'call':
