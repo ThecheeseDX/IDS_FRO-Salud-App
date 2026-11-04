@@ -1,0 +1,944 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="10097" height="2550" viewBox="0 0 10097 2550" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="white"/>
+<text x="40" y="62" font-size="20" font-weight="bold" fill="#1D1D3B">Árbol de Navegación – Punto Paz Salud, Incremento 4</text>
+<rect x="9767.0" y="40" width="26" height="26" rx="6" fill="#20C4E3" stroke="#0E9DB8"/><text x="9801.0" y="58" font-size="14" font-weight="bold" fill="#1D1D3B">Interfaces</text>
+<rect x="9767.0" y="76" width="26" height="26" rx="6" fill="#8C7BD9" stroke="#6B5AC2"/><text x="9801.0" y="94" font-size="14" font-weight="bold" fill="#1D1D3B">Funcionalidades</text>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,339 5020,339"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,339 5088,339"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,409 5020,409"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,409 5088,409"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,479 5020,479"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,667 5020,667"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,855 5020,855"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,855 5088,855"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="116,988 116,1016"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="116,1074 116,1088"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 116,908 116,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="290,988 290,1016"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="290,1074 290,1088"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 290,908 290,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="464,988 464,1016"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="464,1074 464,1088"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="464,1146 464,1160"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 464,908 464,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="638,988 638,1016"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 638,908 638,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="812,988 812,1016"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 812,908 812,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2811,1043 2777,1043"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1231 1213,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1231 1281,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1301 1213,1301"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1301 1281,1301"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1371 1213,1371"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1371 1281,1371"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1441 1213,1441"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1441 1281,1441"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1511 1213,1511"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,1644 986,1672"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,1730 986,1744"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,1802 986,1816"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,1874 986,1888"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,1946 986,1960"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,2018 986,2032"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="986,2090 986,2104"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1176 1247,1564 986,1564 986,1594"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1160,1644 1160,1672"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1176 1247,1564 1160,1564 1160,1594"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1334,1644 1334,1672"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1176 1247,1564 1334,1564 1334,1594"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1508,1644 1508,1672"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1247,1176 1247,1564 1508,1564 1508,1594"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2811,988 2811,1096 1247,1096 1247,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1231 2204,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1682,1364 1682,1392"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1682,1450 1682,1464"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1176 2238,1284 1682,1284 1682,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1419 1926,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1419 1994,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1489 1926,1489"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1489 1994,1489"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1559 1926,1559"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1692 1960,1720"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="1960,1364 1960,1642"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1176 2238,1284 1960,1284 1960,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1364 2238,1392"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1450 2238,1464"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1176 2238,1284 2238,1284 2238,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2412,1364 2412,1392"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2412,1450 2412,1464"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2412,1522 2412,1536"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2412,1594 2412,1608"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2412,1666 2412,1680"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2412,1738 2412,1752"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1176 2238,1284 2412,1284 2412,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2690,1419 2656,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2690,1419 2724,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2690,1489 2656,1489"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2690,1622 2690,1650"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2690,1364 2690,1572"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2238,1176 2238,1284 2690,1284 2690,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2811,988 2811,1096 2238,1096 2238,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1231 3125,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1231 3193,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1301 3125,1301"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1301 3193,1301"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1371 3125,1371"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2968,1504 2968,1532"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1176 3159,1424 2968,1424 2968,1454"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3246,1559 3212,1559"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3246,1559 3280,1559"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3246,1692 3246,1720"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3246,1504 3246,1642"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3159,1176 3159,1424 3246,1424 3246,1454"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2811,988 2811,1096 3159,1096 3159,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3889,1231 3855,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3628,1419 3594,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3628,1552 3628,1580"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3628,1364 3628,1502"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3889,1176 3889,1284 3628,1284 3628,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1419 4046,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1419 4114,1419"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1489 4046,1489"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3906,1622 3906,1650"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3906,1708 3906,1722"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1364 4080,1542 3906,1542 3906,1572"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1622 4080,1650"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1364 4080,1542 4080,1542 4080,1572"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4254,1622 4254,1650"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4080,1364 4080,1542 4254,1542 4254,1572"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="3889,1176 3889,1284 4080,1284 4080,1314"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2811,988 2811,1096 3889,1096 3889,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1231 4498,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1231 4566,1231"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1301 4498,1301"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1301 4566,1301"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1371 4498,1371"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4445,1504 4445,1532"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1176 4532,1424 4445,1424 4445,1454"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4619,1504 4619,1532"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4619,1590 4619,1604"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4532,1176 4532,1424 4619,1424 4619,1454"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="2811,988 2811,1096 4532,1096 4532,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 2811,908 2811,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5801,1167 5767,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5801,1167 5835,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4810,1300 4810,1328"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4810,1386 4810,1400"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5801,1112 5801,1220 4810,1220 4810,1250"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1355 5854,1355"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1355 5922,1355"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1425 5854,1425"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1613 5315,1613"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1613 5383,1613"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1683 5315,1683"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1683 5383,1683"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1753 5315,1753"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1753 5383,1753"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1823 5315,1823"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1823 5383,1823"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1893 5315,1893"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1893 5383,1893"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1963 5315,1963"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1963 5383,1963"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,2033 5315,2033"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,2033 5383,2033"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,2103 5315,2103"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,2103 5383,2103"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4984,2236 4984,2264"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="4984,2322 4984,2336"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1558 5349,2156 4984,2156 4984,2186"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5158,2236 5158,2264"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1558 5349,2156 5158,2156 5158,2186"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5436,2291 5402,2291"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5436,2291 5470,2291"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5436,2424 5436,2452"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5436,2236 5436,2374"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1558 5349,2156 5436,2156 5436,2186"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5714,2236 5714,2264"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5349,1558 5349,2156 5714,2156 5714,2186"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1300 5888,1478 5349,1478 5349,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1558 5888,1586"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1644 5888,1658"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1300 5888,1478 5888,1478 5888,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6166,1613 6132,1613"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6166,1746 6166,1774"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6166,1832 6166,1846"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6166,1904 6166,1918"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6166,1558 6166,1696"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1300 5888,1478 6166,1478 6166,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6444,1558 6444,1586"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6444,1644 6444,1658"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6444,1716 6444,1730"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6444,1788 6444,1802"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1300 5888,1478 6444,1478 6444,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,1558 6618,1586"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,1644 6618,1658"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,1716 6618,1730"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,1788 6618,1802"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,1860 6618,1874"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1300 5888,1478 6618,1478 6618,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6792,1558 6792,1586"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6792,1644 6792,1658"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5888,1300 5888,1478 6792,1478 6792,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5801,1112 5801,1220 5888,1220 5888,1250"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,988 6618,1032 5801,1032 5801,1062"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7070,1167 7036,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7070,1167 7104,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7070,1237 7036,1237"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7070,1370 7070,1398"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7070,1112 7070,1320"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,988 6618,1032 7070,1032 7070,1062"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1167 7418,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1355 7418,1355"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1355 7486,1355"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1425 7418,1425"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1425 7486,1425"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7365,1558 7365,1586"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1300 7452,1478 7365,1478 7365,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7539,1558 7539,1586"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1300 7452,1478 7539,1478 7539,1508"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7452,1112 7452,1250"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,988 6618,1032 7452,1032 7452,1062"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1167 8044,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1167 8112,1167"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1237 8044,1237"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1237 8112,1237"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7730,1370 7730,1398"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1112 8078,1290 7730,1290 7730,1320"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="7904,1370 7904,1398"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1112 8078,1290 7904,1290 7904,1320"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1370 8078,1398"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1112 8078,1290 8078,1290 8078,1320"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8252,1370 8252,1398"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1112 8078,1290 8252,1290 8252,1320"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8426,1370 8426,1398"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8426,1456 8426,1470"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8078,1112 8078,1290 8426,1290 8426,1320"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="6618,988 6618,1032 8078,1032 8078,1062"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 6618,908 6618,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,1043 9262,1043"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8600,1176 8600,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8600,1262 8600,1276"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 8600,1096 8600,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8774,1176 8774,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 8774,1096 8774,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="8948,1176 8948,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 8948,1096 8948,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9122,1176 9122,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 9122,1096 9122,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,1176 9296,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 9296,1096 9296,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9470,1176 9470,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 9470,1096 9470,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9644,1176 9644,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9644,1262 9644,1276"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 9644,1096 9644,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9818,1176 9818,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9818,1262 9818,1276"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 9818,1096 9818,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9992,1176 9992,1204"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9992,1262 9992,1276"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9992,1334 9992,1348"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="9296,988 9296,1096 9992,1096 9992,1126"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,800 5054,908 9296,908 9296,938"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,612 5054,750"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,284 5054,562"/>
+<polyline fill="none" stroke="#5C5C7A" stroke-width="1.2" points="5054,160 5054,234"/>
+<rect x="4989" y="110" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5054" y="139" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Sistema</text>
+<rect x="4989" y="234" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5054" y="263" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Registro</text>
+<rect x="4890" y="310" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4955" y="336" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar paciente</text>
+<text x="4955" y="349" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU01)</text>
+<rect x="5088" y="310" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5153" y="336" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar profesional</text>
+<text x="5153" y="349" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU02)</text>
+<rect x="4890" y="380" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4955" y="406" font-size="10" text-anchor="middle" fill="#1D1D3B">Controlar unicidad de</text>
+<text x="4955" y="419" font-size="10" text-anchor="middle" fill="#1D1D3B">cuentas (CU03)</text>
+<rect x="5088" y="380" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5153" y="406" font-size="10" text-anchor="middle" fill="#1D1D3B">Validar contraseña en</text>
+<text x="5153" y="419" font-size="10" text-anchor="middle" fill="#1D1D3B">tiempo real (CU01)</text>
+<rect x="4890" y="450" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4955" y="476" font-size="10" text-anchor="middle" fill="#1D1D3B">Definir bloques</text>
+<text x="4955" y="489" font-size="10" text-anchor="middle" fill="#1D1D3B">horarios (CU02)</text>
+<rect x="4989" y="562" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5054" y="591" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Activación de Cuenta</text>
+<rect x="4890" y="638" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4955" y="664" font-size="10" text-anchor="middle" fill="#1D1D3B">Verificar identidad</text>
+<text x="4955" y="677" font-size="10" text-anchor="middle" fill="#1D1D3B">OTP (CU04)</text>
+<rect x="4989" y="750" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5054" y="779" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Inicio de Sesión</text>
+<rect x="4890" y="826" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4955" y="852" font-size="10" text-anchor="middle" fill="#1D1D3B">Autenticar usuario</text>
+<text x="4955" y="865" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU05)</text>
+<rect x="5088" y="826" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5153" y="852" font-size="10" text-anchor="middle" fill="#1D1D3B">Segregar interfaces</text>
+<text x="5153" y="865" font-size="10" text-anchor="middle" fill="#1D1D3B">por rol (CU79)</text>
+<rect x="51" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="116" y="967" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Recuperar Contraseña</text>
+<rect x="51" y="1016" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="116" y="1036" font-size="10" text-anchor="middle" fill="#1D1D3B">Solicitar</text>
+<text x="116" y="1048" font-size="10" text-anchor="middle" fill="#1D1D3B">restablecimiento</text>
+<text x="116" y="1062" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU06)</text>
+<rect x="51" y="1088" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="116" y="1114" font-size="10" text-anchor="middle" fill="#1D1D3B">Ejecutar cambio de</text>
+<text x="116" y="1127" font-size="10" text-anchor="middle" fill="#1D1D3B">contraseña (CU07)</text>
+<rect x="225" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="290" y="953" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Seguridad de la</text>
+<text x="290" y="967" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Cuenta</text>
+<text x="290" y="981" font-size="9" text-anchor="middle" fill="#1D1D3B">(administrador)</text>
+<rect x="225" y="1016" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="290" y="1042" font-size="10" text-anchor="middle" fill="#1D1D3B">Gestionar sesiones y</text>
+<text x="290" y="1055" font-size="10" text-anchor="middle" fill="#1D1D3B">tokens (CU08)</text>
+<rect x="225" y="1088" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="290" y="1114" font-size="10" text-anchor="middle" fill="#1D1D3B">Ejecutar cambio de</text>
+<text x="290" y="1127" font-size="10" text-anchor="middle" fill="#1D1D3B">contraseña (CU07)</text>
+<rect x="399" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="464" y="953" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Centro de</text>
+<text x="464" y="967" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Notificaciones</text>
+<text x="464" y="981" font-size="9" text-anchor="middle" fill="#1D1D3B">(los tres roles, desde la campana)</text>
+<rect x="399" y="1016" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="464" y="1042" font-size="10" text-anchor="middle" fill="#1D1D3B">Emitir y leer avisos</text>
+<text x="464" y="1055" font-size="10" text-anchor="middle" fill="#1D1D3B">multicanal (CU52)</text>
+<rect x="399" y="1088" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="464" y="1114" font-size="10" text-anchor="middle" fill="#1D1D3B">Configurar canales</text>
+<text x="464" y="1127" font-size="10" text-anchor="middle" fill="#1D1D3B">push y correo (CU52)</text>
+<rect x="399" y="1160" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="464" y="1186" font-size="10" text-anchor="middle" fill="#1D1D3B">Activar mensajes de</text>
+<text x="464" y="1199" font-size="10" text-anchor="middle" fill="#1D1D3B">ánimo (CU54)</text>
+<rect x="573" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="638" y="960" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Panel de Acceso</text>
+<text x="638" y="974" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Restringido</text>
+<rect x="573" y="1016" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="638" y="1042" font-size="10" text-anchor="middle" fill="#1D1D3B">Controlar acceso RBAC</text>
+<text x="638" y="1055" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU12)</text>
+<rect x="747" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="812" y="967" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Consola de Auditoría</text>
+<rect x="747" y="1016" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="812" y="1042" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar bitácora de</text>
+<text x="812" y="1055" font-size="10" text-anchor="middle" fill="#1D1D3B">auditoría (CU13)</text>
+<rect x="2746" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2811" y="960" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Inicio Paciente</text>
+<text x="2811" y="974" font-size="9" text-anchor="middle" fill="#1D1D3B">(barra inferior de 5 secciones)</text>
+<rect x="2647" y="1014" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2712" y="1034" font-size="10" text-anchor="middle" fill="#1D1D3B">Enviar ubicación en</text>
+<text x="2712" y="1046" font-size="10" text-anchor="middle" fill="#1D1D3B">visitas a domicilio</text>
+<text x="2712" y="1060" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU39)</text>
+<rect x="1182" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1247" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Inicio (Mis Citas)</text>
+<rect x="1083" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1148" y="1234" font-size="10" text-anchor="middle" fill="#1D1D3B">Saludo al paciente</text>
+<rect x="1281" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1346" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Transicionar estados</text>
+<text x="1346" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">de cita (CU20)</text>
+<rect x="1083" y="1272" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1148" y="1304" font-size="10" text-anchor="middle" fill="#1D1D3B">Cancelar cita (CU18)</text>
+<rect x="1281" y="1272" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1346" y="1298" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar trazabilidad</text>
+<text x="1346" y="1311" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU22)</text>
+<rect x="1083" y="1342" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1148" y="1368" font-size="10" text-anchor="middle" fill="#1D1D3B">Confirmar asistencia</text>
+<text x="1148" y="1381" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU21)</text>
+<rect x="1281" y="1342" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1346" y="1368" font-size="10" text-anchor="middle" fill="#1D1D3B">Lista de espera y</text>
+<text x="1346" y="1381" font-size="10" text-anchor="middle" fill="#1D1D3B">tomar cupo (CU19)</text>
+<rect x="1083" y="1412" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1148" y="1438" font-size="10" text-anchor="middle" fill="#1D1D3B">Responder satisfacción</text>
+<text x="1148" y="1451" font-size="10" text-anchor="middle" fill="#1D1D3B">de la sesión (CU55)</text>
+<rect x="1281" y="1412" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1346" y="1438" font-size="10" text-anchor="middle" fill="#1D1D3B">Calificar el</text>
+<text x="1346" y="1451" font-size="10" text-anchor="middle" fill="#1D1D3B">tratamiento (CU55)</text>
+<rect x="1083" y="1482" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1148" y="1508" font-size="10" text-anchor="middle" fill="#1D1D3B">Cambiar sesión a plan</text>
+<text x="1148" y="1521" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU74)</text>
+<rect x="921" y="1594" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="986" y="1616" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Pagos y Bonos</text>
+<text x="986" y="1630" font-size="9" text-anchor="middle" fill="#1D1D3B">(botón arriba a la derecha)</text>
+<rect x="921" y="1672" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="1698" font-size="10" text-anchor="middle" fill="#1D1D3B">Validar bonos de</text>
+<text x="986" y="1711" font-size="10" text-anchor="middle" fill="#1D1D3B">cobertura (CU66)</text>
+<rect x="921" y="1744" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="1770" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar copagos y</text>
+<text x="986" y="1783" font-size="10" text-anchor="middle" fill="#1D1D3B">paquetes (CU67)</text>
+<rect x="921" y="1816" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="1836" font-size="10" text-anchor="middle" fill="#1D1D3B">Intercambiar con</text>
+<text x="986" y="1848" font-size="10" text-anchor="middle" fill="#1D1D3B">proveedor externo</text>
+<text x="986" y="1862" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU68)</text>
+<rect x="921" y="1888" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="1914" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar bitácora</text>
+<text x="986" y="1927" font-size="10" text-anchor="middle" fill="#1D1D3B">externa (CU69)</text>
+<rect x="921" y="1960" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="1986" font-size="10" text-anchor="middle" fill="#1D1D3B">Reintentar ante fallos</text>
+<text x="986" y="1999" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU70)</text>
+<rect x="921" y="2032" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="2058" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver devoluciones</text>
+<text x="986" y="2071" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU74)</text>
+<rect x="921" y="2104" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="986" y="2130" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver bono provisorio</text>
+<text x="986" y="2143" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU72)</text>
+<rect x="1095" y="1594" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1160" y="1616" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Evidencia de Sesión</text>
+<text x="1160" y="1630" font-size="9" text-anchor="middle" fill="#1D1D3B">(teleconsulta)</text>
+<rect x="1095" y="1672" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1160" y="1698" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar evidencia de</text>
+<text x="1160" y="1711" font-size="10" text-anchor="middle" fill="#1D1D3B">teleconsulta (CU43)</text>
+<rect x="1269" y="1594" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1334" y="1609" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Confirmación por</text>
+<text x="1334" y="1623" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Correo</text>
+<text x="1334" y="1637" font-size="9" text-anchor="middle" fill="#1D1D3B">(desde el correo)</text>
+<rect x="1269" y="1672" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1334" y="1698" font-size="10" text-anchor="middle" fill="#1D1D3B">Confirmar o cancelar</text>
+<text x="1334" y="1711" font-size="10" text-anchor="middle" fill="#1D1D3B">por enlace (CU21)</text>
+<rect x="1443" y="1594" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1508" y="1609" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Tomar Cupo por</text>
+<text x="1508" y="1623" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Correo</text>
+<text x="1508" y="1637" font-size="9" text-anchor="middle" fill="#1D1D3B">(desde el correo)</text>
+<rect x="1443" y="1672" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1508" y="1698" font-size="10" text-anchor="middle" fill="#1D1D3B">Tomar el cupo liberado</text>
+<text x="1508" y="1711" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU19)</text>
+<rect x="2173" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2238" y="1148" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mi Tratamiento</text>
+<text x="2238" y="1162" font-size="9" text-anchor="middle" fill="#1D1D3B">(pestañas superiores)</text>
+<rect x="2074" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2139" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Abrir la entrevista si</text>
+<text x="2139" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">está pendiente (CU23)</text>
+<rect x="1617" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1682" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mi Progreso</text>
+<rect x="1617" y="1392" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1682" y="1418" font-size="10" text-anchor="middle" fill="#1D1D3B">Visualizar panel de</text>
+<text x="1682" y="1431" font-size="10" text-anchor="middle" fill="#1D1D3B">progreso (CU45)</text>
+<rect x="1617" y="1464" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1682" y="1490" font-size="10" text-anchor="middle" fill="#1D1D3B">Actualizar índice de</text>
+<text x="1682" y="1503" font-size="10" text-anchor="middle" fill="#1D1D3B">adherencia (CU44)</text>
+<rect x="1895" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1960" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mis Ejercicios</text>
+<rect x="1796" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1861" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar cumplimiento</text>
+<text x="1861" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">diario (CU48)</text>
+<rect x="1994" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2059" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver días asignados</text>
+<text x="2059" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU48)</text>
+<rect x="1796" y="1460" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1861" y="1486" font-size="10" text-anchor="middle" fill="#1D1D3B">Controlar vigencia de</text>
+<text x="1861" y="1499" font-size="10" text-anchor="middle" fill="#1D1D3B">pautas (CU49)</text>
+<rect x="1994" y="1460" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2059" y="1486" font-size="10" text-anchor="middle" fill="#1D1D3B">Actualizar índice de</text>
+<text x="2059" y="1499" font-size="10" text-anchor="middle" fill="#1D1D3B">adherencia (CU44)</text>
+<rect x="1796" y="1530" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1861" y="1556" font-size="10" text-anchor="middle" fill="#1D1D3B">Recibir mensaje de</text>
+<text x="1861" y="1569" font-size="10" text-anchor="middle" fill="#1D1D3B">ánimo (CU54)</text>
+<rect x="1895" y="1642" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="1960" y="1671" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Visor de Documento</text>
+<rect x="1895" y="1720" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="1960" y="1746" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver material de apoyo</text>
+<text x="1960" y="1759" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU47)</text>
+<rect x="2173" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2238" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mi Seguimiento</text>
+<rect x="2173" y="1392" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2238" y="1418" font-size="10" text-anchor="middle" fill="#1D1D3B">Reportar dolor y</text>
+<text x="2238" y="1431" font-size="10" text-anchor="middle" fill="#1D1D3B">limitación (CU50)</text>
+<rect x="2173" y="1464" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2238" y="1490" font-size="10" text-anchor="middle" fill="#1D1D3B">Alertar deterioro</text>
+<text x="2238" y="1503" font-size="10" text-anchor="middle" fill="#1D1D3B">clínico (CU50)</text>
+<rect x="2347" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2412" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Entrevista Previa</text>
+<rect x="2347" y="1392" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2412" y="1418" font-size="10" text-anchor="middle" fill="#1D1D3B">Aceptar disclaimer</text>
+<text x="2412" y="1431" font-size="10" text-anchor="middle" fill="#1D1D3B">legal (CU27)</text>
+<rect x="2347" y="1464" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2412" y="1490" font-size="10" text-anchor="middle" fill="#1D1D3B">Ejecutar triaje</text>
+<text x="2412" y="1503" font-size="10" text-anchor="middle" fill="#1D1D3B">automatizado (CU23)</text>
+<rect x="2347" y="1536" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2412" y="1562" font-size="10" text-anchor="middle" fill="#1D1D3B">Volver a la pregunta</text>
+<text x="2412" y="1575" font-size="10" text-anchor="middle" fill="#1D1D3B">anterior (CU23)</text>
+<rect x="2347" y="1608" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2412" y="1634" font-size="10" text-anchor="middle" fill="#1D1D3B">Estructurar síntomas a</text>
+<text x="2412" y="1647" font-size="10" text-anchor="middle" fill="#1D1D3B">ficha (CU24)</text>
+<rect x="2347" y="1680" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2412" y="1706" font-size="10" text-anchor="middle" fill="#1D1D3B">Generar reporte</text>
+<text x="2412" y="1719" font-size="10" text-anchor="middle" fill="#1D1D3B">pre-clínico (CU25)</text>
+<rect x="2347" y="1752" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2412" y="1778" font-size="10" text-anchor="middle" fill="#1D1D3B">Sugerir especialidad</text>
+<text x="2412" y="1791" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU26)</text>
+<rect x="2625" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2690" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Prevención y Alta</text>
+<rect x="2526" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2591" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Habilitar contenidos</text>
+<text x="2591" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">de prevención (CU51)</text>
+<rect x="2724" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2789" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver avance hacia el</text>
+<text x="2789" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">alta (CU51)</text>
+<rect x="2526" y="1460" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2591" y="1486" font-size="10" text-anchor="middle" fill="#1D1D3B">Abrir recursos de</text>
+<text x="2591" y="1499" font-size="10" text-anchor="middle" fill="#1D1D3B">prevención (CU51)</text>
+<rect x="2625" y="1572" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2690" y="1601" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Visor de Documento</text>
+<rect x="2625" y="1650" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2690" y="1676" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver informe de alta</text>
+<text x="2690" y="1689" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU37)</text>
+<rect x="3094" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3159" y="1148" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Agendamiento de Cita</text>
+<text x="3159" y="1162" font-size="9" text-anchor="middle" fill="#1D1D3B">(botón ＋ de la barra)</text>
+<rect x="2995" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3060" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Buscar y seleccionar</text>
+<text x="3060" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">cita (CU14)</text>
+<rect x="3193" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3258" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Controlar concurrencia</text>
+<text x="3258" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU15)</text>
+<rect x="2995" y="1272" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3060" y="1298" font-size="10" text-anchor="middle" fill="#1D1D3B">Reprogramar cita</text>
+<text x="3060" y="1311" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU17)</text>
+<rect x="3193" y="1272" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3258" y="1298" font-size="10" text-anchor="middle" fill="#1D1D3B">Inscribirse en bloque</text>
+<text x="3258" y="1311" font-size="10" text-anchor="middle" fill="#1D1D3B">ocupado (CU19)</text>
+<rect x="2995" y="1342" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3060" y="1368" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver calificación del</text>
+<text x="3060" y="1381" font-size="10" text-anchor="middle" fill="#1D1D3B">profesional (CU58)</text>
+<rect x="2903" y="1454" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="2968" y="1483" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Pagar tu Hora</text>
+<rect x="2903" y="1532" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="2968" y="1558" font-size="10" text-anchor="middle" fill="#1D1D3B">Pagar sesión o plan</text>
+<text x="2968" y="1571" font-size="10" text-anchor="middle" fill="#1D1D3B">anticipado (CU73)</text>
+<rect x="3181" y="1454" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3246" y="1476" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Perfil del</text>
+<text x="3246" y="1490" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Profesional</text>
+<rect x="3082" y="1530" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3147" y="1556" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver perfil público</text>
+<text x="3147" y="1569" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU10)</text>
+<rect x="3280" y="1530" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3345" y="1556" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver modalidad y</text>
+<text x="3345" y="1569" font-size="10" text-anchor="middle" fill="#1D1D3B">comunas (CU14)</text>
+<rect x="3181" y="1642" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3246" y="1664" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Evaluaciones del</text>
+<text x="3246" y="1678" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Profesional</text>
+<rect x="3181" y="1720" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3246" y="1746" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver promedio y reseñas</text>
+<text x="3246" y="1759" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU58)</text>
+<rect x="3824" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3889" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mensajes</text>
+<rect x="3725" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3790" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Listar conversaciones</text>
+<text x="3790" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU53)</text>
+<rect x="3563" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3628" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mis Documentos</text>
+<rect x="3464" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3529" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Descargar mi ficha</text>
+<text x="3529" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">clínica (CU35)</text>
+<rect x="3563" y="1502" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3628" y="1531" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Visor de Documento</text>
+<rect x="3563" y="1580" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3628" y="1606" font-size="10" text-anchor="middle" fill="#1D1D3B">Visualizar con visor</text>
+<text x="3628" y="1619" font-size="10" text-anchor="middle" fill="#1D1D3B">embebido (CU35)</text>
+<rect x="4015" y="1314" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4080" y="1343" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Chat Clínico</text>
+<rect x="3916" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3981" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Mensajería cifrada</text>
+<text x="3981" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU53)</text>
+<rect x="4114" y="1390" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4179" y="1416" font-size="10" text-anchor="middle" fill="#1D1D3B">Filtrar contenido</text>
+<text x="4179" y="1429" font-size="10" text-anchor="middle" fill="#1D1D3B">restringido (CU57)</text>
+<rect x="3916" y="1460" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3981" y="1486" font-size="10" text-anchor="middle" fill="#1D1D3B">Adjuntar imagen o</text>
+<text x="3981" y="1499" font-size="10" text-anchor="middle" fill="#1D1D3B">archivo (CU53)</text>
+<rect x="3841" y="1572" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="3906" y="1594" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Perfil del</text>
+<text x="3906" y="1608" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Profesional</text>
+<rect x="3841" y="1650" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3906" y="1676" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver perfil público</text>
+<text x="3906" y="1689" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU10)</text>
+<rect x="3841" y="1722" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="3906" y="1748" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver modalidad y</text>
+<text x="3906" y="1761" font-size="10" text-anchor="middle" fill="#1D1D3B">comunas (CU14)</text>
+<rect x="4015" y="1572" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4080" y="1594" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mis Documentos</text>
+<text x="4080" y="1608" font-size="9" text-anchor="middle" fill="#1D1D3B">(modo selección)</text>
+<rect x="4015" y="1650" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4080" y="1676" font-size="10" text-anchor="middle" fill="#1D1D3B">Enviar documento por</text>
+<text x="4080" y="1689" font-size="10" text-anchor="middle" fill="#1D1D3B">el chat (CU53)</text>
+<rect x="4189" y="1572" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4254" y="1601" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Visor de Documento</text>
+<rect x="4189" y="1650" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4254" y="1676" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver adjuntos del chat</text>
+<text x="4254" y="1689" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU35)</text>
+<rect x="4467" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4532" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mi Perfil</text>
+<rect x="4368" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4433" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Ejecutar cambio de</text>
+<text x="4433" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">contraseña (CU07)</text>
+<rect x="4566" y="1202" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4631" y="1228" font-size="10" text-anchor="middle" fill="#1D1D3B">Gestionar sesiones y</text>
+<text x="4631" y="1241" font-size="10" text-anchor="middle" fill="#1D1D3B">tokens (CU08)</text>
+<rect x="4368" y="1272" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4433" y="1298" font-size="10" text-anchor="middle" fill="#1D1D3B">Configurar privacidad</text>
+<text x="4433" y="1311" font-size="10" text-anchor="middle" fill="#1D1D3B">de contacto (CU09)</text>
+<rect x="4566" y="1272" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4631" y="1298" font-size="10" text-anchor="middle" fill="#1D1D3B">Nombre o anónimo en</text>
+<text x="4631" y="1311" font-size="10" text-anchor="middle" fill="#1D1D3B">reseñas (CU58)</text>
+<rect x="4368" y="1342" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4433" y="1368" font-size="10" text-anchor="middle" fill="#1D1D3B">Agregar o quitar foto</text>
+<text x="4433" y="1381" font-size="10" text-anchor="middle" fill="#1D1D3B">de perfil (CU09)</text>
+<rect x="4380" y="1454" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4445" y="1483" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mis Datos</text>
+<rect x="4380" y="1532" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4445" y="1552" font-size="10" text-anchor="middle" fill="#1D1D3B">Editar teléfono,</text>
+<text x="4445" y="1564" font-size="10" text-anchor="middle" fill="#1D1D3B">dirección y contacto</text>
+<text x="4445" y="1578" font-size="10" text-anchor="middle" fill="#1D1D3B">de emergencia (CU09)</text>
+<rect x="4554" y="1454" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4619" y="1483" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Ayuda y Soporte</text>
+<rect x="4554" y="1532" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4619" y="1558" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar y seguir</text>
+<text x="4619" y="1571" font-size="10" text-anchor="middle" fill="#1D1D3B">solicitudes (CU60)</text>
+<rect x="4554" y="1604" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4619" y="1630" font-size="10" text-anchor="middle" fill="#1D1D3B">Enrutar por categoría</text>
+<text x="4619" y="1643" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU61)</text>
+<rect x="6553" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="6618" y="960" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Gestión Profesional</text>
+<text x="6618" y="974" font-size="9" text-anchor="middle" fill="#1D1D3B">(barra inferior de 4 secciones)</text>
+<rect x="5736" y="1062" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5801" y="1091" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Inicio (Fichas)</text>
+<rect x="5637" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5702" y="1164" font-size="10" text-anchor="middle" fill="#1D1D3B">Visualizar panel</text>
+<text x="5702" y="1177" font-size="10" text-anchor="middle" fill="#1D1D3B">profesional (CU11)</text>
+<rect x="5835" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5900" y="1164" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver y revisar banderas</text>
+<text x="5900" y="1177" font-size="10" text-anchor="middle" fill="#1D1D3B">rojas (CU50)</text>
+<rect x="4745" y="1250" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4810" y="1272" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Derivaciones</text>
+<text x="4810" y="1286" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Recibidas</text>
+<rect x="4745" y="1328" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4810" y="1354" font-size="10" text-anchor="middle" fill="#1D1D3B">Leer la ficha en solo</text>
+<text x="4810" y="1367" font-size="10" text-anchor="middle" fill="#1D1D3B">lectura (CU65)</text>
+<rect x="4745" y="1400" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4810" y="1426" font-size="10" text-anchor="middle" fill="#1D1D3B">Aceptar o rechazar</text>
+<text x="4810" y="1439" font-size="10" text-anchor="middle" fill="#1D1D3B">derivación (CU65)</text>
+<rect x="5823" y="1250" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5888" y="1279" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Ficha Clínica</text>
+<rect x="5724" y="1326" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5789" y="1352" font-size="10" text-anchor="middle" fill="#1D1D3B">Consolidar ficha</text>
+<text x="5789" y="1365" font-size="10" text-anchor="middle" fill="#1D1D3B">clínica (CU28)</text>
+<rect x="5922" y="1326" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5987" y="1358" font-size="10" text-anchor="middle" fill="#1D1D3B">Cerrar episodio (CU78)</text>
+<rect x="5724" y="1396" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5789" y="1422" font-size="10" text-anchor="middle" fill="#1D1D3B">Abrir el chat del</text>
+<text x="5789" y="1435" font-size="10" text-anchor="middle" fill="#1D1D3B">paciente (CU53)</text>
+<rect x="5284" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5349" y="1530" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Historial (Gestión</text>
+<text x="5349" y="1544" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">de Agenda)</text>
+<rect x="5185" y="1584" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="1610" font-size="10" text-anchor="middle" fill="#1D1D3B">Transicionar estados</text>
+<text x="5250" y="1623" font-size="10" text-anchor="middle" fill="#1D1D3B">de cita (CU20)</text>
+<rect x="5383" y="1584" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="1616" font-size="10" text-anchor="middle" fill="#1D1D3B">Cancelar cita (CU18)</text>
+<rect x="5185" y="1654" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="1680" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar trazabilidad</text>
+<text x="5250" y="1693" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU22)</text>
+<rect x="5383" y="1654" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="1680" font-size="10" text-anchor="middle" fill="#1D1D3B">Ejecutar transacciones</text>
+<text x="5448" y="1693" font-size="10" text-anchor="middle" fill="#1D1D3B">de cita (CU76)</text>
+<rect x="5185" y="1724" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="1750" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar marcas</text>
+<text x="5250" y="1763" font-size="10" text-anchor="middle" fill="#1D1D3B">temporales (CU38)</text>
+<rect x="5383" y="1724" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="1744" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar GPS al</text>
+<text x="5448" y="1756" font-size="10" text-anchor="middle" fill="#1D1D3B">iniciar y finalizar</text>
+<text x="5448" y="1770" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU39)</text>
+<rect x="5185" y="1794" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="1820" font-size="10" text-anchor="middle" fill="#1D1D3B">Certificar al</text>
+<text x="5250" y="1833" font-size="10" text-anchor="middle" fill="#1D1D3B">finalizar (CU41)</text>
+<rect x="5383" y="1794" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="1820" font-size="10" text-anchor="middle" fill="#1D1D3B">Validar sesión</text>
+<text x="5448" y="1833" font-size="10" text-anchor="middle" fill="#1D1D3B">multi-factor (CU41)</text>
+<rect x="5185" y="1864" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="1884" font-size="10" text-anchor="middle" fill="#1D1D3B">Documentar ahora o al</text>
+<text x="5250" y="1896" font-size="10" text-anchor="middle" fill="#1D1D3B">final de la jornada</text>
+<text x="5250" y="1910" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU40)</text>
+<rect x="5383" y="1864" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="1890" font-size="10" text-anchor="middle" fill="#1D1D3B">Versionar correcciones</text>
+<text x="5448" y="1903" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU31)</text>
+<rect x="5185" y="1934" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="1960" font-size="10" text-anchor="middle" fill="#1D1D3B">Cuadrar sesiones</text>
+<text x="5250" y="1973" font-size="10" text-anchor="middle" fill="#1D1D3B">bonificables (CU71)</text>
+<rect x="5383" y="1934" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="1960" font-size="10" text-anchor="middle" fill="#1D1D3B">Leer reporte</text>
+<text x="5448" y="1973" font-size="10" text-anchor="middle" fill="#1D1D3B">pre-clínico (CU25)</text>
+<rect x="5185" y="2004" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="2030" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver adherencia del</text>
+<text x="5250" y="2043" font-size="10" text-anchor="middle" fill="#1D1D3B">paciente (CU44)</text>
+<rect x="5383" y="2004" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="2030" font-size="10" text-anchor="middle" fill="#1D1D3B">Confirmar hora pagada</text>
+<text x="5448" y="2043" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU73)</text>
+<rect x="5185" y="2074" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5250" y="2100" font-size="10" text-anchor="middle" fill="#1D1D3B">Solicitar evaluación</text>
+<text x="5250" y="2113" font-size="10" text-anchor="middle" fill="#1D1D3B">al cerrar (CU55)</text>
+<rect x="5383" y="2074" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5448" y="2094" font-size="10" text-anchor="middle" fill="#1D1D3B">Episodio y evolución</text>
+<text x="5448" y="2106" font-size="10" text-anchor="middle" fill="#1D1D3B">recientes con</text>
+<text x="5448" y="2120" font-size="10" text-anchor="middle" fill="#1D1D3B">historial (CU28)</text>
+<rect x="4919" y="2186" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="4984" y="2215" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Evidencia de Sesión</text>
+<rect x="4919" y="2264" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4984" y="2284" font-size="10" text-anchor="middle" fill="#1D1D3B">Consultar</text>
+<text x="4984" y="2296" font-size="10" text-anchor="middle" fill="#1D1D3B">presencialidad GPS</text>
+<text x="4984" y="2310" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU39)</text>
+<rect x="4919" y="2336" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="4984" y="2362" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar evidencia de</text>
+<text x="4984" y="2375" font-size="10" text-anchor="middle" fill="#1D1D3B">teleconsulta (CU43)</text>
+<rect x="5093" y="2186" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5158" y="2215" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Firma de Conformidad</text>
+<rect x="5093" y="2264" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5158" y="2290" font-size="10" text-anchor="middle" fill="#1D1D3B">Capturar firma</text>
+<text x="5158" y="2303" font-size="10" text-anchor="middle" fill="#1D1D3B">manuscrita (CU42)</text>
+<rect x="5371" y="2186" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5436" y="2208" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Documentos del</text>
+<text x="5436" y="2222" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Paciente</text>
+<rect x="5272" y="2262" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5337" y="2288" font-size="10" text-anchor="middle" fill="#1D1D3B">Almacenar archivos</text>
+<text x="5337" y="2301" font-size="10" text-anchor="middle" fill="#1D1D3B">multimedia (CU33)</text>
+<rect x="5470" y="2262" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5535" y="2288" font-size="10" text-anchor="middle" fill="#1D1D3B">Categorizar documentos</text>
+<text x="5535" y="2301" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU34)</text>
+<rect x="5371" y="2374" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5436" y="2403" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Visor de Documento</text>
+<rect x="5371" y="2452" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5436" y="2478" font-size="10" text-anchor="middle" fill="#1D1D3B">Visualizar con visor</text>
+<text x="5436" y="2491" font-size="10" text-anchor="middle" fill="#1D1D3B">embebido (CU35)</text>
+<rect x="5649" y="2186" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5714" y="2201" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Bonos por</text>
+<text x="5714" y="2215" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Contingencia</text>
+<text x="5714" y="2229" font-size="9" text-anchor="middle" fill="#1D1D3B">(desde la cuadratura)</text>
+<rect x="5649" y="2264" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5714" y="2290" font-size="10" text-anchor="middle" fill="#1D1D3B">Ingresar bono</text>
+<text x="5714" y="2303" font-size="10" text-anchor="middle" fill="#1D1D3B">provisorio (CU72)</text>
+<rect x="5823" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="5888" y="1537" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Anamnesis</text>
+<rect x="5823" y="1586" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5888" y="1612" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar antecedentes</text>
+<text x="5888" y="1625" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU29)</text>
+<rect x="5823" y="1658" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="5888" y="1684" font-size="10" text-anchor="middle" fill="#1D1D3B">Renderizar plantillas</text>
+<text x="5888" y="1697" font-size="10" text-anchor="middle" fill="#1D1D3B">dinámicas (CU77)</text>
+<rect x="6101" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="6166" y="1537" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Episodios</text>
+<rect x="6002" y="1584" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6067" y="1610" font-size="10" text-anchor="middle" fill="#1D1D3B">Agrupar registros por</text>
+<text x="6067" y="1623" font-size="10" text-anchor="middle" fill="#1D1D3B">episodio (CU78)</text>
+<rect x="6101" y="1696" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="6166" y="1725" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Informe de Alta</text>
+<rect x="6101" y="1774" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6166" y="1794" font-size="10" text-anchor="middle" fill="#1D1D3B">Consolidar estado</text>
+<text x="6166" y="1806" font-size="10" text-anchor="middle" fill="#1D1D3B">final del episodio</text>
+<text x="6166" y="1820" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU37)</text>
+<rect x="6101" y="1846" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6166" y="1872" font-size="10" text-anchor="middle" fill="#1D1D3B">Emitir informe de alta</text>
+<text x="6166" y="1885" font-size="10" text-anchor="middle" fill="#1D1D3B">y cerrar (CU37)</text>
+<rect x="6101" y="1918" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6166" y="1944" font-size="10" text-anchor="middle" fill="#1D1D3B">Cerrar sin informe de</text>
+<text x="6166" y="1957" font-size="10" text-anchor="middle" fill="#1D1D3B">alta (CU78)</text>
+<rect x="6379" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="6444" y="1530" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Sesión Clínica</text>
+<text x="6444" y="1544" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">(Atención Clínica)</text>
+<rect x="6379" y="1586" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6444" y="1612" font-size="10" text-anchor="middle" fill="#1D1D3B">Documentar</text>
+<text x="6444" y="1625" font-size="10" text-anchor="middle" fill="#1D1D3B">intervención (CU40)</text>
+<rect x="6379" y="1658" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6444" y="1684" font-size="10" text-anchor="middle" fill="#1D1D3B">Definir metas y</text>
+<text x="6444" y="1697" font-size="10" text-anchor="middle" fill="#1D1D3B">objetivos (CU32)</text>
+<rect x="6379" y="1730" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6444" y="1756" font-size="10" text-anchor="middle" fill="#1D1D3B">Asegurar</text>
+<text x="6444" y="1769" font-size="10" text-anchor="middle" fill="#1D1D3B">inalterabilidad (CU30)</text>
+<rect x="6379" y="1802" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6444" y="1828" font-size="10" text-anchor="middle" fill="#1D1D3B">Firmar digitalmente</text>
+<text x="6444" y="1841" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU36)</text>
+<rect x="6553" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="6618" y="1537" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Pautas</text>
+<rect x="6553" y="1586" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6618" y="1612" font-size="10" text-anchor="middle" fill="#1D1D3B">Seleccionar material</text>
+<text x="6618" y="1625" font-size="10" text-anchor="middle" fill="#1D1D3B">de biblioteca (CU46)</text>
+<rect x="6553" y="1658" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6618" y="1684" font-size="10" text-anchor="middle" fill="#1D1D3B">Prescribir pautas de</text>
+<text x="6618" y="1697" font-size="10" text-anchor="middle" fill="#1D1D3B">ejercicio (CU47)</text>
+<rect x="6553" y="1730" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6618" y="1756" font-size="10" text-anchor="middle" fill="#1D1D3B">Asignar días de la</text>
+<text x="6618" y="1769" font-size="10" text-anchor="middle" fill="#1D1D3B">semana (CU47)</text>
+<rect x="6553" y="1802" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6618" y="1828" font-size="10" text-anchor="middle" fill="#1D1D3B">Subir material de</text>
+<text x="6618" y="1841" font-size="10" text-anchor="middle" fill="#1D1D3B">apoyo (CU47)</text>
+<rect x="6553" y="1874" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6618" y="1900" font-size="10" text-anchor="middle" fill="#1D1D3B">Controlar vigencia de</text>
+<text x="6618" y="1913" font-size="10" text-anchor="middle" fill="#1D1D3B">pautas (CU49)</text>
+<rect x="6727" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="6792" y="1537" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Derivación Interna</text>
+<rect x="6727" y="1586" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6792" y="1612" font-size="10" text-anchor="middle" fill="#1D1D3B">Derivar el episodio</text>
+<text x="6792" y="1625" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU65)</text>
+<rect x="6727" y="1658" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6792" y="1684" font-size="10" text-anchor="middle" fill="#1D1D3B">Cancelar derivación</text>
+<text x="6792" y="1697" font-size="10" text-anchor="middle" fill="#1D1D3B">pendiente (CU65)</text>
+<rect x="7005" y="1062" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7070" y="1091" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mi Jornada</text>
+<rect x="6906" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6971" y="1164" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver agenda por día,</text>
+<text x="6971" y="1177" font-size="10" text-anchor="middle" fill="#1D1D3B">semana o mes (CU11)</text>
+<rect x="7104" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7169" y="1170" font-size="10" text-anchor="middle" fill="#1D1D3B">Ir a una fecha (CU11)</text>
+<rect x="6906" y="1208" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="6971" y="1234" font-size="10" text-anchor="middle" fill="#1D1D3B">Pendientes de</text>
+<text x="6971" y="1247" font-size="10" text-anchor="middle" fill="#1D1D3B">documentar (CU40)</text>
+<rect x="7005" y="1320" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7070" y="1335" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Gestión de</text>
+<text x="7070" y="1349" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Disponibilidad</text>
+<text x="7070" y="1363" font-size="9" text-anchor="middle" fill="#1D1D3B">(botón flotante)</text>
+<rect x="7005" y="1398" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7070" y="1424" font-size="10" text-anchor="middle" fill="#1D1D3B">Restringir</text>
+<text x="7070" y="1437" font-size="10" text-anchor="middle" fill="#1D1D3B">disponibilidad (CU16)</text>
+<rect x="7387" y="1062" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7452" y="1091" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mensajes</text>
+<rect x="7288" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7353" y="1164" font-size="10" text-anchor="middle" fill="#1D1D3B">Listar conversaciones</text>
+<text x="7353" y="1177" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU53)</text>
+<rect x="7387" y="1250" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7452" y="1279" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Chat Clínico</text>
+<rect x="7288" y="1326" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7353" y="1352" font-size="10" text-anchor="middle" fill="#1D1D3B">Mensajería cifrada</text>
+<text x="7353" y="1365" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU53)</text>
+<rect x="7486" y="1326" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7551" y="1352" font-size="10" text-anchor="middle" fill="#1D1D3B">Filtrar contenido</text>
+<text x="7551" y="1365" font-size="10" text-anchor="middle" fill="#1D1D3B">restringido (CU57)</text>
+<rect x="7288" y="1396" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7353" y="1422" font-size="10" text-anchor="middle" fill="#1D1D3B">Ir a la ficha clínica</text>
+<text x="7353" y="1435" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU28)</text>
+<rect x="7486" y="1396" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7551" y="1422" font-size="10" text-anchor="middle" fill="#1D1D3B">Adjuntar imagen o</text>
+<text x="7551" y="1435" font-size="10" text-anchor="middle" fill="#1D1D3B">archivo (CU53)</text>
+<rect x="7300" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7365" y="1523" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Documentos del</text>
+<text x="7365" y="1537" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Paciente</text>
+<text x="7365" y="1551" font-size="9" text-anchor="middle" fill="#1D1D3B">(modo selección)</text>
+<rect x="7300" y="1586" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7365" y="1612" font-size="10" text-anchor="middle" fill="#1D1D3B">Enviar documento por</text>
+<text x="7365" y="1625" font-size="10" text-anchor="middle" fill="#1D1D3B">el chat (CU53)</text>
+<rect x="7474" y="1508" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7539" y="1537" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Visor de Documento</text>
+<rect x="7474" y="1586" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7539" y="1612" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver adjuntos del chat</text>
+<text x="7539" y="1625" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU35)</text>
+<rect x="8013" y="1062" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8078" y="1084" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Perfil (Mi Perfil</text>
+<text x="8078" y="1098" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Público)</text>
+<rect x="7914" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7979" y="1164" font-size="10" text-anchor="middle" fill="#1D1D3B">Administrar catálogo</text>
+<text x="7979" y="1177" font-size="10" text-anchor="middle" fill="#1D1D3B">de perfil (CU10)</text>
+<rect x="8112" y="1138" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8177" y="1164" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver mi calificación</text>
+<text x="8177" y="1177" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU58)</text>
+<rect x="7914" y="1208" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7979" y="1234" font-size="10" text-anchor="middle" fill="#1D1D3B">Ejecutar cambio de</text>
+<text x="7979" y="1247" font-size="10" text-anchor="middle" fill="#1D1D3B">contraseña (CU07)</text>
+<rect x="8112" y="1208" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8177" y="1234" font-size="10" text-anchor="middle" fill="#1D1D3B">Gestionar sesiones y</text>
+<text x="8177" y="1247" font-size="10" text-anchor="middle" fill="#1D1D3B">tokens (CU08)</text>
+<rect x="7665" y="1320" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7730" y="1342" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mis Horarios de</text>
+<text x="7730" y="1356" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Atención</text>
+<rect x="7665" y="1398" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7730" y="1424" font-size="10" text-anchor="middle" fill="#1D1D3B">Gestionar bloques</text>
+<text x="7730" y="1437" font-size="10" text-anchor="middle" fill="#1D1D3B">horarios (CU02)</text>
+<rect x="7839" y="1320" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="7904" y="1342" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Evaluaciones del</text>
+<text x="7904" y="1356" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Profesional</text>
+<rect x="7839" y="1398" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="7904" y="1424" font-size="10" text-anchor="middle" fill="#1D1D3B">Ver promedio y reseñas</text>
+<text x="7904" y="1437" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU58)</text>
+<rect x="8013" y="1320" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8078" y="1342" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Mis Liquidaciones</text>
+<text x="8078" y="1356" font-size="9" text-anchor="middle" fill="#1D1D3B">(botón arriba a la derecha)</text>
+<rect x="8013" y="1398" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8078" y="1424" font-size="10" text-anchor="middle" fill="#1D1D3B">Consultar</text>
+<text x="8078" y="1437" font-size="10" text-anchor="middle" fill="#1D1D3B">liquidaciones (CU75)</text>
+<rect x="8187" y="1320" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8252" y="1342" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Bonos por</text>
+<text x="8252" y="1356" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Contingencia</text>
+<rect x="8187" y="1398" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8252" y="1424" font-size="10" text-anchor="middle" fill="#1D1D3B">Ingresar bono</text>
+<text x="8252" y="1437" font-size="10" text-anchor="middle" fill="#1D1D3B">provisorio (CU72)</text>
+<rect x="8361" y="1320" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8426" y="1349" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Ayuda y Soporte</text>
+<rect x="8361" y="1398" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8426" y="1424" font-size="10" text-anchor="middle" fill="#1D1D3B">Registrar y seguir</text>
+<text x="8426" y="1437" font-size="10" text-anchor="middle" fill="#1D1D3B">solicitudes (CU60)</text>
+<rect x="8361" y="1470" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8426" y="1496" font-size="10" text-anchor="middle" fill="#1D1D3B">Enrutar por categoría</text>
+<text x="8426" y="1509" font-size="10" text-anchor="middle" fill="#1D1D3B">(CU61)</text>
+<rect x="9231" y="938" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9296" y="960" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Panel de</text>
+<text x="9296" y="974" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Administración</text>
+<rect x="9132" y="1014" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9197" y="1040" font-size="10" text-anchor="middle" fill="#1D1D3B">Monitorear dashboard</text>
+<text x="9197" y="1053" font-size="10" text-anchor="middle" fill="#1D1D3B">de KPIs (CU64)</text>
+<rect x="8535" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8600" y="1148" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Gestión de</text>
+<text x="8600" y="1162" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Parámetros</text>
+<rect x="8535" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8600" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Gestionar parámetros</text>
+<text x="8600" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">globales (CU59)</text>
+<rect x="8535" y="1276" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8600" y="1302" font-size="10" text-anchor="middle" fill="#1D1D3B">Restringir</text>
+<text x="8600" y="1315" font-size="10" text-anchor="middle" fill="#1D1D3B">disponibilidad (CU16)</text>
+<rect x="8709" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8774" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Sesiones Suspendidas</text>
+<rect x="8709" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8774" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Revisar sesiones</text>
+<text x="8774" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">derivadas (CU41)</text>
+<rect x="8883" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="8948" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Bandeja de Soporte</text>
+<rect x="8883" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="8948" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Enrutar y resolver</text>
+<text x="8948" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">tickets (CU61)</text>
+<rect x="9057" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9122" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Informes Operativos</text>
+<rect x="9057" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9122" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Generar y exportar</text>
+<text x="9122" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">reportes (CU63)</text>
+<rect x="9231" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9296" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Liquidaciones</text>
+<rect x="9231" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9296" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Liquidar ganancias</text>
+<text x="9296" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">mensuales (CU75)</text>
+<rect x="9405" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9470" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Moderar Testimonios</text>
+<rect x="9405" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9470" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Moderar testimonios</text>
+<text x="9470" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">públicos (CU56)</text>
+<rect x="9579" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9644" y="1148" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Términos</text>
+<text x="9644" y="1162" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Restringidos</text>
+<rect x="9579" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9644" y="1224" font-size="10" text-anchor="middle" fill="#1D1D3B">Administrar</text>
+<text x="9644" y="1236" font-size="10" text-anchor="middle" fill="#1D1D3B">diccionario</text>
+<text x="9644" y="1250" font-size="10" text-anchor="middle" fill="#1D1D3B">restringido (CU57)</text>
+<rect x="9579" y="1276" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9644" y="1302" font-size="10" text-anchor="middle" fill="#1D1D3B">Clasificar términos</text>
+<text x="9644" y="1315" font-size="10" text-anchor="middle" fill="#1D1D3B">críticos (CU62)</text>
+<rect x="9753" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9818" y="1155" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Eventos Críticos</text>
+<rect x="9753" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9818" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Revisar eventos</text>
+<text x="9818" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">escalados (CU62)</text>
+<rect x="9753" y="1276" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9818" y="1308" font-size="10" text-anchor="middle" fill="#1D1D3B">Acusar recibo (CU62)</text>
+<rect x="9927" y="1126" width="130" height="50" rx="8" fill="#20C4E3" stroke="#0E9DB8"/>
+<text x="9992" y="1148" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Contingencia de</text>
+<text x="9992" y="1162" font-size="11" text-anchor="middle" fill="#1D1D3B" font-weight="bold">Bonos</text>
+<rect x="9927" y="1204" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9992" y="1230" font-size="10" text-anchor="middle" fill="#1D1D3B">Forzar modo</text>
+<text x="9992" y="1243" font-size="10" text-anchor="middle" fill="#1D1D3B">contingencia (CU72)</text>
+<rect x="9927" y="1276" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9992" y="1302" font-size="10" text-anchor="middle" fill="#1D1D3B">Ingresar bono</text>
+<text x="9992" y="1315" font-size="10" text-anchor="middle" fill="#1D1D3B">provisorio (CU72)</text>
+<rect x="9927" y="1348" width="130" height="58" rx="8" fill="#8C7BD9" stroke="#6B5AC2"/>
+<text x="9992" y="1374" font-size="10" text-anchor="middle" fill="#1D1D3B">Regularizar con el</text>
+<text x="9992" y="1387" font-size="10" text-anchor="middle" fill="#1D1D3B">financiador (CU72)</text>
+</svg>
