@@ -11,7 +11,7 @@ ALTO_SELF = 38     # altura del bucle de auto-llamada
 Y0 = 190           # y del primer mensaje
 Y_LIFELINE = 40
 ANCHO_ACTOR = 35
-X_ACTOR = 30
+X_ACTOR = 80
 X_PRIMERA_VISTA = 330
 GAP = 90
 FUENTE = 17        # letra de mensajes y cajas (en el Inc 3 era 12)
@@ -185,7 +185,10 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
             s.append(f'<line x1="{x1}" y1="{yy}" x2="{x2}" y2="{yy}" stroke="#000" stroke-width="1.4"{dash} marker-end="url(#flecha)"/>')
             s.append(f'<text x="{(x1+x2)/2:.0f}" y="{yy-8}" text-anchor="middle">{html.escape(m["texto"])}</text>')
     s.append('</svg>')
-    return celdas, "\n".join(s), (ancho, alto)
+    # El tamaño de letra se fija en FUENTE (los estilos se escribieron con 17).
+    celdas = [c.replace('fontSize=17;', f'fontSize={FUENTE};').replace('fontSize=16;', f'fontSize={FUENTE - 1};') for c in celdas]
+    svg = "\n".join(s).replace('font-size="17"', f'font-size="{FUENTE}"').replace('font-size="16"', f'font-size="{FUENTE - 1}"')
+    return celdas, svg, (ancho, alto)
 
 NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'controlador': 2.5, 'dao': 3, 'motor_sql': 4, 'externo': 2.6, 'tabla': 5}
 
