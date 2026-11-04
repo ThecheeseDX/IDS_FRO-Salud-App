@@ -1,10 +1,14 @@
 # Documentación del Incremento 4
 
-Entregables del Paso 2: cambios en los casos de uso y en la base de datos, comparados contra el código final (commit `c36a0434`, 63 migraciones).
+Todo se compara contra el código final: commit `c36a0434`, más los arreglos del commit `9f9d4a13`.
 
-- **`Incremento 4 - para copiar y pegar.docx`**: las 27 fichas como tablas, con el formato del informe del Incremento 3. Son los 6 CU del incremento (Tablas 3.2 a 3.7) y 21 CU anteriores actualizados. Al final vienen las listas MR, 1FN, 2FN y 3FN completas, con la PK subrayada y la FK con subrayado discontinuo. Se copia una tabla o una lista y se pega en el informe.
-- **`reporte-cambios-inc4.html`**: qué cambió en cada CU, con un botón para copiar cada ficha; hallazgos del código; clases y atributos nuevos; cómo dibujarlos en el MERE; el MR y la normalización con los cambios marcados.
+| Paso | Carpeta o archivo | Contenido |
+|---|---|---|
+| 2 · CU y base de datos | `Incremento 4 - para copiar y pegar.docx` | 27 fichas como tablas con el formato del informe del Inc 3, más el MR, la 1FN, la 2FN y la 3FN con las claves subrayadas |
+| | `reporte-cambios-inc4.html` | Qué cambió en cada CU, clases y atributos nuevos, MERE, MR y normalización con los cambios marcados |
+| 3 · Árbol de navegación | `arbol-navegacion/` | Árbol del Inc 4 (75 interfaces, 168 funcionalidades), texto y tablas de vistas |
+| | `arboles-por-incremento/` | Árbol coloreado por incremento: 1 azul, 2 morado, 3 verde, 4 naranjo |
+| 4 · Diagramas de secuencia | `diagramas-secuencia/` | 24 diagramas legibles de 16 CU; el README de la carpeta dice cuáles reemplazan a los anteriores |
+| 5 · Componentes | `diagrama-componentes/` | Seis componentes internos nuevos y el GPS del dispositivo, con el texto para la Vista de Desarrollo |
 
-Para regenerar los dos archivos: `python3 generar_reporte.py`.
-
-Las fuentes son `cus_inc4.py` (fichas), `modelo_datos.py` (MR y formas normales sobre el anexo del Inc 3, en `base-modelo-inc3.json`) y `datos_bd.py` (columnas, tipos y MERE). `generar_docx.py` arma el Word con los estilos del informe del Inc 3, que están en `plantilla/`.
+Cada carpeta trae su generador en Python. Para regenerar el paso 2: `python3 generar_reporte.py`. Las fuentes son `cus_inc4.py`, `modelo_datos.py` y `datos_bd.py`.
