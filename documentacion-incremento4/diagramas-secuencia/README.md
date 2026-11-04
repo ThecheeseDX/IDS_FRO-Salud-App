@@ -1,6 +1,6 @@
 # Diagramas de secuencia: Incremento 4
 
-Son **85 páginas de 16 CU** en el mismo formato y con las mismas reglas del Incremento 3:
+Son **98 páginas de 16 CU** en el mismo formato y con las mismas reglas del Incremento 3:
 - todos los componentes y las tablas como líneas de vida;
 - mensajes técnicos, con el SQL sin `?` ni `WHERE`;
 - ningún mensaje se salta una línea de vida y cada llamada vuelve por el mismo camino;
@@ -20,11 +20,11 @@ Cada carpeta trae un `.drawio` con una página por diagrama (se abre en app.diag
 | Grupo | CU | Páginas |
 |---|---|---|
 | CU del Incremento 4 | CU37 · CU51 · CU54 · CU47 | 5 cada uno |
-| | CU62 (Paciente que dispara + Administrador) | 6 |
+| | CU62 (Paciente que dispara + Administrador) | 7 |
 | | CU65 (Profesional que deriva + Profesional que recibe) | 7 |
-| | CU72 (Profesional + Administrador) | 6 |
+| | CU72 (Profesional + Administrador, cada excepción para ambos) | 10 |
 | Rehechos: reemplazan **todas** las páginas anteriores del CU | CU38 · CU40 | 5 cada uno |
-| | CU39 · CU41 (dos actores) | 6 cada uno |
+| | CU39 · CU41 (dos actores, cada excepción para ambos) | 10 cada uno |
 | | CU53 (Paciente y Profesional) | 10 |
 | | CU55 | 5 |
 | Flujo nuevo: se suman a los diagramas que ya tiene el CU | CU09 (datos y foto) | 4 |

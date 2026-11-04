@@ -256,6 +256,16 @@ CU72_PROF = [
     'V --> A: mostrar_bono_provisorio_y_copago_fijado()',
 ]
 
+# Estado con el modo forzado por el administrador (parametro MODO_CONTINGENCIA = 1).
+CU72_FORZADA = [
+    f'{API} -> {CONT}: estado_contingencia()',
+    *leer_de(CONT, 'leer_parametros(MODO_CONTINGENCIA, VENTANA_MINUTOS)', 'Parametro_Global', 'clave, valor',
+             'modo 1', 'return (modo forzado)'),
+    *leer_de(CONT, 'leer_momento_de_activacion()', 'Parametro_Global', 'ultima_modificacion', '1 parametro',
+             'return (activo desde)'),
+    f'{CONT} --> {API}: return (contingencia activa: MANUAL)',
+]
+
 CU72_ADMIN = [
     '! Se abre desde el Panel de administracion; el administrador ve las citas de todos',
     'A -> V: abrir_contingencia_de_bonos()',
@@ -265,12 +275,7 @@ CU72_ADMIN = [
     f'V -> {API}: PUT /pagos/contingencia/modo (activo)',
     *actualizar('guardar_parametro(MODO_CONTINGENCIA_FINANCIADOR = 1)', 'Parametro_Global', 'valor, administrador_id'),
     *insertar('registrar_trazabilidad(CONTINGENCIA_ACTIVADA)', 'Bitacora_Auditoria'),
-    f'{API} -> {CONT}: estado_contingencia()',
-    *leer_de(CONT, 'leer_parametros(MODO_CONTINGENCIA, VENTANA_MINUTOS)', 'Parametro_Global', 'clave, valor',
-             'modo 1', 'return (modo forzado)'),
-    *leer_de(CONT, 'leer_momento_de_activacion()', 'Parametro_Global', 'ultima_modificacion', '1 parametro',
-             'return (activo desde)'),
-    f'{CONT} --> {API}: return (contingencia activa: MANUAL)',
+    *CU72_FORZADA,
     f'{API} --> V: return (HTTP 200 OK: modo de contingencia activado)',
     'V --> A: mostrar_modo_forzado_y_formulario()',
     '! Registra bonos igual que el profesional. Cuando el financiador vuelve, desactiva el modo (activo = 0)',
@@ -293,6 +298,34 @@ CU72_ADMIN = [
     *insertar('registrar_trazabilidad(BONO_CONTINGENCIA_REGULARIZADO)', 'Bitacora_Auditoria'),
     f'{API} --> V: return (HTTP 200 OK: bono validado)',
     'V --> A: mostrar_bono_validado_o_no_validado()',
+]
+
+# Tramos del registro hecho por el administrador con el modo forzado (Exc. 3 y 4
+# de su rol): el mismo POST del profesional, con el estado MANUAL.
+CU72_GUARDAR_BONO = insertar('guardar_bono(PROVISORIO, registrado_por, momento)', 'Bono',
+                             ' (folio, monto_cobertura, copago, estado_validacion, registrado_por_usuario_id, cita_id)')
+CU72_ADMIN_FORMULARIO = [
+    'A -> V: elegir_cita(cita_id)',
+    'V --> A: desplegar_formulario(folio, financiador, cobertura, copago)',
+    'A -> V: registrar_bono_provisorio(folio, financiador_id, cobertura, copago)',
+    'V ->> V: validar_formato(BON-XXXXXX, montos enteros)',
+]
+CU72_ADMIN_VERIFICAR = [
+    f'V -> {API}: POST /pagos/citas/:id/bono-contingencia (folio, financiador, cobertura, copago)',
+    *CU72_FORZADA,
+    f'{API} ->> {API}: validar_campos_obligatorios(folio, financiador, montos)',
+    *leer('verificar_cita(cita_id, rol)', 'Cita', 'cita_id, estado, paciente_id', '1 cita AGENDADA de cualquier profesional',
+          'return (cita habilitable)'),
+    *leer('verificar_financiador(financiador_id)', 'Financiador', 'financiador_id', '1 financiador',
+          'return (financiador del catalogo)'),
+    *leer('buscar_bono_previo(cita_id)', 'Bono', 'bono_id, estado_validacion', '0 bonos', 'return (sin bono validado)'),
+]
+CU72_ADMIN_GUARDAR = [
+    *CU72_GUARDAR_BONO,
+    *insertar('registrar_trazabilidad(BONO_CONTINGENCIA_REGISTRADO)', 'Bitacora_Auditoria'),
+    *despachar(API, 'BONO_PROVISORIO', 'paciente', retorno='return (aviso al paciente)'),
+    f'{API} --> V: return (HTTP 201 Created: bono provisorio)',
+    'V --> A: mostrar_bono_provisorio_y_copago_fijado()',
 ]
 
 CU72 = dict(id='CU72', nombre='Ingresando datos mediante interfaz de contingencia', actores=['Profesional', 'Administrador'],
@@ -349,7 +382,84 @@ CU72 = dict(id='CU72', nombre='Ingresando datos mediante interfaz de contingenci
           'A -> V: reintentar_el_envio()'],
           reanudar='POST /pagos/citas/:id/bono-contingencia'),
     },
-    'Administrador': {},
+    'Administrador': {
+      1: dict(cortar='SELECT momento_evento, accion, datos_adicionales FROM Bitacora_Auditoria', lineas=[
+          f'Bitacora_Auditoria --> {SQL}: return (ultima integracion exitosa)',
+          f'{SQL} --> {DAO}: return (resultado)',
+          f'{DAO} --> {CONT}: return (sin fallas en la ventana)',
+          f'{CONT} ->> {CONT}: evaluar_falla(LIMITE_REINTENTOS o sin respuesta)',
+          f'{CONT} --> {API}: return (contingencia inactiva: financiador operativo)',
+          *CU72_PROVISORIOS, *CU72_CATALOGO,
+          f'{API} ->> {API}: omitir_el_formulario()',
+          f'{API} --> V: return (HTTP 200 OK: formulario = false)',
+          '! Si un registro llega igual, se rechaza con HTTP 409 ADAPTADOR_OPERATIVO',
+          'V --> A: mostrar_financiador_operativo_sin_formulario()',
+          '! O le indica al paciente que registre su bono en "Pagos y bonos", donde se valida en linea',
+          'A ->> A: decidir_forzar_el_modo_de_contingencia()'],
+          reanudar='forzar_modo_contingencia'),
+      2: dict(cortar='SELECT financiador_id, nombre_institucion, convenio_activo FROM Financiador', lineas=[
+          f'Financiador --> {SQL}: error de lectura',
+          f'{SQL} --> {DAO}: throw (SQLException)',
+          f'{DAO} --> {API}: return (catalogo no disponible)',
+          f'{API} ->> {API}: habilitar_financiador_en_texto_libre()',
+          *CU72_CITAS,
+          f'{API} --> V: return (HTTP 200 OK: catalogo_disponible = false)',
+          'V --> A: desplegar_formulario_con_financiador_en_texto_libre()',
+          '! Igual si el financiador no esta en el catalogo',
+          'A -> V: registrar_bono_provisorio(folio, financiador_nombre, cobertura, copago)',
+          'V ->> V: validar_formato(BON-XXXXXX, montos enteros)',
+          *CU72_VERIFICAR_REGISTRO,
+          f'{API} ->> {API}: guardar_el_nombre_escrito_a_mano(financiador_manual)',
+          *leer('buscar_bono_previo(cita_id)', 'Bono', 'bono_id, estado_validacion', '0 bonos', 'return (sin bono validado)'),
+          *insertar('guardar_bono(PROVISORIO, financiador_manual, registrado_por)', 'Bono',
+                    ' (folio, financiador_manual, monto_cobertura, copago, estado_validacion, cita_id)'),
+          *insertar('registrar_trazabilidad(BONO_CONTINGENCIA_REGISTRADO)', 'Bitacora_Auditoria'),
+          *despachar(API, 'BONO_PROVISORIO', 'paciente', retorno='return (aviso al paciente)'),
+          f'{API} --> V: return (HTTP 201 Created: bono provisorio)',
+          'V --> A: mostrar_bono_provisorio_escrito_a_mano()',
+          '! Cuando el financiador vuelve a responder, el administrador elige el financiador del catalogo',
+          'A -> V: validar_con_el_financiador(bono_id, financiador_id)',
+          f'V -> {API}: POST /pagos/bonos/:id/regularizar (financiador_id)',
+          *cu72_estado('integracion exitosa', 'return (sin fallas en la ventana)', 'return (contingencia inactiva)'),
+          *bloque('leer_bono_provisorio(bono_id)',
+                  [q('Bono', 'bono_id, folio, financiador_id, cita_id, estado_validacion', '1 bono PROVISORIO sin financiador'),
+                   q('Financiador', 'rut_institucion', 'sin rut (escrito a mano)')],
+                  'return (bono con financiador escrito a mano)'),
+          '! Si no elige un financiador del catalogo, responde HTTP 400 FINANCIADOR_REQUERIDO',
+          *leer('leer_financiador_elegido(financiador_id)', 'Financiador', 'financiador_id, rut_institucion, convenio_activo',
+                '1 financiador con convenio', 'return (rut del financiador elegido)'),
+          *leer('leer_parametro(ARANCEL_ESPECIALIDAD)', 'Parametro_Global', 'clave, valor', 'arancel', 'return (arancel)')],
+          reanudar='armar_payload'),
+      3: dict(cortar='mostrar_modo_forzado_y_formulario', lineas=[
+          *CU72_ADMIN_FORMULARIO,
+          *CU72_ADMIN_VERIFICAR,
+          *CU72_GUARDAR_BONO[:3],
+          f'Bono --> {SQL}: error (folio duplicado)',
+          f'{SQL} --> {DAO}: throw (ER_DUP_ENTRY)',
+          f'{DAO} --> {API}: return (folio ya registrado en otra cita)',
+          '! Datos faltantes o con formato invalido (HTTP 400) y cita con bono validado (HTTP 409 BONO_YA_VALIDADO) se bloquean antes',
+          f'{API} --> V: return (HTTP 409 FOLIO_YA_REGISTRADO)',
+          'V ->> V: resaltar_el_campo_con_el_motivo(folio)',
+          'V --> A: pedir_corregir_los_datos()',
+          'A -> V: registrar_bono_provisorio(folio corregido, financiador_id, cobertura, copago)',
+          'V ->> V: validar_formato(BON-XXXXXX, montos enteros)',
+          *CU72_ADMIN_VERIFICAR,
+          *CU72_ADMIN_GUARDAR],
+          reanudar='validar_con_el_financiador'),
+      4: dict(cortar='mostrar_modo_forzado_y_formulario', lineas=[
+          *CU72_ADMIN_FORMULARIO,
+          *CU72_ADMIN_VERIFICAR,
+          *CU72_GUARDAR_BONO[:3],
+          *fallo_bd('Bono'),
+          f'{API} --> V: return (HTTP 500 PERSISTENCIA_FALLIDA)',
+          'V ->> V: conservar_los_datos_en_el_formulario()',
+          'V --> A: informar_que_la_operacion_no_pudo_procesarse()',
+          '! Si la falla ocurre al regularizar, responde HTTP 500 y el bono sigue provisorio',
+          'A -> V: reintentar_el_envio()',
+          *CU72_ADMIN_VERIFICAR,
+          *CU72_ADMIN_GUARDAR],
+          reanudar='validar_con_el_financiador'),
+    },
   })
 
 # ──────────────────────────── CU53 ────────────────────────────

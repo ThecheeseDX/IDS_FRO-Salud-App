@@ -326,8 +326,9 @@ CU54 = dict(id='CU54', nombre='Enviando Mensajes de Refuerzo Positivo', actores=
 # Dos roles: el Paciente dispara el escalamiento con el comentario de su
 # reporte de sintomas (CU50; tambien lo disparan reseñas y tickets), y el
 # Administrador (D1: cumple el papel de supervisor) lo revisa y acusa recibo.
-# Exc. 1 ocurre en el escalamiento (pagina del Paciente); Exc. 2, 3 y 4 en la
-# bandeja (paginas del Administrador).
+# Exc. 1 ocurre en el escalamiento (pagina del Paciente) y tambien tiene su
+# pagina del Administrador (aviso por correo, revisa al ingresar); Exc. 2, 3 y
+# 4 ocurren en la bandeja (paginas del Administrador).
 CU62_PACIENTE = [
     'A -> V: enviar_reporte_de_sintomas(dolor, limitacion, comentario)',
     f'V -> {API}: POST /clinica/sintomas (dolor, limitacion, comentario, clave)',
@@ -408,6 +409,15 @@ CU62_EXC_PACIENTE = {
 }
 
 CU62_EXC_ADMINISTRADOR = {
+    # Exc. 1 vista por el Administrador: sin nadie conectado, el escalamiento
+    # (escalamientoService.supervisores) avisa a todos los administradores
+    # activos en la app y por correo; la bandeja se revisa al ingresar.
+    1: dict(cortar=0, lineas=[
+        '! Ningun administrador tenia sesion activa: el aviso EVENTO_CRITICO llego a todos los administradores activos, en la app y por correo',
+        'A ->> A: leer_el_correo_del_evento_critico()',
+        '! Al ingresar, el Panel de administración destaca el contador de pendientes',
+        'A -> V: abrir_eventos_criticos_al_ingresar()'],
+        reanudar='GET /gestion/eventos-criticos?estado=PENDIENTE'),
     2: dict(cortar='SELECT evento_critico_id, origen', lineas=[
         f'Evento_Critico --> {SQL}: return (0 eventos PENDIENTE)',
         f'{SQL} --> {DAO}: return (resultado)',

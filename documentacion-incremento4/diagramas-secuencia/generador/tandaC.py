@@ -263,7 +263,38 @@ CU39 = dict(id='CU39', nombre='Validando presencialidad mediante coordenadas GPS
                  *T('Cita', 'Parametro_Global', 'Usuario', 'Usuario_Telefono', 'Rol', 'Notificacion', 'Bitacora_Auditoria')],
   principal={'Paciente': CU39_PACIENTE, 'Profesional': CU39_PROFESIONAL},
   excepciones={
-    'Paciente': {},
+    # Paciente: su app nunca le muestra avisos; cada excepcion se ve desde lo
+    # que la app envia (o deja de enviar) y lo que el servidor guarda.
+    'Paciente': {
+      1: dict(cortar='obtener_gps_del_telefono', lineas=[
+          '! Sin permiso de ubicacion, con el GPS apagado o sin senal, el telefono no entrega coordenadas',
+          'V ->> V: omitir_el_envio_de_la_ubicacion()',
+          '! Si la app esta cerrada no envia nada. Al iniciar y finalizar, el Profesional usa la direccion registrada del paciente (sin ella si la oculto, CU09)',
+          'V ->> V: reintentar_en_la_proxima_pasada(2 minutos)'],
+          reanudar='seguir_usando_la_app_sin_avisos'),
+      2: dict(cortar='SELECT cita_id, fecha_hora_inicio, estado, modalidad FROM Cita', lineas=[
+          '! El Profesional inicio con su GPS apagado o a mas de 100 m: la marca no se bloqueo y la cita sigue EN_CURSO',
+          *vacio('Cita', '1 visita DOMICILIO EN_CURSO', 'visita en curso por reportar')],
+          reanudar='return (HTTP 200 OK: citas)'),
+      3: dict(cortar='SELECT cita_id, fecha_hora_inicio, estado, modalidad FROM Cita', lineas=[
+          '! La app estuvo cerrada o sin senal al termino: la atencion ya finalizo (REALIZADA)',
+          *vacio('Cita', '0 visitas por reportar', 'sin visitas pendientes'),
+          f'{API} --> V: return (HTTP 200 OK: citas = [])',
+          '! La marca de termino quedo sin la ubicacion del paciente: el Profesional cierra con justificacion (CU41)',
+          'V ->> V: no_pedir_ubicacion_ni_permisos()'],
+          reanudar='seguir_usando_la_app_sin_avisos'),
+      4: dict(cortar='obtener_gps_del_telefono', lineas=[
+          '! El telefono ubica al paciente lejos del domicilio de la visita: la app envia igual su ubicacion',
+          f'V -> {API}: POST /citas/:id/ubicacion (latitud, longitud)',
+          f'{API} ->> {API}: validar_coordenadas()',
+          *leer('verificar_cita_del_paciente(cita_id)', 'Cita', 'paciente_id, modalidad, estado', '1 cita DOMICILIO EN_CURSO',
+                'return (cita habilitada)'),
+          '! El servidor no mide la distancia al recibirla: la guarda tal cual',
+          *actualizar('guardar_ultima_ubicacion(lat, lng, momento_registro)', 'Cita', 'evidencia_presencial'),
+          '! Al termino la distancia supera los 100 m: la sesion se suspende y se deriva al Administrador (CU41), que puede contactar al paciente',
+          f'{API} --> V: return (HTTP 200 OK)'],
+          reanudar='seguir_usando_la_app_sin_avisos'),
+    },
     'Profesional': {
       1: dict(cortar='tomar_ultima_ubicacion_del_paciente', lineas=[
           '! La app del paciente no envio su ubicacion (cerrada, sin permiso o sin senal)',
@@ -510,7 +541,63 @@ CU41 = dict(id='CU41', nombre='Validando sesión mediante protocolo multi-factor
           f'{API} --> V: return (HTTP 200 OK: sesion certificada)'],
           reanudar='mostrar_sesion_certificada'),
     },
-    'Administrador': {},
+    # Administrador: cada excepcion se ve desde su bandeja de sesiones
+    # suspendidas (derivarAAdministracion, sesionesSuspendidas, validarSesion).
+    'Administrador': {
+      1: dict(cortar='SELECT cita_id, fecha_hora_inicio, sesion_suspendida_en', lineas=[
+          '! Si solo falta una ubicacion, la sesion no se suspende ni se deriva: el Administrador no recibe aviso',
+          *vacio('Cita', '0 sesiones suspendidas', 'bandeja vacia'),
+          f'{API} --> V: return (HTTP 200 OK: sesiones = [])',
+          'V --> A: mostrar_no_hay_sesiones_suspendidas()',
+          '! El Profesional cierra esa sesion con justificacion obligatoria, sin pasar por la bandeja',
+          'A ->> A: esperar_un_aviso_SESION_SUSPENDIDA()',
+          'A -> V: abrir_sesiones_suspendidas()'],
+          reanudar='GET /citas/sesiones-suspendidas'),
+      2: dict(cortar='SELECT cita_id, fecha_hora_inicio, sesion_suspendida_en', lineas=[
+          '! Distancia sobre el radio: cada administrador recibio una sola vez el aviso SESION_SUSPENDIDA y un correo con los contactos de ambos',
+          f'Cita --> {SQL}: return (1 sesion suspendida por DISTANCIA, sin certificar)',
+          f'{SQL} --> {DAO}: return (resultado)',
+          *q('Usuario', 'nombres, rut, email', 'paciente y profesional'),
+          *q('Usuario_Telefono', 'telefono', 'telefonos'),
+          *q('Especialidad', 'nombre', 'especialidad'),
+          f'{DAO} --> {API}: return (sesion suspendida con contactos)',
+          f'{API} ->> {API}: marcar_resuelta_si_ya_se_certifico()',
+          f'{API} --> V: return (HTTP 200 OK: sesion Pendiente)',
+          '! El correo es de mejor esfuerzo: si no sale, queda el aviso en la app. Un reintento del Profesional no vuelve a avisar',
+          'V --> A: mostrar_distancia_sobre_el_radio_y_contactos_de_ambos()'],
+          reanudar='contactar_al_paciente_o_al_profesional'),
+      3: dict(cortar='coordinar_la_resolucion_fuera_del_sistema', lineas=[
+          '! El Profesional rechaza el resumen o pierde la red antes de confirmar: no se persiste ninguna certificacion',
+          'A -> V: refrescar_la_bandeja()',
+          f'V -> {API}: GET /citas/sesiones-suspendidas',
+          *bloque('listar_sesiones_suspendidas()',
+                  [q('Cita', 'cita_id, sesion_suspendida_en, sesion_certificada_en', 'sesion aun sin certificar'),
+                   q('Usuario', 'nombres, rut, email', 'paciente y profesional'),
+                   q('Usuario_Telefono', 'telefono', 'telefonos'),
+                   q('Especialidad', 'nombre', 'especialidad')],
+                  'return (sesiones con contactos)'),
+          f'{API} ->> {API}: marcar_resuelta_si_ya_se_certifico()',
+          f'{API} --> V: return (HTTP 200 OK: sesion Pendiente)',
+          'V --> A: mantener_la_sesion_como_pendiente()',
+          'A ->> A: volver_a_revisar_mas_tarde()'],
+          reanudar='refrescar_la_bandeja'),
+      4: dict(cortar='coordinar_la_resolucion_fuera_del_sistema', lineas=[
+          '! Falla la escritura del cierre del Profesional (HTTP 500 CIERRE_ENCOLADO): la sesion sigue sin certificar',
+          'A -> V: refrescar_la_bandeja()',
+          f'V -> {API}: GET /citas/sesiones-suspendidas',
+          *bloque('listar_sesiones_suspendidas()',
+                  [q('Cita', 'cita_id, sesion_suspendida_en, sesion_certificada_en', 'sesion aun sin certificar'),
+                   q('Usuario', 'nombres, rut, email', 'paciente y profesional'),
+                   q('Usuario_Telefono', 'telefono', 'telefonos'),
+                   q('Especialidad', 'nombre', 'especialidad')],
+                  'return (sesiones con contactos)'),
+          f'{API} ->> {API}: marcar_resuelta_si_ya_se_certifico()',
+          f'{API} --> V: return (HTTP 200 OK: sesion Pendiente)',
+          'V --> A: mantener_la_sesion_como_pendiente()',
+          '! El Profesional reintenta en unos minutos; al certificarse, la sesion aparece Resuelta',
+          'A ->> A: refrescar_en_unos_minutos()'],
+          reanudar='refrescar_la_bandeja'),
+    },
   })
 
 if __name__ == '__main__':
