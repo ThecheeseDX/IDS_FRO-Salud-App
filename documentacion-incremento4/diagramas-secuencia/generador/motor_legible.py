@@ -3,31 +3,36 @@
 Motor de diagramas de secuencia del Incremento 4: versión LEGIBLE.
 
 Reglas del prompt de Pablo (04-11-2026), que el motor verifica antes de dibujar:
+  - se dibujan TODOS los componentes involucrados (del diagrama de
+    componentes), sin agruparlos; las tablas van nombradas en el mensaje a
+    C_MYSQL;
   - un diagrama = un flujo principal, con a lo más un bloque alternativo
-    (alt / else), sin bloques anidados;
-  - pocas líneas de vida (máximo 6): las capas internas del servidor van
-    agrupadas en "Servidor" y la base en "Base de datos";
-  - pocos mensajes (máximo 16 por camino);
-  - etiquetas cortas (verbo + objeto, máximo 42 caracteres);
-  - cada llamada vuelve por el mismo camino, nada salta una línea de vida y
-    todo nace en el actor y vuelve a él (reglas de los incrementos 2 y 3).
+    (alt / else), sin bloques anidados; los avisos (CU52) van como "ref";
+  - pocos mensajes (máximo 18 por camino; si no alcanza, se divide);
+  - etiquetas cortas que caben entre sus dos líneas de vida;
+  - cada llamada vuelve por el mismo camino, ningún mensaje salta un nivel
+    (actor, vista, C_API_REST, componentes, capa de datos, MySQL) y todo nace
+    en el actor y vuelve a él (reglas de los incrementos 2 y 3). Los
+    servicios externos solo hablan con C_API_Adapter.
 
 DSL de cada página (una línea por elemento):
   A -> V: texto        llamada          V --> A: texto     retorno (punteado)
   S ->> S: texto       acción propia    ! texto            nota (antes del mensaje)
   alt [condición]      inicio del bloque alternativo
   else [condición]     segunda rama     end                 cierre del bloque
+  ref X..Y: texto      referencia a otro diagrama, sobre las líneas X a Y
 """
 import glob, html, os, re, shutil, subprocess, tempfile
 
-FUENTE = 15          # tamaño de letra de los mensajes
+FUENTE = 14          # tamaño de letra de los mensajes
 PASO = 58            # separación vertical entre mensajes
 ALTO_SELF = 34
 Y_CAJA = 30          # y de las cajas de las líneas de vida
 ALTO_CAJA = 64
-ANCHO_CAJA = 200
-GAP = 90             # separación horizontal entre cajas
-MAX_LINEAS_VIDA, MAX_MENSAJES, MAX_ETIQUETA = 6, 16, 42
+GAP = 70             # separación horizontal entre cajas
+MAX_LINEAS_VIDA, MAX_MENSAJES, MAX_ETIQUETA = 9, 18, 44
+ANCHO_LETRA = 7.3    # ancho medio de un carácter de los mensajes (Helvetica 14)
+NIVEL = {'actor': 0, 'vista': 1, 'api': 2, 'comp': 2.5, 'adapter': 2.5, 'dao': 3, 'sql': 4, 'externo': 5}
 FILL, STROKE = '#f5f5f5', '#666666'
 NOTA_FILL, NOTA_STROKE = '#ffff88', '#9E916F'
 ALT_STROKE = '#5C5C7A'
@@ -48,6 +53,9 @@ def parsear(lineas):
             elementos.append({'tipo': m.group(1), 'cond': m.group(2)}); continue
         if ln == 'end':
             elementos.append({'tipo': 'end'}); continue
+        m = re.match(r'^ref\s+(\S+)\.\.(\S+)\s*:\s*(.+)$', ln)
+        if m:
+            elementos.append({'tipo': 'ref', 'de': m.group(1), 'a': m.group(2), 'texto': m.group(3).strip()}); continue
         m = RE_MSG.match(ln)
         if not m:
             raise ValueError('línea inválida: ' + ln)
@@ -75,6 +83,9 @@ def validar(nombre, participantes, elementos):
     tipos = {x['id']: x['tipo'] for x in participantes}
     if len(participantes) > MAX_LINEAS_VIDA:
         p.append(f'{len(participantes)} líneas de vida (máximo {MAX_LINEAS_VIDA})')
+    niveles = [NIVEL[x['tipo']] for x in participantes]
+    if niveles != sorted(niveles):
+        p.append('orden de líneas de vida: actor, vista, C_API_REST, componentes, capa de datos, MySQL, externos')
     if sum(e['tipo'] == 'alt' for e in elementos) > 1:
         p.append('más de un bloque alternativo')
     profundidad = 0
@@ -85,7 +96,7 @@ def validar(nombre, participantes, elementos):
         if e['tipo'] == 'end': profundidad -= 1
     for camino in caminos(elementos):
         msgs = [e for e in camino if e['tipo'] in ('call', 'ret', 'self')]
-        if len(msgs) > MAX_MENSAJES:
+        if len(msgs) + sum(e['tipo'] == 'ref' for e in camino) > MAX_MENSAJES:
             p.append(f'{len(msgs)} mensajes en un camino (máximo {MAX_MENSAJES})')
         pila = []
         for m in msgs:
@@ -95,11 +106,14 @@ def validar(nombre, participantes, elementos):
                 if x not in ids: p.append(f'participante no declarado: {x}')
             if not pila and m['de'] != ids[0]:
                 p.append(f'"{m["texto"]}" no nace del actor')
-            # Los servicios externos van en la última columna (convención del
-            # CU68): el servidor les habla directo, cruzando la base de datos.
-            externo = 'externo' in (tipos.get(m['de']), tipos.get(m['a']))
-            if m['tipo'] != 'self' and not externo and abs(ids.index(m['de']) - ids.index(m['a'])) != 1:
-                p.append(f'"{m["texto"]}" salta una línea de vida')
+            if m['tipo'] != 'self' and m['de'] in tipos and m['a'] in tipos:
+                ta, tb = tipos[m['de']], tipos[m['a']]
+                if 'externo' in (ta, tb):
+                    # convención del CU68: solo el adaptador habla con los externos
+                    if 'adapter' not in (ta, tb):
+                        p.append(f'"{m["texto"]}": un servicio externo solo habla con C_API_Adapter')
+                elif abs(NIVEL[ta] - NIVEL[tb]) > 1.01:
+                    p.append(f'"{m["texto"]}" salta un nivel ({m["de"]} -> {m["a"]})')
             if m['tipo'] == 'call':
                 pila.append((m['de'], m['a']))
             elif m['tipo'] == 'ret':
@@ -128,12 +142,16 @@ def construir(nombre, titulo, participantes, elementos):
     parts = [dict(x) for x in participantes]
     x = 110            # deja lugar a la izquierda para el marco del bloque alternativo
     for q in parts:
-        q['w'] = 90 if q['tipo'] == 'actor' else ANCHO_CAJA
+        q['w'] = 130 if q['tipo'] == 'actor' else max(170, max(8.4 * len(l) for l in q['nombre'].split('\n')) + 26)
         q['x'] = x
         q['cx'] = x + q['w'] / 2
         x += q['w'] + GAP
     pos = {q['id']: q for q in parts}
     ancho = x - GAP + 40
+    no_caben = [f'"{e["texto"]}" no cabe entre {e["de"]} y {e["a"]}' for e in elementos
+                if e['tipo'] in ('call', 'ret') and ANCHO_LETRA * len(e['texto']) > abs(pos[e['a']]['cx'] - pos[e['de']]['cx']) - 14]
+    if no_caben:
+        raise ValueError(f'{nombre}:\n  - ' + '\n  - '.join(no_caben))
 
     # y de cada elemento
     y = Y_CAJA + ALTO_CAJA + 60 + 40   # deja espacio para el título
@@ -142,6 +160,8 @@ def construir(nombre, titulo, participantes, elementos):
             y += 14; e['y'] = y; y += 40; continue
         if e['tipo'] == 'end':
             e['y'] = y - 18; y += 26; continue
+        if e['tipo'] == 'ref':
+            e['y'] = y - 18; y += 66; continue
         if e.get('nota'): y += 76
         e['y'] = y
         y += (PASO + ALTO_SELF) if e['tipo'] == 'self' else PASO
@@ -177,7 +197,7 @@ def construir(nombre, titulo, participantes, elementos):
     if any(e['tipo'] == 'alt' for e in elementos):
         i = next(k for k, e in enumerate(elementos) if e['tipo'] == 'alt')
         k = next(k for k, e in enumerate(elementos) if e['tipo'] == 'end')
-        dentro = [e for e in elementos[i:k] if e['tipo'] in ('call', 'ret', 'self')]
+        dentro = [e for e in elementos[i:k] if e['tipo'] in ('call', 'ret', 'self', 'ref')]
         xs = [pos[e['de']]['cx'] for e in dentro] + [pos[e['a']]['cx'] for e in dentro]
         marco = dict(x0=min(xs) - 70, x1=max(xs) + 70, y0=elementos[i]['y'] - 8, y1=elementos[k]['y'],
                      cond=elementos[i]['cond'], otros=[(e['y'], e['cond']) for e in elementos[i:k] if e['tipo'] == 'else'])
@@ -215,6 +235,13 @@ def construir(nombre, titulo, participantes, elementos):
         for yy, cond in m['otros']:
             s.append(f'<line x1="{m["x0"]}" y1="{yy - 6}" x2="{m["x1"]}" y2="{yy - 6}" stroke="{ALT_STROKE}" stroke-dasharray="8,5"/>')
             s.append(f'<text x="{m["x0"] + 10}" y="{yy + 14}" font-size="13" font-style="italic">{html.escape(cond)}</text>')
+    for e in elementos:
+        if e['tipo'] == 'ref':
+            x0, x1 = pos[e['de']]['cx'] - 40, pos[e['a']]['cx'] + 40
+            s.append(f'<rect x="{x0:.0f}" y="{e["y"]}" width="{x1 - x0:.0f}" height="46" fill="#FFFFFF" stroke="{ALT_STROKE}" stroke-width="1.4"/>'
+                     f'<path d="M{x0:.0f},{e["y"]} h40 v16 l-7,7 h-33 z" fill="#ECECF4" stroke="{ALT_STROKE}"/>'
+                     f'<text x="{x0 + 7:.0f}" y="{e["y"] + 16}" font-weight="bold" font-size="13">ref</text>'
+                     f'<text x="{(x0 + x1) / 2:.0f}" y="{e["y"] + 29}" text-anchor="middle">{html.escape(e["texto"])}</text>')
     for e in elementos:
         if e['tipo'] not in ('call', 'ret', 'self'):
             continue
@@ -260,6 +287,11 @@ def construir(nombre, titulo, participantes, elementos):
         for yy, cond in m['otros']:
             c.append(f'<mxCell id="{nid()}" value="" style="endArrow=none;dashed=1;html=1;strokeColor={ALT_STROKE};" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="{m["x0"]}" y="{yy - 6}" as="sourcePoint"/><mxPoint x="{m["x1"]}" y="{yy - 6}" as="targetPoint"/></mxGeometry></mxCell>')
             c.append(f'<mxCell id="{nid()}" value="{html.escape(cond)}" style="text;html=1;fontStyle=2;fontSize=13;align=left;" vertex="1" parent="1"><mxGeometry x="{m["x0"] + 8}" y="{yy - 2}" width="420" height="24" as="geometry"/></mxCell>')
+    for e in elementos:
+        if e['tipo'] == 'ref':
+            x0, x1 = pos[e['de']]['cx'] - 40, pos[e['a']]['cx'] + 40
+            c.append(f'<mxCell id="{nid()}" value="ref" style="shape=umlFrame;whiteSpace=wrap;html=1;fontStyle=1;fontSize=13;width=40;height=23;strokeColor={ALT_STROKE};fillColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="{x0:.0f}" y="{e["y"]}" width="{x1 - x0:.0f}" height="46" as="geometry"/></mxCell>')
+            c.append(f'<mxCell id="{nid()}" value="{html.escape(e["texto"])}" style="text;html=1;align=center;fontSize={FUENTE};" vertex="1" parent="1"><mxGeometry x="{x0 + 40:.0f}" y="{e["y"] + 12}" width="{x1 - x0 - 50:.0f}" height="26" as="geometry"/></mxCell>')
     for e in elementos:
         if e['tipo'] not in ('call', 'ret', 'self'):
             continue
