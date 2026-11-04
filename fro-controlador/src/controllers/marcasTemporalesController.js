@@ -1,6 +1,10 @@
 const pool = require('../config/database');
 const { actualizarIndicador } = require('../services/clinico/adherenciaService');
 const { descontarSesionPaquete, pedirEvaluacion } = require('../services/agenda/agendaService');
+// CU39/CU41: al comenzar y finalizar se registran solas las ubicaciones de
+// ambos y, al final, se intenta certificar la sesión sin pasos extra.
+const { registrarMarcaPresencial, resumenMarca } = require('../services/agenda/presencialidadService');
+const { certificarAlFinalizar } = require('./evidenciaController');
 
 function obtenerIP(req) {
   return (
@@ -31,6 +35,8 @@ async function obtenerCitaProfesional(connection, citaId, usuarioId, bloquear = 
         c.paciente_id,
         c.profesional_id,
         c.episodio_clinico_id,
+        c.modalidad,
+        c.evidencia_presencial,
         COALESCE(
           NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno, u.apellido_materno)), ''),
           CONCAT('Paciente #', c.paciente_id)
@@ -210,14 +216,20 @@ exports.iniciarAtencion = async (req, res) => {
       episodioVinculado = episodios[0]?.episodio_clinico_id || null;
     }
 
+    // Corrección Inc 4: el inicio lo dispara solo el profesional. La marca de
+    // presencia del paciente queda automática en el mismo instante.
     await connection.execute(
       `UPDATE Cita
        SET checkin_profesional = ?,
+           checkin_paciente = COALESCE(checkin_paciente, ?),
            estado = 'EN_CURSO',
            episodio_clinico_id = COALESCE(episodio_clinico_id, ?)
        WHERE cita_id = ?`,
-      [marcaInicio, episodioVinculado, cita_id]
+      [marcaInicio, marcaInicio, episodioVinculado, cita_id]
     );
+
+    // CU39: en domicilio, GPS del profesional y ubicación del paciente.
+    const presencialidad = await registrarMarcaPresencial(connection, cita, 'INICIO', req.body);
 
     await registrarAuditoria(connection, req, 'INICIAR_ATENCION_CU38', {
       cita_id: Number(cita_id),
@@ -228,13 +240,16 @@ exports.iniciarAtencion = async (req, res) => {
       origen_marca: marcaManual ? 'MANUAL_JUSTIFICADA' : 'SERVIDOR',
       justificacion_manual: marcaManual
         ? String(justificacion_manual).trim()
-        : null
+        : null,
+      presencialidad
     });
 
     await connection.commit();
 
     return res.status(200).json({
       mensaje: 'Atencion iniciada correctamente.',
+      presencialidad,
+      aviso_presencialidad: resumenMarca(presencialidad),
       cita_id: Number(cita_id),
       estado: 'EN_CURSO',
       marca_inicio: marcaInicio,
@@ -329,6 +344,9 @@ exports.finalizarAtencion = async (req, res) => {
 
     const duracionMinutos = Math.floor(duracionMs / 60000);
 
+    // CU39: ubicación de ambos al término (domicilio).
+    const presencialidad = await registrarMarcaPresencial(connection, cita, 'TERMINO', req.body);
+
     await connection.execute(
       `UPDATE Cita
        SET fecha_hora_fin = ?,
@@ -355,8 +373,25 @@ exports.finalizarAtencion = async (req, res) => {
       justificacion_manual: marcaManual
         ? String(justificacion_manual).trim()
         : null,
-      inventario
+      inventario,
+      presencialidad
     });
+
+    // Corrección Inc 4 (punto 7): si la sesión todavía no tiene su registro
+    // clínico firmado, queda pendiente de documentar. El profesional elige
+    // hacerlo ahora o al final de la jornada; mientras tanto la sesión
+    // clínica sigue editable aunque la cita ya esté REALIZADA.
+    const [[documentada]] = await connection.execute(
+      `SELECT 1 AS si FROM Evolucion_Clinica
+        WHERE episodio_clinico_id = ? AND profesional_id = ? AND inalterable = 1
+          AND hora_firma_digital >= ?
+        LIMIT 1`,
+      [cita.episodio_clinico_id || 0, cita.profesional_id, marcaInicio]
+    );
+    const documentacionPendiente = Boolean(cita.episodio_clinico_id) && !documentada;
+    if (documentacionPendiente) {
+      await connection.execute(`UPDATE Cita SET documentacion_pendiente = TRUE WHERE cita_id = ?`, [cita_id]);
+    }
 
     // CU55: el paciente recibe el aviso para calificar la sesión.
     await pedirEvaluacion(connection, cita_id);
@@ -367,6 +402,14 @@ exports.finalizarAtencion = async (req, res) => {
     // indicadores del paciente. Fuera de la transacción y sin esperar.
     actualizarIndicador(pool, cita.paciente_id).catch(() => {});
 
+    // CU41: certificación automática (o pedido de cierre justificado).
+    let certificacion = null;
+    try {
+      certificacion = await certificarAlFinalizar(req, cita_id);
+    } catch (errorCertificacion) {
+      console.error('[finalizarAtencion] certificación pendiente:', errorCertificacion.message);
+    }
+
     return res.status(200).json({
       mensaje: 'Atencion finalizada correctamente.',
       cita_id: Number(cita_id),
@@ -374,7 +417,13 @@ exports.finalizarAtencion = async (req, res) => {
       marca_inicio: marcaInicio,
       marca_termino: marcaTermino,
       duracion_minutos: duracionMinutos,
-      inventario
+      inventario,
+      presencialidad,
+      certificacion,
+      documentacion_pendiente: documentacionPendiente,
+      episodio_clinico_id: cita.episodio_clinico_id || null,
+      paciente_id: cita.paciente_id,
+      paciente: cita.paciente
     });
   } catch (error) {
     await connection.rollback();
@@ -422,5 +471,34 @@ exports.atencionEnCurso = async (req, res) => {
   } catch (error) {
     console.error('[atencionEnCurso]', error);
     return res.status(500).json({ error: 'No se pudo consultar la atencion en curso.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Corrección Inc 4 (punto 7) — Sesiones realizadas pendientes de documentar
+//  GET /citas/documentacion-pendiente
+//  Las que el profesional dejó para el final de la jornada (o que finalizó sin
+//  firmar el registro clínico). Se muestran en Mi Jornada.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.documentacionPendiente = async (req, res) => {
+  try {
+    const [citas] = await pool.execute(
+      `SELECT c.cita_id, c.fecha_hora_inicio, c.fecha_hora_fin, c.paciente_id, c.episodio_clinico_id,
+              ec.motivo_consulta,
+              COALESCE(CONCAT(u.nombres, ' ', u.apellido_paterno), CONCAT('Paciente #', c.paciente_id)) AS paciente
+         FROM Cita c
+         JOIN Profesional p ON p.profesional_id = c.profesional_id
+         LEFT JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = c.episodio_clinico_id
+         LEFT JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+         LEFT JOIN Usuario u ON u.usuario_id = pa.usuario_id
+        WHERE p.usuario_id = ? AND c.estado = 'REALIZADA' AND c.documentacion_pendiente = TRUE
+        ORDER BY c.fecha_hora_fin ASC
+        LIMIT 50`,
+      [req.user.usuario_id]
+    );
+    return res.status(200).json({ citas });
+  } catch (error) {
+    console.error('[documentacionPendiente]', error);
+    return res.status(500).json({ error: 'No se pudieron consultar las sesiones pendientes de documentar.' });
   }
 };

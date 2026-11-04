@@ -17,6 +17,7 @@ import SeguridadScreen from '../screens/Comun/SeguridadScreen';
 import CampanaNotificaciones from '../components/CampanaNotificaciones';
 import LogoMarca from '../components/LogoMarca';
 import { opcionesDeBarra } from './barraInferior';
+import useReporteUbicacion from '../utils/useReporteUbicacion';
 import { colores, radio, sombra } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -55,6 +56,9 @@ function BotonAgendar({ onPress }) {
 }
 
 export default function PestanasPaciente({ navigation }) {
+  // CU39: el día de una visita a domicilio, la ubicación se envía sola.
+  useReporteUbicacion();
+
   return (
     <Tab.Navigator
       backBehavior="firstRoute"

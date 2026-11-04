@@ -3,12 +3,16 @@
  *
  * Desde la ficha, el profesional a cargo de un episodio ABIERTO lo deriva a
  * otra especialidad y a un profesional concreto (D6), con una justificación
- * obligatoria. La derivación es el "puente" de acceso: mientras esté
- * PENDIENTE o ACEPTADA y el episodio siga abierto, el profesional derivado
- * puede consultar la ficha del paciente (ver accesoClinicoService).
+ * obligatoria. Derivar es TRASPASAR el episodio:
  *
- * Estados: PENDIENTE → ACEPTADA | RECHAZADA; ACEPTADA → CERRADA. Al cerrarse
- * el episodio todas pasan a CERRADA.
+ *   - PENDIENTE: el receptor puede leer la ficha para decidir.
+ *   - ACEPTADA: el episodio pasa a ser del receptor (Episodio_Clinico.
+ *     profesional_id), que trabaja en él con normalidad; quien derivó lo
+ *     conserva en solo lectura (ver accesoClinicoService).
+ *   - RECHAZADA: el episodio sigue con quien lo derivó.
+ *   - CERRADA: se canceló estando pendiente o se cerró el episodio.
+ *
+ * Un episodio admite una sola derivación pendiente a la vez.
  */
 
 const pool = require('../../config/database');
@@ -191,16 +195,21 @@ exports.crear = async (req, res) => {
     if (!destino) {
       return res.status(404).json({ error: 'DESTINO_NO_DISPONIBLE', mensaje: 'Ese profesional ya no está disponible para recibir derivaciones.' });
     }
-    const [[repetida]] = await pool.query(
-      `SELECT 1 AS si FROM Derivacion_Interna
-        WHERE episodio_clinico_id = ? AND profesional_destino_id = ? AND estado IN ('PENDIENTE', 'ACEPTADA')
+    // Una sola derivación pendiente por episodio: si dos receptores aceptaran,
+    // el episodio no puede ser de los dos.
+    const [[pendiente]] = await pool.query(
+      `SELECT CONCAT(u.nombres, ' ', u.apellido_paterno) AS nombre
+         FROM Derivacion_Interna di
+         JOIN Profesional pr ON pr.profesional_id = di.profesional_destino_id
+         JOIN Usuario u ON u.usuario_id = pr.usuario_id
+        WHERE di.episodio_clinico_id = ? AND di.estado = 'PENDIENTE'
         LIMIT 1`,
-      [episodio.episodio_clinico_id, destinoId]
+      [episodio.episodio_clinico_id]
     );
-    if (repetida) {
+    if (pendiente) {
       return res.status(409).json({
         error: 'DERIVACION_DUPLICADA',
-        mensaje: `Este episodio ya tiene una derivación vigente a ${destino.nombre}.`,
+        mensaje: `Este episodio ya tiene una derivación pendiente a ${pendiente.nombre}. Espera su respuesta o cancélala antes de derivarlo a otra persona.`,
       });
     }
 
@@ -219,7 +228,7 @@ exports.crear = async (req, res) => {
       paciente_id: episodio.paciente_id,
       profesional_origen_id: propio.profesional_id,
       profesional_destino_id: destinoId,
-      acceso: 'LECTURA_FICHA',
+      acceso: 'LECTURA_FICHA_HASTA_RESPONDER',
     });
     await conexion.commit();
 
@@ -233,12 +242,12 @@ exports.crear = async (req, res) => {
       pool,
       destino.usuario_id,
       'DERIVACION_RECIBIDA',
-      `${propio.nombre} te derivó a ${paciente?.nombre || 'un paciente'}: "${justificacion}". Ya puedes consultar su ficha clínica.`,
+      `${propio.nombre} te derivó a ${paciente?.nombre || 'un paciente'}: "${justificacion}". Revisa su ficha y acepta para quedar a cargo del episodio.`,
       { datos: { pantalla: 'DerivacionesRecibidas', derivacion_interna_id: creada.insertId } }
     );
 
     return res.status(201).json({
-      mensaje: `Derivación enviada a ${destino.nombre} (${destino.especialidad}). Ya puede consultar la ficha del paciente.`,
+      mensaje: `Derivación enviada a ${destino.nombre} (${destino.especialidad}). Cuando la acepte, el episodio pasará a estar a su cargo y tú lo conservarás en solo lectura.`,
       derivacion_interna_id: creada.insertId,
     });
   } catch (error) {
@@ -326,6 +335,7 @@ exports.responder = async (req, res) => {
     });
   }
 
+  let conexion;
   try {
     const derivacion = await derivacionCompleta(req.params.id);
     if (!derivacion || Number(derivacion.usuario_destino) !== Number(req.user.usuario_id)) {
@@ -335,45 +345,85 @@ exports.responder = async (req, res) => {
       return res.status(409).json({ error: 'DERIVACION_YA_RESPONDIDA', mensaje: `Esta derivación ya está ${derivacion.estado.toLowerCase()}.` });
     }
     const nuevoEstado = accion === 'ACEPTAR' ? 'ACEPTADA' : 'RECHAZADA';
-    const [resultado] = await pool.query(
+    let citasDesvinculadas = 0;
+    conexion = await pool.getConnection();
+    await conexion.beginTransaction();
+    const [resultado] = await conexion.query(
       `UPDATE Derivacion_Interna
           SET estado = ?, momento_respuesta = NOW(), comentario_respuesta = ?
         WHERE derivacion_interna_id = ? AND estado = 'PENDIENTE'`,
       [nuevoEstado, comentario, derivacion.derivacion_interna_id]
     );
     if (resultado.affectedRows === 0) {
+      await conexion.rollback();
       return res.status(409).json({ error: 'DERIVACION_YA_RESPONDIDA', mensaje: 'Esta derivación acaba de cambiar de estado. Recarga la lista.' });
     }
-    await auditar(pool, req, `DERIVACION_INTERNA_${nuevoEstado}`, {
+
+    if (nuevoEstado === 'ACEPTADA') {
+      // Traspaso real: el episodio pasa a estar a cargo del receptor. Solo si
+      // sigue abierto y sigue siendo de quien lo derivó.
+      const [traspaso] = await conexion.query(
+        `UPDATE Episodio_Clinico SET profesional_id = ?
+          WHERE episodio_clinico_id = ? AND profesional_id = ? AND COALESCE(estado, 'ABIERTO') <> 'CERRADO'`,
+        [derivacion.profesional_destino_id, derivacion.episodio_clinico_id, derivacion.profesional_origen_id]
+      );
+      if (traspaso.affectedRows === 0) {
+        await conexion.rollback();
+        return res.status(409).json({
+          error: 'EPISODIO_NO_TRASPASABLE',
+          mensaje: 'El episodio ya se cerró o cambió de responsable, así que no se puede traspasar. Pide al profesional que lo derive de nuevo si corresponde.',
+        });
+      }
+      // Las citas futuras de quien derivó quedan en su agenda, pero dejan de
+      // colgar del episodio traspasado: al iniciarlas se vinculan a un episodio suyo.
+      const [desvinculadas] = await conexion.query(
+        `UPDATE Cita SET episodio_clinico_id = NULL
+          WHERE episodio_clinico_id = ? AND profesional_id = ?
+            AND estado IN ('AGENDADA', 'CONFIRMADA') AND fecha_hora_inicio > NOW()`,
+        [derivacion.episodio_clinico_id, derivacion.profesional_origen_id]
+      );
+      citasDesvinculadas = desvinculadas.affectedRows || 0;
+    }
+
+    await auditar(conexion, req, nuevoEstado === 'ACEPTADA' ? 'EPISODIO_TRASPASADO' : 'DERIVACION_INTERNA_RECHAZADA', {
       derivacion_interna_id: derivacion.derivacion_interna_id,
       episodio_clinico_id: derivacion.episodio_clinico_id,
-      acceso: nuevoEstado === 'ACEPTADA' ? 'LECTURA_FICHA' : 'REVOCADO',
-    }).catch(() => {});
+      profesional_origen_id: derivacion.profesional_origen_id,
+      profesional_destino_id: derivacion.profesional_destino_id,
+      citas_futuras_desvinculadas: citasDesvinculadas,
+      acceso_origen: nuevoEstado === 'ACEPTADA' ? 'SOLO_LECTURA' : 'RESPONSABLE',
+    });
+    await conexion.commit();
 
     await notificarUsuario(
       pool,
       derivacion.usuario_origen,
       'DERIVACION_RESPONDIDA',
       nuevoEstado === 'ACEPTADA'
-        ? `${derivacion.nombre_destino} aceptó la derivación de ${derivacion.paciente}.`
-        : `${derivacion.nombre_destino} rechazó la derivación de ${derivacion.paciente}: "${comentario}".`,
+        ? `${derivacion.nombre_destino} aceptó la derivación de ${derivacion.paciente}: el episodio ahora está a su cargo y tú lo conservas en solo lectura.` +
+          (citasDesvinculadas ? ` Tus ${citasDesvinculadas} cita(s) futura(s) con el paciente siguen en tu agenda.` : '')
+        : `${derivacion.nombre_destino} rechazó la derivación de ${derivacion.paciente}: "${comentario}". El episodio sigue a tu cargo.`,
       { datos: { pantalla: 'FichaClinica', pacienteId: derivacion.paciente_id, nombrePaciente: derivacion.paciente } }
     );
 
     return res.status(200).json({
       estado: nuevoEstado,
       mensaje: nuevoEstado === 'ACEPTADA'
-        ? 'Aceptaste la derivación. La ficha del paciente queda disponible mientras el episodio siga abierto.'
+        ? 'Aceptaste la derivación: el episodio ahora está a tu cargo y puedes registrar sesiones, metas y pautas en él.'
         : 'Rechazaste la derivación y se le avisó al profesional que la envió.',
     });
   } catch (error) {
+    if (conexion) await conexion.rollback().catch(() => {});
     console.error('[derivaciones.responder]', error);
-    return res.status(500).json({ error: 'No se pudo registrar tu respuesta. Intenta nuevamente.' });
+    return res.status(500).json({ error: 'No se pudo registrar tu respuesta y no se traspasó nada. Intenta nuevamente.' });
+  } finally {
+    if (conexion) conexion.release();
   }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /clinica/derivaciones/:id/cierre — el profesional de origen la da por terminada
+// POST /clinica/derivaciones/:id/cierre — quien derivó la cancela mientras está
+// pendiente. Una derivación aceptada ya traspasó el episodio: no se deshace.
 // ─────────────────────────────────────────────────────────────────────────────
 exports.cerrar = async (req, res) => {
   try {
@@ -381,8 +431,13 @@ exports.cerrar = async (req, res) => {
     if (!derivacion || Number(derivacion.usuario_origen) !== Number(req.user.usuario_id)) {
       return res.status(404).json({ error: 'DERIVACION_NO_ENCONTRADA', mensaje: 'La derivación no existe o no la enviaste tú.' });
     }
-    if (!['PENDIENTE', 'ACEPTADA'].includes(derivacion.estado)) {
-      return res.status(409).json({ error: 'DERIVACION_NO_VIGENTE', mensaje: `Esta derivación ya está ${derivacion.estado.toLowerCase()}.` });
+    if (derivacion.estado !== 'PENDIENTE') {
+      return res.status(409).json({
+        error: 'DERIVACION_NO_VIGENTE',
+        mensaje: derivacion.estado === 'ACEPTADA'
+          ? 'Esta derivación ya fue aceptada: el episodio está a cargo del otro profesional.'
+          : `Esta derivación ya está ${derivacion.estado.toLowerCase()}.`,
+      });
     }
     await pool.query(
       `UPDATE Derivacion_Interna SET estado = 'CERRADA', momento_cierre = NOW() WHERE derivacion_interna_id = ?`,
@@ -393,7 +448,7 @@ exports.cerrar = async (req, res) => {
       episodio_clinico_id: derivacion.episodio_clinico_id,
       acceso: 'REVOCADO',
     }).catch(() => {});
-    return res.status(200).json({ estado: 'CERRADA', mensaje: 'Derivación cerrada. El acceso del profesional derivado quedó retirado.' });
+    return res.status(200).json({ estado: 'CERRADA', mensaje: 'Derivación cancelada. El episodio sigue a tu cargo y el otro profesional ya no ve la ficha.' });
   } catch (error) {
     console.error('[derivaciones.cerrar]', error);
     return res.status(500).json({ error: 'No se pudo cerrar la derivación. Intenta nuevamente.' });

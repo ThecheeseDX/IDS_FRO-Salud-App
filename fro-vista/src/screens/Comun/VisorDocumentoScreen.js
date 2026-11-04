@@ -5,6 +5,11 @@
 // PDF y video dentro de un visor web incrustado. El backend valida el RBAC
 // antes de entregar la URL y registra cada visualización (o intento
 // denegado) en la bitácora.
+//
+// Sirve tres orígenes con la misma respuesta del servidor:
+//  · documentoId → documento de la ficha clínica;
+//  · mensajeId   → archivo adjunto en el chat clínico (CU53);
+//  · materialId  → material de apoyo de un ejercicio de la pauta.
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -26,7 +31,13 @@ import { formatearFecha } from '../../utils/fechas';
 import { colores, radio } from '../../theme';
 
 export default function VisorDocumentoScreen({ route }) {
-  const { documentoId, nombre } = route?.params || {};
+  const { documentoId, mensajeId, materialId, nombre } = route?.params || {};
+
+  const ruta = mensajeId
+    ? `/clinica/chat/adjuntos/${mensajeId}/ver`
+    : materialId
+      ? `/clinica/pautas/material/${materialId}/ver`
+      : `/clinica/documentos/${documentoId}/ver`;
 
   const [documento, setDocumento] = useState(null);
   const [errorCarga, setErrorCarga] = useState('');
@@ -37,7 +48,7 @@ export default function VisorDocumentoScreen({ route }) {
   const cargar = async () => {
     setErrorCarga('');
     try {
-      const { data } = await apiClient.get(`/clinica/documentos/${documentoId}/ver`);
+      const { data } = await apiClient.get(ruta);
       setDocumento(data.documento);
     } catch (error) {
       const respuesta = error.response?.data;
@@ -113,8 +124,8 @@ export default function VisorDocumentoScreen({ route }) {
           {nombre || documento.nombre_original}
         </Text>
         <Text style={estilos.detalle}>
-          {documento.formato?.toUpperCase()} ·{' '}
-          {formatearFecha(documento.fecha_carga)}
+          {documento.formato?.toUpperCase()}
+          {documento.fecha_carga ? ` · ${formatearFecha(documento.fecha_carga)}` : ''}
           {documento.visor === 'pdf' && documento.paginas ? ` · ${documento.paginas} página(s)` : ''}
           {documento.visor === 'documento' ? ' · documento Word' : ''}
           {' '}· solo visualización

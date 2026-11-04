@@ -260,13 +260,13 @@ export default function FichaClinicaScreen({ route, navigation }) {
                     {episodioElegido.estado || 'Sin estado'} · desde{' '}
                     {formatearFecha(episodioElegido.fecha_inicio)}
                   </Text>
-                  {/* CU53: el chat cuelga del episodio, así que se abre desde
-                      el episodio que está activo en la ficha. */}
+                  {/* CU53: hay un solo chat por paciente–profesional; la
+                      pantalla del chat averigua la pareja con el pacienteId. */}
                   <TouchableOpacity
                     activeOpacity={interaccion.opacidadActiva}
                     onPress={() =>
                       navigation.navigate('ChatClinico', {
-                        episodioId: episodioElegido.episodio_clinico_id,
+                        pacienteId,
                         nombreOtro: nombrePaciente,
                       })
                     }

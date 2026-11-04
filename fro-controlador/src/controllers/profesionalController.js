@@ -25,14 +25,15 @@ exports.listarPacientesAsignados = async (req, res) => {
         CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
              THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id,
+        p.foto_url,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion,
-        -- CU65: paciente que llegó por una derivación interna vigente.
+        -- CU65: paciente con una derivación interna esperando tu respuesta.
         EXISTS(
           SELECT 1 FROM Derivacion_Interna di
             JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
            WHERE ed.paciente_id = p.paciente_id AND di.profesional_destino_id = ?
-             AND di.estado IN ('PENDIENTE', 'ACEPTADA') AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+             AND di.estado = 'PENDIENTE' AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
         ) AS por_derivacion
       FROM Paciente p
       LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
@@ -43,8 +44,15 @@ exports.listarPacientesAsignados = async (req, res) => {
           OR p.paciente_id IN (
             SELECT ed.paciente_id FROM Derivacion_Interna di
               JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
-             WHERE di.profesional_destino_id = ? AND di.estado IN ('PENDIENTE', 'ACEPTADA')
+             WHERE di.profesional_destino_id = ? AND di.estado = 'PENDIENTE'
                AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+          )
+          -- CU65: pacientes cuyo episodio traspasaste (los sigues viendo en solo lectura).
+          OR p.paciente_id IN (
+            SELECT ed.paciente_id FROM Derivacion_Interna di
+              JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
+             WHERE di.profesional_origen_id = ? AND di.momento_respuesta IS NOT NULL
+               AND di.estado IN ('ACEPTADA', 'CERRADA')
           )
         )
         AND (
@@ -67,10 +75,11 @@ exports.listarPacientesAsignados = async (req, res) => {
         p.calle,
         p.numero_calle,
         p.departamento,
-        p.comuna_id
+        p.comuna_id,
+        p.foto_url
       ORDER BY ultima_atencion DESC
       `,
-      [profesionalId, profesionalId, profesionalId, profesionalId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
+      [profesionalId, profesionalId, profesionalId, profesionalId, profesionalId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
     );
 
     res.json({ ok: true, pacientes });
@@ -302,15 +311,16 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         CASE WHEN JSON_EXTRACT(p.privacidad_contacto, '$.mostrar_direccion') = false
              THEN NULL ELSE p.departamento END AS departamento,
         p.comuna_id,
+        p.foto_url,
         COUNT(DISTINCT ec.episodio_clinico_id) AS total_atenciones,
         MAX(ec.fecha_inicio) AS ultima_atencion,
-        -- CU65: paciente que llegó por una derivación interna vigente.
+        -- CU65: paciente con una derivación interna esperando tu respuesta.
         EXISTS(
           SELECT 1 FROM Derivacion_Interna di
             JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
             JOIN Profesional pd ON pd.profesional_id = di.profesional_destino_id
            WHERE ed.paciente_id = p.paciente_id AND pd.usuario_id = ?
-             AND di.estado IN ('PENDIENTE', 'ACEPTADA') AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+             AND di.estado = 'PENDIENTE' AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
         ) AS por_derivacion
       FROM Paciente p
       LEFT JOIN Usuario u ON u.usuario_id = p.usuario_id
@@ -328,8 +338,16 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
             SELECT ed.paciente_id FROM Derivacion_Interna di
               JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
               JOIN Profesional pd ON pd.profesional_id = di.profesional_destino_id
-             WHERE pd.usuario_id = ? AND di.estado IN ('PENDIENTE', 'ACEPTADA')
+             WHERE pd.usuario_id = ? AND di.estado = 'PENDIENTE'
                AND COALESCE(ed.estado, 'ABIERTO') <> 'CERRADO'
+          )
+          -- CU65: pacientes cuyo episodio traspasaste (los sigues viendo en solo lectura).
+          OR p.paciente_id IN (
+            SELECT ed.paciente_id FROM Derivacion_Interna di
+              JOIN Episodio_Clinico ed ON ed.episodio_clinico_id = di.episodio_clinico_id
+              JOIN Profesional po ON po.profesional_id = di.profesional_origen_id
+             WHERE po.usuario_id = ? AND di.momento_respuesta IS NOT NULL
+               AND di.estado IN ('ACEPTADA', 'CERRADA')
           )
         )
         AND (
@@ -352,10 +370,11 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
         p.calle,
         p.numero_calle,
         p.departamento,
-        p.comuna_id
+        p.comuna_id,
+        p.foto_url
       ORDER BY ultima_atencion DESC
       `,
-      [usuarioId, usuarioId, usuarioId, usuarioId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
+      [usuarioId, usuarioId, usuarioId, usuarioId, usuarioId, busqueda, busqueda, busqueda, busqueda, busqueda, busqueda]
     );
 
     res.json({ ok: true, pacientes });

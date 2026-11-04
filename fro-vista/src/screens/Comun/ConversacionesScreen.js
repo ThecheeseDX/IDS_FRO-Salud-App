@@ -1,19 +1,20 @@
 // Ruta: fro-vista/src/screens/Comun/ConversacionesScreen.js
 //
-// CU53 — Bandeja de conversaciones. Cada chat cuelga de un episodio clínico,
-// así que la lista es la de los episodios en los que el usuario participa:
-// para el paciente son sus tratamientos, para el profesional sus pacientes.
+// CU53 — Bandeja de conversaciones. Hay un solo chat por pareja paciente–
+// profesional: el paciente ve uno por cada profesional que lo atiende y el
+// profesional, uno por cada paciente.
 //
-// Los episodios cerrados siguen apareciendo, al final y marcados: su
-// conversación queda como historial de solo lectura (Excepción 3).
+// Las conversaciones sin episodio abierto ni cita vigente siguen apareciendo,
+// al final y marcadas: quedan como historial de solo lectura (Excepción 3).
 
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, RefreshControl,
-  ActivityIndicator, StyleSheet, Image,
+  ActivityIndicator, StyleSheet,
 } from 'react-native';
 
 import Icono from '../../components/Icono';
+import Avatar from '../../components/Avatar';
 import { getMisConversaciones } from '../../api/client';
 import { AuthContext } from '../../context/AuthContext';
 import ErrorRetry from '../../components/ErrorRetry';
@@ -36,7 +37,10 @@ export default function ConversacionesScreen({ navigation }) {
     setError(false);
     try {
       const { conversaciones: recibidas } = await getMisConversaciones();
-      setConversaciones(recibidas || []);
+      // Las de solo lectura van al final, sin alterar el orden del servidor
+      // dentro de cada grupo.
+      const lista = recibidas || [];
+      setConversaciones([...lista.filter((c) => c.activa), ...lista.filter((c) => !c.activa)]);
     } catch {
       setError(true);
     } finally {
@@ -95,8 +99,10 @@ export default function ConversacionesScreen({ navigation }) {
       )}
 
       <Text style={estilos.intro}>
-        Canal directo con tu equipo de tratamiento. Los mensajes viajan cifrados y solo los
-        ven los dos participantes.
+        {esPaciente
+          ? 'Un chat directo con cada profesional que te atiende.'
+          : 'Un chat directo con cada uno de tus pacientes.'}{' '}
+        Los mensajes viajan cifrados y solo los ven los dos participantes.
       </Text>
 
       {conversaciones.length === 0 ? (
@@ -104,46 +110,45 @@ export default function ConversacionesScreen({ navigation }) {
           <Text style={estilos.vacioIcono}>💬</Text>
           <Text style={estilos.vacioTitulo}>Sin conversaciones</Text>
           <Text style={estilos.vacioTexto}>
-            El chat se abre con cada episodio clínico. Cuando tengas uno en curso, aparecerá aquí.
+            {esPaciente
+              ? 'Cuando tengas una cita o un tratamiento en curso con un profesional, su chat aparecerá aquí.'
+              : 'Cuando un paciente tenga una cita o un tratamiento en curso contigo, su chat aparecerá aquí.'}
           </Text>
         </View>
       ) : (
         conversaciones.map((c) => {
-          const cerrado = String(c.estado || '').toUpperCase() === 'CERRADO';
+          const soloLectura = !c.activa;
           return (
             <TouchableOpacity
-              key={c.episodio_clinico_id}
-              style={[estilos.tarjeta, cerrado && estilos.tarjetaCerrada]}
+              key={`${c.paciente_id}-${c.profesional_id}`}
+              style={[estilos.tarjeta, soloLectura && estilos.tarjetaCerrada]}
               onPress={() =>
                 navigation.navigate('ChatClinico', {
-                  episodioId: c.episodio_clinico_id,
+                  pacienteId: c.paciente_id,
+                  profesionalId: c.profesional_id,
                   nombreOtro: c.con,
                 })
               }
               activeOpacity={interaccion.opacidadActiva}
             >
-              {/* Foto del profesional; sin foto, sus iniciales. */}
-              {c.foto ? (
-                <Image source={{ uri: c.foto }} style={estilos.avatar} />
-              ) : (
-                <View style={[estilos.avatar, estilos.avatarVacio]}>
-                  <Text style={estilos.iniciales}>
-                    {String(c.con || '')
-                      .split(' ')
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((p) => p[0])
-                      .join('')
-                      .toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              {/* Foto de la otra persona; sin foto, sus iniciales. */}
+              <Avatar foto={c.foto} nombre={c.con} tamano={48} style={estilos.avatar} />
               <View style={estilos.cuerpo}>
-                <Text style={estilos.nombre}>{c.con}</Text>
-                <Text style={estilos.motivo} numberOfLines={1}>
-                  {c.motivo_consulta || 'Sin motivo registrado'}
-                  {cerrado ? ' · episodio cerrado' : ''}
-                </Text>
+                <View style={estilos.filaNombre}>
+                  <Text style={[estilos.nombre, estilos.nombreFlexible]} numberOfLines={1}>
+                    {c.con}
+                  </Text>
+                  {soloLectura && (
+                    <View style={estilos.etiquetaLectura}>
+                      <Text style={estilos.etiquetaLecturaTexto}>Solo lectura</Text>
+                    </View>
+                  )}
+                </View>
+                {c.detalle ? (
+                  <Text style={estilos.motivo} numberOfLines={1}>
+                    {c.detalle}
+                  </Text>
+                ) : null}
                 <Text style={estilos.momento}>
                   {c.ultimo_momento
                     ? `Último mensaje: ${formatearFechaHora(c.ultimo_momento)}`
@@ -190,16 +195,19 @@ const estilos = StyleSheet.create({
   tarjeta: { ...piezas.tarjeta, flexDirection: 'row', alignItems: 'center', marginBottom: espacio.md },
   tarjetaCerrada: { backgroundColor: colores.superficieSuave },
   cuerpo: { flex: 1 },
-  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: espacio.md },
-  avatarVacio: {
-    backgroundColor: colores.primarioSuave,
-    borderWidth: 1,
-    borderColor: colores.primarioBorde,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iniciales: { ...tipografia.cuerpoFuerte, color: colores.primario },
+  avatar: { marginRight: espacio.md },
+  filaNombre: { flexDirection: 'row', alignItems: 'center', gap: espacio.sm },
   nombre: { ...tipografia.cuerpoFuerte, color: colores.textoTitulo },
+  nombreFlexible: { flexShrink: 1 },
+  etiquetaLectura: {
+    paddingHorizontal: espacio.sm,
+    paddingVertical: 1,
+    borderRadius: radio.completo,
+    backgroundColor: colores.superficie,
+    borderWidth: 1,
+    borderColor: colores.borde,
+  },
+  etiquetaLecturaTexto: { ...tipografia.micro, color: colores.textoSuave },
   motivo: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
   momento: { ...tipografia.micro, color: colores.textoTenue, marginTop: espacio.xs },
 

@@ -1371,6 +1371,129 @@ const MIGRACIONES = [
       );
     },
   },
+  {
+    nombre: 'Chat general por paciente y profesional, con adjuntos (CU53)',
+    descripcion: 'Una conversación por pareja en vez de una por episodio; imágenes, archivos y documentos de la ficha en el chat',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Mensaje_Chat' AND COLUMN_NAME = 'paciente_id'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `ALTER TABLE Mensaje_Chat
+           ADD COLUMN paciente_id INT NULL,
+           ADD COLUMN profesional_id INT NULL,
+           ADD COLUMN adjunto_url VARCHAR(500) NULL,
+           ADD COLUMN adjunto_public_id VARCHAR(255) NULL,
+           ADD COLUMN adjunto_nombre VARCHAR(255) NULL,
+           ADD COLUMN adjunto_formato VARCHAR(10) NULL,
+           ADD COLUMN adjunto_tipo_recurso VARCHAR(10) NULL,
+           ADD COLUMN adjunto_bytes INT NULL,
+           ADD COLUMN adjunto_paginas INT NULL,
+           ADD COLUMN documento_id INT NULL`
+      );
+      // Las conversaciones de cada episodio pasan a la de su pareja.
+      await conexion.query(
+        `UPDATE Mensaje_Chat m
+           JOIN Episodio_Clinico e ON e.episodio_clinico_id = m.episodio_clinico_id
+            SET m.paciente_id = e.paciente_id, m.profesional_id = e.profesional_id`
+      );
+      await conexion.query(
+        `ALTER TABLE Mensaje_Chat
+           MODIFY COLUMN episodio_clinico_id INT NULL,
+           ADD KEY idx_chat_pareja (paciente_id, profesional_id, mensaje_id),
+           ADD CONSTRAINT fk_chat_paciente FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+           ADD CONSTRAINT fk_chat_profesional FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+           ADD CONSTRAINT fk_chat_documento FOREIGN KEY (documento_id) REFERENCES Documento_Clinico(documento_id)`
+      );
+    },
+  },
+  {
+    nombre: 'Paciente.foto_url (foto de perfil opcional)',
+    descripcion: 'Fotografía del paciente; sin ella se muestran sus iniciales',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Paciente' AND COLUMN_NAME = 'foto_url'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Paciente ADD COLUMN foto_url VARCHAR(500) NULL`);
+    },
+  },
+  {
+    nombre: 'Cita.documentacion_pendiente (documentar al final de la jornada)',
+    descripcion: 'Sesión finalizada cuyo registro clínico se completa después',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Cita' AND COLUMN_NAME = 'documentacion_pendiente'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Cita ADD COLUMN documentacion_pendiente BOOLEAN NOT NULL DEFAULT FALSE`);
+    },
+  },
+  {
+    nombre: 'Pautas: días de la semana y material de apoyo por ejercicio (CU47)',
+    descripcion: 'Días específicos en que se realiza cada ejercicio y archivos de apoyo subidos al ejercicio',
+    yaAplicada: async (conexion, baseDatos) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Pauta_Ejercicio' AND COLUMN_NAME = 'dias_semana'`,
+        [baseDatos]
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(`ALTER TABLE Pauta_Ejercicio ADD COLUMN dias_semana VARCHAR(20) NULL`);
+      await conexion.query(
+        `CREATE TABLE IF NOT EXISTS Pauta_Ejercicio_Material (
+           pauta_ejercicio_material_id INT PRIMARY KEY AUTO_INCREMENT,
+           pauta_ejercicio_id INT NOT NULL,
+           nombre_original VARCHAR(255) NOT NULL,
+           formato VARCHAR(10) NOT NULL,
+           tipo_recurso VARCHAR(10) NOT NULL,
+           url_publica VARCHAR(500) NOT NULL,
+           public_id_cloud VARCHAR(255) NOT NULL,
+           tamano_bytes INT NOT NULL,
+           paginas INT NULL,
+           momento_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+           usuario_id INT NOT NULL,
+           FOREIGN KEY (pauta_ejercicio_id) REFERENCES Pauta_Ejercicio(pauta_ejercicio_id),
+           FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+         )`
+      );
+    },
+  },
+  {
+    nombre: 'Presencialidad automática: radio 100 m y ventana de ubicación del paciente (CU39)',
+    descripcion: 'Las marcas las dispara el profesional; la ubicación del paciente vale 30 minutos',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(`SELECT 1 FROM Parametro_Global WHERE clave = 'VENTANA_UBICACION_PACIENTE_MINUTOS'`);
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      await conexion.query(
+        `INSERT IGNORE INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('VENTANA_UBICACION_PACIENTE_MINUTOS', '30', 'Minutos durante los que vale la última ubicación que envió la app del paciente para validar la presencialidad.', 1)`
+      );
+      await conexion.query(
+        `UPDATE Parametro_Global
+            SET valor = '100',
+                descripcion = 'Distancia máxima en metros entre el profesional y el paciente en visitas a domicilio.'
+          WHERE clave = 'RADIO_PRESENCIALIDAD_METROS'`
+      );
+    },
+  },
 ];
 
 /**

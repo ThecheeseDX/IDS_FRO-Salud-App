@@ -231,6 +231,8 @@ CREATE TABLE Paciente (
     privacidad_contacto JSON,
     -- CU58: si es TRUE, sus calificaciones escritas se muestran como anónimas.
     resena_anonima BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Foto de perfil opcional; sin ella la app muestra las iniciales.
+    foto_url VARCHAR(500) NULL,
     contacto_emergencia_id INT,
     usuario_id INT NOT NULL UNIQUE,
     comuna_id INT NOT NULL,
@@ -496,10 +498,27 @@ CREATE TABLE Mensaje_Chat (
     -- Quién escribió y si la otra parte ya lo leyó.
     remitente_usuario_id INT NOT NULL,
     leido BOOLEAN NOT NULL DEFAULT FALSE,
-    episodio_clinico_id INT NOT NULL,
+    -- CU53: el chat es uno por pareja paciente–profesional. El episodio queda
+    -- solo como referencia del tratamiento abierto al momento del mensaje.
+    episodio_clinico_id INT NULL,
+    paciente_id INT NULL,
+    profesional_id INT NULL,
+    -- Adjunto subido desde el teléfono (Cloudinary) o documento de la ficha.
+    adjunto_url VARCHAR(500) NULL,
+    adjunto_public_id VARCHAR(255) NULL,
+    adjunto_nombre VARCHAR(255) NULL,
+    adjunto_formato VARCHAR(10) NULL,
+    adjunto_tipo_recurso VARCHAR(10) NULL,
+    adjunto_bytes INT NULL,
+    adjunto_paginas INT NULL,
+    documento_id INT NULL,
     KEY idx_chat_episodio (episodio_clinico_id, mensaje_id),
+    KEY idx_chat_pareja (paciente_id, profesional_id, mensaje_id),
     FOREIGN KEY (remitente_usuario_id) REFERENCES Usuario(usuario_id),
-    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id)
+    FOREIGN KEY (episodio_clinico_id) REFERENCES Episodio_Clinico(episodio_clinico_id),
+    FOREIGN KEY (paciente_id) REFERENCES Paciente(paciente_id),
+    FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id),
+    FOREIGN KEY (documento_id) REFERENCES Documento_Clinico(documento_id)
 );
 
 -- CU57: diccionario central de términos no permitidos, administrado por el
@@ -547,9 +566,29 @@ CREATE TABLE Pauta_Ejercicio(
     frecuencia VARCHAR(20) NOT NULL DEFAULT 'DIARIA',
     -- CU46: recurso de la biblioteca asociado al ejercicio (opcional)
     material_terapeutico_id INT,
+    -- Días en que se realiza (1 = lunes … 7 = domingo, separados por coma).
+    -- NULL: según la frecuencia (diaria o semanal).
+    dias_semana VARCHAR(20) NULL,
     UNIQUE KEY uq_pauta_nombre (pauta_tratamiento_id, nombre_ejercicio),
     FOREIGN KEY (pauta_tratamiento_id) REFERENCES Pauta_Tratamiento(pauta_tratamiento_id),
     FOREIGN KEY (material_terapeutico_id) REFERENCES Material_Terapeutico(material_terapeutico_id)
+);
+
+-- Material de apoyo subido por el profesional a un ejercicio de la pauta.
+CREATE TABLE Pauta_Ejercicio_Material (
+    pauta_ejercicio_material_id INT PRIMARY KEY AUTO_INCREMENT,
+    pauta_ejercicio_id INT NOT NULL,
+    nombre_original VARCHAR(255) NOT NULL,
+    formato VARCHAR(10) NOT NULL,
+    tipo_recurso VARCHAR(10) NOT NULL,
+    url_publica VARCHAR(500) NOT NULL,
+    public_id_cloud VARCHAR(255) NOT NULL,
+    tamano_bytes INT NOT NULL,
+    paginas INT NULL,
+    momento_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_id INT NOT NULL,
+    FOREIGN KEY (pauta_ejercicio_id) REFERENCES Pauta_Ejercicio(pauta_ejercicio_id),
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
 );
 
 -- CU48: una marca por ejercicio y día. La clave única es el control
@@ -595,6 +634,8 @@ CREATE TABLE Cita(
     -- profesional tenía que teclear identificadores a mano.
     episodio_clinico_id INT NULL,
     metadatos_teleconsulta JSON,
+    -- Sesión finalizada cuyo registro clínico se completa más tarde.
+    documentacion_pendiente BOOLEAN NOT NULL DEFAULT FALSE,
     paciente_id INT NOT NULL,
     profesional_id INT NOT NULL,
     sede_id INT NOT NULL,
@@ -784,7 +825,8 @@ INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUE
 ('TIEMPO_BLOQUE_MINUTOS', '30', 'Duración estándar en minutos para los bloques de agendamiento clínico.', 1),
 ('ANTICIPACION_MINIMA_REPROGRAMACION_HORAS', '24', 'Horas mínimas de anticipación con que un paciente puede reprogramar su cita.', 1),
 ('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1),
-('RADIO_PRESENCIALIDAD_METROS', '200', 'Distancia máxima en metros entre los check-in GPS del paciente y del profesional.', 1),
+('RADIO_PRESENCIALIDAD_METROS', '100', 'Distancia máxima en metros entre el profesional y el paciente en visitas a domicilio.', 1),
+('VENTANA_UBICACION_PACIENTE_MINUTOS', '30', 'Minutos durante los que vale la última ubicación que envió la app del paciente para validar la presencialidad.', 1),
 ('TOLERANCIA_MULTIFACTOR_MINUTOS', '15', 'Diferencia máxima en minutos entre marcas de presencia para certificar una sesión.', 1),
 ('MAX_TAMANO_ARCHIVO_MB', '10', 'Tamaño máximo en megabytes aceptado al cargar archivos al repositorio multimedia.', 1),
 ('MAX_VERSIONES_CORRECCION', '5', 'Cantidad máxima de correcciones versionadas permitidas sobre una evolución clínica cerrada.', 1);

@@ -1,9 +1,9 @@
 // Ruta: fro-vista/src/screens/Profesional/DerivacionesRecibidasScreen.js
 //
 // CU65 — Derivaciones que otros profesionales te enviaron. Mientras están
-// pendientes o aceptadas (y el episodio sigue abierto) puedes abrir la ficha
-// del paciente en modo consulta. Aceptar confirma que tomas el caso; rechazar
-// exige un motivo y retira el acceso.
+// pendientes puedes leer la ficha del paciente para decidir. Aceptar te
+// traspasa el episodio (quedas a cargo y trabajas en él con normalidad);
+// rechazar exige un motivo y el episodio sigue con quien lo derivó.
 
 import React, { useCallback, useState } from 'react';
 import {
@@ -91,6 +91,7 @@ export default function DerivacionesRecibidasScreen({ navigation }) {
           const estado = datosEstado(d.estado);
           const pendiente = d.estado === 'PENDIENTE';
           const conAcceso = ['PENDIENTE', 'ACEPTADA'].includes(d.estado) && d.estado_episodio !== 'CERRADO';
+          const aCargo = d.estado === 'ACEPTADA' && d.estado_episodio !== 'CERRADO';
           const ocupado = enviando === d.derivacion_interna_id;
           return (
             <View key={d.derivacion_interna_id} style={[estilos.tarjeta, pendiente && estilos.tarjetaPendiente]}>
@@ -104,6 +105,10 @@ export default function DerivacionesRecibidasScreen({ navigation }) {
               <Text style={estilos.meta}>Episodio #{d.episodio_clinico_id}: {d.motivo_consulta}</Text>
               <Text style={estilos.justificacion}>“{d.justificacion}”</Text>
               {d.comentario_respuesta ? <Text style={estilos.meta}>Tu respuesta: {d.comentario_respuesta}</Text> : null}
+              {aCargo && <Text style={estilos.aCargo}>El episodio está a tu cargo.</Text>}
+              {pendiente && (
+                <Text style={estilos.meta}>Al aceptar, el episodio pasa a tu cargo y {d.profesional_origen} lo conserva en solo lectura.</Text>
+              )}
 
               {conAcceso && (
                 <TouchableOpacity
@@ -111,7 +116,7 @@ export default function DerivacionesRecibidasScreen({ navigation }) {
                   onPress={() => navigation.navigate('FichaClinica', { pacienteId: d.paciente_id, nombrePaciente: d.paciente })}
                   activeOpacity={interaccion.opacidadActiva}
                 >
-                  <Text style={estilos.botonSecundarioTexto}>Ver ficha clínica</Text>
+                  <Text style={estilos.botonSecundarioTexto}>{aCargo ? 'Abrir ficha clínica' : 'Ver ficha clínica (solo lectura)'}</Text>
                 </TouchableOpacity>
               )}
 
@@ -193,6 +198,7 @@ const estilos = StyleSheet.create({
   estado: { ...tipografia.metaFuerte },
   meta: { ...tipografia.meta, color: colores.textoSuave, marginTop: 2 },
   justificacion: { ...tipografia.cuerpo, color: colores.texto, fontStyle: 'italic', marginTop: espacio.sm },
+  aCargo: { ...tipografia.metaFuerte, color: colores.exito, marginTop: espacio.sm },
 
   acciones: { flexDirection: 'row', gap: espacio.sm, marginTop: espacio.md },
   accion: { flex: 1 },

@@ -29,8 +29,9 @@ import DialogoAviso from '../../../components/DialogoAviso';
 // Las horas de la base son hora de pared: se formatean sin convertir huso.
 import { formatearFechaHora as formatearFecha } from '../../../utils/fechas';
 import { etiquetaModalidad, iconoModalidad } from '../../../utils/modalidad';
+import { ubicacionActual, coordenadasDeDireccion } from '../../../utils/ubicacion';
 import { datosEstado, etiquetaEstado, esEstadoTerminal } from '../../../utils/estados';
-import { colores, espacio, piezas, radio, sombra, tipografia } from '../../../theme';
+import { colores, espacio, piezas, radio, sombra, tipografia, interaccion } from '../../../theme';
 import SeccionHistorial from '../../../components/SeccionHistorial';
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 
@@ -85,6 +86,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [sincronizando, setSincronizando] = useState(false);
   // CU41: cierre manual justificado cuando el paciente no marcó su término.
   const [cierreManualCita, setCierreManualCita] = useState(null);
+  // Mientras se toma la ubicación y se registra la marca (CU39), los botones esperan.
+  const [marcando, setMarcando] = useState(null);
   // CU33/CU35: disponibilidad del repositorio multimedia y conteo de archivos.
   const [multimediaDisponible, setMultimediaDisponible] = useState(false);
   const [totalDocumentos, setTotalDocumentos] = useState(0);
@@ -227,25 +230,27 @@ export default function HistorialPacienteScreen({ route, navigation }) {
    * transición genérica, que dejaría la hora real sin registrar.
    */
   const registrarMarcaAtencion = async (citaId, evento) => {
+    // CU39 (corrección Inc 4): el inicio y el término los dispara solo el
+    // profesional. En domicilio se manda su GPS y, como respaldo del GPS del
+    // paciente, su dirección registrada convertida a coordenadas.
+    const cita = historial.find((c) => String(c.cita_id) === String(citaId));
+    let cuerpo = {};
+    if (String(cita?.modalidad || '').toUpperCase() === 'DOMICILIO') {
+      setMarcando(evento);
+      const [ubicacion, direccionPaciente] = await Promise.all([
+        ubicacionActual(),
+        coordenadasDeDireccion(paciente),
+      ]);
+      cuerpo = { ubicacion, direccion_paciente: direccionPaciente };
+    }
+    setMarcando(evento);
     try {
       if (evento === 'INICIAR') {
-        const data = await iniciarAtencion(citaId, {});
-        setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
+        const data = await iniciarAtencion(citaId, cuerpo);
+        avisarInicio(data);
       } else {
-        const data = await finalizarAtencion(citaId, {});
-        const inv = data.inventario;
-        const detalleInventario = !inv
-          ? ''
-          : inv.sin_paquete
-            ? '\n\nEl paciente no tiene un paquete de sesiones activo: no se descontó ninguna sesión.'
-            : `\n\nSesiones restantes del paquete: ${inv.sesiones_restantes}${inv.paquete_agotado ? ' (paquete agotado)' : ''}`;
-        setAviso({
-          tono: 'ok',
-          titulo: 'Atención finalizada',
-          // CU55: la calificación la hace el paciente desde su teléfono; se
-          // le envía un aviso al cerrar la sesión.
-          mensaje: `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}\n\nLe enviamos al paciente un aviso para que califique la atención.`,
-        });
+        const data = await finalizarAtencion(citaId, cuerpo);
+        avisarTermino(data);
       }
       cargarHistorial(false);
     } catch (err) {
@@ -260,8 +265,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           etiqueta: 'Confirmar inicio',
           accion: async () => {
             try {
-              const data = await iniciarAtencion(citaId, { confirmar_inicio_anticipado: true });
-              setAviso({ tono: 'ok', titulo: 'Atención iniciada', mensaje: `Marca de inicio: ${formatearFecha(data.marca_inicio)}` });
+              const data = await iniciarAtencion(citaId, { ...cuerpo, confirmar_inicio_anticipado: true });
+              avisarInicio(data);
               cargarHistorial(false);
             } catch (error) {
               setAviso({ tono: 'info', titulo: 'No fue posible iniciar', mensaje: error.response?.data?.mensaje || 'Intenta nuevamente.' });
@@ -272,7 +277,65 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       }
 
       setAviso({ tono: 'alerta', titulo: evento === 'INICIAR' ? 'No fue posible iniciar' : 'No fue posible finalizar', mensaje: detalle?.mensaje || 'Revisa la conexión e intenta nuevamente.' });
+    } finally {
+      setMarcando(null);
     }
+  };
+
+  const avisarInicio = (data) => {
+    setAviso({
+      tono: data.presencialidad && !data.presencialidad.dentro_del_radio ? 'alerta' : 'ok',
+      titulo: 'Atención iniciada',
+      mensaje:
+        `Marca de inicio: ${formatearFecha(data.marca_inicio)}` +
+        (data.aviso_presencialidad ? `\n\n${data.aviso_presencialidad}` : ''),
+    });
+  };
+
+  /**
+   * Corrección Inc 4 (punto 7): al finalizar se confirma que la atención se
+   * realizó y, si el registro clínico aún no está firmado, se ofrece
+   * documentarlo ahora o dejarlo para el final de la jornada.
+   */
+  const avisarTermino = (data) => {
+    const inv = data.inventario;
+    const detalleInventario = !inv
+      ? ''
+      : inv.sin_paquete
+        ? '\nEl paciente no tiene un paquete de sesiones activo: no se descontó ninguna sesión.'
+        : `\nSesiones restantes del paquete: ${inv.sesiones_restantes}${inv.paquete_agotado ? ' (paquete agotado)' : ''}`;
+    const cert = data.certificacion;
+    const detalleCertificacion = cert?.certificada
+      ? '\n\n✅ Sesión certificada automáticamente: las marcas y ubicaciones coinciden.'
+      : cert?.requiere_cierre_manual
+        ? `\n\n⚠️ No se pudo validar la presencialidad:\n${textoFactores((cert.factores || []).filter((f) => !f.ok))}\nCierra la sesión con una justificación desde "Validar sesión".` +
+          (cert.administradores_avisados ? ' El caso también se informó a administración.' : '')
+        : '';
+    const resumen =
+      `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}` +
+      `${detalleCertificacion}\n\nLe enviamos al paciente un aviso para que califique la atención.`;
+
+    if (data.documentacion_pendiente && data.episodio_clinico_id) {
+      setConfirmacion({
+        titulo: 'Atención realizada',
+        mensaje: `${resumen}\n\nEl registro clínico de esta sesión aún no está firmado. ¿Lo completas ahora o al final de la jornada?`,
+        etiqueta: 'Documentar ahora',
+        etiquetaCancelar: 'Al final de la jornada',
+        accion: () =>
+          navigation.navigate('SesionClinica', {
+            episodioId: String(data.episodio_clinico_id),
+            episodio_id: String(data.episodio_clinico_id),
+          }),
+        alCancelar: () =>
+          setAviso({
+            tono: 'info',
+            titulo: 'Queda pendiente',
+            mensaje: 'La encontrarás en Mi Jornada, en "Pendientes de documentar". La sesión clínica sigue abierta para completarla hasta que firmes el registro.',
+          }),
+      });
+      return;
+    }
+    setAviso({ tono: cert?.requiere_cierre_manual ? 'alerta' : 'ok', titulo: 'Atención realizada', mensaje: resumen });
   };
 
   const modificarEstadoCita = async (citaId, estadoActual, evento, motivo) => {
@@ -354,7 +417,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       if (data.requiere_cierre_manual) {
         setConfirmacion({
           tono: 'peligro',
-          titulo: 'Falta la marca del paciente',
+          titulo: 'Presencialidad sin validar',
           mensaje: `${data.mensaje}\n\n${textoFactores(data.factores)}`,
           etiqueta: 'Cierre manual',
           etiquetaCancelar: 'Volver',
@@ -689,10 +752,11 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     {estadoCita === 'CONFIRMADA' && (
                       <>
                         <TouchableOpacity 
-                          style={[styles.botonAccion, { backgroundColor: colores.primario }]}
+                          style={[styles.botonAccion, { backgroundColor: colores.primario }, marcando && { opacity: interaccion.opacidadDeshabilitada }]}
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
+                          disabled={Boolean(marcando)}
                         >
-                          <Text style={styles.textoBotonAccion}>▶️ Iniciar</Text>
+                          <Text style={styles.textoBotonAccion}>{marcando === 'INICIAR' ? 'Registrando…' : '▶️ Comenzar atención'}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
@@ -716,9 +780,16 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                       <TouchableOpacity 
                         style={[styles.botonAccion, { backgroundColor: colores.primario, marginHorizontal: 0 }]}
                         onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'FINALIZAR')}
+                        disabled={Boolean(marcando)}
                       >
-                        <Text style={styles.textoBotonAccion}>✅ Finalizar Atención</Text>
+                        <Text style={styles.textoBotonAccion}>{marcando === 'FINALIZAR' ? 'Registrando…' : '✅ Finalizar atención'}</Text>
                       </TouchableOpacity>
+                    )}
+                    {/* CU39: las ubicaciones se registran solas al comenzar y al finalizar. */}
+                    {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && String(item.modalidad || '').toUpperCase() === 'DOMICILIO' && (
+                      <Text style={styles.notaPresencialidad}>
+                        📍 Al {estadoCita === 'CONFIRMADA' ? 'comenzar' : 'finalizar'} se registran la hora y la ubicación tuya y del paciente; deben estar a menos de 100 m.
+                      </Text>
                     )}
 
                     {/* MENSAJE SI LA CITA ESTÁ EN UN ESTADO FINAL O TERMINAL */}
@@ -759,7 +830,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                         })
                       }
                     >
-                      <Text style={styles.enlaceEvidencia}>🛰️ Evidencia de sesión</Text>
+                      <Text style={styles.enlaceEvidencia}>🛰️ Evidencia y firma de conformidad</Text>
                     </TouchableOpacity>
                   )}
 
@@ -777,7 +848,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                               mensaje:
                                 `Validada el ${formatearFecha(item.sesion_certificada_en)}.` +
                                 (item.certificacion_tipo === 'MANUAL'
-                                  ? '\n\nSe cerró con justificación manual porque faltaba la marca de término del paciente.'
+                                  ? '\n\nSe cerró con justificación manual porque no se pudo validar la presencialidad.'
                                   : '\n\nTodos los factores del protocolo multi-factor coincidieron.'),
                             })
                           }
@@ -1226,7 +1297,11 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           setConfirmacion(null);
           if (accion) accion();
         }}
-        onCancelar={() => setConfirmacion(null)}
+        onCancelar={() => {
+          const alCancelar = confirmacion?.alCancelar;
+          setConfirmacion(null);
+          if (alCancelar) alCancelar();
+        }}
       />
 
 
@@ -1516,6 +1591,7 @@ const styles = StyleSheet.create({
   campoManual: { ...piezas.campo, marginBottom: espacio.md },
   campoManualAlto: { minHeight: 84, textAlignVertical: 'top' },
   accionesManual: { flexDirection: 'row', gap: espacio.md, marginTop: espacio.sm },
+  notaPresencialidad: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm, width: '100%' },
   botonManualCancelar: { flex: 1, paddingVertical: espacio.md, borderRadius: radio.md, borderWidth: 1.5, borderColor: colores.borde, alignItems: 'center' },
   textoManualCancelar: { ...tipografia.cuerpoFuerte, color: colores.textoSuave },
   botonManualConfirmar: { flex: 1, paddingVertical: espacio.md, borderRadius: radio.md, backgroundColor: colores.primario, alignItems: 'center' },

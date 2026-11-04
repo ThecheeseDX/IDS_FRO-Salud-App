@@ -203,3 +203,37 @@ exports.guardarAnamnesis = async (req, res) => {
     connection.release();
   }
 };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/clinica/mi-ficha/pdf  (Paciente)
+// El paciente descarga su ficha clínica completa en PDF. Se genera al momento
+// y viaja directo en la respuesta: no pasa por Cloudinary, que en cuentas
+// nuevas bloquea la entrega de PDF.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.miFichaPdf = async (req, res) => {
+  const { datosFicha, generarPdfFicha } = require('../../services/clinico/fichaPdfService');
+  try {
+    const [[paciente]] = await pool.query(
+      `SELECT paciente_id FROM Paciente WHERE usuario_id = ? LIMIT 1`,
+      [req.user.usuario_id]
+    );
+    if (!paciente) {
+      return res.status(404).json({ error: 'PACIENTE_NO_ENCONTRADO', mensaje: 'No encontramos tu registro de paciente.' });
+    }
+    const datos = await datosFicha(paciente.paciente_id);
+    const pdf = await generarPdfFicha(datos);
+
+    pool.query(
+      `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
+       VALUES ('DESCARGA_FICHA_PACIENTE', 'Ficha_Clinica', ?, ?, ?)`,
+      [req.ip || null, JSON.stringify({ paciente_id: paciente.paciente_id, bytes: pdf.length }), req.user.usuario_id]
+    ).catch(() => {});
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="ficha-clinica-${fecha}.pdf"`);
+    return res.status(200).send(pdf);
+  } catch (error) {
+    console.error('[miFichaPdf]', error);
+    return res.status(500).json({ error: 'FICHA_NO_GENERADA', mensaje: 'No se pudo generar tu ficha clínica. Intenta nuevamente en unos minutos.' });
+  }
+};

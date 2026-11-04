@@ -25,6 +25,18 @@ router.get('/atencion-en-curso',
   verifyToken, authorizeRoles(['Profesional']),
   marcasTemporalesController.atencionEnCurso);
 
+// CU39: la app del paciente envía sola su ubicación el día de la visita.
+router.get('/ubicacion-pendiente',
+  verifyToken, authorizeRoles(['Paciente']),
+  evidenciaController.ubicacionPendiente);
+router.post('/:id/ubicacion',
+  verifyToken, authorizeRoles(['Paciente']),
+  evidenciaController.reportarUbicacion);
+
+router.get('/documentacion-pendiente',
+  verifyToken, authorizeRoles(['Profesional']),
+  marcasTemporalesController.documentacionPendiente);
+
 router.post('/marcas-temporales/:cita_id/iniciar',
   verifyToken, authorizeRoles(['Profesional']),
   marcasTemporalesController.iniciarAtencion);

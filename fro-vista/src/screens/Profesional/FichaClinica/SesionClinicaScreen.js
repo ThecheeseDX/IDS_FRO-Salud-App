@@ -682,7 +682,9 @@ export default function SesionClinicaScreen({ route, navigation }) {
         {/* Firmar sella el registro clínico; la ATENCIÓN se cierra sobre la
             cita, en el historial. Había que buscarla a mano entre las citas:
             este atajo lleva directo a ella y la deja señalada. */}
-        {editable && contexto?.cita_id && (
+        {/* Si la atención ya se finalizó y solo falta documentarla (punto 7),
+            no hay nada que finalizar: basta con cerrar y firmar. */}
+        {editable && contexto?.cita_id && String(contexto?.estado_cita || '').toUpperCase() === 'EN_CURSO' && (
           <TouchableOpacity
             style={estilos.botonFinalizar}
             onPress={() =>

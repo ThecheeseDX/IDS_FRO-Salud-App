@@ -3,8 +3,9 @@
 // CU65 — Derivar un episodio a otra especialidad. Se abre desde la cabecera de
 // la ficha (episodio propio y abierto). Arriba están las derivaciones que el
 // episodio ya tiene; abajo, el formulario: especialidad → profesional →
-// justificación. Al enviarla, el profesional derivado puede consultar la
-// ficha del paciente mientras el episodio siga abierto.
+// justificación. Derivar es traspasar: mientras está pendiente, el receptor
+// lee la ficha para decidir; al aceptar, el episodio pasa a su cargo y quien
+// derivó lo conserva en solo lectura.
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
@@ -121,9 +122,9 @@ export default function DerivacionInternaScreen({ route, navigation }) {
     try {
       const datos = await cerrarDerivacion(d.derivacion_interna_id);
       await cargar();
-      setAviso({ tono: 'ok', titulo: 'Derivación cerrada', mensaje: datos.mensaje });
+      setAviso({ tono: 'ok', titulo: 'Derivación cancelada', mensaje: datos.mensaje });
     } catch (e) {
-      setAviso({ tono: 'error', titulo: 'No se pudo cerrar', mensaje: e.response?.data?.mensaje || 'Intenta nuevamente.' });
+      setAviso({ tono: 'error', titulo: 'No se pudo cancelar', mensaje: e.response?.data?.mensaje || 'Intenta nuevamente.' });
     }
   };
 
@@ -173,7 +174,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
           <Text style={estilos.titulo}>Derivaciones de este episodio</Text>
           {derivaciones.map((d) => {
             const estado = datosEstado(d.estado);
-            const vigente = ['PENDIENTE', 'ACEPTADA'].includes(d.estado);
+            const pendiente = d.estado === 'PENDIENTE';
             return (
               <View key={d.derivacion_interna_id} style={estilos.tarjeta}>
                 <View style={estilos.filaEntre}>
@@ -185,12 +186,15 @@ export default function DerivacionInternaScreen({ route, navigation }) {
                 {d.comentario_respuesta ? (
                   <Text style={estilos.meta}>Respuesta: {d.comentario_respuesta}</Text>
                 ) : null}
-                {vigente && (
+                {d.estado === 'ACEPTADA' && (
+                  <Text style={estilos.meta}>El episodio quedó a cargo de {d.profesional_destino}.</Text>
+                )}
+                {pendiente && (
                   <TouchableOpacity
                     onPress={() => setConfirmacion(d)}
                     activeOpacity={interaccion.opacidadActiva}
                   >
-                    <Text style={estilos.enlace}>Cerrar derivación y retirar el acceso</Text>
+                    <Text style={estilos.enlace}>Cancelar derivación</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -266,7 +270,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
         </View>
 
         <Text style={estilos.ayuda}>
-          El profesional derivado podrá consultar la ficha de este paciente mientras el episodio siga abierto o hasta que cierres la derivación.
+          Mientras la derivación esté pendiente, el profesional podrá leer la ficha para decidir. Al aceptarla, el episodio pasa a su cargo y tú lo conservas en solo lectura.
         </Text>
 
         <TouchableOpacity
@@ -281,9 +285,9 @@ export default function DerivacionInternaScreen({ route, navigation }) {
 
       <DialogoConfirmacion
         visible={confirmacion !== null}
-        titulo="Cerrar la derivación"
-        mensaje={confirmacion ? `${confirmacion.profesional_destino} dejará de ver la ficha de este paciente.` : ''}
-        etiquetaConfirmar="Cerrar derivación"
+        titulo="Cancelar la derivación"
+        mensaje={confirmacion ? `${confirmacion.profesional_destino} dejará de ver la ficha y el episodio sigue a tu cargo.` : ''}
+        etiquetaConfirmar="Cancelar derivación"
         tono="peligro"
         onConfirmar={() => {
           const d = confirmacion;

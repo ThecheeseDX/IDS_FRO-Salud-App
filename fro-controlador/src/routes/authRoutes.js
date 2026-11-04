@@ -41,6 +41,25 @@ router.post('/logout', verifyToken, authController.cerrarSesionActual);
 router.get('/privacidad', verifyToken, authorizeRoles(['Paciente']), authController.obtenerPrivacidad);
 router.put('/privacidad', verifyToken, authorizeRoles(['Paciente']), authController.actualizarPrivacidad);
 
+// ── Foto de perfil opcional del paciente (sin foto se muestran sus iniciales) ──
+const multer = require('multer');
+const perfilPacienteController = require('../controllers/perfilPacienteController');
+const cargaFoto = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+function manejarErrorFoto(err, req, res, next) {
+    if (err) {
+        return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+            error: err.code === 'LIMIT_FILE_SIZE' ? 'FOTO_MUY_PESADA' : 'CARGA_INVALIDA',
+            mensaje: err.code === 'LIMIT_FILE_SIZE'
+                ? 'La fotografía supera el tope absoluto de 8 MB.'
+                : 'No fue posible recibir la imagen. Intenta nuevamente.',
+        });
+    }
+    next();
+}
+router.get('/mi-foto', verifyToken, authorizeRoles(['Paciente']), perfilPacienteController.obtener);
+router.post('/mi-foto', verifyToken, authorizeRoles(['Paciente']), cargaFoto.single('foto'), manejarErrorFoto, perfilPacienteController.subir);
+router.delete('/mi-foto', verifyToken, authorizeRoles(['Paciente']), perfilPacienteController.quitar);
+
 router.get('/mi-perfil', verifyToken, (req, res) => {
     res.status(200).json({ 
         mensaje: `¡Acceso concedido! Hola, el sistema reconoce que tienes el rol de: ${req.user.nombre_rol}` 

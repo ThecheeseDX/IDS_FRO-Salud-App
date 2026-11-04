@@ -27,6 +27,11 @@ const chatController = require('../controllers/clinico/chatController');
 // ─────────────────────────────────────────────────────────────────────────────
 // CU29 — Anamnesis / Ficha Clínica
 // ─────────────────────────────────────────────────────────────────────────────
+// El paciente descarga su propia ficha clínica en PDF (va antes de /ficha/:paciente_id).
+router.get('/mi-ficha/pdf',
+    verifyToken, authorizeRoles(['Paciente']),
+    fichaClinicaController.miFichaPdf
+);
 router.get('/ficha/:paciente_id',
     verifyToken, authorizeRoles(['Profesional', 'Administrador']), auditarAccesoClinico,
     fichaClinicaController.obtenerFicha
@@ -189,13 +194,36 @@ router.get('/mis-conversaciones',
     verifyToken, authorizeRoles(['Paciente', 'Profesional']),
     chatController.misConversaciones
 );
-router.get('/episodio/:episodio_id/mensajes',
+// Una conversación por pareja paciente–profesional.
+router.get('/chat/adjuntos/:mensaje_id/ver',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.verAdjunto
+);
+router.get('/chat/con/:paciente_id',
+    verifyToken, authorizeRoles(['Profesional']),
+    chatController.conversacionConPaciente
+);
+router.get('/chat/:paciente_id/:profesional_id/mensajes',
     verifyToken, authorizeRoles(['Paciente', 'Profesional']),
     chatController.listarMensajes
 );
-router.post('/episodio/:episodio_id/mensajes',
+router.post('/chat/:paciente_id/:profesional_id/mensajes',
     verifyToken, authorizeRoles(['Paciente', 'Profesional']),
     chatController.enviarMensaje
+);
+router.post('/chat/:paciente_id/:profesional_id/documento',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.compartirDocumento
+);
+// (la ruta de adjuntos va más abajo, junto al receptor de archivos)
+// Compatibilidad con avisos y versiones anteriores, que abrían el chat por episodio.
+router.get('/episodio/:episodio_id/mensajes',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.listarMensajesEpisodio
+);
+router.post('/episodio/:episodio_id/mensajes',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    chatController.enviarMensajeEpisodio
 );
 
 // CU16
@@ -308,6 +336,28 @@ function manejarErrorCarga(err, req, res, next) {
     }
     next();
 }
+
+// Punto 8: material de apoyo propio de cada ejercicio de una pauta.
+router.post('/pautas/ejercicios/:id/material',
+    verifyToken, authorizeRoles(['Profesional']),
+    cargaArchivo.single('archivo'), manejarErrorCarga,
+    pautaController.subirMaterialApoyo
+);
+router.get('/pautas/material/:id/ver',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    pautaController.verMaterialApoyo
+);
+router.delete('/pautas/material/:id',
+    verifyToken, authorizeRoles(['Profesional']),
+    pautaController.eliminarMaterialApoyo
+);
+
+// CU53: imágenes y archivos adjuntos al chat (mismo receptor que la ficha).
+router.post('/chat/:paciente_id/:profesional_id/adjuntos',
+    verifyToken, authorizeRoles(['Paciente', 'Profesional']),
+    cargaArchivo.single('archivo'), manejarErrorCarga,
+    chatController.enviarAdjunto
+);
 
 router.get('/documentos/categorias',
     verifyToken, authorizeRoles(['Paciente', 'Profesional', 'Administrador']),

@@ -16,6 +16,21 @@ function estadoEnCurso(estado) {
   return String(estado || '').trim().toUpperCase().replace(/\s+/g, '_') === 'EN_CURSO';
 }
 
+/**
+ * Corrección Inc 4 (punto 7): la sesión se documenta con la cita EN CURSO o,
+ * si el profesional la dejó para el final de la jornada, con la cita ya
+ * REALIZADA y pendiente de documentar (se libera al firmar el registro).
+ */
+function sesionDocumentable(contexto) {
+  if (!contexto?.cita_id) return false;
+  if (estadoEnCurso(contexto.estado_cita)) return true;
+  return String(contexto.estado_cita || '').toUpperCase() === 'REALIZADA' && Boolean(Number(contexto.documentacion_pendiente));
+}
+
+// Cita que habilita la sesión clínica: en curso o realizada pendiente de documentar.
+const SQL_CITA_DOCUMENTABLE = `(UPPER(REPLACE(TRIM(c.estado), ' ', '_')) = 'EN_CURSO'
+       OR (c.estado = 'REALIZADA' AND c.documentacion_pendiente = TRUE))`;
+
 async function obtenerContexto(connection, episodioId, usuarioId, bloquear = false, soloDelProfesional = true) {
   const [filas] = await connection.execute(
     `SELECT
@@ -36,6 +51,7 @@ async function obtenerContexto(connection, episodioId, usuarioId, bloquear = fal
         ) AS paciente,
         c.cita_id,
         c.estado AS estado_cita,
+        c.documentacion_pendiente,
         c.fecha_hora_inicio,
         c.fecha_hora_fin
      FROM Episodio_Clinico ec
@@ -47,13 +63,14 @@ async function obtenerContexto(connection, episodioId, usuarioId, bloquear = fal
      LEFT JOIN Cita c
        ON c.paciente_id = ec.paciente_id
       AND c.profesional_id = ec.profesional_id
-      AND UPPER(REPLACE(TRIM(c.estado), ' ', '_')) = 'EN_CURSO'
+      AND ${SQL_CITA_DOCUMENTABLE}
       -- El vinculo real manda; la coincidencia por paciente y profesional
       -- queda solo para las citas anteriores a que existiera la columna.
       AND (c.episodio_clinico_id = ec.episodio_clinico_id OR c.episodio_clinico_id IS NULL)
      WHERE ec.episodio_clinico_id = ?
        ${soloDelProfesional ? 'AND p.usuario_id = ?' : ''}
-     ORDER BY c.fecha_hora_inicio DESC
+     -- La atención en curso manda sobre una realizada pendiente de documentar.
+     ORDER BY (c.estado = 'EN_CURSO') DESC, c.fecha_hora_inicio DESC
      LIMIT 1${bloquear ? ' FOR UPDATE' : ''}`,
     soloDelProfesional ? [episodioId, usuarioId] : [episodioId]
   );
@@ -131,7 +148,7 @@ exports.listarSesiones = async (req, res) => {
        LEFT JOIN Cita c
          ON c.paciente_id = ec.paciente_id
         AND c.profesional_id = ec.profesional_id
-        AND UPPER(REPLACE(TRIM(c.estado), ' ', '_')) = 'EN_CURSO'
+        AND ${SQL_CITA_DOCUMENTABLE}
        WHERE p.usuario_id = ?
        ORDER BY (c.cita_id IS NOT NULL) DESC, c.fecha_hora_inicio DESC, ec.fecha_inicio DESC`,
       [req.user.usuario_id]
@@ -193,8 +210,7 @@ exports.obtenerIntervencion = async (req, res) => {
       [episodio_id, contexto.profesional_id]
     );
 
-    const editable =
-      !deOtroProfesional && Boolean(contexto.cita_id) && estadoEnCurso(contexto.estado_cita);
+    const editable = !deOtroProfesional && sesionDocumentable(contexto);
     const ultimaEvolucion = evoluciones[0] || null;
 
     // Si la atención en curso está registrada en OTRO episodio del mismo
@@ -221,8 +237,10 @@ exports.obtenerIntervencion = async (req, res) => {
         mensaje_estado: deOtroProfesional
           ? `Este episodio lo lleva ${contexto.profesional_responsable}. Puedes consultarlo, pero solo su profesional registra en él.`
           : editable
-            ? 'Sesión clínica en curso.'
-            : 'La sesión no está EN CURSO. Los campos se muestran en modo de solo lectura.'
+            ? (estadoEnCurso(contexto.estado_cita)
+              ? 'Sesión clínica en curso.'
+              : 'Atención ya finalizada: estás completando su registro clínico pendiente.')
+            : 'No hay una atención en curso ni pendiente de documentar. Los campos se muestran en modo de solo lectura.'
       },
       evolucion:
         editable && ultimaEvolucion?.inalterable === 1
@@ -270,11 +288,11 @@ exports.guardarIntervencion = async (req, res) => {
       });
     }
 
-    if (!contexto.cita_id || !estadoEnCurso(contexto.estado_cita)) {
+    if (!sesionDocumentable(contexto)) {
       await connection.rollback();
       return res.status(409).json({
         error: 'SESION_NO_EN_CURSO',
-        mensaje: 'La intervención solo puede modificarse mientras la cita está EN CURSO.'
+        mensaje: 'La intervención solo puede registrarse con la atención en curso o pendiente de documentar.'
       });
     }
 

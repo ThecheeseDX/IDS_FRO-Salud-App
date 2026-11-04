@@ -8,7 +8,9 @@
  *   · un ejercicio DIARIO programa una tarea por cada día de vigencia
  *     transcurrido (nunca días futuros: nadie está atrasado por no haber
  *     hecho lo de mañana);
- *   · un ejercicio SEMANAL programa una tarea por cada semana empezada.
+ *   · un ejercicio SEMANAL programa una tarea por cada semana empezada;
+ *   · un ejercicio con días específicos (p. ej. lunes, miércoles y viernes)
+ *     programa una tarea por cada uno de esos días dentro de la vigencia.
  *
  * Las marcas fuera del periodo de vigencia no entran en el cálculo
  * (Excepción 1): la consulta las descarta por rango de fechas.
@@ -22,6 +24,30 @@ function hoySQL() {
   const f = new Date();
   const dos = (n) => String(n).padStart(2, '0');
   return `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}`;
+}
+
+/** Días asignados (1 = lunes … 7 = domingo) o [] si el ejercicio no los usa. */
+function diasAsignados(diasSemana) {
+  return String(diasSemana || '')
+    .split(',')
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n >= 1 && n <= 7);
+}
+
+/** Tareas que el ejercicio programa en `dias` días de vigencia desde `inicio`. */
+function tareasEsperadas(fila, inicio, dias) {
+  const asignados = diasAsignados(fila.dias_semana);
+  if (asignados.length > 0) {
+    let total = 0;
+    for (let i = 0; i < dias; i++) {
+      const d = new Date(inicio.getTime());
+      d.setDate(d.getDate() + i);
+      const dia = d.getDay() === 0 ? 7 : d.getDay();
+      if (asignados.includes(dia)) total += 1;
+    }
+    return total;
+  }
+  return String(fila.frecuencia).toUpperCase() === 'SEMANAL' ? Math.ceil(dias / 7) : dias;
 }
 
 /**
@@ -43,6 +69,7 @@ async function calcularAdherencia(conexion, pacienteId, { desde = null, hasta = 
         pe.pauta_ejercicio_id,
         pe.nombre_ejercicio,
         pe.frecuencia,
+        pe.dias_semana,
         GREATEST(pt.fecha_inicio, COALESCE(?, pt.fecha_inicio))            AS inicio_efectivo,
         LEAST(pt.fecha_expiracion, ?)                                      AS fin_efectivo,
         (SELECT COUNT(*) FROM Pauta_Cumplimiento pc
@@ -67,8 +94,7 @@ async function calcularAdherencia(conexion, pacienteId, { desde = null, hasta = 
     const dias = Math.floor((fin - inicio) / 86400000) + 1;
     if (dias <= 0) continue;
 
-    const esperadas =
-      String(fila.frecuencia).toUpperCase() === 'SEMANAL' ? Math.ceil(dias / 7) : dias;
+    const esperadas = tareasEsperadas(fila, inicio, dias);
     // Una marca de más (por ejemplo, de una pauta que cambió de frecuencia) no
     // puede hacer que el paciente supere el 100%.
     const hechas = Math.min(Number(fila.cumplidas) || 0, esperadas);

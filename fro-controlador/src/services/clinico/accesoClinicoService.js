@@ -7,15 +7,17 @@
  *
  *   1. es responsable de algún episodio del paciente,
  *   2. tiene una cita vigente con él, o
- *   3. CU65: recibió una derivación interna PENDIENTE o ACEPTADA sobre un
- *      episodio que sigue ABIERTO. Es una vinculación temporal: al cerrarse el
- *      episodio (o la derivación) el acceso se retira solo.
+ *   3. CU65: tiene una derivación interna PENDIENTE sobre un episodio que
+ *      sigue ABIERTO (lee la ficha para decidir si acepta). Al aceptar, el
+ *      episodio pasa a ser suyo y entra por la vía 1.
+ *   4. CU65: derivó un episodio y el receptor lo aceptó. Conserva la ficha en
+ *      solo lectura (las escrituras ya exigen ser el responsable del episodio).
  */
 
-const ESTADOS_DERIVACION_CON_ACCESO = ['PENDIENTE', 'ACEPTADA'];
+const ESTADOS_DERIVACION_CON_ACCESO = ['PENDIENTE'];
 
 // Pacientes a los que el profesional (identificado por usuario_id) tiene acceso.
-// Lleva tres marcadores: los tres son el usuario_id.
+// Lleva cuatro marcadores: los cuatro son el usuario_id.
 const SQL_PACIENTES_CON_ACCESO = `
   SELECT ec.paciente_id FROM Episodio_Clinico ec
     JOIN Profesional pr ON pr.profesional_id = ec.profesional_id
@@ -28,11 +30,17 @@ const SQL_PACIENTES_CON_ACCESO = `
   SELECT ec.paciente_id FROM Derivacion_Interna di
     JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = di.episodio_clinico_id
     JOIN Profesional pr ON pr.profesional_id = di.profesional_destino_id
-   WHERE pr.usuario_id = ? AND di.estado IN ('PENDIENTE', 'ACEPTADA')
-     AND COALESCE(ec.estado, 'ABIERTO') <> 'CERRADO'`;
+   WHERE pr.usuario_id = ? AND di.estado = 'PENDIENTE'
+     AND COALESCE(ec.estado, 'ABIERTO') <> 'CERRADO'
+  UNION
+  SELECT ec.paciente_id FROM Derivacion_Interna di
+    JOIN Episodio_Clinico ec ON ec.episodio_clinico_id = di.episodio_clinico_id
+    JOIN Profesional pr ON pr.profesional_id = di.profesional_origen_id
+   WHERE pr.usuario_id = ? AND di.momento_respuesta IS NOT NULL
+     AND di.estado IN ('ACEPTADA', 'CERRADA')`;
 
 function parametrosAcceso(usuarioId) {
-  return [usuarioId, usuarioId, usuarioId];
+  return [usuarioId, usuarioId, usuarioId, usuarioId];
 }
 
 /** true si el profesional (usuario_id) puede consultar la información clínica del paciente. */
@@ -48,8 +56,8 @@ async function profesionalTratante(conexion, usuarioId, pacienteId) {
 }
 
 /**
- * CU65: al cerrar un episodio, sus derivaciones abiertas pasan a CERRADA y el
- * puente de acceso desaparece también en el registro, no solo en la consulta.
+ * CU65: al cerrar un episodio, sus derivaciones abiertas pasan a CERRADA. Una
+ * aceptada conserva momento_respuesta, así quien derivó sigue con su lectura.
  */
 async function cerrarDerivacionesDelEpisodio(conexion, episodioId) {
   const [resultado] = await conexion.query(

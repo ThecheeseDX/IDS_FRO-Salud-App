@@ -13,6 +13,72 @@ const { cloudinary, cloudinaryConfigurado, subirBuffer } = require('../../config
 const { leerParametroEntero } = require('../../services/agenda/agendaService');
 const { rechazarSiCerrado } = require('../../services/clinico/episodioService');
 
+/**
+ * Datos que la app necesita para mostrar un archivo sin descargarlo (CU35).
+ * Lo usan el repositorio de documentos y los adjuntos del chat (CU53).
+ *
+ * @param {{formato, url_publica, public_id_cloud, tipo_recurso, paginas}} archivo
+ * @param {(paginas:number)=>Promise} guardarPaginas  persiste el conteo si faltaba
+ */
+async function prepararVisor(archivo, guardarPaginas = async () => {}) {
+  // El tipo de visor le dice a la app cómo renderizar sin descargar:
+  // imagen → componente Image; video → visor web embebido; pdf → cada
+  // página convertida a imagen por Cloudinary. Esto último reemplaza al
+  // visor de Google, que mostraba "no hay vista previa": las cuentas nuevas
+  // de Cloudinary bloquean la entrega del PDF original, pero sí entregan sus
+  // páginas como JPG, así que la vista previa funciona igual.
+  let visor = 'imagen';
+  if (archivo.formato === 'pdf') visor = 'pdf';
+  else if (['mp4', 'mov'].includes(archivo.formato)) visor = 'video';
+  // DOCX (D5): el teléfono no lo renderiza solo; se muestra con el visor de
+  // documentos de Google incrustado, que lee la URL pública del archivo.
+  else if (archivo.formato === 'docx') visor = 'documento';
+
+  const urlVisor =
+    visor === 'documento'
+      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(archivo.url_publica)}`
+      : archivo.url_publica;
+
+  const paginasUrls = [];
+  let paginas = archivo.paginas;
+  if (visor === 'pdf') {
+    // Archivos cargados antes de guardar el número de páginas: se consulta
+    // una vez a Cloudinary y se persiste para no volver a preguntar.
+    if (!paginas) {
+      try {
+        const recurso = await cloudinary.api.resource(archivo.public_id_cloud, {
+          resource_type: archivo.tipo_recurso || 'image', pages: true,
+        });
+        paginas = recurso.pages || 1;
+        await guardarPaginas(paginas);
+      } catch (errorNube) {
+        console.error('[prepararVisor] sin conteo de páginas:', errorNube.message);
+        paginas = 1;
+      }
+    }
+    for (let n = 1; n <= Math.min(paginas, 60); n++) {
+      paginasUrls.push(
+        cloudinary.url(archivo.public_id_cloud, {
+          resource_type: 'image', page: n, format: 'jpg',
+          width: 1200, crop: 'limit', quality: 'auto', secure: true,
+        })
+      );
+    }
+  }
+
+  // Enlace para abrir/descargar el archivo original en el navegador del
+  // teléfono. Para PDF requiere habilitar en Cloudinary (Settings → Security)
+  // "Allow delivery of PDF and ZIP files"; imágenes y videos salen siempre.
+  const urlDescarga = cloudinary.url(archivo.public_id_cloud, {
+    resource_type: archivo.tipo_recurso || 'image', flags: 'attachment', secure: true,
+  });
+
+  return {
+    paginas,
+    campos: { visor, url_visor: urlVisor, paginas_urls: paginasUrls, url_descarga: urlDescarga },
+  };
+}
+
 // ── Taxonomía de categorías (CU34) ───────────────────────────────────────────
 const CATEGORIAS = [
   { clave: 'EXAMEN_IMAGENOLOGICO', nombre: 'Examen imagenológico' },
@@ -340,63 +406,14 @@ exports.verDocumento = async (req, res) => {
       });
     }
 
-    // El tipo de visor le dice a la app cómo renderizar sin descargar:
-    // imagen → componente Image; video → visor web embebido; pdf → cada
-    // página convertida a imagen por Cloudinary. Esto último reemplaza al
-    // visor de Google, que mostraba "no hay vista previa": las cuentas nuevas
-    // de Cloudinary bloquean la entrega del PDF original, pero sí entregan sus
-    // páginas como JPG, así que la vista previa funciona igual.
-    let visor = 'imagen';
-    if (documento.formato === 'pdf') visor = 'pdf';
-    else if (['mp4', 'mov'].includes(documento.formato)) visor = 'video';
-    // DOCX (D5): el teléfono no lo renderiza solo; se muestra con el visor de
-    // documentos de Google incrustado, que lee la URL pública del archivo.
-    else if (documento.formato === 'docx') visor = 'documento';
-
-    const urlVisor =
-      visor === 'documento'
-        ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(documento.url_publica)}`
-        : documento.url_publica;
-
-    let paginasUrls = [];
-    if (visor === 'pdf') {
-      let paginas = documento.paginas;
-      // Documentos cargados antes de guardar el número de páginas: se consulta
-      // una vez a Cloudinary y se persiste para no volver a preguntar.
-      if (!paginas) {
-        try {
-          const recurso = await cloudinary.api.resource(documento.public_id_cloud, {
-            resource_type: documento.tipo_recurso || 'image', pages: true,
-          });
-          paginas = recurso.pages || 1;
-          await pool.query(`UPDATE Documento_Clinico SET paginas = ? WHERE documento_id = ?`, [paginas, id]);
-        } catch (errorNube) {
-          console.error('[verDocumento] sin conteo de páginas:', errorNube.message);
-          paginas = 1;
-        }
-      }
-      for (let n = 1; n <= Math.min(paginas, 60); n++) {
-        paginasUrls.push(
-          cloudinary.url(documento.public_id_cloud, {
-            resource_type: 'image', page: n, format: 'jpg',
-            width: 1200, crop: 'limit', quality: 'auto', secure: true,
-          })
-        );
-      }
-      documento.paginas = paginas;
-    }
-
-    // Enlace para abrir/descargar el archivo original en el navegador del
-    // teléfono. Para PDF requiere habilitar en Cloudinary (Settings → Security)
-    // "Allow delivery of PDF and ZIP files"; imágenes y videos salen siempre.
-    const urlDescarga = cloudinary.url(documento.public_id_cloud, {
-      resource_type: documento.tipo_recurso || 'image', flags: 'attachment', secure: true,
-    });
+    const vista = await prepararVisor(documento, async (paginas) =>
+      pool.query(`UPDATE Documento_Clinico SET paginas = ? WHERE documento_id = ?`, [paginas, id])
+    );
 
     await auditar(req, 'VISUALIZACION_DOCUMENTO', { documento_id: id });
 
     const { public_id_cloud, ...publico } = documento;
-    res.json({ ok: true, documento: { ...publico, visor, url_visor: urlVisor, paginas_urls: paginasUrls, url_descarga: urlDescarga } });
+    res.json({ ok: true, documento: { ...publico, paginas: vista.paginas ?? publico.paginas, ...vista.campos } });
   } catch (error) {
     console.error('[verDocumento]', error);
     res.status(500).json({ error: 'Error interno al preparar el visor.' });
@@ -404,3 +421,6 @@ exports.verDocumento = async (req, res) => {
 };
 
 exports.CATEGORIAS = CATEGORIAS;
+exports.EXTENSIONES_PERMITIDAS = EXTENSIONES_PERMITIDAS;
+exports.prepararVisor = prepararVisor;
+exports.puedeAccederAPaciente = puedeAccederAPaciente;

@@ -10,6 +10,9 @@ const pool = require('../config/database');
 const { leerParametroEntero } = require('../services/agenda/agendaService');
 const { enviarCorreo } = require('../services/notifications/otpService');
 const { notificarUsuario } = require('../services/agenda/agendaService');
+const {
+  distanciaMetros, parsearJSON, coordenadas, analizarFactores,
+} = require('../services/agenda/presencialidadService');
 
 const DECLARACION_CONFORMIDAD = {
   version: '1.0',
@@ -32,22 +35,8 @@ function formatearFechaHoraCL(valor) {
   return `${p(f.getDate())}/${p(f.getMonth() + 1)}/${f.getFullYear()} ${p(f.getHours())}:${p(f.getMinutes())}`;
 }
 
-function distanciaMetros(a, b) {
-  const R = 6371000;
-  const rad = (g) => (g * Math.PI) / 180;
-  const dLat = rad(b.lat - a.lat);
-  const dLng = rad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return Math.round(2 * R * Math.asin(Math.sqrt(h)));
-}
-
-function parsearJSON(valor) {
-  if (valor === null || valor === undefined) return null;
-  if (typeof valor === 'object') return valor;
-  try { return JSON.parse(valor); } catch { return null; }
-}
+// Distancia y lectura de la evidencia viven en el servicio de presencialidad,
+// que también usan el inicio y el término automáticos de la atención (CU38).
 
 /** Cita a la que el usuario pertenece (como paciente o profesional). */
 async function citaDelActor(citaId, usuarioId) {
@@ -357,6 +346,89 @@ exports.sesionesSuspendidas = async (_req, res) => {
 //  POST /citas/:id/validar-sesion   { confirmar, cierre_manual, justificacion }
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Certificación automática al finalizar la atención (CU41). Si todos los
+ * factores cuadran, la sesión queda certificada como MULTIFACTOR sin pasos
+ * extra. Si estaban lejos, se deriva al Administrador (D11). En ambos casos
+ * de falla el profesional puede cerrar con justificación.
+ */
+exports.certificarAlFinalizar = async (req, citaId) => {
+  const [[cita]] = await pool.query(`SELECT * FROM Cita WHERE cita_id = ? LIMIT 1`, [citaId]);
+  if (!cita || cita.sesion_certificada_en) return { certificada: Boolean(cita?.sesion_certificada_en), factores: [] };
+  const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 100);
+  const factores = analizarFactores(cita, radio);
+  const fallidos = factores.filter((f) => !f.ok);
+
+  if (fallidos.length === 0) {
+    await pool.query(
+      `UPDATE Cita SET sesion_certificada_en = NOW(), certificacion_tipo = 'MULTIFACTOR' WHERE cita_id = ?`,
+      [citaId]
+    );
+    await auditar(req, 'SESION_CERTIFICADA', { cita_id: Number(citaId), factores, automatica: true });
+    return { certificada: true, factores };
+  }
+
+  let administradoresAvisados = 0;
+  if (fallidos.some((f) => f.clave === 'DISTANCIA')) {
+    await auditar(req, 'SESION_SUSPENDIDA', { cita_id: Number(citaId), factores_fallidos: fallidos.map((f) => f.factor) });
+    administradoresAvisados = await derivarAAdministracion(req, citaId, fallidos).catch((e) => {
+      console.error('[certificarAlFinalizar] derivación fallida:', e.message);
+      return 0;
+    });
+  }
+  return { certificada: false, requiere_cierre_manual: true, factores, administradores_avisados: administradoresAvisados };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CU39 — Ubicación del paciente, enviada sola por su app
+//  GET  /citas/ubicacion-pendiente   → citas a domicilio de hoy que la necesitan
+//  POST /citas/:id/ubicacion         { latitud, longitud }
+//  El paciente no aprieta nada: la app la envía al abrirse el día de la visita,
+//  y el profesional la usa al comenzar y finalizar la atención.
+// ─────────────────────────────────────────────────────────────────────────────
+
+exports.ubicacionPendiente = async (req, res) => {
+  try {
+    const [citas] = await pool.query(
+      `SELECT c.cita_id, c.fecha_hora_inicio, c.estado
+         FROM Cita c JOIN Paciente pa ON pa.paciente_id = c.paciente_id
+        WHERE pa.usuario_id = ? AND c.modalidad = 'DOMICILIO'
+          AND (c.estado = 'EN_CURSO'
+               OR (c.estado IN ('AGENDADA', 'CONFIRMADA')
+                   AND c.fecha_hora_inicio BETWEEN NOW() - INTERVAL 3 HOUR AND NOW() + INTERVAL 2 HOUR))
+        ORDER BY c.fecha_hora_inicio`,
+      [req.user.usuario_id]
+    );
+    return res.json({ citas });
+  } catch (error) {
+    console.error('[ubicacionPendiente]', error);
+    return res.status(500).json({ error: 'No se pudo consultar tus visitas de hoy.' });
+  }
+};
+
+exports.reportarUbicacion = async (req, res) => {
+  const punto = coordenadas(req.body);
+  if (!punto) return res.status(400).json({ error: 'COORDENADAS_INVALIDAS' });
+  try {
+    const cita = await citaDelActor(req.params.id, req.user.usuario_id);
+    if (!cita || !Number(cita.es_paciente)) return res.status(404).json({ error: 'La cita no existe o no es tuya.' });
+    if (cita.modalidad !== 'DOMICILIO' || !['AGENDADA', 'CONFIRMADA', 'EN_CURSO'].includes(cita.estado)) {
+      return res.status(409).json({ error: 'CITA_NO_HABILITADA', mensaje: 'Solo se registra la ubicación de visitas a domicilio por realizar.' });
+    }
+    await pool.query(
+      `UPDATE Cita SET evidencia_presencial = JSON_SET(COALESCE(evidencia_presencial, JSON_OBJECT()),
+              '$.paciente', JSON_MERGE_PATCH(COALESCE(JSON_EXTRACT(evidencia_presencial, '$.paciente'), JSON_OBJECT()),
+                                             JSON_OBJECT('ultima', CAST(? AS JSON))))
+        WHERE cita_id = ?`,
+      [JSON.stringify({ ...punto, momento_registro: new Date().toISOString() }), cita.cita_id]
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('[reportarUbicacion]', error);
+    return res.status(500).json({ error: 'No se pudo registrar la ubicación.' });
+  }
+};
+
 exports.validarSesion = async (req, res) => {
   const { id } = req.params;
   const cierreManual = Boolean(req.body?.cierre_manual);
@@ -392,61 +464,22 @@ exports.validarSesion = async (req, res) => {
       });
     }
 
-    const evidencia = parsearJSON(cita.evidencia_presencial) || {};
-    const tolerancia = await leerParametroEntero(pool, 'TOLERANCIA_MULTIFACTOR_MINUTOS', 15);
-    const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 200);
+    const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 100);
 
-    // ── Análisis cruzado de factores ──
-    const factores = [];
-
-    factores.push({
-      factor: 'Marca temporal del profesional (inicio de atención)',
-      ok: Boolean(cita.checkin_profesional),
-    });
-
-    const marcaPaciente = evidencia.paciente?.inicio || null;
-    factores.push({
-      factor: 'Marca de presencia del paciente',
-      ok: Boolean(marcaPaciente || cita.checkin_paciente),
-    });
-
-    let diferenciaMin = null;
-    if (cita.checkin_profesional && marcaPaciente?.momento_registro) {
-      diferenciaMin = Math.abs(
-        new Date(cita.checkin_profesional).getTime() -
-          new Date(marcaPaciente.momento_registro).getTime()
-      ) / 60000;
-      factores.push({
-        factor: `Diferencia entre marcas ≤ ${tolerancia} min (fue ${Math.round(diferenciaMin)} min)`,
-        ok: diferenciaMin <= tolerancia,
-      });
-    }
-
-    if (cita.modalidad === 'DOMICILIO' || (evidencia.paciente && evidencia.profesional)) {
-      const a = evidencia.paciente?.inicio;
-      const b = evidencia.profesional?.inicio;
-      if (a && b) {
-        const distancia = distanciaMetros(a, b);
-        factores.push({
-          factor: `Coordenadas GPS coincidentes ≤ ${radio} m (fue ${distancia} m)`,
-          ok: distancia <= radio,
-        });
-      } else {
-        factores.push({ factor: 'Coordenadas GPS de ambos actores', ok: false });
-      }
-    }
-
+    // ── Análisis cruzado de factores ── (las marcas ahora son automáticas:
+    // ya no se espera una confirmación del paciente).
+    const factores = analizarFactores(cita, radio);
     const fallidos = factores.filter((f) => !f.ok);
-    const faltaTerminoPaciente = !evidencia.paciente?.termino;
+    const hayDiscrepancia = fallidos.some((f) => f.clave === 'DISTANCIA');
 
-    // Excepción 1: sin término del paciente, se exige cierre manual justificado.
-    if (faltaTerminoPaciente && !cierreManual) {
+    // Falta alguna ubicación: no es una discrepancia, pero sin ella no se
+    // puede certificar solo. Se pide el cierre manual justificado.
+    if (fallidos.length > 0 && !hayDiscrepancia && !cierreManual) {
       return res.status(200).json({
         certificada: false,
         requiere_cierre_manual: true,
         factores,
-        mensaje:
-          'El paciente no emitió su marca de término. Puedes ejecutar un cierre manual justificado.',
+        mensaje: 'Falta la ubicación de uno de los dos para validar la presencialidad. Puedes cerrar la sesión con una justificación.',
       });
     }
     if (cierreManual && !justificacion) {
@@ -456,9 +489,9 @@ exports.validarSesion = async (req, res) => {
       });
     }
 
-    // Excepción 2: discrepancias críticas suspenden la validación y el caso
-    // se deriva al Administrador (D11).
-    if (fallidos.length > 0 && !cierreManual) {
+    // Excepción 2: discrepancias críticas (estaban lejos) suspenden la
+    // validación y el caso se deriva al Administrador (D11).
+    if (hayDiscrepancia && !cierreManual) {
       await auditar(req, 'SESION_SUSPENDIDA', {
         cita_id: Number(id), factores_fallidos: fallidos.map((f) => f.factor),
       });

@@ -25,6 +25,7 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
 import DialogoAviso from '../../components/DialogoAviso';
+import EncabezadoPerfilPaciente from '../../components/EncabezadoPerfilPaciente';
 
 // Sesiones, contraseña y privacidad, sin contenedor propio: la usa esta
 // pantalla y el pie de los perfiles (paciente y profesional).
@@ -428,13 +429,17 @@ export function PieDePerfil({ navigation, tituloSeguridad, alInicio = false }) {
   );
 }
 
-// comoPerfil: la pestaña "Mi perfil" del paciente (seguridad y privacidad
-// primero; la información personal irá arriba cuando exista).
+// comoPerfil: la pestaña "Mi perfil" del paciente: arriba su foto y nombre,
+// después seguridad y privacidad.
 export default function SeguridadScreen({ navigation, comoPerfil = false }) {
   return (
     <VistaConTeclado style={estilos.fondo} contentContainerStyle={estilos.contenido}>
       {comoPerfil ? (
-        <PieDePerfil navigation={navigation} tituloSeguridad="Seguridad y privacidad" alInicio />
+        <>
+          {/* Foto de perfil opcional del paciente (sin foto, sus iniciales). */}
+          <EncabezadoPerfilPaciente />
+          <PieDePerfil navigation={navigation} tituloSeguridad="Seguridad y privacidad" alInicio />
+        </>
       ) : (
         <SeccionesSeguridad />
       )}

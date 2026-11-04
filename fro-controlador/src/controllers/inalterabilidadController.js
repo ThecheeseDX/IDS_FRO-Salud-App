@@ -92,6 +92,16 @@ exports.finalizarEvolucion = async (req, res) => {
       [firmaDigitalGenerada, porcentajeEpisodio, evolucionId]
     );
 
+    // Corrección Inc 4 (punto 7): firmar el registro libera la sesión que
+    // había quedado pendiente de documentar.
+    await connection.execute(
+      `UPDATE Cita c
+          JOIN Profesional p ON p.profesional_id = c.profesional_id
+          SET c.documentacion_pendiente = FALSE
+        WHERE c.episodio_clinico_id = ? AND p.usuario_id = ? AND c.documentacion_pendiente = TRUE`,
+      [rows[0].episodio_clinico_id, usuarioId]
+    );
+
     await registrarAuditoria(connection, req, 'FINALIZAR_EVOLUCION_CLINICA', 'evolucion_clinica', {
       evolucion_clinica_id: evolucionId,
       resultado: 'Registro clínico finalizado e inalterable',

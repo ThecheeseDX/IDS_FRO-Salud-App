@@ -21,6 +21,7 @@ import { AuthContext } from '../../context/AuthContext';
 import apiClient, { getAlertasClinicas, revisarAlertaClinica, getDerivacionesRecibidas } from '../../api/client';
 import { colores, espacio, radio, tipografia, piezas, interaccion } from '../../theme';
 import BarraAtencionEnCurso from '../../components/BarraAtencionEnCurso';
+import Avatar from '../../components/Avatar';
 
 export default function DashboardProfesional({ navigation }) {
   const { userData } = useContext(AuthContext);
@@ -114,9 +115,12 @@ export default function DashboardProfesional({ navigation }) {
 
   const renderPaciente = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => abrirFicha(item)}>
-      <Text style={styles.nombre}>{item.nombre_completo}</Text>
+      <View style={styles.filaNombre}>
+        <Avatar foto={item.foto_url} nombre={item.nombre_completo} tamano={44} />
+        <Text style={[styles.nombre, styles.nombreConFoto]}>{item.nombre_completo}</Text>
+      </View>
       {Boolean(item.por_derivacion) && (
-        <Text style={styles.insigniaDerivado}>Derivado a ti · solo consulta</Text>
+        <Text style={styles.insigniaDerivado}>Derivación por responder · solo consulta</Text>
       )}
       <Text style={styles.dato}>RUT: {item.rut}</Text>
       <Text style={styles.dato}>Sexo clínico: {item.sexo_clinico || 'No informado'}</Text>
@@ -276,6 +280,8 @@ const styles = StyleSheet.create({
 
   card: { ...piezas.tarjeta, marginBottom: espacio.md },
   nombre: { ...tipografia.subtitulo, color: colores.textoTitulo, marginBottom: espacio.xs },
+  filaNombre: { flexDirection: 'row', alignItems: 'center', gap: espacio.md, marginBottom: espacio.xs },
+  nombreConFoto: { flex: 1, marginBottom: 0 },
   dato: { ...tipografia.meta, color: colores.textoSuave },
   // CU50 — el bloque de banderas rojas.
   panelAlertas: { marginBottom: espacio.base },
