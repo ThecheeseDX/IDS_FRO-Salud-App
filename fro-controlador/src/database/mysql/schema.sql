@@ -244,7 +244,7 @@ CREATE TABLE Paciente (
 -- CU62: eventos escalados a supervisión por términos críticos del diccionario.
 CREATE TABLE Evento_Critico (
     evento_critico_id INT PRIMARY KEY AUTO_INCREMENT,
-    origen VARCHAR(20) NOT NULL,           -- CHAT, SINTOMAS, RESENA, TICKET
+    origen VARCHAR(20) NOT NULL,           -- SINTOMAS, RESENA, TICKET (el chat cifrado no escala)
     entidad VARCHAR(50) NOT NULL,
     entidad_id INT NULL,
     termino VARCHAR(80) NOT NULL,
@@ -837,6 +837,7 @@ INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUE
 ('ANTICIPACION_MINIMA_CANCELACION_HORAS', '2', 'Horas mínimas de anticipación con que un paciente puede cancelar su cita.', 1),
 ('RADIO_PRESENCIALIDAD_METROS', '100', 'Distancia máxima en metros entre el profesional y el paciente en visitas a domicilio.', 1),
 ('VENTANA_UBICACION_PACIENTE_MINUTOS', '30', 'Minutos durante los que vale la última ubicación que envió la app del paciente para validar la presencialidad.', 1),
+('CHAT_FUERA_DE_ESCALAMIENTO', '1', 'El chat cifrado no escala eventos críticos: solo lo leen el paciente y su profesional.', 1),
 ('TOLERANCIA_MULTIFACTOR_MINUTOS', '15', 'Diferencia máxima en minutos entre marcas de presencia para certificar una sesión.', 1),
 ('MAX_TAMANO_ARCHIVO_MB', '10', 'Tamaño máximo en megabytes aceptado al cargar archivos al repositorio multimedia.', 1),
 ('MAX_VERSIONES_CORRECCION', '5', 'Cantidad máxima de correcciones versionadas permitidas sobre una evolución clínica cerrada.', 1);

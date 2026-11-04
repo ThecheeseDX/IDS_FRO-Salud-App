@@ -168,8 +168,9 @@ export default function PalabrasRestringidasScreen() {
 
         {categoria === 'CRITICO' && (
           <Text style={estilos.ayudaCritico}>
-            Los términos críticos no bloquean el mensaje: se guardan igual y el caso se escala a la bandeja de
-            Eventos críticos, avisando a los administradores con sesión activa.
+            Los términos críticos no bloquean el texto: se guarda igual y el caso se escala a la bandeja de
+            Eventos críticos, avisando a los administradores con sesión activa. Se revisan los reportes de
+            síntomas, las reseñas y los tickets; el chat no, porque es privado entre paciente y profesional.
           </Text>
         )}
 

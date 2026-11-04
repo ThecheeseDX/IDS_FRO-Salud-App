@@ -2,11 +2,14 @@
  * CU62 — Escalamiento de eventos críticos a supervisión (Incremento 4).
  *
  * El diccionario de términos restringidos (CU57) suma la categoría CRITICO:
- * esas palabras no bloquean el texto, lo escalan. Cada coincidencia en el
- * chat, un reporte de síntomas, una reseña o un ticket crea un Evento_Critico
+ * esas palabras no bloquean el texto, lo escalan. Cada coincidencia en un
+ * reporte de síntomas, una reseña o un ticket crea un Evento_Critico
  * y avisa a los administradores (D1: cumplen el papel de supervisor) que
  * tienen una sesión activa. El evento queda PENDIENTE en la bandeja hasta
  * que un administrador acusa recibo.
+ *
+ * El chat clínico NO se revisa aquí: es cifrado y solo lo leen el paciente y
+ * su profesional (CU53). Un extracto suyo en la bandeja rompía esa promesa.
  */
 
 const { detectarCriticos } = require('./filtroContenidoService');

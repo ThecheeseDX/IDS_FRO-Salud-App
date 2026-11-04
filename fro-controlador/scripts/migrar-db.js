@@ -1527,6 +1527,26 @@ const MIGRACIONES = [
            ADD CONSTRAINT fk_eval_profesional FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)`
       );
     },
+  },  {
+    nombre: 'Retirar del escalamiento los mensajes del chat cifrado (CU53/CU62)',
+    descripcion: 'Borra los eventos críticos que guardaron un extracto de un mensaje del chat',
+    yaAplicada: async (conexion) => {
+      const [filas] = await conexion.query(
+        `SELECT 1 FROM Parametro_Global WHERE clave = 'CHAT_FUERA_DE_ESCALAMIENTO'`
+      );
+      return filas.length > 0;
+    },
+    aplicar: async (conexion) => {
+      // El extracto del mensaje quedó sin cifrar en la bandeja del
+      // administrador: se borran esos eventos (la bitácora conserva solo que
+      // hubo un escalamiento y sus términos, nunca el texto).
+      await conexion.query(`DELETE FROM Evento_Critico WHERE origen = 'CHAT'`);
+      // Marca de que ya se hizo, para que no se repita en cada arranque.
+      await conexion.query(
+        `INSERT IGNORE INTO Parametro_Global (clave, valor, descripcion, administrador_id) VALUES
+         ('CHAT_FUERA_DE_ESCALAMIENTO', '1', 'El chat cifrado no escala eventos críticos: solo lo leen el paciente y su profesional.', 1)`
+      );
+    },
   },
 ];
 

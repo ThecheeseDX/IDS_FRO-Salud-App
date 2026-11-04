@@ -179,7 +179,7 @@ export default function EventosCriticosScreen({ navigation }) {
               {filtro === 'PENDIENTE' ? 'No hay eventos críticos pendientes' : 'No hay eventos en esta lista'}
             </Text>
             <Text style={estilos.vacioTexto}>
-              Los textos con términos críticos del diccionario (chat, síntomas, reseñas y tickets) aparecen aquí al instante.
+              Los textos con términos críticos del diccionario (reportes de síntomas, reseñas y tickets) aparecen aquí al instante. El chat no se revisa: es privado entre paciente y profesional.
             </Text>
           </View>
         ) : (

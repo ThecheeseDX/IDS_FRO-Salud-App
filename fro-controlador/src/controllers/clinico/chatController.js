@@ -23,7 +23,6 @@
 const pool = require('../../config/database');
 const { cifrar, descifrar } = require('../../services/clinico/cifradoService');
 const { revisar } = require('../../services/clinico/filtroContenidoService');
-const { escalar } = require('../../services/clinico/escalamientoService');
 const { notificarUsuario, leerParametroEntero } = require('../../services/agenda/agendaService');
 const { cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
 const {
@@ -213,13 +212,9 @@ async function guardarMensaje(req, contexto, { contenido, adjunto = null, docume
     ]
   );
 
-  // CU62: un término crítico no bloquea el mensaje, pero escala al administrador.
-  if (contenido) {
-    escalar(pool, {
-      texto: contenido, origen: 'CHAT', entidad: 'Mensaje_Chat', entidadId: resultado.insertId,
-      usuarioOrigenId: req.user.usuario_id, pacienteId: contexto.paciente_id,
-    }).catch(() => {});
-  }
+  // El chat NO escala eventos críticos (CU62) al administrador: es cifrado y
+  // solo lo leen los dos participantes (poscondición del CU53). Decisión de
+  // Pablo, 03-11-2026. Síntomas, reseñas y tickets sí escalan.
 
   // Aviso a la otra parte por los canales del CU52.
   const destinatario = contexto.papel === 'PACIENTE' ? contexto.usuario_profesional : contexto.usuario_paciente;
