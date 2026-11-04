@@ -178,7 +178,7 @@ export default function EvidenciaSesionScreen({ route }) {
           )}
           {!esPaciente && (
             <Text style={estilos.nota}>
-              Se registran solas al apretar "Comenzar atención" y "Finalizar atención". Si no hay ubicación del paciente, se usa su dirección registrada; si están a más de 100 m, la sesión se cierra con justificación.
+              Se registran solas al apretar "Iniciar" y "Finalizar atención". Si no hay ubicación del paciente, se usa su dirección registrada; si están a más de 100 m, la sesión se cierra con justificación.
             </Text>
           )}
         </View>

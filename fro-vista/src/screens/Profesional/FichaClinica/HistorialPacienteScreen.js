@@ -756,7 +756,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                           onPress={() => modificarEstadoCita(item.cita_id, item.estado, 'INICIAR')}
                           disabled={Boolean(marcando)}
                         >
-                          <Text style={styles.textoBotonAccion}>{marcando === 'INICIAR' ? 'Registrando…' : '▶️ Comenzar atención'}</Text>
+                          <Text style={styles.textoBotonAccion}>{marcando === 'INICIAR' ? 'Registrando…' : '▶️ Iniciar'}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
@@ -797,7 +797,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                       ancho completo aplastaba los botones hasta ocultarlos. */}
                   {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && String(item.modalidad || '').toUpperCase() === 'DOMICILIO' && (
                     <Text style={styles.notaPresencialidad}>
-                      📍 Al {estadoCita === 'CONFIRMADA' ? 'comenzar' : 'finalizar'} se registran la hora y la ubicación tuya y del paciente; deben estar a menos de 100 m.
+                      📍 Al {estadoCita === 'CONFIRMADA' ? 'iniciar' : 'finalizar'} se registran la hora y la ubicación tuya y del paciente; deben estar a menos de 100 m.
                     </Text>
                   )}
 
