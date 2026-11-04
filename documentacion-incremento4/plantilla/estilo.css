@@ -1,0 +1,64 @@
+<style>
+:root {
+  --fondo:#FCFBF9; --superficie:#FFFFFF; --texto:#23201C; --suave:#5D564D; --tenue:#8A8278;
+  --borde:#E7E2DB; --marca:#003B4D; --marcaSuave:#E6EEF1; --acento:#8B7140; --acentoSuave:#F3EEE4;
+  --alerta:#A85A00; --alertaSuave:#FFF2E3; --nuevo:#DFF0E7; --nuevoTexto:#0E5A38;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fondo:#15171A; --superficie:#1D2024; --texto:#ECE8E1; --suave:#B8B0A4; --tenue:#847C71;
+    --borde:#2E3238; --marca:#8FC5D8; --marcaSuave:#1B2E36; --acento:#D2B27F; --acentoSuave:#2A251C;
+    --alerta:#F0A85A; --alertaSuave:#3A2A14; --nuevo:#1E3A2C; --nuevoTexto:#9FDDB9;
+  }
+}
+:root[data-theme="dark"] {
+  --fondo:#15171A; --superficie:#1D2024; --texto:#ECE8E1; --suave:#B8B0A4; --tenue:#847C71;
+  --borde:#2E3238; --marca:#8FC5D8; --marcaSuave:#1B2E36; --acento:#D2B27F; --acentoSuave:#2A251C;
+  --alerta:#F0A85A; --alertaSuave:#3A2A14; --nuevo:#1E3A2C; --nuevoTexto:#9FDDB9;
+}
+* { box-sizing:border-box }
+body { margin:0; background:var(--fondo); color:var(--texto); font:16px/1.55 "Source Sans 3", system-ui, sans-serif; }
+main { max-width:1000px; margin:0 auto; padding:32px 16px 80px }
+h1,h2,h3,h4 { font-family:"Source Serif 4", Georgia, serif; font-weight:600; text-wrap:balance; color:var(--texto) }
+h1 { font-size:34px; line-height:1.15; margin:8px 0 4px }
+h2 { font-size:24px; margin:48px 0 12px; padding-top:20px; border-top:2px solid var(--marca) }
+h3 { font-size:19px; margin:30px 0 10px; color:var(--marca) }
+h4 { font-size:16px; margin:24px 0 6px }
+h4 small { font:600 12px/1 "Source Sans 3"; letter-spacing:.06em; text-transform:uppercase; color:var(--acento); margin-left:8px }
+p, li { max-width:72ch }
+.eyebrow { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--acento); font-weight:600 }
+.sub { color:var(--suave); margin:0 0 20px }
+nav.indice { background:var(--superficie); border:1px solid var(--borde); border-radius:10px; padding:14px 18px; margin:20px 0 }
+nav.indice a { color:var(--marca); text-decoration:none; margin-right:14px; white-space:nowrap }
+code { font:13px "JetBrains Mono", monospace; background:var(--marcaSuave); color:var(--marca); padding:1px 5px; border-radius:4px }
+.caja { background:var(--superficie); border:1px solid var(--borde); border-left:4px solid var(--marca); border-radius:8px; padding:14px 18px; margin:16px 0 }
+.caja.decision { border-left-color:var(--alerta); background:var(--alertaSuave) }
+.alerta { color:var(--alerta); font-weight:600 }
+table { border-collapse:collapse; width:100%; margin:12px 0 20px; font-size:14.5px; background:var(--superficie) }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--borde) }
+th { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--suave); background:var(--fondo) }
+.tabla-scroll { overflow-x:auto }
+article.cu { background:var(--superficie); border:1px solid var(--borde); border-radius:10px; padding:14px 18px; margin:12px 0 }
+article.cu header { display:flex; gap:10px; align-items:baseline; margin-bottom:8px }
+.cod { font:600 13px "JetBrains Mono", monospace; color:var(--acento); background:var(--acentoSuave); padding:2px 8px; border-radius:999px }
+.nom { font-family:"Source Serif 4", serif; font-size:18px; font-weight:600 }
+.fila { display:grid; grid-template-columns:110px 1fr; gap:10px; padding:6px 0; border-top:1px dashed var(--borde) }
+.fila .et { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--suave); padding-top:4px }
+.fila ul { margin:0; padding-left:18px }
+.fila li { margin:4px 0 }
+.vive { color:var(--suave); font-size:14px }
+ol.mr { padding-left:22px; font:14px/1.6 "JetBrains Mono", monospace; background:var(--superficie); border:1px solid var(--borde); border-radius:8px; padding:14px 14px 14px 36px; overflow-x:auto }
+ol.mr li { max-width:none; margin:2px 0; white-space:normal }
+ol.mr li.nueva { background:var(--nuevo); border-radius:4px; padding:2px 6px; margin-left:-6px }
+ol.mr li.nueva b::before { content:"NUEVA · "; color:var(--nuevoTexto); font-size:11px; letter-spacing:.06em }
+ol.mr li.repuesta { background:var(--alertaSuave); border-radius:4px; padding:2px 6px; margin-left:-6px }
+ol.mr li.repuesta b::before { content:"FALTABA EN LA 3FN DEL INC 2 · "; color:var(--alerta); font-size:11px; letter-spacing:.06em }
+mark { background:var(--nuevo); color:var(--nuevoTexto); padding:0 3px; border-radius:3px }
+/* Claves del modelo relacional: PK subrayado continuo, FK subrayado discontinuo. */
+u.pk { text-decoration:underline solid; text-decoration-thickness:1.5px; text-underline-offset:3px }
+u.fk { text-decoration:underline dashed; text-decoration-thickness:1.5px; text-underline-offset:3px }
+.leyenda { font-size:13px; color:var(--suave) }
+.leyenda mark, .leyenda .nuevaEj { margin:0 4px }
+.nuevaEj { background:var(--nuevo); color:var(--nuevoTexto); padding:0 6px; border-radius:4px; font-family:"JetBrains Mono", monospace; font-size:12px }
+@media (max-width:640px) { .fila { grid-template-columns:1fr } h1 { font-size:28px } }
+</style>
