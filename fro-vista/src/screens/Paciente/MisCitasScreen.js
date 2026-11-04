@@ -405,12 +405,6 @@ export default function MisCitasScreen({ navigation, route }) {
         )}
 
         {/* CU39: en domicilio ya no hay check-in: la ubicación se envía sola. */}
-        {['CONFIRMADA', 'EN_CURSO'].includes(item.estado) && String(item.modalidad || '').toUpperCase() === 'DOMICILIO' && (
-          <Text style={styles.notaUbicacion}>
-            📍 No tienes que marcar nada: el día de la visita, con la app abierta y la ubicación activada, se registra sola cuando el profesional comienza y termina la atención.
-          </Text>
-        )}
-
         {/* CU43: evidencia de la teleconsulta (opcional) */}
         {['CONFIRMADA', 'EN_CURSO'].includes(item.estado) && String(item.modalidad || '').toUpperCase() !== 'DOMICILIO' && (
           <TouchableOpacity
@@ -710,7 +704,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   botonEvidenciaTexto: { color: colores.primario, fontWeight: 'bold' },
-  notaUbicacion: { color: colores.textoSuave, fontSize: 13, lineHeight: 19, marginTop: 8 },
   botonReprogramar: {
     flex: 1,
     borderWidth: 1,

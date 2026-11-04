@@ -785,18 +785,21 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                         <Text style={styles.textoBotonAccion}>{marcando === 'FINALIZAR' ? 'Registrando…' : '✅ Finalizar atención'}</Text>
                       </TouchableOpacity>
                     )}
-                    {/* CU39: las ubicaciones se registran solas al comenzar y al finalizar. */}
-                    {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && String(item.modalidad || '').toUpperCase() === 'DOMICILIO' && (
-                      <Text style={styles.notaPresencialidad}>
-                        📍 Al {estadoCita === 'CONFIRMADA' ? 'comenzar' : 'finalizar'} se registran la hora y la ubicación tuya y del paciente; deben estar a menos de 100 m.
-                      </Text>
-                    )}
 
                     {/* MENSAJE SI LA CITA ESTÁ EN UN ESTADO FINAL O TERMINAL */}
                     {esEstadoTerminal(estadoCita) && (
                       <Text style={styles.textoTerminal}>🔒 Flujo concluido (Registro histórico cerrado)</Text>
                     )}
                   </View>
+
+                  {/* CU39: las ubicaciones se registran solas al comenzar y al
+                      finalizar. Va fuera de la fila de botones: dentro, su
+                      ancho completo aplastaba los botones hasta ocultarlos. */}
+                  {['CONFIRMADA', 'EN_CURSO'].includes(estadoCita) && String(item.modalidad || '').toUpperCase() === 'DOMICILIO' && (
+                    <Text style={styles.notaPresencialidad}>
+                      📍 Al {estadoCita === 'CONFIRMADA' ? 'comenzar' : 'finalizar'} se registran la hora y la ubicación tuya y del paciente; deben estar a menos de 100 m.
+                    </Text>
+                  )}
 
                   {/* CU38 Excepción 2: esta marca es SOLO para cuando la hora
                       automática del servidor no es utilizable. El inicio antes
@@ -1591,7 +1594,7 @@ const styles = StyleSheet.create({
   campoManual: { ...piezas.campo, marginBottom: espacio.md },
   campoManualAlto: { minHeight: 84, textAlignVertical: 'top' },
   accionesManual: { flexDirection: 'row', gap: espacio.md, marginTop: espacio.sm },
-  notaPresencialidad: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm, width: '100%' },
+  notaPresencialidad: { ...tipografia.meta, color: colores.textoSuave, marginTop: espacio.sm },
   botonManualCancelar: { flex: 1, paddingVertical: espacio.md, borderRadius: radio.md, borderWidth: 1.5, borderColor: colores.borde, alignItems: 'center' },
   textoManualCancelar: { ...tipografia.cuerpoFuerte, color: colores.textoSuave },
   botonManualConfirmar: { flex: 1, paddingVertical: espacio.md, borderRadius: radio.md, backgroundColor: colores.primario, alignItems: 'center' },

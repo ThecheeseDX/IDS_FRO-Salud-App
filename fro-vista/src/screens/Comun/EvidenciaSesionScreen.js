@@ -176,11 +176,11 @@ export default function EvidenciaSesionScreen({ route }) {
           {gps.distancia_termino_metros != null && (
             <Text style={estilos.detalle}>Distancia al término: {gps.distancia_termino_metros} m</Text>
           )}
-          <Text style={estilos.nota}>
-            {esPaciente
-              ? 'No tienes que apretar nada: tu ubicación se registra sola cuando el profesional comienza y finaliza la atención. Mantén la app abierta con la ubicación activada durante la visita.'
-              : 'Se registran solas al apretar "Comenzar atención" y "Finalizar atención". Si no hay ubicación del paciente, se usa su dirección registrada; si están a más de 100 m, la sesión se cierra con justificación.'}
-          </Text>
+          {!esPaciente && (
+            <Text style={estilos.nota}>
+              Se registran solas al apretar "Comenzar atención" y "Finalizar atención". Si no hay ubicación del paciente, se usa su dirección registrada; si están a más de 100 m, la sesión se cierra con justificación.
+            </Text>
+          )}
         </View>
       )}
 
