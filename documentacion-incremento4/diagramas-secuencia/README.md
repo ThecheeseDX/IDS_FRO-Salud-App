@@ -7,11 +7,13 @@ Son **85 páginas de 16 CU** en el mismo formato y con las mismas reglas del Inc
 - una página por excepción, que retoma el flujo principal;
 - páginas separadas por actor cuando el CU tiene más de uno.
 
-**Lo único que cambia es el tamaño, para que se lean mejor** (pedido de Pablo, 04-11-2026):
-- letra de 17 puntos (antes 12);
-- cajas, flechas, barras de activación y notas más grandes;
-- más espacio entre mensajes;
-- separación entre líneas de vida calculada para que ningún texto se salga de su tramo.
+**Para que se lean bien, se resume lo menos importante** (formato aprobado por Pablo con el diagrama de prueba del CU65, 04-11-2026):
+- las tablas no son líneas de vida: el mensaje a `C_MYSQL` nombra la operación y las tablas (por ejemplo `SELECT Episodio_Clinico, Profesional`);
+- cada ida a la base es un solo viaje, y varias consultas seguidas del mismo componente se juntan en uno;
+- BEGIN, COMMIT y ROLLBACK van en una nota amarilla;
+- las rutas HTTP llevan un nombre que se entiende solo: `GET opciones_de_derivacion(episodio_id)` en vez de `GET /clinica/episodio/:id/derivaciones/opciones`;
+- cada página de excepción parte en la última acción del actor antes de la excepción ("los pasos anteriores son los del flujo principal") y retoma el flujo hasta el final;
+- letra de 20 puntos, cajas más grandes y los textos largos partidos en renglones para que el diagrama no se ensanche.
 
 Cada carpeta trae un `.drawio` con una página por diagrama (se abre en app.diagrams.net) y un PNG por página.
 
@@ -35,4 +37,4 @@ Los demás CU que cambiaron de texto (CU11, CU28, CU30, CU44, CU48, CU49, CU56, 
 
 **Para regenerarlos:** `python3 generador/tandaA.py` (lo mismo con `tandaB` y `tandaC`). Con `--sin-png` solo valida.
 
-El motor es el del Incremento 3 con el tamaño ajustado. `comun.py` suma los componentes nuevos del diagrama de componentes del Incremento 4.
+El motor es el del Incremento 3 con el tamaño ajustado. El resumen lo aplica `generador/resumen.py` sobre cada página, sin tocar las definiciones de las tandas. `comun.py` suma los componentes nuevos del diagrama de componentes del Incremento 4.

@@ -13,15 +13,46 @@ Y_LIFELINE = 40
 ANCHO_ACTOR = 35
 X_ACTOR = 80
 X_PRIMERA_VISTA = 330
-GAP = 90
-FUENTE = 17        # letra de mensajes y cajas (en el Inc 3 era 12)
+GAP = 50
+FUENTE = 20        # letra de mensajes y cajas (en el Inc 3 era 12)
 LETRA = 0.56 * FUENTE   # ancho medio de un carácter
 ALTO_CAJA = 74
 FILL_LL = "#f5f5f5"; STROKE_LL = "#666666"
 
+def partir_nombre(nombre):
+    """Los nombres largos de componentes van en dos renglones, cortados en un "_"."""
+    if len(nombre) <= 16 or '_' not in nombre[1:-1]:
+        return [nombre]
+    cortes = [i for i, c in enumerate(nombre) if c == '_' and 0 < i < len(nombre) - 1]
+    i = min(cortes, key=lambda k: abs(k - len(nombre) / 2))
+    return [nombre[:i + 1], nombre[i + 1:]]
+
 def ancho_participante(p):
     if p["tipo"] == "actor": return ANCHO_ACTOR
-    return max(190, LETRA * len(p["nombre"]) * 1.08 + 50)
+    return max(170, LETRA * max(len(r) for r in partir_nombre(p["nombre"])) * 1.1 + 36)
+
+RENGLON_MENSAJE = 22   # caracteres por renglón de un mensaje
+RENGLON_NOTA = 56      # caracteres por renglón de una nota
+ALTO_RENGLON = 24
+
+def renglones(texto, ancho):
+    """Parte un texto largo en renglones (por espacios y comas) para que el
+    diagrama no se ensanche. Un texto corto queda en un renglón."""
+    if len(texto) <= ancho: return [texto]
+    piezas, lineas, actual = re.split(r'(?<=[ ,])', texto), [], ''
+    if len(piezas) > 1 and piezas[0].strip() in ('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'return'):
+        piezas = [piezas[0] + piezas[1]] + piezas[2:]   # el verbo HTTP no queda solo
+    for p in piezas:
+        if actual and len(actual) + len(p) > ancho:
+            lineas.append(actual.rstrip()); actual = p
+        else:
+            actual += p
+    if actual.strip(): lineas.append(actual.rstrip())
+    return lineas
+
+def br(lineas):
+    """Renglones para una etiqueta html de draw.io."""
+    return '&lt;br&gt;'.join(html.escape(r) for r in lineas)
 
 ACTOR_ID = '__actor__'
 VISTA_ID = '__vista__'
@@ -73,10 +104,11 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     for m in msgs:
         if m['tipo'] == 'self' or m['de'] not in idx or m['a'] not in idx: continue
         i, j = sorted((idx[m['de']], idx[m['a']]))
-        necesita[(i, j)] = max(necesita.get((i, j), 0), LETRA * len(m['texto']) + 34)
+        largo = max(len(r) for r in renglones(m['texto'], RENGLON_MENSAJE))
+        necesita[(i, j)] = max(necesita.get((i, j), 0), LETRA * largo + 34)
     for i, p in enumerate(parts):
         p['w'] = ancho_participante(p)
-        if i == 0: p['x'] = X_ACTOR
+        if i == 0: p['x'] = max(X_ACTOR, LETRA * 1.1 * len(p['nombre']) / 2 + 12 - p['w'] / 2)
         elif i == 1: p['x'] = max(X_PRIMERA_VISTA, parts[0]['x'] + parts[0]['w'] + GAP)
         else: p['x'] = parts[i-1]['x'] + parts[i-1]['w'] + GAP
         p['cx'] = p['x'] + p['w'] / 2
@@ -87,7 +119,8 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     # y de cada mensaje
     y = Y0
     for m in msgs:
-        if m['nota']: y += 96
+        if m['nota']: y += 96 + (len(renglones(m['nota'], RENGLON_NOTA)) - 1) * ALTO_RENGLON
+        y += (len(renglones(m['texto'], RENGLON_MENSAJE)) - 1) * ALTO_RENGLON
         m['y'] = y
         y += (PASO + ALTO_SELF) if m['tipo'] == 'self' else PASO
     y_fin = y + 30
@@ -128,7 +161,7 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
             estilo = "shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;fontSize=17;fontStyle=1;"
         else:
             estilo = "shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fontSize=17;fontStyle=1;size=74;"
-        celdas.append(f'<mxCell id="{lid}" value=""{html.escape(p["nombre"])}" style="{estilo}" vertex="1" parent="1"><mxGeometry x="{p["x"]}" y="{Y_LIFELINE}" width="{p["w"]}" height="{alto_ll:.0f}" as="geometry"/></mxCell>')
+        celdas.append(f'<mxCell id="{lid}" value="{br(partir_nombre(p["nombre"]))}" style="{estilo}" vertex="1" parent="1"><mxGeometry x="{p["x"]}" y="{Y_LIFELINE}" width="{p["w"]}" height="{alto_ll:.0f}" as="geometry"/></mxCell>')
         for k, (a, b) in enumerate(barras[p['id']]):
             bid = nuevo(); id_barra[(p['id'], k)] = bid
             bx = (p['w'] - 10) / 2
@@ -136,10 +169,12 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
     for m in msgs:
         de, a, yy = pos[m['de']], pos[m['a']], m['y']
         if m['nota']:
-            nw = max(330, LETRA * 0.95 * len(m['nota']) + 40)
+            rn = renglones(m['nota'], RENGLON_NOTA)
+            nw = max(330, LETRA * 0.95 * max(len(r) for r in rn) + 40)
+            hn = 52 + (len(rn) - 1) * ALTO_RENGLON
             # la nota se centra en la vista (segundo participante)
             nx = parts[1]['cx'] - nw / 2
-            celdas.append(f'<mxCell id="{nuevo()}" value="{html.escape(m["nota"])}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#9E916F;fontColor=light-dark(#333333,#cccccc);fontSize=16;" vertex="1" parent="1"><mxGeometry x="{nx:.0f}" y="{yy - 88}" width="{nw:.0f}" height="52" as="geometry"/></mxCell>')
+            celdas.append(f'<mxCell id="{nuevo()}" value="{br(rn)}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#9E916F;fontColor=light-dark(#333333,#cccccc);fontSize=16;" vertex="1" parent="1"><mxGeometry x="{nx:.0f}" y="{yy - 36 - hn}" width="{nw:.0f}" height="{hn}" as="geometry"/></mxCell>')
         src = id_barra.get((m['de'], barra_en(m['de'], yy))) or id_ll[m['de']]
         tgt = id_barra.get((m['a'], barra_en(m['a'], yy))) or id_ll[m['a']]
         if m['tipo'] == 'self':
@@ -151,7 +186,7 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
             estilo = f"html=1;verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=17;{dashed}"
             mid = (de['cx'] + a['cx']) / 2
             pts = f'<Array as="points"><mxPoint x="{mid:.0f}" y="{yy}"/></Array>'
-        celdas.append(f'<mxCell id="{nuevo()}" value="{html.escape(m["texto"])}" style="{estilo}" edge="1" parent="1" source="{src}" target="{tgt}"><mxGeometry relative="1" as="geometry">{pts}</mxGeometry></mxCell>')
+        celdas.append(f'<mxCell id="{nuevo()}" value="{br(renglones(m["texto"], RENGLON_MENSAJE))}" style="{estilo}" edge="1" parent="1" source="{src}" target="{tgt}"><mxGeometry relative="1" as="geometry">{pts}</mxGeometry></mxCell>')
     ancho = parts[-1]['x'] + parts[-1]['w'] + 60
     alto = Y_LIFELINE + alto_ll + 40
     # ── SVG ──
@@ -166,24 +201,34 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
             s.append(f'<line x1="{cx}" y1="{Y_LIFELINE+60}" x2="{cx}" y2="{Y_LIFELINE+alto_ll:.0f}" stroke="#666" stroke-dasharray="6,4"/>')
         else:
             s.append(f'<rect x="{p["x"]}" y="{Y_LIFELINE}" width="{p["w"]}" height="{ALTO_CAJA}" fill="{FILL_LL}" stroke="{STROKE_LL}"/>')
-            s.append(f'<text x="{cx}" y="{Y_LIFELINE+43}" text-anchor="middle" font-weight="bold">{html.escape(p["nombre"])}</text>')
+            nl = partir_nombre(p["nombre"])
+            for k, r in enumerate(nl):
+                s.append(f'<text x="{cx}" y="{Y_LIFELINE + 43 + (k - (len(nl) - 1) / 2) * ALTO_RENGLON:.0f}" text-anchor="middle" font-weight="bold">{html.escape(r)}</text>')
             s.append(f'<line x1="{cx}" y1="{Y_LIFELINE+ALTO_CAJA}" x2="{cx}" y2="{Y_LIFELINE+alto_ll:.0f}" stroke="#666" stroke-dasharray="6,4"/>')
         for a, b in barras[p['id']]:
             s.append(f'<rect x="{cx-7}" y="{a}" width="14" height="{b-a}" fill="{FILL_LL}" stroke="{STROKE_LL}"/>')
     for m in msgs:
         de, a, yy = pos[m['de']], pos[m['a']], m['y']
         if m['nota']:
-            nw = max(330, LETRA * 0.95 * len(m['nota']) + 40); nx = parts[1]['cx'] - nw / 2
-            s.append(f'<rect x="{nx:.0f}" y="{yy-88}" width="{nw:.0f}" height="52" fill="#ffff88" stroke="#9E916F"/><text x="{nx+nw/2:.0f}" y="{yy-56}" text-anchor="middle" fill="#333" font-size="16">{html.escape(m["nota"])}</text>')
+            rn = renglones(m['nota'], RENGLON_NOTA)
+            nw = max(330, LETRA * 0.95 * max(len(r) for r in rn) + 40); nx = parts[1]['cx'] - nw / 2
+            hn = 52 + (len(rn) - 1) * ALTO_RENGLON
+            s.append(f'<rect x="{nx:.0f}" y="{yy - 36 - hn}" width="{nw:.0f}" height="{hn}" fill="#ffff88" stroke="#9E916F"/>')
+            for k, r in enumerate(rn):
+                s.append(f'<text x="{nx+nw/2:.0f}" y="{yy - 36 - hn + 32 + k * ALTO_RENGLON}" text-anchor="middle" fill="#333" font-size="16">{html.escape(r)}</text>')
         if m['tipo'] == 'self':
             x1 = de['cx'] + 5
             s.append(f'<path d="M{x1},{yy} C{x1+60},{yy-10} {x1+60},{yy+ALTO_SELF+10} {x1},{yy+ALTO_SELF}" fill="none" stroke="#000" marker-end="url(#flecha)"/>')
-            s.append(f'<text x="{x1+6}" y="{yy-5}" text-anchor="start">{html.escape(m["texto"])}</text>')
+            rm = renglones(m['texto'], RENGLON_MENSAJE)
+            for k, r in enumerate(rm):
+                s.append(f'<text x="{x1+6}" y="{yy - 5 - (len(rm) - 1 - k) * ALTO_RENGLON}" text-anchor="start">{html.escape(r)}</text>')
         else:
             x1 = de['cx'] + (5 if a['cx'] > de['cx'] else -5); x2 = a['cx'] - (5 if a['cx'] > de['cx'] else -5)
             dash = ' stroke-dasharray="5,4"' if m['tipo'] == 'ret' else ''
             s.append(f'<line x1="{x1}" y1="{yy}" x2="{x2}" y2="{yy}" stroke="#000" stroke-width="1.4"{dash} marker-end="url(#flecha)"/>')
-            s.append(f'<text x="{(x1+x2)/2:.0f}" y="{yy-8}" text-anchor="middle">{html.escape(m["texto"])}</text>')
+            rm = renglones(m['texto'], RENGLON_MENSAJE)
+            for k, r in enumerate(rm):
+                s.append(f'<text x="{(x1+x2)/2:.0f}" y="{yy - 8 - (len(rm) - 1 - k) * ALTO_RENGLON}" text-anchor="middle">{html.escape(r)}</text>')
     s.append('</svg>')
     # El tamaño de letra se fija en FUENTE (los estilos se escribieron con 17).
     celdas = [c.replace('fontSize=17;', f'fontSize={FUENTE};').replace('fontSize=16;', f'fontSize={FUENTE - 1};') for c in celdas]
@@ -243,6 +288,15 @@ def validar_pagina(nombre_pagina, parts, msgs, problemas):
     if pila:
         problemas.append(f"{nombre_pagina}: quedan llamadas sin retorno: " + ", ".join(f"{x} -> {y}" for x, y in pila))
 
+def _inicio_de_tramo(msgs, k):
+    """k si el mensaje k abre un tramo con la pila vacía (todo lo anterior volvió al actor)."""
+    pila = 0
+    for m in msgs[:k]:
+        if m['tipo'] == 'call': pila += 1
+        elif m['tipo'] == 'ret': pila -= 1
+    return k if pila == 0 else -1
+
+
 def generar_cu(cu, carpeta, chrome=None, png=True):
     """cu: dict(id, nombre, actores:[...], participantes:[...], principal:[líneas], excepciones:{n: dict(cortar, lineas, reanudar)})"""
     os.makedirs(carpeta, exist_ok=True)
@@ -266,15 +320,30 @@ def generar_cu(cu, carpeta, chrome=None, png=True):
                 for k, m in enumerate(base):
                     if m['texto'].startswith(ref): return k + 1 if desde_fin else k
                 raise ValueError(f"{cu['id']} exc {n}: no encuentro '{ref}'")
-            msgs = [dict(m) for m in base[:indice(ex['cortar'], True)]] + parsear(ex['lineas'], actor, vista)
+            corte = indice(ex['cortar'], True)
+            # Incremento 4 (resumen): la página de la excepción parte en la
+            # última acción del actor antes de la excepción; lo anterior es
+            # idéntico al flujo principal y se indica con una nota.
+            inicio = max([k for k in range(corte) if base[k]['de'] == ACTOR_ID and base[k]['tipo'] == 'call'
+                          and k == _inicio_de_tramo(base, k)] or [0])
+            previos = [dict(m) for m in base[inicio:corte]]
+            if inicio > 0:
+                aviso = 'Los pasos anteriores son los del flujo principal'
+                previos[0]['nota'] = f"{aviso} · {previos[0]['nota']}" if previos[0]['nota'] else aviso
+            msgs = previos + parsear(ex['lineas'], actor, vista)
             if ex.get('reanudar') is not None:
                 msgs += [dict(m) for m in base[indice(ex['reanudar']):]]
             paginas.append((f"{cu['id']} - Excepción {n}{suf}", f"{cu['id']}-Excepción {n}{suf}", msgs, actor, vista))
     diagramas = []
     problemas = []
+    from resumen import resumir
     for nombre_pag, archivo, msgs, actor, vista in paginas:
-        celdas, svg, (w, h) = construir_pagina(nombre_pag, cu['participantes'], msgs, actor, vista)
-        parts = [dict(p) for p in cu['participantes']]
+        # Incremento 4: resumen pedido por Pablo (tablas en el mensaje a
+        # C_MYSQL, un viaje por ida a la base, transacciones en nota, rutas
+        # con nombre legible). Ver resumen.py.
+        msgs, participantes = resumir(msgs, cu['participantes'])
+        celdas, svg, (w, h) = construir_pagina(nombre_pag, participantes, msgs, actor, vista)
+        parts = [dict(p) for p in participantes]
         if parts[0]['tipo'] == 'actor':
             parts[0] = {'id': '__actor__', 'nombre': actor, 'tipo': 'actor'}
         if isinstance(vista, str): parts[1] = {'id': VISTA_ID, 'nombre': vista, 'tipo': 'vista'}
