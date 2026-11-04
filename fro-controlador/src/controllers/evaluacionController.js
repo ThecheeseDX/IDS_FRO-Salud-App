@@ -9,8 +9,8 @@
  * que se publica hacia afuera.
  *
  * Correcciones Inc 4: hay dos momentos de evaluación.
- *   - SESION: después de cada cita solo se pregunta si la atención satisfizo
- *     las necesidades del paciente (sí/no) y se ofrece un comentario.
+ *   - SESION: después de cada cita solo se pregunta si el paciente quedó
+ *     satisfecho con la atención (sí/no) y se ofrece un comentario.
  *   - TRATAMIENTO: la calificación general del profesional (1 a 5 estrellas
  *     y reseña) se pide una sola vez, al cerrarse el episodio.
  * El promedio del profesional sale de las notas en estrellas (las de
@@ -30,7 +30,16 @@ const ESTADOS = { PENDIENTE: 'PENDIENTE', APROBADA: 'APROBADA', RECHAZADA: 'RECH
  * de mostrarse, en vez de ensuciar la consola del moderador.
  */
 function sanear(texto) {
-  return String(texto ?? '')
+  let limpio = String(texto ?? '');
+  // Texto UTF-8 leído como Latin-1 ("Ã³" en vez de "ó"): se repara.
+  if (/Ã[\u0080-\u00BF]/.test(limpio)) {
+    const reparado = Buffer.from(limpio, 'latin1').toString('utf8');
+    if (!reparado.includes('\uFFFD')) limpio = reparado;
+  }
+  // Algunos teclados mandan la tilde como un signo aparte de la letra y se
+  // dibuja desplazada: se compone en un solo carácter (NFC).
+  return limpio
+    .normalize('NFC')
     // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
     .replace(/\s{3,}/g, '  ')
@@ -66,8 +75,8 @@ async function recalcularPromedio(conexion, profesionalId) {
 /**
  * POST /api/citas/:id/evaluacion   { satisfecho: true|false, resena? }
  *
- * Evaluación de cada sesión: solo si la atención satisfizo las necesidades
- * del paciente, más un comentario opcional. Sin estrellas: la calificación
+ * Evaluación de cada sesión: solo si el paciente quedó satisfecho con la
+ * atención, más un comentario opcional. Sin estrellas: la calificación
  * general se pide al cerrar el tratamiento.
  */
 exports.registrarEvaluacion = async (req, res) => {
@@ -78,7 +87,7 @@ exports.registrarEvaluacion = async (req, res) => {
   if (typeof satisfecho !== 'boolean') {
     return res.status(400).json({
       error: 'RESPUESTA_INVALIDA',
-      mensaje: 'Indica si la atención satisfizo tus necesidades.',
+      mensaje: 'Indica si quedaste satisfecho con la atención.',
     });
   }
 

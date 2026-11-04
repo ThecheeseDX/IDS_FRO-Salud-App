@@ -579,7 +579,7 @@ export default function MisCitasScreen({ navigation, route }) {
                       {formatearFecha(cita.fecha_hora_inicio)} · {cita.profesional}
                     </Text>
                     <Text style={styles.esperaDato}>
-                      Cuéntanos si la atención satisfizo tus necesidades.
+                      Cuéntanos si quedaste satisfecho con la atención.
                     </Text>
                     <TouchableOpacity
                       style={styles.botonEvaluar}

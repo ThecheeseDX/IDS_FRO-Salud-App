@@ -59,7 +59,7 @@ exports.kpis = async (req, res) => {
 
     const [[satisfaccion]] = await pool.query(
       `SELECT COUNT(e.puntuacion) AS evaluaciones, COALESCE(AVG(e.puntuacion), 0) AS promedio,
-              -- Correcciones Inc 4: respuestas por sesión (¿satisfizo sus necesidades?).
+              -- Correcciones Inc 4: respuestas por sesión (¿quedó satisfecho?).
               COUNT(e.satisfecho) AS respuestas_sesion,
               COALESCE(SUM(e.satisfecho = TRUE), 0) AS sesiones_satisfechas
          FROM Evaluacion_Satisfaccion e

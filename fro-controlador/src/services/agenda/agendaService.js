@@ -120,7 +120,7 @@ async function pedirEvaluacion(connection, citaId) {
       connection,
       cita.usuario_id,
       'EVALUAR_SESION',
-      `¿La sesión con ${cita.profesional || 'tu profesional'} satisfizo tus necesidades? ` +
+      `¿Quedaste satisfecho con tu sesión con ${cita.profesional || 'tu profesional'}? ` +
         'Tócalo para responder y, si quieres, dejar un comentario.',
       { datos: { pantalla: 'MisCitas', evaluar_cita_id: Number(citaId) } }
     );

@@ -701,7 +701,7 @@ CREATE TABLE Liquidacion (
 CREATE TABLE Evaluacion_Satisfaccion(
     evaluacion_satisfaccion_id INT PRIMARY KEY AUTO_INCREMENT,
     -- CU55 (correcciones Inc 4): SESION = después de cada cita, solo si la
-    -- atención satisfizo (sí/no) y comentario; TRATAMIENTO = al cerrar el
+    -- paciente quedó satisfecho (sí/no) y comentario; TRATAMIENTO = al cerrar el
     -- episodio, la nota en estrellas que entra al promedio del profesional.
     tipo VARCHAR(20) NOT NULL DEFAULT 'SESION',
     satisfecho BOOLEAN NULL,

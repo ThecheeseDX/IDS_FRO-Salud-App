@@ -16,6 +16,8 @@ import { getBandejaModeracion, moderarResena } from '../../api/client';
 import DialogoAviso from '../../components/DialogoAviso';
 import DialogoMotivo from '../../components/DialogoMotivo';
 import ErrorRetry from '../../components/ErrorRetry';
+import EtiquetaEvaluacion from '../../components/EtiquetaEvaluacion';
+import { textoLimpio } from '../../utils/texto';
 import { formatearFechaHora } from '../../utils/fechas';
 import { colores, espacio, piezas, radio, tipografia, interaccion } from '../../theme';
 
@@ -135,15 +137,11 @@ export default function ModeracionResenasScreen() {
               <View key={e.evaluacion_satisfaccion_id} style={estilos.tarjeta}>
                 <View style={estilos.cabecera}>
                   {/* Correcciones Inc 4: los comentarios de sesión no llevan estrellas. */}
-                  <Text style={estilos.estrellas}>
-                    {e.puntuacion
-                      ? `${'★'.repeat(e.puntuacion)}${'☆'.repeat(5 - e.puntuacion)} · tratamiento`
-                      : `Sesión · ${Number(e.satisfecho) ? '👍 satisfizo sus necesidades' : '👎 no las satisfizo'}`}
-                  </Text>
+                  <EtiquetaEvaluacion puntuacion={e.puntuacion} satisfecho={e.satisfecho} />
                   <Text style={estilos.momento}>{formatearFechaHora(e.momento_creacion)}</Text>
                 </View>
 
-                <Text style={estilos.resena}>“{e.resena}”</Text>
+                <Text style={estilos.resena}>“{textoLimpio(e.resena)}”</Text>
 
                 <Text style={estilos.contexto}>
                   {e.paciente} · atención con {e.profesional}

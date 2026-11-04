@@ -1,8 +1,8 @@
 // Ruta: fro-vista/src/components/DialogoEvaluacion.js
 //
 // CU55 — Formularios de evaluación (correcciones Inc 4), en dos modos:
-//   - 'SESION' (después de cada cita): solo si la atención satisfizo las
-//     necesidades del paciente (Sí / No) y un comentario opcional.
+//   - 'SESION' (después de cada cita): solo si el paciente quedó satisfecho
+//     con la atención (Sí / No) y un comentario opcional.
 //   - 'TRATAMIENTO' (al cerrarse el episodio): la calificación general del
 //     profesional en estrellas de 1 a 5 y una reseña opcional.
 //
@@ -53,7 +53,7 @@ export default function DialogoEvaluacion({
       <View style={estilos.velo}>
         <View style={estilos.tarjeta}>
           <Text style={estilos.titulo}>
-            {esTratamiento ? '¿Cómo calificarías tu tratamiento?' : '¿La atención satisfizo tus necesidades?'}
+            {esTratamiento ? '¿Cómo calificarías tu tratamiento?' : '¿Quedaste satisfecho con la atención?'}
           </Text>
           {profesional ? <Text style={estilos.subtitulo}>con {profesional}{detalle ? ` · ${detalle}` : ''}</Text> : null}
 

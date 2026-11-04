@@ -12,6 +12,8 @@ import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-nat
 import { getResenasProfesional } from '../../api/client';
 import ErrorRetry from '../../components/ErrorRetry';
 import { formatearFecha } from '../../utils/fechas';
+import EtiquetaEvaluacion from '../../components/EtiquetaEvaluacion';
+import { textoLimpio } from '../../utils/texto';
 import { colores, espacio, piezas, radio, tipografia } from '../../theme';
 
 export default function ResenasProfesionalScreen({ route, navigation }) {
@@ -79,14 +81,10 @@ export default function ResenasProfesionalScreen({ route, navigation }) {
           <View key={r.evaluacion_satisfaccion_id} style={estilos.tarjeta}>
             <View style={estilos.cabecera}>
               {/* Correcciones Inc 4: los comentarios de sesión no llevan estrellas. */}
-              <Text style={estilos.estrellasChicas}>
-                {r.puntuacion
-                  ? `${'★'.repeat(r.puntuacion)}${'☆'.repeat(5 - r.puntuacion)}`
-                  : Number(r.satisfecho) ? '👍 Sesión: satisfizo sus necesidades' : '👎 Sesión: no las satisfizo'}
-              </Text>
+              <EtiquetaEvaluacion puntuacion={r.puntuacion} satisfecho={r.satisfecho} tamanoEstrellas={14} />
               <Text style={estilos.momento}>{formatearFecha(r.momento_creacion)}</Text>
             </View>
-            <Text style={estilos.texto}>“{r.resena}”</Text>
+            <Text style={estilos.texto}>“{textoLimpio(r.resena)}”</Text>
             {/* Quién la escribió: nombre e inicial, o "Anónimo" si lo pidió. */}
             <Text style={estilos.autor}>— {r.autor || 'Paciente'}</Text>
           </View>
