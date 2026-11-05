@@ -524,3 +524,48 @@ CU35 = dict(
 INC4 = [CU37, CU51, CU54, CU62, CU65, CU72]
 PREVIOS = [CU09, CU11, CU28, CU30, CU35, CU38, CU39, CU40, CU41, CU44, CU47, CU48, CU49,
            CU53, CU55, CU56, CU57, CU58, CU66, CU71, CU78]
+
+# ── Redacción final (reglas de Pablo, 04-11-2026) ────────────────────────────
+# Los textos de cada ficha salen de textos_cu.py; aquí se aplican y se revisan
+# las reglas: sin paréntesis, sin nombres técnicos en mayúsculas con "_",
+# marcadores [Excepción n] en orden y cada excepción en tres oraciones que
+# alternan actor y Sistema.
+import re as _re
+import textos_cu as _textos
+
+for _cu in INC4 + PREVIOS:
+    _cu.update(_textos.T[_cu['id']])
+
+
+def _es_sistema(oracion):
+    return oracion.startswith('El Sistema')
+
+
+def revisar_reglas():
+    errores = []
+    for cu in INC4 + PREVIOS:
+        campos = [cu[k] for k in ('resumen', 'frecuencia', 'pre', 'descripcion', 'pos')] + cu['excepciones']
+        for texto in campos:
+            if _re.search(r'[()]', texto):
+                errores.append(f"{cu['id']}: usa paréntesis: {texto[:60]}")
+            if _re.search(r'\b[A-Z]{2,}_[A-Z_]+\b', texto):
+                errores.append(f"{cu['id']}: nombre técnico: {texto[:60]}")
+        marcas = [int(n) for n in _re.findall(r'\[Excepción (\d+)\]', cu['descripcion'])]
+        if marcas != list(range(1, len(cu['excepciones']) + 1)):
+            errores.append(f"{cu['id']}: marcadores {marcas} para {len(cu['excepciones'])} excepciones")
+        for n, exc in enumerate(cu['excepciones'], 1):
+            oraciones = [o for o in _re.split(r'(?<=\.)\s+', exc) if o]
+            if len(oraciones) != 3:
+                errores.append(f"{cu['id']} Exc {n}: {len(oraciones)} oraciones")
+            elif [_es_sistema(o) for o in oraciones] not in ([False, True, False], [True, False, True]):
+                errores.append(f"{cu['id']} Exc {n}: no alterna actor y Sistema")
+        pasos = [p.strip() for p in _re.split(r'\s*\[Excepción \d+\]\s*,?\s*|,\s+(?=el |la otra parte)', cu['descripcion']) if p.strip(' .')]
+        pasos = [p for p in pasos if not p.lower().startswith('y, ')]   # continúa el mismo paso del Sistema
+        sistema = [p.lower().startswith('el sistema') for p in pasos]
+        if any(a == b for a, b in zip(sistema, sistema[1:])):
+            errores.append(f"{cu['id']}: la descripción no alterna actor y Sistema")
+    if errores:
+        raise ValueError('Fichas fuera de las reglas:\n  - ' + '\n  - '.join(errores))
+
+
+revisar_reglas()

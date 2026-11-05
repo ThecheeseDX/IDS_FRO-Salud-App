@@ -73,6 +73,10 @@ def tabla_cu(cu):
             pars = ''.join(_p([_run(f'Excepción {i}:', negrita=True), _run(' ' + texto)], jc='both', after=200)
                            for i, texto in enumerate(cu['excepciones'], 1))
             filas.append(_fila(campo, pars))
+        elif campo == 'Descripción':
+            # los marcadores [Excepción n] van en negrita
+            partes = re.split(r'(\[Excepción \d+\])', valor)
+            filas.append(_fila(campo, _p([_run(t, negrita=t.startswith('[Excepción')) for t in partes if t], jc='both')))
         else:
             filas.append(_fila(campo, _p([_run(valor)], jc='both')))
     return TBL_INICIO + ''.join(filas) + '</w:tbl>'

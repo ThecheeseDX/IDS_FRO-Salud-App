@@ -77,6 +77,8 @@ def ficha_html(cu):
     for etiqueta, clave in CAMPOS:
         if clave:
             valor = e(cu[clave])
+            if clave == 'descripcion':
+                valor = re.sub(r'(\[Excepción \d+\])', r'<b>\1</b>', valor)
         else:
             valor = ''.join(f'<p><b>Excepción {i}:</b> {e(t)}</p>' for i, t in enumerate(cu['excepciones'], 1))
         filas.append(f'<tr><td class="izq"><b>{etiqueta}</b></td><td>{valor}</td></tr>')
