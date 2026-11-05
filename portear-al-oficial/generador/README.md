@@ -30,6 +30,18 @@ se pierde en silencio.
 La documentación queda excluida del traspaso (`EXCLUIR` en la config), porque
 se entrega en el repositorio de documentación.
 
+## Para el Incremento 4
+
+Config `partes_incremento4.py`: seis bloques, un CU por persona; el bloque 1
+lleva la base y la ronda de correcciones. Salida en `../incremento4/`:
+
+```bash
+python3 portear-al-oficial/generador/generar_partes.py --config portear-al-oficial/generador/partes_incremento4.py --base upstream/main --destino main --salida portear-al-oficial/incremento4
+```
+
+Probado el 04-11-2026 sobre un clon del oficial, con los seis bloques en orden:
+el código queda idéntico al del fork.
+
 ## Qué corrige respecto del Incremento 2
 
 En el Incremento 2 faltaron seis archivos en el oficial. Eran renombres que
