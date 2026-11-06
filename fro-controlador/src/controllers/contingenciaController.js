@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU72, CU66, CU68, CU52, CU13.
+ *
  * CU72 — Ingresando datos mediante interfaz de contingencia (Incremento 4).
  *
  * Cuando el financiador no puede validar bonos (reintentos agotados o modo
@@ -8,15 +11,16 @@
  * financiador vuelve, el administrador lo regulariza con la validación real.
  */
 
-const pool = require('../config/database');
-const { ejecutarTransaccion } = require('../services/external/providerAdapter');
-const { leerParametroEntero, notificarUsuario } = require('../services/agenda/agendaService');
-const { estadoContingencia, CLAVE_MODO } = require('../services/external/contingenciaService');
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_API_Adapter = require('../componentes/C_API_Adapter');
+const C_Despachador_Notificaciones = require('../componentes/C_Despachador_Notificaciones');
+const C_Gestor_Contingencia = require('../componentes/C_Gestor_Contingencia');
 
 const REGEX_FOLIO = /^BON-\d{6}$/;
 const ESTADO_PROVISORIO = 'PROVISORIO';
 const ESTADOS_CITA_HABILITABLES = ['AGENDADA', 'CONFIRMADA', 'EN_CURSO', 'REALIZADA'];
 
+// Apoyo común: IP de origen para la bitácora
 function obtenerIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || null;
 }
@@ -25,9 +29,10 @@ function esAdministrador(req) {
   return req.user?.nombre_rol === 'Administrador';
 }
 
+// CU13 — Registrando bitácora de auditoría de seguridad
 async function auditar(req, accion, datos) {
   try {
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES (?, 'Bono', ?, ?, ?)`,
       [accion, obtenerIP(req), JSON.stringify(datos), req.user?.usuario_id || null]
@@ -37,10 +42,11 @@ async function auditar(req, accion, datos) {
   }
 }
 
+// CU72 — Ingresando Datos mediante Interfaz de Contingencia
 /** Catálogo de financiadores; si no se puede leer, el formulario pasa a texto libre (Exc. 2). */
 async function catalogoFinanciadores() {
   try {
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT financiador_id, nombre_institucion FROM Financiador
         WHERE convenio_activo = TRUE ORDER BY nombre_institucion`
     );
@@ -51,6 +57,7 @@ async function catalogoFinanciadores() {
   }
 }
 
+// CU12: el profesional solo ve sus citas
 // Filtro por rol: el profesional ve sus citas; el administrador, todas.
 function filtroDeRol(req) {
   return esAdministrador(req)
@@ -61,12 +68,13 @@ function filtroDeRol(req) {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /pagos/contingencia — estado, citas por habilitar y bonos provisorios
 // ─────────────────────────────────────────────────────────────────────────────
+// CU72 — Ingresando Datos mediante Interfaz de Contingencia
 exports.obtener = async (req, res) => {
   try {
-    const estado = await estadoContingencia(pool);
+    const estado = await C_Gestor_Contingencia.estadoContingencia(C_Capa_de_Acceso_a_Datos);
     const filtro = filtroDeRol(req);
 
-    const [provisorios] = await pool.query(
+    const [provisorios] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT b.bono_id, b.folio, b.monto_cobertura, b.copago, b.momento_registro_manual,
               COALESCE(f.nombre_institucion, b.financiador_manual) AS financiador,
               b.financiador_id IS NULL AS financiador_fuera_de_catalogo,
@@ -99,7 +107,7 @@ exports.obtener = async (req, res) => {
       });
     }
 
-    const [citas] = await pool.query(
+    const [citas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT c.cita_id, c.fecha_hora_inicio, c.estado,
               CONCAT(upa.nombres, ' ', upa.apellido_paterno) AS paciente,
               CONCAT(upr.nombres, ' ', upr.apellido_paterno) AS profesional,
@@ -124,7 +132,7 @@ exports.obtener = async (req, res) => {
       formulario: true,
       catalogo_disponible: catalogo.disponible,
       financiadores: catalogo.financiadores,
-      arancel: await leerParametroEntero(pool, 'ARANCEL_ESPECIALIDAD', 40000),
+      arancel: await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'ARANCEL_ESPECIALIDAD', 40000),
       citas,
       provisorios,
     });
@@ -138,6 +146,7 @@ exports.obtener = async (req, res) => {
 // POST /pagos/citas/:id/bono-contingencia
 // { folio, financiador_id | financiador_nombre, monto_cobertura, copago }
 // ─────────────────────────────────────────────────────────────────────────────
+// CU72 — Ingresando Datos mediante Interfaz de Contingencia
 exports.registrar = async (req, res) => {
   const citaId = Number(req.params.id);
   const folio = String(req.body?.folio || '').trim().toUpperCase();
@@ -147,7 +156,7 @@ exports.registrar = async (req, res) => {
   const copago = req.body?.copago;
 
   try {
-    const estado = await estadoContingencia(pool);
+    const estado = await C_Gestor_Contingencia.estadoContingencia(C_Capa_de_Acceso_a_Datos);
     // Excepción 1: el adaptador está operativo → validación estándar.
     if (!estado.activa) {
       return res.status(409).json({
@@ -174,7 +183,7 @@ exports.registrar = async (req, res) => {
     }
 
     const filtro = filtroDeRol(req);
-    const [[cita]] = await pool.query(
+    const [[cita]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT c.cita_id, c.estado, c.paciente_id, pa.usuario_id AS usuario_paciente
          FROM Cita c
          JOIN Profesional pr ON pr.profesional_id = c.profesional_id
@@ -191,7 +200,7 @@ exports.registrar = async (req, res) => {
 
     let idFinanciador = null;
     if (financiadorId) {
-      const [[existe]] = await pool.query(
+      const [[existe]] = await C_Capa_de_Acceso_a_Datos.query(
         `SELECT financiador_id FROM Financiador WHERE financiador_id = ? LIMIT 1`,
         [financiadorId]
       ).catch(() => [[null]]);
@@ -201,7 +210,7 @@ exports.registrar = async (req, res) => {
       idFinanciador = financiadorId;
     }
 
-    const [[previo]] = await pool.query(
+    const [[previo]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT bono_id, estado_validacion FROM Bono WHERE cita_id = ? LIMIT 1`,
       [citaId]
     );
@@ -219,7 +228,7 @@ exports.registrar = async (req, res) => {
       idFinanciador ? null : financiadorNombre, req.user.usuario_id];
 
     if (previo) {
-      await pool.query(
+      await C_Capa_de_Acceso_a_Datos.query(
         `UPDATE Bono
             SET folio = ?, monto_cobertura = ?, copago = ?, estado_validacion = ?, payload_respuesta = ?,
                 financiador_id = ?, financiador_manual = ?, registrado_por_usuario_id = ?,
@@ -228,7 +237,7 @@ exports.registrar = async (req, res) => {
         [...valores, previo.bono_id]
       );
     } else {
-      await pool.query(
+      await C_Capa_de_Acceso_a_Datos.query(
         `INSERT INTO Bono
            (folio, monto_cobertura, copago, estado_validacion, payload_respuesta, financiador_id,
             financiador_manual, registrado_por_usuario_id, momento_registro_manual, cita_id)
@@ -242,8 +251,9 @@ exports.registrar = async (req, res) => {
       financiador_id: idFinanciador, financiador_manual: idFinanciador ? null : financiadorNombre,
       origen_contingencia: estado.origen,
     });
-    await notificarUsuario(
-      pool,
+    // CU52: aviso al paciente
+    await C_Despachador_Notificaciones.notificarUsuario(
+      C_Capa_de_Acceso_a_Datos,
       cita.usuario_paciente,
       'BONO_PROVISORIO',
       `Tu bono ${folio} quedó registrado de forma provisoria mientras el financiador no responde. Tu atención sigue en pie; copago informado: $${Number(copago).toLocaleString('es-CL')}.`,
@@ -274,21 +284,22 @@ exports.registrar = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /pagos/contingencia/modo  { activo }  (Administrador)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU72 — Ingresando Datos mediante Interfaz de Contingencia
 exports.cambiarModo = async (req, res) => {
   const activo = req.body?.activo === true || req.body?.activo === 1 || req.body?.activo === '1';
   try {
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `INSERT INTO Parametro_Global (clave, valor, descripcion, administrador_id)
        VALUES (?, ?, 'Fuerza la interfaz de contingencia de bonos (1) o la deja en automático (0).', ?)
        ON DUPLICATE KEY UPDATE valor = VALUES(valor), administrador_id = VALUES(administrador_id)`,
-      [CLAVE_MODO, activo ? '1' : '0', req.user.usuario_id]
+      [C_Gestor_Contingencia.CLAVE_MODO, activo ? '1' : '0', req.user.usuario_id]
     );
-    await auditar(req, activo ? 'CONTINGENCIA_ACTIVADA' : 'CONTINGENCIA_DESACTIVADA', { clave: CLAVE_MODO });
+    await auditar(req, activo ? 'CONTINGENCIA_ACTIVADA' : 'CONTINGENCIA_DESACTIVADA', { clave: C_Gestor_Contingencia.CLAVE_MODO });
     return res.status(200).json({
       mensaje: activo
         ? 'Modo de contingencia activado: profesionales y administradores pueden ingresar bonos a mano.'
         : 'Modo de contingencia desactivado: vuelve la validación automática (salvo que el financiador siga caído).',
-      contingencia: await estadoContingencia(pool),
+      contingencia: await C_Gestor_Contingencia.estadoContingencia(C_Capa_de_Acceso_a_Datos),
     });
   } catch (error) {
     console.error('[contingencia.cambiarModo]', error);
@@ -300,9 +311,10 @@ exports.cambiarModo = async (req, res) => {
 // POST /pagos/bonos/:id/regularizar  { financiador_id? }  (Administrador)
 // Con el financiador de vuelta, el bono provisorio pasa por la validación real.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU72, CU66 — regularizar el bono provisorio con el financiador
 exports.regularizar = async (req, res) => {
   try {
-    const estado = await estadoContingencia(pool);
+    const estado = await C_Gestor_Contingencia.estadoContingencia(C_Capa_de_Acceso_a_Datos);
     if (estado.activa) {
       return res.status(409).json({
         error: 'CONTINGENCIA_ACTIVA',
@@ -312,7 +324,7 @@ exports.regularizar = async (req, res) => {
       });
     }
 
-    const [[bono]] = await pool.query(
+    const [[bono]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT b.bono_id, b.folio, b.financiador_id, b.cita_id, f.rut_institucion
          FROM Bono b LEFT JOIN Financiador f ON f.financiador_id = b.financiador_id
         WHERE b.bono_id = ? AND b.estado_validacion = ? LIMIT 1`,
@@ -328,7 +340,7 @@ exports.regularizar = async (req, res) => {
       // Se registró con texto libre: para validarlo hay que elegirlo del catálogo.
       const elegido = Number(req.body?.financiador_id);
       const [[f]] = elegido
-        ? await pool.query(`SELECT financiador_id, rut_institucion FROM Financiador WHERE financiador_id = ? AND convenio_activo = TRUE`, [elegido])
+        ? await C_Capa_de_Acceso_a_Datos.query(`SELECT financiador_id, rut_institucion FROM Financiador WHERE financiador_id = ? AND convenio_activo = TRUE`, [elegido])
         : [[null]];
       if (!f) {
         return res.status(400).json({
@@ -340,10 +352,11 @@ exports.regularizar = async (req, res) => {
       rut = f.rut_institucion;
     }
 
-    const arancel = await leerParametroEntero(pool, 'ARANCEL_ESPECIALIDAD', 40000);
+    const arancel = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'ARANCEL_ESPECIALIDAD', 40000);
     let resultado;
+    // CU68: validación real con el financiador externo
     try {
-      resultado = await ejecutarTransaccion({
+      resultado = await C_API_Adapter.ejecutarTransaccion({
         proveedor: 'FINANCIADOR',
         operacion: 'VALIDAR_BONO',
         usuarioId: req.user.usuario_id,
@@ -358,7 +371,7 @@ exports.regularizar = async (req, res) => {
 
     const validado = resultado.datos.estado === 'VALIDADO';
     const nuevoEstado = validado ? 'VALIDADO' : 'NO_VALIDADO';
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Bono
           SET estado_validacion = ?, monto_cobertura = ?, copago = ?, financiador_id = ?,
               payload_respuesta = JSON_SET(COALESCE(payload_respuesta, JSON_OBJECT()), '$.regularizacion', CAST(? AS JSON)),

@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Prevención y alta"
+ * Casos de uso: CU51, CU37, CU32.
+ */
 // Ruta: fro-vista/src/screens/Paciente/PreparacionAltaScreen.js
 //
 // CU51 — Pestaña "Prevención y alta" de Mi Tratamiento. Muestra cuánto falta
@@ -28,6 +32,7 @@ export default function PreparacionAltaScreen({ navigation }) {
   // Exc. 4: las imágenes que no cargan se reemplazan por un marcador.
   const [imagenesRotas, setImagenesRotas] = useState({});
 
+  // CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
   const cargar = useCallback(async (esRefresco = false) => {
     if (esRefresco) setRefrescando(true);
     else setCargando(true);
@@ -54,6 +59,7 @@ export default function PreparacionAltaScreen({ navigation }) {
     cargar();
   }, [cargar]);
 
+  // CU51: abre un contenido de prevención habilitado
   const abrirRecurso = async (recurso) => {
     try {
       const soportado = await Linking.canOpenURL(recurso.url_archivo);
@@ -135,6 +141,7 @@ export default function PreparacionAltaScreen({ navigation }) {
           </View>
 
           {/* Metas */}
+          {/* CU32: metas terapéuticas definidas por el profesional */}
           {datos.metas?.length > 0 && (
             <View style={estilos.tarjeta}>
               <Text style={estilos.titulo}>Tus metas</Text>

@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU40, CU38.
+ */
 // Ruta: fro-vista/src/components/PendientesDocumentar.js
 //
 // Corrección Inc 4 (punto 7): atenciones ya finalizadas cuyo registro clínico
@@ -15,6 +19,7 @@ import { colores, espacio, piezas, radio, tipografia, interaccion } from '../the
 export default function PendientesDocumentar({ navigation }) {
   const [citas, setCitas] = useState([]);
 
+  // CU40: atenciones finalizadas que falta documentar
   const cargar = useCallback(async () => {
     try {
       const { data } = await apiClient.get('/citas/documentacion-pendiente');

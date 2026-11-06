@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU39, CU41, CU42, CU43, CU52, CU13.
+ *
  * Evidencia de atención (Incremento 2, bloque 6).
  * CU39: presencialidad por GPS cruzado en sesiones domiciliarias.
  * CU41: certificación multi-factor de la sesión (marcas + GPS cruzados).
@@ -6,14 +9,12 @@
  * CU43: evidencia técnica de teleconsulta (IP, latencia, segmentos).
  */
 
-const pool = require('../config/database');
-const { leerParametroEntero } = require('../services/agenda/agendaService');
-const { enviarCorreo } = require('../services/notifications/otpService');
-const { notificarUsuario } = require('../services/agenda/agendaService');
-const {
-  distanciaMetros, parsearJSON, coordenadas, analizarFactores,
-} = require('../services/agenda/presencialidadService');
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_API_Adapter = require('../componentes/C_API_Adapter');
+const C_Despachador_Notificaciones = require('../componentes/C_Despachador_Notificaciones');
+const C_Validador_Presencialidad = require('../componentes/C_Validador_Presencialidad');
 
+// CU42: texto legal que firma el paciente
 const DECLARACION_CONFORMIDAD = {
   version: '1.0',
   texto:
@@ -24,6 +25,7 @@ const DECLARACION_CONFORMIDAD = {
 };
 
 /** Distancia en metros entre dos coordenadas (fórmula de Haversine). */
+// Apoyo común: fecha DD/MM/AAAA HH:MM para avisos y correos
 // Formato exigido por los requerimientos: DD/MM/AAAA HH:MM en 24 horas. Las
 // fechas de la base ya son hora de pared chilena, asi que se imprimen tal cual.
 function formatearFechaHoraCL(valor) {
@@ -38,9 +40,12 @@ function formatearFechaHoraCL(valor) {
 // Distancia y lectura de la evidencia viven en el servicio de presencialidad,
 // que también usan el inicio y el término automáticos de la atención (CU38).
 
-/** Cita a la que el usuario pertenece (como paciente o profesional). */
+/**
+ * CU39, CU41, CU42, CU43 — la cita debe ser del paciente o profesional con sesión
+ * Cita a la que el usuario pertenece (como paciente o profesional).
+ */
 async function citaDelActor(citaId, usuarioId) {
-  const [filas] = await pool.query(
+  const [filas] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT c.*,
             (pac_u.usuario_id = ?) AS es_paciente,
             (prof_u.usuario_id = ?) AS es_profesional,
@@ -57,9 +62,10 @@ async function citaDelActor(citaId, usuarioId) {
   return filas[0] || null;
 }
 
+// CU13 — Registrando bitácora de auditoría de seguridad
 async function auditar(req, accion, datos) {
   try {
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES (?, 'Cita', ?, ?, ?)`,
       [accion, req.ip || null, JSON.stringify(datos), req.user?.usuario_id ?? null]
@@ -74,6 +80,7 @@ async function auditar(req, accion, datos) {
 //  POST /citas/:id/checkin-gps   { latitud, longitud, momento: 'INICIO'|'TERMINO' }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 exports.checkinGPS = async (req, res) => {
   const { id } = req.params;
   const latitud = Number(req.body?.latitud);
@@ -100,11 +107,11 @@ exports.checkinGPS = async (req, res) => {
     }
 
     const rol = cita.es_paciente ? 'paciente' : 'profesional';
-    const evidencia = parsearJSON(cita.evidencia_presencial) || {};
+    const evidencia = C_Validador_Presencialidad.parsearJSON(cita.evidencia_presencial) || {};
     evidencia[rol] = evidencia[rol] || {};
 
     const marca = { lat: latitud, lng: longitud, momento_registro: new Date().toISOString() };
-    const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 200);
+    const radio = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'RADIO_PRESENCIALIDAD_METROS', 200);
 
     // Validación cruzada: la referencia es la marca equivalente del otro actor.
     const otro = rol === 'paciente' ? 'profesional' : 'paciente';
@@ -112,7 +119,7 @@ exports.checkinGPS = async (req, res) => {
     let distancia = null;
 
     if (marcaOtro) {
-      distancia = distanciaMetros(marca, marcaOtro);
+      distancia = C_Validador_Presencialidad.distanciaMetros(marca, marcaOtro);
 
       if (momento === 'INICIO' && distancia > radio) {
         // Excepción 2: sin coincidencia geográfica no hay validación presencial.
@@ -139,7 +146,7 @@ exports.checkinGPS = async (req, res) => {
 
     // Compatibilidad con el modelo original: el par lat,lng del inicio.
     const columnaLegacy = rol === 'paciente' ? 'coordenadas_gps_paciente' : 'coordenadas_gps_profesional';
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Cita SET evidencia_presencial = ?${momento === 'INICIO' ? `, ${columnaLegacy} = ?` : ''}
         WHERE cita_id = ?`,
       momento === 'INICIO'
@@ -174,6 +181,7 @@ exports.checkinGPS = async (req, res) => {
 //  { evento: 'INICIO'|'RECONEXION'|'TERMINO', latencia_ms, dispositivo, permisos }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CU43 — Registrando evidencia técnica de teleconsulta
 exports.registrarEvidenciaTeleconsulta = async (req, res) => {
   const { id } = req.params;
   const evento = ['INICIO', 'RECONEXION', 'TERMINO'].includes(req.body?.evento)
@@ -187,7 +195,7 @@ exports.registrarEvidenciaTeleconsulta = async (req, res) => {
     }
 
     const rol = cita.es_paciente ? 'paciente' : 'profesional';
-    const metadatos = parsearJSON(cita.metadatos_teleconsulta) || { segmentos: [] };
+    const metadatos = C_Validador_Presencialidad.parsearJSON(cita.metadatos_teleconsulta) || { segmentos: [] };
     metadatos.segmentos = metadatos.segmentos || [];
 
     // Excepción 2: cada reconexión queda como un segmento corto adicional.
@@ -201,7 +209,7 @@ exports.registrarEvidenciaTeleconsulta = async (req, res) => {
       momento: new Date().toISOString(),
     });
 
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Cita SET metadatos_teleconsulta = ? WHERE cita_id = ?`,
       [JSON.stringify(metadatos), id]
     );
@@ -229,6 +237,7 @@ exports.registrarEvidenciaTeleconsulta = async (req, res) => {
 //  GET /citas/:id/evidencia
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CU39, CU41, CU42, CU43 — GPS, certificación, firma y teleconsulta de la cita
 exports.resumenEvidencia = async (req, res) => {
   const { id } = req.params;
   try {
@@ -243,9 +252,9 @@ exports.resumenEvidencia = async (req, res) => {
       modalidad: cita.modalidad,
       checkin_profesional: cita.checkin_profesional,
       checkin_paciente: cita.checkin_paciente,
-      evidencia_presencial: parsearJSON(cita.evidencia_presencial),
-      metadatos_teleconsulta: parsearJSON(cita.metadatos_teleconsulta),
-      firma: parsearJSON(cita.firma_conformidad_datos),
+      evidencia_presencial: C_Validador_Presencialidad.parsearJSON(cita.evidencia_presencial),
+      metadatos_teleconsulta: C_Validador_Presencialidad.parsearJSON(cita.metadatos_teleconsulta),
+      firma: C_Validador_Presencialidad.parsearJSON(cita.firma_conformidad_datos),
     });
   } catch (error) {
     console.error('[resumenEvidencia]', error);
@@ -260,6 +269,7 @@ exports.resumenEvidencia = async (req, res) => {
 //  para que pueda resolver la discrepancia fuera del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CU41 Exc. 2: datos de contacto de ambas partes para el Administrador
 const SELECT_CONTACTOS_CITA = `
   SELECT c.cita_id, c.fecha_hora_inicio, c.modalidad, c.sesion_suspendida_en, c.motivo_suspension,
          c.sesion_certificada_en, c.certificacion_tipo,
@@ -277,15 +287,16 @@ const SELECT_CONTACTOS_CITA = `
     JOIN Usuario uf ON uf.usuario_id = pr.usuario_id
     LEFT JOIN Especialidad e ON e.especialidad_id = pr.especialidad_id`;
 
+// CU41 — Validando sesión mediante protocolo multi-factor
 async function derivarAAdministracion(req, citaId, fallidos) {
   const factores = fallidos.map((f) => f.factor);
-  await pool.query(
+  await C_Capa_de_Acceso_a_Datos.query(
     `UPDATE Cita SET sesion_suspendida_en = NOW(), motivo_suspension = ? WHERE cita_id = ?`,
     [JSON.stringify({ factores, derivado_por: req.user?.usuario_id ?? null }), citaId]
   );
 
-  const [[contactos]] = await pool.query(`${SELECT_CONTACTOS_CITA} WHERE c.cita_id = ? LIMIT 1`, [citaId]);
-  const [administradores] = await pool.query(
+  const [[contactos]] = await C_Capa_de_Acceso_a_Datos.query(`${SELECT_CONTACTOS_CITA} WHERE c.cita_id = ? LIMIT 1`, [citaId]);
+  const [administradores] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT u.usuario_id, u.email FROM Usuario u
        JOIN Rol r ON r.rol_id = u.rol_id
       WHERE r.nombre_rol = 'Administrador' AND u.cuenta_activo = TRUE`
@@ -309,20 +320,24 @@ async function derivarAAdministracion(req, citaId, fallidos) {
        <p style="color:#475569">Revisa el caso en el panel de administración, sección "Sesiones suspendidas".</p>
      </div>`;
 
+  // CU52: aviso en la app y por correo a cada administrador
   for (const admin of administradores) {
-    await notificarUsuario(pool, admin.usuario_id, 'SESION_SUSPENDIDA', resumen);
+    await C_Despachador_Notificaciones.notificarUsuario(C_Capa_de_Acceso_a_Datos, admin.usuario_id, 'SESION_SUSPENDIDA', resumen);
     // El correo es mejor esfuerzo: sin proveedor configurado, queda el aviso en la app.
-    enviarCorreo(admin.email, `Sesión #${citaId} derivada a revisión - Punto Paz Salud`, html).catch((error) => {
+    C_API_Adapter.enviarCorreo(admin.email, `Sesión #${citaId} derivada a revisión - Punto Paz Salud`, html).catch((error) => {
       console.error('[derivarAAdministracion] correo no enviado:', error.message);
     });
   }
   return administradores.length;
 }
 
-/** GET /citas/sesiones-suspendidas — bandeja del Administrador (D11). */
+/**
+ * CU41 — Validando sesión mediante protocolo multi-factor
+ * GET /citas/sesiones-suspendidas — bandeja del Administrador (D11).
+ */
 exports.sesionesSuspendidas = async (_req, res) => {
   try {
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `${SELECT_CONTACTOS_CITA}
         WHERE c.sesion_suspendida_en IS NOT NULL
         ORDER BY (c.sesion_certificada_en IS NULL) DESC, c.sesion_suspendida_en DESC`
@@ -330,7 +345,7 @@ exports.sesionesSuspendidas = async (_req, res) => {
     return res.status(200).json({
       sesiones: filas.map((f) => ({
         ...f,
-        motivo_suspension: parsearJSON(f.motivo_suspension),
+        motivo_suspension: C_Validador_Presencialidad.parsearJSON(f.motivo_suspension),
         // Si después se certificó (cierre manual), la derivación quedó resuelta.
         resuelta: Boolean(f.sesion_certificada_en),
       })),
@@ -347,20 +362,21 @@ exports.sesionesSuspendidas = async (_req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * CU41 — Validando sesión mediante protocolo multi-factor
  * Certificación automática al finalizar la atención (CU41). Si todos los
  * factores cuadran, la sesión queda certificada como MULTIFACTOR sin pasos
  * extra. Si estaban lejos, se deriva al Administrador (D11). En ambos casos
  * de falla el profesional puede cerrar con justificación.
  */
 exports.certificarAlFinalizar = async (req, citaId) => {
-  const [[cita]] = await pool.query(`SELECT * FROM Cita WHERE cita_id = ? LIMIT 1`, [citaId]);
+  const [[cita]] = await C_Capa_de_Acceso_a_Datos.query(`SELECT * FROM Cita WHERE cita_id = ? LIMIT 1`, [citaId]);
   if (!cita || cita.sesion_certificada_en) return { certificada: Boolean(cita?.sesion_certificada_en), factores: [] };
-  const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 100);
-  const factores = analizarFactores(cita, radio);
+  const radio = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'RADIO_PRESENCIALIDAD_METROS', 100);
+  const factores = C_Validador_Presencialidad.analizarFactores(cita, radio);
   const fallidos = factores.filter((f) => !f.ok);
 
   if (fallidos.length === 0) {
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Cita SET sesion_certificada_en = NOW(), certificacion_tipo = 'MULTIFACTOR' WHERE cita_id = ?`,
       [citaId]
     );
@@ -387,9 +403,10 @@ exports.certificarAlFinalizar = async (req, citaId) => {
 //  y el profesional la usa al comenzar y finalizar la atención.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 exports.ubicacionPendiente = async (req, res) => {
   try {
-    const [citas] = await pool.query(
+    const [citas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT c.cita_id, c.fecha_hora_inicio, c.estado
          FROM Cita c JOIN Paciente pa ON pa.paciente_id = c.paciente_id
         WHERE pa.usuario_id = ? AND c.modalidad = 'DOMICILIO'
@@ -406,8 +423,9 @@ exports.ubicacionPendiente = async (req, res) => {
   }
 };
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 exports.reportarUbicacion = async (req, res) => {
-  const punto = coordenadas(req.body);
+  const punto = C_Validador_Presencialidad.coordenadas(req.body);
   if (!punto) return res.status(400).json({ error: 'COORDENADAS_INVALIDAS' });
   try {
     const cita = await citaDelActor(req.params.id, req.user.usuario_id);
@@ -415,7 +433,7 @@ exports.reportarUbicacion = async (req, res) => {
     if (cita.modalidad !== 'DOMICILIO' || !['AGENDADA', 'CONFIRMADA', 'EN_CURSO'].includes(cita.estado)) {
       return res.status(409).json({ error: 'CITA_NO_HABILITADA', mensaje: 'Solo se registra la ubicación de visitas a domicilio por realizar.' });
     }
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Cita SET evidencia_presencial = JSON_SET(COALESCE(evidencia_presencial, JSON_OBJECT()),
               '$.paciente', JSON_MERGE_PATCH(COALESCE(JSON_EXTRACT(evidencia_presencial, '$.paciente'), JSON_OBJECT()),
                                              JSON_OBJECT('ultima', CAST(? AS JSON))))
@@ -429,6 +447,7 @@ exports.reportarUbicacion = async (req, res) => {
   }
 };
 
+// CU41 — Validando sesión mediante protocolo multi-factor
 exports.validarSesion = async (req, res) => {
   const { id } = req.params;
   const cierreManual = Boolean(req.body?.cierre_manual);
@@ -450,7 +469,7 @@ exports.validarSesion = async (req, res) => {
     // Una sesión se certifica una sola vez. Antes la certificación quedaba
     // solo en la bitácora, así que ni la app ni este endpoint sabían que ya
     // estaba hecha y el botón "Validar sesión" seguía apareciendo.
-    const [[yaCertificada]] = await pool.query(
+    const [[yaCertificada]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT sesion_certificada_en, certificacion_tipo FROM Cita WHERE cita_id = ? LIMIT 1`,
       [id]
     );
@@ -464,11 +483,11 @@ exports.validarSesion = async (req, res) => {
       });
     }
 
-    const radio = await leerParametroEntero(pool, 'RADIO_PRESENCIALIDAD_METROS', 100);
+    const radio = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'RADIO_PRESENCIALIDAD_METROS', 100);
 
     // ── Análisis cruzado de factores ── (las marcas ahora son automáticas:
     // ya no se espera una confirmación del paciente).
-    const factores = analizarFactores(cita, radio);
+    const factores = C_Validador_Presencialidad.analizarFactores(cita, radio);
     const fallidos = factores.filter((f) => !f.ok);
     const hayDiscrepancia = fallidos.some((f) => f.clave === 'DISTANCIA');
 
@@ -531,7 +550,7 @@ exports.validarSesion = async (req, res) => {
     }
 
     // Persistir en la cita (la bitácora sigue guardando el detalle de factores).
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Cita SET sesion_certificada_en = NOW(), certificacion_tipo = ? WHERE cita_id = ?`,
       [cierreManual ? 'MANUAL' : 'MULTIFACTOR', id]
     );
@@ -563,12 +582,16 @@ exports.validarSesion = async (req, res) => {
 //  CU42 — Firma manuscrita de conformidad
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** GET /citas/:id/declaracion-conformidad — Exc.2: sin texto legal, sin lienzo. */
+/**
+ * CU42 — Capturando firma manuscrita de conformidad
+ * GET /citas/:id/declaracion-conformidad — Exc.2: sin texto legal, sin lienzo.
+ */
 exports.declaracionConformidad = (_req, res) => {
   return res.status(200).json(DECLARACION_CONFORMIDAD);
 };
 
 /**
+ * CU42 — Capturando firma manuscrita de conformidad
  * POST /citas/:id/firma
  * { trazos: [[{x,y}...]] }  ó  { rechazo: 'motivo' }  ó  { por_correo: true }
  */
@@ -588,7 +611,7 @@ exports.guardarFirma = async (req, res) => {
       });
     }
 
-    const firmaPrevia = parsearJSON(cita.firma_conformidad_datos);
+    const firmaPrevia = C_Validador_Presencialidad.parsearJSON(cita.firma_conformidad_datos);
     if (firmaPrevia?.tipo === 'FIRMA') {
       return res.status(409).json({
         error: 'FIRMA_YA_REGISTRADA',
@@ -606,7 +629,7 @@ exports.guardarFirma = async (req, res) => {
         momento: new Date().toISOString(),
       };
       try {
-        await enviarCorreo(
+        await C_API_Adapter.enviarCorreo(
           cita.email_paciente,
           'Conformidad de atención - Punto Paz Salud',
           `<div style="font-family:sans-serif;max-width:460px;margin:auto;padding:24px;border:1px solid #e5e7eb;border-radius:8px;">
@@ -658,7 +681,7 @@ exports.guardarFirma = async (req, res) => {
       };
     }
 
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Cita SET firma_conformidad_datos = ? WHERE cita_id = ?`,
       [JSON.stringify(registro), id]
     );

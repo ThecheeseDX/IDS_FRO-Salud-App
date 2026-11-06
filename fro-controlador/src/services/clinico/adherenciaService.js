@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Motor_Clinico (puerta de entrada: src/componentes/C_Motor_Clinico.js)
+ * Casos de uso: CU44, CU45, CU48, CU50.
+ *
  * CU44 — Índice de adherencia y curva de síntomas.
  *
  * La adherencia es una división simple: cuántas tareas ejecutó el paciente
@@ -16,9 +19,10 @@
  * (Excepción 1): la consulta las descarta por rango de fechas.
  */
 
-const { leerParametroEntero } = require('../agenda/agendaService');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
 const { crearAlerta } = require('./alertaClinicaService');
 
+// CU48 — Registrando cumplimiento diario de tareas
 /** Fecha AAAA-MM-DD de hoy en la hora de pared del servidor. */
 function hoySQL() {
   const f = new Date();
@@ -26,6 +30,7 @@ function hoySQL() {
   return `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}`;
 }
 
+// CU44 — Actualizando indicadores de adherencia y síntomas
 /** Días asignados (1 = lunes … 7 = domingo) o [] si el ejercicio no los usa. */
 function diasAsignados(diasSemana) {
   return String(diasSemana || '')
@@ -34,6 +39,7 @@ function diasAsignados(diasSemana) {
     .filter((n) => Number.isInteger(n) && n >= 1 && n <= 7);
 }
 
+// CU44 — Actualizando indicadores de adherencia y síntomas
 /** Tareas que el ejercicio programa en `dias` días de vigencia desde `inicio`. */
 function tareasEsperadas(fila, inicio, dias) {
   const asignados = diasAsignados(fila.dias_semana);
@@ -51,6 +57,7 @@ function tareasEsperadas(fila, inicio, dias) {
 }
 
 /**
+ * CU44 — Actualizando indicadores de adherencia y síntomas
  * Calcula la adherencia del paciente en un rango.
  *
  * @param {string|null} desde  AAAA-MM-DD; sin valor, toda la historia
@@ -118,6 +125,7 @@ async function calcularAdherencia(conexion, pacienteId, { desde = null, hasta = 
   };
 }
 
+// CU44 — Actualizando indicadores de adherencia y síntomas
 /** El último indicador guardado, para cuando el cálculo no se puede rehacer. */
 async function ultimoIndicador(conexion, pacienteId) {
   try {
@@ -135,6 +143,7 @@ async function ultimoIndicador(conexion, pacienteId) {
 }
 
 /**
+ * CU44 — Actualizando indicadores de adherencia y síntomas
  * Recalcula el índice del paciente, lo guarda como el dato de hoy y levanta
  * una alerta si cayó bajo el umbral (Excepción 4).
  *
@@ -183,10 +192,10 @@ async function actualizarIndicador(conexion, pacienteId) {
   // Excepción 4: la caída bajo el umbral es un deterioro y va al panel del
   // profesional como bandera roja, igual que el reporte de síntomas (CU50).
   try {
-    const umbral = await leerParametroEntero(conexion, 'UMBRAL_ADHERENCIA_CRITICA', 50);
+    const umbral = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, 'UMBRAL_ADHERENCIA_CRITICA', 50);
     // Se exige un mínimo de tareas programadas: con dos días de pauta, un día
     // sin marcar ya daría 50% y sería una alerta sin sustento.
-    const minimo = await leerParametroEntero(conexion, 'MINIMO_TAREAS_PARA_ALERTA_ADHERENCIA', 5);
+    const minimo = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, 'MINIMO_TAREAS_PARA_ALERTA_ADHERENCIA', 5);
 
     if (calculo.porcentaje < umbral && calculo.programadas >= minimo) {
       if (await debeAlertarAdherencia(conexion, pacienteId, calculo.porcentaje, umbral)) {
@@ -209,6 +218,7 @@ async function actualizarIndicador(conexion, pacienteId) {
 }
 
 /**
+ * CU50 — Generando y notificando alerta por deterioro clínico
  * ¿Corresponde levantar una bandera de adherencia baja? El índice se recalcula
  * en muchas lecturas (abrir la ficha, marcar un ejercicio), así que:
  * - con una alerta ABIERTA no se crea otra (sería ruido en el panel);
@@ -248,6 +258,7 @@ async function debeAlertarAdherencia(conexion, pacienteId, porcentaje, umbral) {
   return Boolean(recuperado);
 }
 
+// CU44, CU45 — serie diaria para el gráfico de progreso
 /** Serie diaria del índice, para el gráfico del CU45. */
 async function serieAdherencia(conexion, pacienteId, { desde = null, hasta = null } = {}) {
   const [filas] = await conexion.query(

@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mis Documentos"
+ * Casos de uso: CU33, CU34, CU35, CU28, CU53.
+ */
 // Ruta: fro-vista/src/screens/Comun/DocumentosScreen.js
 //
 // Repositorio multimedia de la ficha clínica, compartido por ambos roles:
@@ -75,6 +79,7 @@ export default function DocumentosScreen({ route, navigation }) {
     if (modoChat) navigation.setOptions?.({ title: 'Elegir documento' });
   }, [navigation, modoChat]);
 
+  // CU35, CU34 — listar los documentos de la ficha, filtrados por categoría
   const cargar = async (categoriaFiltro = filtro) => {
     setErrorCarga(false);
     setCargando(true);
@@ -130,6 +135,7 @@ export default function DocumentosScreen({ route, navigation }) {
     );
   };
 
+  // CU33 — Almacenando archivos en repositorio multimedia
   const subirArchivo = async (archivo) => {
     setSubiendo(true);
     try {
@@ -231,7 +237,7 @@ export default function DocumentosScreen({ route, navigation }) {
     }
   };
 
-  // ── Ficha clínica completa en PDF (solo paciente) ──────────────────────────
+  // ── CU28: ficha clínica completa en PDF (solo paciente) ────────────────────
   // Igual que los informes de Administración: se descarga con el token de la
   // sesión y se abre el menú del teléfono para guardarla o compartirla.
   const descargarFicha = async () => {
@@ -305,6 +311,7 @@ export default function DocumentosScreen({ route, navigation }) {
   const nombreCategoria = (clave) =>
     categorias.find((c) => c.clave === clave)?.nombre || clave;
 
+  // CU35 — al tocar un documento se abre el visor embebido
   const renderDocumento = ({ item }) => (
     <TouchableOpacity
       style={estilos.card}
@@ -366,6 +373,7 @@ export default function DocumentosScreen({ route, navigation }) {
 
   return (
     <View style={estilos.contenedor}>
+      {/* CU53: modo selección para enviar un documento al chat */}
       {modoChat && (
         <View style={estilos.cintaChat}>
           <Text style={estilos.cintaChatTexto}>
@@ -378,7 +386,7 @@ export default function DocumentosScreen({ route, navigation }) {
         <Text style={estilos.subtitulo}>Paciente: {nombrePaciente}</Text>
       ) : null}
 
-      {/* Ficha clínica completa en PDF: solo el paciente, fuera del modo chat. */}
+      {/* CU28: ficha clínica completa en PDF: solo el paciente, fuera del modo chat. */}
       {!esProfesional && !modoChat && (
         <TouchableOpacity
           style={[estilos.botonFicha, descargandoFicha && estilos.deshabilitado]}

@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mis Citas"
+ * Casos de uso: CU20, CU17, CU18, CU19, CU21, CU22, CU55, CU73, CU74, CU43.
+ */
 // Ruta: fro-vista/src/screens/Paciente/MisCitasScreen.js
 //
 // Vista única de gestión de citas del paciente: muestra sus horas agendadas y
@@ -82,6 +86,7 @@ export default function MisCitasScreen({ navigation, route }) {
   // CU74: cambio de sesión unitaria a plan, con su diferencia.
   const [actualizandoId, setActualizandoId] = useState(null);
 
+  // CU20 — Transicionando máquina de estados de cita (listado de citas del paciente)
   const cargarCitas = useCallback(async (esRefresco = false) => {
     if (esRefresco) {
       setRefrescando(true);
@@ -151,6 +156,7 @@ export default function MisCitasScreen({ navigation, route }) {
   // CU22: cancelar exige un motivo, así que se pide en un diálogo propio.
   const [citaPorCancelar, setCitaPorCancelar] = useState(null);
 
+  // CU18 — Cancelando cita y liberando recursos
   const cancelarCita = async (cita, motivo) => {
     setCitaPorCancelar(null);
     setCancelandoId(cita.cita_id);
@@ -163,6 +169,7 @@ export default function MisCitasScreen({ navigation, route }) {
       // A quien cancela no se le informa si había otros pacientes esperando
       // esa hora: la lista de espera es información de terceros.
       // RF74: cancelar con la anticipación mínima devuelve el pago de la sesión.
+      // CU74: aviso de la devolución
       if (data?.devolucion?.devuelto) {
         setAviso({
           tono: 'ok',
@@ -271,6 +278,7 @@ export default function MisCitasScreen({ navigation, route }) {
     }
   };
 
+  // CU19 — Gestionando lista de espera secuencial
   const salirDeLista = async (lista) => {
     try {
       await salirListaEspera(lista.cita_id);
@@ -350,6 +358,7 @@ export default function MisCitasScreen({ navigation, route }) {
     }
   };
 
+  // CU20: tarjeta de cada cita con las acciones que permite su estado
   const renderCita = ({ item }) => {
     const puedeCancelar = ESTADOS_CANCELABLES.includes(item.estado);
     const cancelando = cancelandoId === item.cita_id;
@@ -454,6 +463,7 @@ export default function MisCitasScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
+        {/* CU17, CU18 — reprogramar o cancelar la cita */}
         {puedeCancelar && (
           <View style={styles.filaAcciones}>
             <TouchableOpacity
@@ -570,6 +580,7 @@ export default function MisCitasScreen({ navigation, route }) {
                 ))}
               </View>
             )}
+            {/* CU55: evaluación de cada sesión ya cerrada */}
             {porEvaluar.length > 0 && (
               <View style={styles.bloqueEvaluar}>
                 <Text style={styles.esperaTitulo}>¿Cómo fue tu sesión?</Text>
@@ -592,6 +603,7 @@ export default function MisCitasScreen({ navigation, route }) {
                 ))}
               </View>
             )}
+            {/* CU19: listas de espera del paciente */}
             {listasEspera.length > 0 ? (
             <View style={styles.bloqueEspera}>
               <Text style={styles.esperaTitulo}>En lista de espera</Text>

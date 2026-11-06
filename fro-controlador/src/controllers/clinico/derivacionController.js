@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU65, CU52.
+ *
  * CU65 — Registrando y siguiendo derivaciones internas (Incremento 4).
  *
  * Desde la ficha, el profesional a cargo de un episodio ABIERTO lo deriva a
@@ -15,18 +18,20 @@
  * Un episodio admite una sola derivación pendiente a la vez.
  */
 
-const pool = require('../../config/database');
-const { notificarUsuario } = require('../../services/agenda/agendaService');
-const { obtenerEpisodio, estaCerrado } = require('../../services/clinico/episodioService');
-const { profesionalTratante } = require('../../services/clinico/accesoClinicoService');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Despachador_Notificaciones = require('../../componentes/C_Despachador_Notificaciones');
+const C_Motor_Clinico = require('../../componentes/C_Motor_Clinico');
+const C_Control_Acceso_Clinico = require('../../componentes/C_Control_Acceso_Clinico');
 
 const LARGO_MINIMO_JUSTIFICACION = 10;
 const LARGO_MAXIMO_JUSTIFICACION = 255;
 
+// Apoyo común: IP de origen para la bitácora
 function obtenerIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || null;
 }
 
+// CU65: traza de cada paso de la derivación en la bitácora de auditoría
 async function auditar(conexion, req, accion, datos) {
   await conexion.query(
     `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
@@ -35,6 +40,7 @@ async function auditar(conexion, req, accion, datos) {
   );
 }
 
+// Apoyo común: profesional asociado a la cuenta en sesión
 async function profesionalDelUsuario(conexion, usuarioId) {
   const [[fila]] = await conexion.query(
     `SELECT pr.profesional_id, pr.especialidad_id,
@@ -47,16 +53,17 @@ async function profesionalDelUsuario(conexion, usuarioId) {
 }
 
 /**
+ * CU65 — Registrando y Siguiendo Derivaciones Internas
  * Comprueba que quien deriva sea el profesional a cargo y que el episodio
  * siga abierto. Responde y devuelve null si no corresponde.
  */
 async function episodioDerivable(req, res) {
-  const episodio = await obtenerEpisodio(pool, req.params.episodio_id);
+  const episodio = await C_Motor_Clinico.obtenerEpisodio(C_Capa_de_Acceso_a_Datos, req.params.episodio_id);
   if (!episodio) {
     res.status(404).json({ error: 'EPISODIO_NO_ENCONTRADO', mensaje: 'El episodio clínico no existe.' });
     return null;
   }
-  const propio = await profesionalDelUsuario(pool, req.user.usuario_id);
+  const propio = await profesionalDelUsuario(C_Capa_de_Acceso_a_Datos, req.user.usuario_id);
   if (!propio || Number(propio.profesional_id) !== Number(episodio.profesional_id)) {
     res.status(403).json({
       error: 'EPISODIO_AJENO',
@@ -65,7 +72,7 @@ async function episodioDerivable(req, res) {
     return null;
   }
   // Excepción 1: un episodio cerrado es inalterable; la derivación va en uno nuevo.
-  if (estaCerrado(episodio.estado)) {
+  if (C_Motor_Clinico.estaCerrado(episodio.estado)) {
     res.status(409).json({
       error: 'EPISODIO_INALTERABLE',
       mensaje: 'Este episodio está cerrado y es inalterable. Para derivar al paciente, abre un episodio clínico nuevo.',
@@ -79,15 +86,16 @@ async function episodioDerivable(req, res) {
 // GET /clinica/episodio/:episodio_id/derivaciones/opciones
 // Matriz de especialidades con los profesionales que pueden recibir.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 exports.opciones = async (req, res) => {
   try {
     const contexto = await episodioDerivable(req, res);
     if (!contexto) return;
 
-    const [especialidades] = await pool.query(
+    const [especialidades] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT especialidad_id, nombre FROM Especialidad ORDER BY nombre`
     );
-    const [profesionales] = await pool.query(
+    const [profesionales] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT pr.profesional_id, pr.especialidad_id, pr.foto_url,
               CONCAT(u.nombres, ' ', u.apellido_paterno) AS nombre
          FROM Profesional pr JOIN Usuario u ON u.usuario_id = pr.usuario_id
@@ -119,17 +127,18 @@ exports.opciones = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/episodio/:episodio_id/derivaciones — las del episodio
 // ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 exports.delEpisodio = async (req, res) => {
   try {
     // El profesional solo ve las derivaciones de pacientes a los que tiene
     // acceso; el Administrador ve todas.
     if (req.user?.nombre_rol !== 'Administrador') {
-      const episodio = await obtenerEpisodio(pool, req.params.episodio_id);
-      if (!episodio || !(await profesionalTratante(pool, req.user.usuario_id, episodio.paciente_id))) {
+      const episodio = await C_Motor_Clinico.obtenerEpisodio(C_Capa_de_Acceso_a_Datos, req.params.episodio_id);
+      if (!episodio || !(await C_Control_Acceso_Clinico.profesionalTratante(C_Capa_de_Acceso_a_Datos, req.user.usuario_id, episodio.paciente_id))) {
         return res.status(404).json({ error: 'EPISODIO_NO_ENCONTRADO', mensaje: 'El episodio clínico no existe o no tienes acceso a él.' });
       }
     }
-    const [derivaciones] = await pool.query(
+    const [derivaciones] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT di.derivacion_interna_id, di.estado, di.justificacion, di.momento_creacion,
               di.momento_respuesta, di.comentario_respuesta, di.momento_cierre,
               CONCAT(ud.nombres, ' ', ud.apellido_paterno) AS profesional_destino,
@@ -156,6 +165,7 @@ exports.delEpisodio = async (req, res) => {
 // POST /clinica/episodio/:episodio_id/derivaciones
 // { profesional_destino_id, justificacion }
 // ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 exports.crear = async (req, res) => {
   const destinoId = Number(req.body?.profesional_destino_id);
   const justificacion = String(req.body?.justificacion || '').trim();
@@ -192,7 +202,7 @@ exports.crear = async (req, res) => {
     if (destinoId === propio.profesional_id) {
       return res.status(400).json({ error: 'DESTINO_INVALIDO', mensaje: 'No puedes derivarte un episodio a ti mismo.' });
     }
-    const [[destino]] = await pool.query(
+    const [[destino]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT pr.profesional_id, u.usuario_id, es.nombre AS especialidad,
               CONCAT(u.nombres, ' ', u.apellido_paterno) AS nombre
          FROM Profesional pr
@@ -206,7 +216,7 @@ exports.crear = async (req, res) => {
     }
     // Una sola derivación pendiente por episodio: si dos receptores aceptaran,
     // el episodio no puede ser de los dos.
-    const [[pendiente]] = await pool.query(
+    const [[pendiente]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT CONCAT(u.nombres, ' ', u.apellido_paterno) AS nombre
          FROM Derivacion_Interna di
          JOIN Profesional pr ON pr.profesional_id = di.profesional_destino_id
@@ -223,7 +233,7 @@ exports.crear = async (req, res) => {
     }
 
     // Excepción 4: el enlace y su traza se escriben juntos o no se escribe nada.
-    conexion = await pool.getConnection();
+    conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
     await conexion.beginTransaction();
     const [creada] = await conexion.query(
       `INSERT INTO Derivacion_Interna
@@ -241,14 +251,15 @@ exports.crear = async (req, res) => {
     });
     await conexion.commit();
 
-    const [[paciente]] = await pool.query(
+    const [[paciente]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT CONCAT(u.nombres, ' ', u.apellido_paterno) AS nombre
          FROM Paciente p JOIN Usuario u ON u.usuario_id = p.usuario_id
         WHERE p.paciente_id = ? LIMIT 1`,
       [episodio.paciente_id]
     );
-    await notificarUsuario(
-      pool,
+    // CU52: aviso al profesional que recibe
+    await C_Despachador_Notificaciones.notificarUsuario(
+      C_Capa_de_Acceso_a_Datos,
       destino.usuario_id,
       'DERIVACION_RECIBIDA',
       `${propio.nombre} te derivó a ${paciente?.nombre || 'un paciente'}: "${justificacion}". Revisa su ficha y acepta para quedar a cargo del episodio.`,
@@ -274,9 +285,10 @@ exports.crear = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/derivaciones/recibidas — bandeja del profesional derivado
 // ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 exports.recibidas = async (req, res) => {
   try {
-    const [derivaciones] = await pool.query(
+    const [derivaciones] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT di.derivacion_interna_id, di.estado, di.justificacion, di.momento_creacion,
               di.momento_respuesta, di.comentario_respuesta,
               ec.episodio_clinico_id, ec.motivo_consulta, ec.estado AS estado_episodio,
@@ -307,9 +319,9 @@ exports.recibidas = async (req, res) => {
   }
 };
 
-/** Derivación con sus participantes (para responder o cerrar). */
+/** CU65 — Derivación con sus participantes (para responder o cerrar). */
 async function derivacionCompleta(id) {
-  const [[fila]] = await pool.query(
+  const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT di.*, ud.usuario_id AS usuario_destino, uo.usuario_id AS usuario_origen,
             CONCAT(ud.nombres, ' ', ud.apellido_paterno) AS nombre_destino,
             CONCAT(up.nombres, ' ', up.apellido_paterno) AS paciente, ec.paciente_id
@@ -330,6 +342,7 @@ async function derivacionCompleta(id) {
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /clinica/derivaciones/:id/respuesta { accion: ACEPTAR|RECHAZAR, comentario? }
 // ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 exports.responder = async (req, res) => {
   const accion = String(req.body?.accion || '').toUpperCase();
   const comentario = String(req.body?.comentario || '').trim().slice(0, 255) || null;
@@ -355,7 +368,7 @@ exports.responder = async (req, res) => {
     }
     const nuevoEstado = accion === 'ACEPTAR' ? 'ACEPTADA' : 'RECHAZADA';
     let citasDesvinculadas = 0;
-    conexion = await pool.getConnection();
+    conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
     await conexion.beginTransaction();
     const [resultado] = await conexion.query(
       `UPDATE Derivacion_Interna
@@ -404,8 +417,9 @@ exports.responder = async (req, res) => {
     });
     await conexion.commit();
 
-    await notificarUsuario(
-      pool,
+    // CU52: aviso a quien derivó
+    await C_Despachador_Notificaciones.notificarUsuario(
+      C_Capa_de_Acceso_a_Datos,
       derivacion.usuario_origen,
       'DERIVACION_RESPONDIDA',
       nuevoEstado === 'ACEPTADA'
@@ -434,6 +448,7 @@ exports.responder = async (req, res) => {
 // POST /clinica/derivaciones/:id/cierre — quien derivó la cancela mientras está
 // pendiente. Una derivación aceptada ya traspasó el episodio: no se deshace.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 exports.cerrar = async (req, res) => {
   try {
     const derivacion = await derivacionCompleta(req.params.id);
@@ -448,11 +463,11 @@ exports.cerrar = async (req, res) => {
           : `Esta derivación ya está ${derivacion.estado.toLowerCase()}.`,
       });
     }
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Derivacion_Interna SET estado = 'CERRADA', momento_cierre = NOW() WHERE derivacion_interna_id = ?`,
       [derivacion.derivacion_interna_id]
     );
-    await auditar(pool, req, 'DERIVACION_INTERNA_CERRADA', {
+    await auditar(C_Capa_de_Acceso_a_Datos, req, 'DERIVACION_INTERNA_CERRADA', {
       derivacion_interna_id: derivacion.derivacion_interna_id,
       episodio_clinico_id: derivacion.episodio_clinico_id,
       acceso: 'REVOCADO',

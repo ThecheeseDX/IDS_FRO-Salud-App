@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Eventos críticos"
+ * Casos de uso: CU62.
+ */
 // Ruta: fro-vista/src/screens/Admin/EventosCriticosScreen.js
 //
 // CU62 — Bandeja de eventos críticos escalados a supervisión. El administrador
@@ -45,6 +49,7 @@ export default function EventosCriticosScreen({ navigation }) {
   const filtroRef = useRef(filtro);
   filtroRef.current = filtro;
 
+  // CU62 — Escalando Automáticamente Eventos Críticos a Supervisión: cargar la bandeja
   const cargar = useCallback(async ({ silencioso = false, refresco = false } = {}) => {
     if (refresco) setRefrescando(true);
     else if (!silencioso) setCargando(true);
@@ -90,6 +95,7 @@ export default function EventosCriticosScreen({ navigation }) {
     };
   }, [navigation, cargar]);
 
+  // CU62 — registrar el acuse de recibo del supervisor
   const acusar = async (evento, intento = 1) => {
     setAcusando((previos) => ({ ...previos, [evento.evento_critico_id]: intento === 1 ? 'enviando' : 'reintentando' }));
     try {

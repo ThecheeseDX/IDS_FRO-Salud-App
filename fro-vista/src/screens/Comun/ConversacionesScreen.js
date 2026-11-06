@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mensajes"
+ * Casos de uso: CU53, CU35.
+ */
 // Ruta: fro-vista/src/screens/Comun/ConversacionesScreen.js
 //
 // CU53 — Bandeja de conversaciones. Hay un solo chat por pareja paciente–
@@ -31,6 +35,7 @@ export default function ConversacionesScreen({ navigation }) {
   const [refrescando, setRefrescando] = useState(false);
   const [error, setError] = useState(false);
 
+  // CU53 — Comunicando mediante mensajería clínica cifrada: cargar la bandeja de chats
   const cargar = useCallback(async (esRefresco = false) => {
     if (esRefresco) setRefrescando(true);
     else setCargando(true);
@@ -80,6 +85,7 @@ export default function ConversacionesScreen({ navigation }) {
         <RefreshControl refreshing={refrescando} onRefresh={() => cargar(true)} colors={[colores.primario]} />
       }
     >
+      {/* CU35: acceso del paciente a sus documentos */}
       {esPaciente && (
         <TouchableOpacity
           style={estilos.botonDocumentos}

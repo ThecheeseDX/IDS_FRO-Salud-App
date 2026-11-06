@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Perfil del profesional"
+ * Casos de uso: CU10, CU14, CU58.
+ */
 // Ruta: fro-vista/src/screens/Paciente/PerfilProfesionalScreen.js
 //
 // CU10/CU14 — Perfil público del profesional, de solo lectura: foto,
@@ -43,6 +47,7 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
     if (nombre) navigation.setOptions?.({ title: nombre });
   }, [navigation, nombre]);
 
+  // CU10, CU14 — carga el perfil público del profesional
   const cargar = useCallback(async () => {
     setError(false);
     setPerfil(null);
@@ -79,6 +84,7 @@ export default function PerfilProfesionalScreen({ route, navigation }) {
   const promedio = Number(perfil.calificacion_promedio || 0);
   const pildoras = PILDORAS_MODALIDAD[perfil.tipo_sede] || [];
 
+  // CU58: abre las valoraciones publicadas del profesional
   const verEvaluaciones = () =>
     navigation.navigate('ResenasProfesional', { profesionalId, nombre: nombreCompleto });
 

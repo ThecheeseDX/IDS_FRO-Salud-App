@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Generador_Informes (puerta de entrada: src/componentes/C_Generador_Informes.js)
+ * Casos de uso: CU28.
+ *
  * Ficha clínica completa del paciente en PDF, para que la descargue él mismo.
  *
  * Reúne lo que el paciente puede ver de su historia: datos personales, la
@@ -7,7 +10,7 @@
  * repositorio. Usa el mismo estilo del informe de alta (CU37).
  */
 
-const pool = require('../../config/database');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
 
 const AZUL = '#003B4D';
 const CAFE = '#8B7140';
@@ -15,6 +18,7 @@ const TEXTO = '#23201C';
 const SUAVE = '#5D564D';
 const MARGEN = 48;
 
+// Apoyo común: fecha DD/MM/AAAA (con hora opcional) para el PDF
 function fechaLegible(valor, conHora = false) {
   if (!valor) return '—';
   const d = new Date(valor);
@@ -31,9 +35,10 @@ function textoDias(diasSemana) {
   return dias.length ? dias.map((n) => DIAS[n]).join(', ') : null;
 }
 
+// CU28 — Consolidando historial en ficha clínica electrónica
 /** Todo lo que va en la ficha, en pocas consultas. */
 async function datosFicha(pacienteId) {
-  const [[paciente]] = await pool.query(
+  const [[paciente]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT p.paciente_id, p.sexo_clinico, p.calle, p.numero_calle, p.departamento,
             u.rut, u.email, CONCAT_WS(' ', u.nombres, u.apellido_paterno, u.apellido_materno) AS nombre,
             co.nombre AS comuna,
@@ -48,19 +53,19 @@ async function datosFicha(pacienteId) {
   );
   if (!paciente) return null;
 
-  const [[ficha]] = await pool.query(
+  const [[ficha]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT ficha_clinica_id, anamnesis, plantilla_especialidad, ultima_actualizacion
        FROM Ficha_Clinica WHERE paciente_id = ? LIMIT 1`,
     [pacienteId]
   );
   let alergias = [], quirurgicos = [], patologicos = [];
   if (ficha) {
-    [alergias] = await pool.query(`SELECT alergia AS t FROM Ficha_Alergia WHERE ficha_clinica_id = ?`, [ficha.ficha_clinica_id]);
-    [quirurgicos] = await pool.query(`SELECT antecedente AS t FROM Ficha_Antecedente_Quirurgico WHERE ficha_clinica_id = ?`, [ficha.ficha_clinica_id]);
-    [patologicos] = await pool.query(`SELECT antecedente AS t FROM Ficha_Antecedente_Patologico WHERE ficha_clinica_id = ?`, [ficha.ficha_clinica_id]);
+    [alergias] = await C_Capa_de_Acceso_a_Datos.query(`SELECT alergia AS t FROM Ficha_Alergia WHERE ficha_clinica_id = ?`, [ficha.ficha_clinica_id]);
+    [quirurgicos] = await C_Capa_de_Acceso_a_Datos.query(`SELECT antecedente AS t FROM Ficha_Antecedente_Quirurgico WHERE ficha_clinica_id = ?`, [ficha.ficha_clinica_id]);
+    [patologicos] = await C_Capa_de_Acceso_a_Datos.query(`SELECT antecedente AS t FROM Ficha_Antecedente_Patologico WHERE ficha_clinica_id = ?`, [ficha.ficha_clinica_id]);
   }
 
-  const [episodios] = await pool.query(
+  const [episodios] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT ec.episodio_clinico_id, ec.motivo_consulta, COALESCE(ec.estado, 'ABIERTO') AS estado,
             ec.fecha_inicio, ec.fecha_terminado,
             CONCAT_WS(' ', u.nombres, u.apellido_paterno) AS profesional, es.nombre AS especialidad
@@ -75,13 +80,13 @@ async function datosFicha(pacienteId) {
   const ids = episodios.map((e) => e.episodio_clinico_id);
   let metas = [], evoluciones = [], pautas = [], ejercicios = [];
   if (ids.length > 0) {
-    [metas] = await pool.query(
+    [metas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT episodio_clinico_id, descripcion, meta_valor, valor_actual, unidad
          FROM Objetivo_Terapeutico WHERE episodio_clinico_id IN (?) ORDER BY objetivo_terapeutico_id`,
       [ids]
     );
     // Solo las sesiones firmadas (inalterables): un borrador no es parte de la ficha.
-    [evoluciones] = await pool.query(
+    [evoluciones] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT ev.episodio_clinico_id, ev.hora_firma_digital, ev.tecnicas_aplicadas, ev.respuesta_fisiologica,
               ev.porcentaje_objetivo, CONCAT_WS(' ', u.nombres, u.apellido_paterno) AS profesional
          FROM Evolucion_Clinica ev
@@ -91,14 +96,14 @@ async function datosFicha(pacienteId) {
         ORDER BY ev.hora_firma_digital DESC`,
       [ids]
     );
-    [pautas] = await pool.query(
+    [pautas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT pauta_tratamiento_id, episodio_clinico_id, nombre, fecha_inicio, fecha_expiracion
          FROM Pauta_Tratamiento WHERE episodio_clinico_id IN (?) ORDER BY fecha_inicio DESC`,
       [ids]
     );
     const pautaIds = pautas.map((p) => p.pauta_tratamiento_id);
     if (pautaIds.length > 0) {
-      [ejercicios] = await pool.query(
+      [ejercicios] = await C_Capa_de_Acceso_a_Datos.query(
         `SELECT pauta_tratamiento_id, nombre_ejercicio, series, repeticiones, frecuencia, dias_semana
            FROM Pauta_Ejercicio WHERE pauta_tratamiento_id IN (?) ORDER BY pauta_ejercicio_id`,
         [pautaIds]
@@ -106,7 +111,7 @@ async function datosFicha(pacienteId) {
     }
   }
 
-  const [documentos] = await pool.query(
+  const [documentos] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT nombre_original, categoria, fecha_carga FROM Documento_Clinico
       WHERE paciente_id = ? ORDER BY fecha_carga DESC`,
     [pacienteId]
@@ -115,6 +120,7 @@ async function datosFicha(pacienteId) {
   return { paciente, ficha, alergias, quirurgicos, patologicos, episodios, metas, evoluciones, pautas, ejercicios, documentos };
 }
 
+// CU28 — Consolidando historial en ficha clínica electrónica
 /** Arma el PDF y lo entrega como Buffer. */
 function generarPdfFicha(datos) {
   const PDFDocument = require('pdfkit');

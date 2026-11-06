@@ -1,3 +1,10 @@
+/**
+ * Componente: Cliente Móvil — Vista "Parámetros Globales"
+ * Casos de uso: CU59, CU16.
+ *
+ * El administrador edita los parámetros globales del sistema y bloquea la
+ * agenda de un profesional por un rango de fechas.
+ */
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
@@ -71,6 +78,7 @@ export default function ParametrosScreen({ navigation }) {
       }
   };
 
+  // CU59 — Gestionando Parámetros Globales del Sistema: leer los parámetros
   const cargarParametros = async () => {
     setIsLoading(true);
     setErrorRed(false);
@@ -104,6 +112,7 @@ export default function ParametrosScreen({ navigation }) {
     }
   };
 
+  // CU59 — guardar el nuevo valor, con control de concurrencia
   const guardarCambio = async (parametro) => {
     setIsSaving(true);
     setErrorExcepcion(null); 
@@ -145,6 +154,7 @@ export default function ParametrosScreen({ navigation }) {
     }
   };
 
+// CU16 — Restringiendo disponibilidad administrativa
 const aplicarRestriccion = async () => {
     if (!inicio || !fin) return setAviso({ tono: 'error', titulo: "Error", mensaje: "Complete fechas (DD/MM/AAAA)" });
 
@@ -253,6 +263,7 @@ const aplicarRestriccion = async () => {
               </View>
             );
           })}
+          {/* CU16: bloqueo de la agenda de un profesional */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Gestión de Disponibilidad</Text>
 

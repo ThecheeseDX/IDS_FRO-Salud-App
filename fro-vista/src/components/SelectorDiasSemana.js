@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU47; también lo usa CU48.
+ */
 // Ruta: fro-vista/src/components/SelectorDiasSemana.js
 //
 // Fila de siete botones L M X J V S D para elegir en qué días de la semana

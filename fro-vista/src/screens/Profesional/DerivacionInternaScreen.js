@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Derivación interna"
+ * Casos de uso: CU65, CU60.
+ */
 // Ruta: fro-vista/src/screens/Profesional/DerivacionInternaScreen.js
 //
 // CU65 — Derivar un episodio a otra especialidad. Se abre desde la cabecera de
@@ -39,6 +43,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
   const [aviso, setAviso] = useState(null);
   const [confirmacion, setConfirmacion] = useState(null);
 
+  // CU65 — cargar especialidades disponibles y derivaciones del episodio
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -68,6 +73,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
 
   const especialidad = especialidades.find((e) => e.especialidad_id === especialidadId);
 
+  // CU65 — elegir la especialidad de destino
   const elegirEspecialidad = (e) => {
     // Excepción 2: la especialidad existe pero nadie puede recibir la derivación.
     if (e.profesionales.length === 0) {
@@ -84,6 +90,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
     setErrores((previos) => ({ ...previos, destino: null }));
   };
 
+  // CU65 — Registrando y Siguiendo Derivaciones Internas
   const enviar = async () => {
     const texto = justificacion.trim();
     const nuevos = {};
@@ -118,6 +125,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
     }
   };
 
+  // CU65 — cancelar una derivación pendiente
   const cerrar = async (d) => {
     try {
       const datos = await cerrarDerivacion(d.derivacion_interna_id);
@@ -145,6 +153,7 @@ export default function DerivacionInternaScreen({ route, navigation }) {
               {error.inalterable ? 'Episodio inalterable' : 'Sin especialidades disponibles'}
             </Text>
             <Text style={estilos.bloqueoTexto}>{error.mensaje}</Text>
+            {/* CU60: sin especialidades, se ofrece abrir un ticket de soporte */}
             {error.sinEspecialidades && (
               <TouchableOpacity
                 style={estilos.boton}

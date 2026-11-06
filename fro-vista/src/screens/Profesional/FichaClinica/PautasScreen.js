@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Pautas de ejercicio" (Ficha Clínica)
+ * Casos de uso: CU46, CU47, CU49, CU35.
+ */
 // Ruta: fro-vista/src/screens/Profesional/FichaClinica/PautasScreen.js
 //
 // Pestaña de pautas de ejercicio dentro de la Ficha Clínica.
@@ -47,6 +51,7 @@ function textoFrecuencia(ejercicio) {
 }
 
 /**
+ * CU47 — Prescribiendo pautas de ejercicio técnico
  * Asocia cada ejercicio del formulario con el id que le dio el servidor.
  * Se empareja por nombre; si hay dos con el mismo nombre se usan en orden,
  * y como respaldo se toma el de la misma posición (el servidor los crea en
@@ -107,6 +112,7 @@ export default function PautasScreen({ route, navigation }) {
   const [guardando, setGuardando] = useState(false);
 
   /**
+   * CU46, CU47 — cargar las pautas del paciente y la biblioteca de material
    * Carga pautas y biblioteca por separado. Antes iban en un Promise.all con
    * un catch vacío: si cualquiera de las dos fallaba, la pantalla completa
    * mostraba "Servicio no disponible" y el motivo real se perdía, lo que hacía
@@ -156,6 +162,7 @@ export default function PautasScreen({ route, navigation }) {
     cargarTodo();
   }, []);
 
+  // CU47 — recargar las pautas del paciente
   // Recarga solo la lista de pautas, sin la pantalla de carga: se usa tras
   // agregar o quitar material para no perder la posición ni el formulario.
   const recargarPautas = async () => {
@@ -167,8 +174,9 @@ export default function PautasScreen({ route, navigation }) {
     }
   };
 
-  // ── Material de apoyo del ejercicio ────────────────────────────────────────
+  // ── CU47: Material de apoyo del ejercicio ──────────────────────────────────
   /**
+   * CU47 — subir el material de apoyo de cada ejercicio
    * Sube los archivos uno por uno (envios: [{ pautaEjercicioId, archivo }]) y
    * devuelve los que fallaron con su motivo. Un archivo que falla no detiene
    * a los demás.
@@ -202,7 +210,7 @@ export default function PautasScreen({ route, navigation }) {
       ? `Subiendo material ${progreso.actual} de ${progreso.total}…`
       : '';
 
-  // Agregar material a un ejercicio de una pauta ya prescrita.
+  // CU47 — Agregar material a un ejercicio de una pauta ya prescrita.
   const agregarMaterialExistente = async (ejercicio, archivos) => {
     if (progreso) return;
     const fallidos = await subirMateriales(
@@ -226,6 +234,7 @@ export default function PautasScreen({ route, navigation }) {
     }
   };
 
+  // CU47 — quitar un material de apoyo del ejercicio
   const eliminarMaterial = async () => {
     const material = porEliminar;
     setPorEliminar(null);
@@ -246,6 +255,7 @@ export default function PautasScreen({ route, navigation }) {
     }
   };
 
+  // CU35 — Visualizando archivos con visor embebido
   const abrirMaterial = (material) => {
     navigation?.navigate('VisorDocumento', {
       materialId: material.pauta_ejercicio_material_id,
@@ -254,6 +264,7 @@ export default function PautasScreen({ route, navigation }) {
   };
 
   // ── CU46: buscador de la biblioteca ────────────────────────────────────────
+  // CU46 — Seleccionando material en biblioteca centralizada
   const ejecutarBusqueda = async () => {
     setBuscandoBiblioteca(true);
     try {
@@ -317,6 +328,7 @@ export default function PautasScreen({ route, navigation }) {
     setEjercicios(ejercicios.filter((_, i) => i !== indice));
   };
 
+  // CU47 — Prescribiendo pautas de ejercicio técnico
   const guardarPauta = async () => {
     // CU47 — Excepción 4: sin episodio clínico no hay vinculación.
     if (!episodioId) {
@@ -465,7 +477,7 @@ export default function PautasScreen({ route, navigation }) {
           ))}
       </View>
 
-      {/* ── Pautas existentes ── */}
+      {/* ── CU47, CU49: Pautas existentes con su vigencia ── */}
       <Text style={estilos.seccion}>Pautas del paciente</Text>
       {pautas.length === 0 ? (
         <Text style={estilos.sinResultados}>Aún no hay pautas prescritas.</Text>
@@ -493,7 +505,7 @@ export default function PautasScreen({ route, navigation }) {
                       {ejercicio.material_nombre ? `  📚 ${ejercicio.material_nombre}` : ''}
                       {`  ✅ ${ejercicio.dias_cumplidos} día(s)`}
                     </Text>
-                    {/* Material propio del ejercicio. En pautas expiradas el
+                    {/* Material propio del ejercicio. CU49: en pautas expiradas el
                         servidor ya no lo entrega y no se puede tocar. */}
                     <MaterialApoyo
                       materiales={ejercicio.material_apoyo || []}
@@ -629,6 +641,7 @@ export default function PautasScreen({ route, navigation }) {
                   : 'Marca días solo si el ejercicio va en días fijos.'}
               </Text>
 
+              {/* CU46: material de la biblioteca asociado al ejercicio */}
               <Text style={estilos.label}>Material de la biblioteca</Text>
               <View style={estilos.selector}>
                 <Picker

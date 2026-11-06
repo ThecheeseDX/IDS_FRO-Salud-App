@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Despachador_Notificaciones (puerta de entrada: src/componentes/C_Despachador_Notificaciones.js)
+ * Casos de uso: CU52.
+ *
  * CU52 — Despacho multicanal de avisos.
  *
  * Un solo punto por el que salen TODAS las notificaciones del sistema. Antes
@@ -18,12 +21,14 @@
  * esfuerzo" y los errores se registran, nunca se propagan (Excepciones 1 y 3).
  */
 
-const { enviarCorreo } = require('./otpService');
+const C_API_Adapter = require('../../componentes/C_API_Adapter');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
 
 // Endpoint público de Expo. Funciona con cualquier token ExponentPushToken,
 // venga de una build propia o de Expo Go en plataformas donde siga habilitado.
 const URL_EXPO_PUSH = 'https://exp.host/--/api/v2/push/send';
 
+// CU52 — Emitiendo notificaciones multicanal
 // Tipos de aviso del sistema. El título es el que se ve en el centro de
 // notificaciones y en la alerta del teléfono; 'pantalla' dice adónde lleva el
 // toque (Excepción 3/4 del CU52: la redirección profunda al módulo).
@@ -56,6 +61,7 @@ const TIPOS = {
   BONO_PROVISORIO:        { titulo: 'Bono registrado en contingencia', pantalla: 'Pagos' },
 };
 
+// CU52 — Emitiendo notificaciones multicanal
 /** Datos de contacto y preferencias del destinatario, en una sola consulta. */
 async function destinatario(conexion, usuario_id) {
   const [filas] = await conexion.query(
@@ -70,6 +76,7 @@ async function destinatario(conexion, usuario_id) {
   return filas[0] || null;
 }
 
+// CU52 — Emitiendo notificaciones multicanal
 async function tokensDe(conexion, usuario_id) {
   const [filas] = await conexion.query(
     `SELECT token FROM Dispositivo_Push WHERE usuario_id = ? AND activo = TRUE`,
@@ -79,6 +86,7 @@ async function tokensDe(conexion, usuario_id) {
 }
 
 /**
+ * CU52 — Emitiendo notificaciones multicanal
  * Envía a los tokens indicados y desactiva los que Expo declara muertos.
  *
  * Hoy Expo Go en Android no entrega push remoto (Google lo bloqueó desde el
@@ -124,6 +132,7 @@ async function enviarPush(pool, tokens, { titulo, contenido, datos }) {
   return { enviados: resultados.filter((r) => r?.status === 'ok').length };
 }
 
+// CU52 — Emitiendo notificaciones multicanal
 /** Plantilla sobria para los avisos que salen por correo. */
 function cuerpoCorreo({ titulo, contenido, nombre, accion }) {
   return `
@@ -142,6 +151,7 @@ function cuerpoCorreo({ titulo, contenido, nombre, accion }) {
 }
 
 /**
+ * CU52 — Emitiendo notificaciones multicanal
  * Despacha un aviso por todos los canales que correspondan.
  *
  * @param {object} conexion  pool o conexión en transacción (la fila del centro
@@ -179,12 +189,11 @@ async function despachar(conexion, aviso) {
 
   // 2. Push y correo salen fuera de la transacción y sin bloquearla: una
   //    llamada de red lenta no puede dejar una cita a medio confirmar.
-  const pool = require('../../config/database');
 
   (async () => {
     let contacto = null;
     try {
-      contacto = await destinatario(pool, usuario_id);
+      contacto = await destinatario(C_Capa_de_Acceso_a_Datos, usuario_id);
     } catch (error) {
       console.error('[despachar] sin datos del destinatario:', error.message);
       return;
@@ -195,8 +204,8 @@ async function despachar(conexion, aviso) {
 
     if (contacto.acepta_push) {
       try {
-        const tokens = await tokensDe(pool, usuario_id);
-        const { enviados } = await enviarPush(pool, tokens, { titulo, contenido, datos });
+        const tokens = await tokensDe(C_Capa_de_Acceso_a_Datos, usuario_id);
+        const { enviados } = await enviarPush(C_Capa_de_Acceso_a_Datos, tokens, { titulo, contenido, datos });
         if (enviados > 0) usados.push('PUSH');
       } catch (error) {
         // Excepción 1/3 del CU52: la latencia o la falta de red no rompen nada;
@@ -207,7 +216,7 @@ async function despachar(conexion, aviso) {
 
     if (aviso.correo && contacto.acepta_email && contacto.email) {
       try {
-        await enviarCorreo(
+        await C_API_Adapter.enviarCorreo(
           contacto.email,
           aviso.correo.asunto || titulo,
           cuerpoCorreo({
@@ -225,7 +234,7 @@ async function despachar(conexion, aviso) {
 
     // Excepción 2 del CU52: queda escrito por dónde salió realmente el aviso.
     try {
-      await pool.query(
+      await C_Capa_de_Acceso_a_Datos.query(
         `INSERT INTO Bitacora_Auditoria
             (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
          VALUES ('DESPACHO_NOTIFICACION', 'Notificacion', NULL, ?, ?)`,

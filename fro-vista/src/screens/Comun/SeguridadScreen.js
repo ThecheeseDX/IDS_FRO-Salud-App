@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Seguridad de la Cuenta"
+ * Casos de uso: CU07, CU08, CU09, CU58, CU60.
+ */
 // Ruta: fro-vista/src/screens/Comun/SeguridadScreen.js
 //
 // Panel de seguridad de la cuenta, común a los tres roles:
@@ -50,6 +54,7 @@ function SeccionesSeguridad({ contrasenaPrimero = false }) {
   const [privacidad, setPrivacidad] = useState(null);
   const [guardandoPrivacidad, setGuardandoPrivacidad] = useState(false);
 
+  // CU08 — Gestionando sesiones y tokens de acceso: listar las sesiones activas
   const cargarSesiones = async () => {
     setCargandoSesiones(true);
     setErrorSesiones(false);
@@ -64,6 +69,7 @@ function SeccionesSeguridad({ contrasenaPrimero = false }) {
     }
   };
 
+  // CU09 — Configurando privacidad de datos de contacto: leer las preferencias
   const cargarPrivacidad = async () => {
     if (!esPaciente) return;
     try {
@@ -151,6 +157,7 @@ function SeccionesSeguridad({ contrasenaPrimero = false }) {
       await apiClient.put('/auth/privacidad', {
         mostrar_direccion: nueva.mostrar_direccion,
         mostrar_telefono: nueva.mostrar_telefono,
+        // CU58: nombre o "Anónimo" bajo las reseñas publicadas
         nombre_en_resenas: nueva.nombre_en_resenas !== false,
       });
     } catch (err) {
@@ -417,6 +424,7 @@ export function PieDePerfil({ navigation, tituloSeguridad, alInicio = false }) {
         <Text style={estilos.menuChevron}>›</Text>
       </TouchableOpacity>
 
+      {/* CU08: cerrar la sesión de este dispositivo */}
       <TouchableOpacity
         style={estilos.botonSalir}
         onPress={confirmarCierreSesion}

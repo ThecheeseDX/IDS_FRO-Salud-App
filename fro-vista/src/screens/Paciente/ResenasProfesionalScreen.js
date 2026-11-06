@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Evaluaciones del profesional"
+ * Casos de uso: CU58, CU56.
+ */
 // Ruta: fro-vista/src/screens/Paciente/ResenasProfesionalScreen.js
 //
 // CU58 — El detalle detrás de la calificación: promedio, cantidad de
@@ -26,6 +30,7 @@ export default function ResenasProfesionalScreen({ route, navigation }) {
     navigation.setOptions?.({ title: nombre || 'Evaluaciones' });
   }, [navigation, nombre]);
 
+  // CU58 — Calculando y visualizando calificación profesional
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(false);

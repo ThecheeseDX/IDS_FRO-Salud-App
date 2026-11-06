@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU53, CU35.
+ */
 // Ruta: fro-vista/src/components/AdjuntoChat.js
 //
 // Archivo adjunto dentro de una burbuja del chat clínico (CU53).

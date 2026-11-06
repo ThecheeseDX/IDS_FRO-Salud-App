@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Pagos y bonos"
+ * Casos de uso: CU66, CU67, CU72, CU74.
+ */
 // Ruta: fro-vista/src/screens/Paciente/PagosScreen.js
 //
 // CU66: registro y validación de bonos de cobertura por cita.
@@ -63,6 +67,7 @@ export default function PagosScreen() {
   const [metodoPlan, setMetodoPlan] = useState('TARJETA_OK');
   const [comprandoPlan, setComprandoPlan] = useState(false);
 
+  // CU67: resumen financiero del paciente (citas, bonos, planes y devoluciones)
   const cargar = useCallback(async (esRefresco = false) => {
     if (esRefresco) setRefrescando(true);
     else setCargando(true);
@@ -97,6 +102,7 @@ export default function PagosScreen() {
 
     setProcesandoId(cita.cita_id);
     try {
+      // CU68: el servidor valida el folio con el financiador externo
       const { data } = await apiClient.post(`/pagos/citas/${cita.cita_id}/bono`, {
         folio: folioLimpio,
         financiador_id: Number(financiadorId),
@@ -377,6 +383,7 @@ export default function PagosScreen() {
         ayuda="Citas pagadas ya realizadas, devoluciones y planes terminados"
       >
         {citasHistorial.map(renderCitaPago)}
+        {/* CU74: devoluciones por cancelación con anticipación */}
         {resumen?.devoluciones?.length > 0 ? (
           <>
             <Text style={estilos.subseccion}>Devoluciones</Text>

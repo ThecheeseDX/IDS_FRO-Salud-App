@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: apoyo común, usado por CU38.
+ */
 // Ruta: fro-vista/src/components/CalendarioMensual.js
 //
 // Grilla de un mes, de lunes a domingo, con cuántas citas tiene cada día.

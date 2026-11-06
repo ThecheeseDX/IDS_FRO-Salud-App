@@ -1,3 +1,12 @@
+/**
+ * Componente: Cliente Móvil — Vista "Historial del paciente" (Ficha Clínica)
+ * Casos de uso: CU28, CU20, CU76, CU18, CU22, CU73, CU38, CU39, CU40, CU41,
+ * CU42, CU43, CU55, CU30, CU31, CU78, CU25, CU44, CU50, CU71, CU72, CU09,
+ * CU33, CU35, CU29, CU32.
+ *
+ * Historial consolidado del paciente: sus citas con las acciones de la
+ * atención, episodios, evoluciones y reportes que el profesional lee antes de atender.
+ */
 // Ruta: fro-vista/src/screens/Profesional/FichaClinica/HistorialPacienteScreen.js
 
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
@@ -36,6 +45,7 @@ import SeccionHistorial from '../../../components/SeccionHistorial';
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion';
 
 /**
+ * CU09 — Configurando privacidad de datos de contacto
  * Arma la dirección del paciente para mostrarla en pantalla. El servidor
  * devuelve los campos en NULL cuando el paciente ocultó su dirección (CU09),
  * y en ese caso hay que explicarlo en vez de dejar el dato en blanco.
@@ -73,8 +83,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [seguimiento, setSeguimiento] = useState([]);
   // CU44: índice de adherencia del paciente, calculado por el servidor.
   const [adherencia, setAdherencia] = useState(null);
-  // CU55: al cerrar la atención se le pasa el teléfono al paciente para que
-  // califique en el momento; si prefiere hacerlo después, lo tiene en Mis Citas.
+  // CU33: aviso cuando el repositorio multimedia no está disponible.
   const [mensajeMultimedia, setMensajeMultimedia] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,6 +113,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const [marcaManual, setMarcaManual] = useState(null);
   const [verAntiguas, setVerAntiguas] = useState(false);
 
+  // CU28 — Consolidando historial en ficha clínica electrónica
   const cargarHistorial = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -148,6 +158,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   // ── CU31: correcciones versionadas sobre evoluciones cerradas ──────────────
   // El original nunca se toca: cada aclaración post-firma queda como una
   // versión indexada aparte, y el servidor valida autoría y tope de versiones.
+  // CU31 — ver u ocultar las versiones de una evolución
   const alternarVersiones = async (evolucionId) => {
     if (versionesPorEvolucion[evolucionId]) {
       setVersionesPorEvolucion((previas) => {
@@ -168,6 +179,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
+  // CU31 — Gestionando versionado de correcciones auditadas
   const crearCorreccion = async (evolucionId, texto) => {
     setCorreccionEvolucion(null);
     try {
@@ -190,6 +202,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
+  // CU38 Exc.2 — registrar a mano y con justificación la marca de inicio o término
   const enviarMarcaManual = async () => {
     if (!marcaManual?.fechaHora?.trim() || !marcaManual?.justificacion?.trim()) {
       setAviso({
@@ -224,6 +237,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   };
 
   /**
+   * CU38, CU39 — iniciar o finalizar la atención con su marca horaria y ubicación
    * Iniciar y finalizar una atención no son un simple cambio de estado: además
    * dejan la marca horaria auditable de la prestación (CU38). Por eso usan los
    * mismos servicios que la pantalla de Marcas Temporales, en vez de la
@@ -256,7 +270,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     } catch (err) {
       const detalle = err.response?.data;
 
-      // La atención comienza antes de su bloque horario: queda auditado.
+      // CU38 Exc.1: la atención comienza antes de su bloque horario: queda auditado.
       if (detalle?.error === 'INICIO_ANTICIPADO') {
         setConfirmacion({
           tono: 'peligro',
@@ -282,6 +296,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
+  // CU38, CU39 — aviso de inicio, con la advertencia de presencialidad si la hay
   const avisarInicio = (data) => {
     setAviso({
       tono: data.presencialidad && !data.presencialidad.dentro_del_radio ? 'alerta' : 'ok',
@@ -293,6 +308,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   };
 
   /**
+   * CU38, CU41, CU76 — resumen del término: duración, sesión descontada y certificación
    * Corrección Inc 4 (punto 7): al finalizar se confirma que la atención se
    * realizó y, si el registro clínico aún no está firmado, se ofrece
    * documentarlo ahora o dejarlo para el final de la jornada.
@@ -311,10 +327,12 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         ? `\n\n⚠️ No se pudo validar la presencialidad:\n${textoFactores((cert.factores || []).filter((f) => !f.ok))}\nCierra la sesión con una justificación desde "Validar sesión".` +
           (cert.administradores_avisados ? ' El caso también se informó a administración.' : '')
         : '';
+    // CU55: el servidor ya avisó al paciente para que califique la atención.
     const resumen =
       `Duración total: ${data.duracion_minutos} minutos.${detalleInventario}` +
       `${detalleCertificacion}\n\nLe enviamos al paciente un aviso para que califique la atención.`;
 
+    // CU40: documentar la sesión ahora o al final de la jornada.
     if (data.documentacion_pendiente && data.episodio_clinico_id) {
       setConfirmacion({
         titulo: 'Atención realizada',
@@ -338,6 +356,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     setAviso({ tono: cert?.requiere_cierre_manual ? 'alerta' : 'ok', titulo: 'Atención realizada', mensaje: resumen });
   };
 
+  // CU20 — Transicionando máquina de estados de cita
   const modificarEstadoCita = async (citaId, estadoActual, evento, motivo) => {
     // Exclusión local preventiva para estados terminales
     const deEstado = (estadoActual || '').toUpperCase();
@@ -347,12 +366,12 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       return;
     }
 
-    // Estos dos eventos llevan marca horaria; el resto son cambios de estado.
+    // CU38: estos dos eventos llevan marca horaria; el resto son cambios de estado.
     if (evento === 'INICIAR' || evento === 'FINALIZAR') {
       return registrarMarcaAtencion(citaId, evento);
     }
 
-    // CU22: la cancelación necesita justificación; se pide y se retoma después.
+    // CU18, CU22: la cancelación necesita justificación; se pide y se retoma después.
     if (evento === 'CANCELAR' && !motivo) {
       setCitaPorCancelar({ citaId, estadoActual });
       return;
@@ -375,18 +394,18 @@ export default function HistorialPacienteScreen({ route, navigation }) {
           setAviso({ tono: 'info', titulo: 'Esperando pago', mensaje: data.mensaje });
           cargarHistorial(true);
         }
-        // EXCEPCIÓN 2: Muestra el error exacto que envía el backend para saber qué falló
+        // CU20 EXCEPCIÓN 2: Muestra el error exacto que envía el backend para saber qué falló
         else if (status === 422 || data.code === 'TRANSICION_INVALIDA') {
           setAviso({ tono: 'error', titulo: "Error de validación de flujo lógico", mensaje: `${data.error || 'La transición no está permitida por las reglas de negocio.'}\n\nPor favor, sigue el orden del flujo clínico.` });
         } 
-        // EXCEPCIÓN 4: Fallo de persistencia en BD
+        // CU20 EXCEPCIÓN 4: Fallo de persistencia en BD
         else if (status === 500 || data.code === 'PERSIST_FAIL') {
           setAviso({ tono: 'error', titulo: "Alerta de Error Crítica", mensaje: "El motor de base de datos no logró guardar el nuevo estado debido a un fallo de persistencia. Intente nuevamente o contacte a soporte." });
         } else {
           setAviso({ tono: 'error', titulo: "No se pudo cambiar el estado", mensaje: data.mensaje || data.error || "Intenta nuevamente." });
         }
       } else {
-        // EXCEPCIÓN 3: Latencia o pérdida de red
+        // CU20 EXCEPCIÓN 3: Latencia o pérdida de red
         setConfirmacion({
           titulo: 'Sincronización en curso',
           mensaje: 'La red está lenta y el cambio de estado aún no se ve. Refresca para volver a consultarlo.',
@@ -402,6 +421,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const textoFactores = (factores) =>
     (factores || []).map((f) => `${f.ok ? '✅' : '❌'} ${f.factor}`).join('\n');
 
+  // CU41 — Validando sesión mediante protocolo multi-factor
   const validarSesion = async (citaId, extras = {}) => {
     try {
       const { data } = await apiClient.post(`/citas/${citaId}/validar-sesion`, extras);
@@ -502,8 +522,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     }
   };
 
-  // Al llegar desde la sesión, la cita acaba de cambiar de estado: se recarga
-  // para que el botón de finalizar aparezca con el estado real.
+  // CU25, CU50, CU44 — reporte pre-clínico, reportes de síntomas y adherencia
   // CU25 y CU50 viajan aparte del historial: si fallan, la ficha se muestra igual.
   const cargarPreclinico = useCallback(async () => {
     setErrorPreclinico(false);
@@ -532,6 +551,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     cargarPreclinico();
   }, [cargarPreclinico]);
 
+  // Al llegar desde la sesión, la cita acaba de cambiar de estado: se recarga
+  // para que el botón de finalizar aparezca con el estado real.
   useEffect(() => {
     if (!resaltarCitaId) return;
     cargarHistorial(true);
@@ -555,9 +576,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
   const citasActivas = historial.filter((c) => !esEstadoTerminal(c.estado));
   const citasAntiguas = historial.filter((c) => esEstadoTerminal(c.estado));
 
-  // Una sola tarjeta de cita, reutilizada por las citas activas y por el
-  // desplegable de anteriores.
-  // Episodios y evoluciones: el más reciente a la vista y los anteriores en
+  // CU28: episodios y evoluciones: el más reciente a la vista y los anteriores en
   // el desplegable de historial. El identificador crece con cada registro,
   // así que ordena por antigüedad sin depender del formato de las fechas.
   const episodiosOrdenados = [...episodios].sort(
@@ -567,6 +586,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     (x, y) => Number(y.evolucion_clinica_id) - Number(x.evolucion_clinica_id)
   );
 
+  // CU28, CU78 — tarjeta de un episodio clínico con sus metas (CU32)
   const renderEpisodio = (item) => (
     <View key={item.episodio_clinico_id} style={styles.cardEpisodio}>
       <Text style={styles.fecha}>
@@ -607,6 +627,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     </View>
   );
 
+  // CU28, CU30 — tarjeta de una evolución clínica, con su firma e inalterabilidad
   const renderEvolucion = (item) => (
     <View key={item.evolucion_clinica_id} style={styles.cardEvolucion}>
       <Text style={styles.fecha}>
@@ -686,6 +707,8 @@ export default function HistorialPacienteScreen({ route, navigation }) {
     </View>
   );
 
+  // CU20, CU38 — una sola tarjeta de cita con sus acciones, reutilizada por las
+  // citas activas y por el desplegable de anteriores.
   const renderCita = (item) => {
               // Normalizamos el estado actual a mayúsculas para las comparaciones visuales
               const estadoCita = (item.estado || '').toUpperCase();
@@ -728,7 +751,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                     </View>
                   ) : (
                   <>
-                  {/* PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
+                  {/* CU20: PANEL DE ACCIONES INTELIGENTES (MÁQUINA DE ESTADOS DINÁMICA) */}
                   <View style={styles.containerAcciones}>
                     
                     {/* ACCIONES SI LA CITA ESTÁ AGENDADA */}
@@ -757,7 +780,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                       </>
                     )}
 
-                    {/* ACCIONES SI LA CITA ESTÁ CONFIRMADA */}
+                    {/* ACCIONES SI LA CITA ESTÁ CONFIRMADA (iniciar: CU38) */}
                     {estadoCita === 'CONFIRMADA' && (
                       <>
                         <TouchableOpacity 
@@ -784,7 +807,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
                       </>
                     )}
 
-                    {/* ACCIONES SI LA CITA ESTÁ EN CURSO */}
+                    {/* ACCIONES SI LA CITA ESTÁ EN CURSO (finalizar: CU38) */}
                     {estadoCita === 'EN_CURSO' && (
                       <TouchableOpacity 
                         style={[styles.botonAccion, { backgroundColor: colores.primario, marginHorizontal: 0 }]}
@@ -944,6 +967,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         <Text>Dirección: {textoDireccion(paciente)}</Text>
       </View>
 
+      {/* CU29: acceso a la evaluación inicial (anamnesis) */}
       <TouchableOpacity
         style={styles.botonAnamnesis}
         onPress={() =>
@@ -969,6 +993,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
 
       {!loading && error === '' && (
         <>
+          {/* CU33: repositorio multimedia no disponible */}
           {mensajeMultimedia !== '' && (
             <View style={styles.warningBox}>
               <Text style={styles.warningTitle}>Multimedia no disponible</Text>
@@ -1153,6 +1178,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
             )}
           </View>
 
+          {/* CU20, CU38: citas del paciente, activas y anteriores */}
           <Text style={styles.seccionTitulo}>Atenciones / Citas</Text>
 
           {citasActivas.length === 0 ? (
@@ -1182,6 +1208,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
             </>
           )}
 
+          {/* CU28, CU78: episodios clínicos del paciente */}
           <Text style={styles.seccionTitulo}>Episodios Clínicos</Text>
 
           {episodiosOrdenados.length === 0 ? (
@@ -1199,6 +1226,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
             </>
           )}
 
+          {/* CU28, CU30, CU31: evoluciones clínicas con sus versiones */}
           <Text style={styles.seccionTitulo}>Evoluciones Clínicas</Text>
 
           {evolucionesOrdenadas.length === 0 ? (
@@ -1252,6 +1280,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
         onCancelar={() => setCierreManualCita(null)}
       />
 
+      {/* CU38 Exc.2: marca horaria manual justificada */}
       <Modal
         visible={marcaManual !== null}
         transparent

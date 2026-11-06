@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Derivaciones recibidas"
+ * Casos de uso: CU65, CU28.
+ */
 // Ruta: fro-vista/src/screens/Profesional/DerivacionesRecibidasScreen.js
 //
 // CU65 — Derivaciones que otros profesionales te enviaron. Mientras están
@@ -29,6 +33,7 @@ export default function DerivacionesRecibidasScreen({ navigation }) {
   const [enviando, setEnviando] = useState(null);
   const [aviso, setAviso] = useState(null);
 
+  // CU65 — cargar las derivaciones recibidas
   const cargar = useCallback(async (refresco = false) => {
     if (refresco) setRefrescando(true);
     try {
@@ -45,6 +50,7 @@ export default function DerivacionesRecibidasScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
+  // CU65 — aceptar o rechazar una derivación
   const responder = async (d, accion) => {
     if (accion === 'RECHAZAR' && motivo.trim().length === 0) {
       setErrorMotivo('Indica el motivo del rechazo.');
@@ -110,6 +116,7 @@ export default function DerivacionesRecibidasScreen({ navigation }) {
                 <Text style={estilos.meta}>Al aceptar, el episodio pasa a tu cargo y {d.profesional_origen} lo conserva en solo lectura.</Text>
               )}
 
+              {/* CU28, CU65: abrir la ficha del paciente derivado */}
               {conAcceso && (
                 <TouchableOpacity
                   style={estilos.botonSecundario}

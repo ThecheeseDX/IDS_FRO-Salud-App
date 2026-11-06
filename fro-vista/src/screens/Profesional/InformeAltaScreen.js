@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Informe de alta"
+ * Casos de uso: CU37, CU78, CU32.
+ */
 // Ruta: fro-vista/src/screens/Profesional/InformeAltaScreen.js
 //
 // CU37 — Informe de alta y cierre del episodio. Se abre desde la pestaña
@@ -37,6 +41,7 @@ export default function InformeAltaScreen({ route, navigation }) {
   const [confirmacion, setConfirmacion] = useState(null);
   const [aviso, setAviso] = useState(null);
 
+  // CU37 — cargar el resumen del episodio antes de emitir el alta
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(false);
@@ -65,6 +70,7 @@ export default function InformeAltaScreen({ route, navigation }) {
     setAviso({ tono: 'error', titulo, mensaje: (err?.mensaje || MENSAJES_ERROR[codigo] || 'Intenta nuevamente.') + detalle });
   };
 
+  // CU37 — Emitiendo informe de alta y cierre de episodio
   const emitir = async () => {
     setProcesando(true);
     try {
@@ -135,7 +141,7 @@ export default function InformeAltaScreen({ route, navigation }) {
         )}
       </View>
 
-      {/* Estado final de las metas */}
+      {/* CU32 — Estado final de las metas */}
       <View style={estilos.tarjeta}>
         <Text style={estilos.seccion}>Cumplimiento de metas</Text>
         {porcentaje === null ? (
@@ -228,6 +234,7 @@ export default function InformeAltaScreen({ route, navigation }) {
         </Text>
       )}
 
+      {/* CU78: cierre del episodio sin informe */}
       {!cerrado && (
         <TouchableOpacity
           style={[estilos.botonSecundario, !puedeCerrar && estilos.deshabilitado]}

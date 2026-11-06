@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: apoyo común.
+ */
 // Ruta: fro-vista/src/components/Icono.js
 //
 // Íconos de la app dibujados como gráficos vectoriales (react-native-svg) en

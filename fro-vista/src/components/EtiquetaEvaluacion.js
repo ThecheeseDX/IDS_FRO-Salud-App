@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU58; también lo usa CU56.
+ */
 // Ruta: fro-vista/src/components/EtiquetaEvaluacion.js
 //
 // Cabecera de un testimonio: estrellas si es la calificación del tratamiento,

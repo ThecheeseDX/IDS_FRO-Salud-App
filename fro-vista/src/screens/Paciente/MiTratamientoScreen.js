@@ -1,3 +1,9 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mi tratamiento"
+ * Casos de uso: apoyo común, usado por CU45, CU48, CU50, CU23 y CU51.
+ *
+ * Contenedor de pestañas: cada pestaña es una pantalla con su propio CU.
+ */
 // Ruta: fro-vista/src/screens/Paciente/MiTratamientoScreen.js
 //
 // "Mi tratamiento": segunda pestaña de la barra inferior del paciente. Reúne
@@ -49,6 +55,7 @@ export default function MiTratamientoScreen({ route, navigation }) {
     if (SE_RECARGAN.has(key)) setVueltas((previas) => ({ ...previas, [key]: (previas[key] || 0) + 1 }));
   };
 
+  // CU23, CU26: si aún no hay entrevista previa, se abre esa pestaña primero
   useEffect(() => {
     if (pedida) return;
     let vigente = true;

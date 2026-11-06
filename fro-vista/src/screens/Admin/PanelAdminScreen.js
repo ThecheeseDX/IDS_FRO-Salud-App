@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Panel de gestión"
+ * Casos de uso: CU64, CU79.
+ */
 // Ruta: fro-vista/src/screens/Admin/PanelAdminScreen.js
 //
 // CU64 — Dashboard de monitoreo de KPIs. Es la pantalla de inicio del
@@ -53,6 +57,7 @@ export default function PanelAdminScreen({ navigation }) {
   // Excepción 1: respaldo en tablas numéricas si el gráfico no sirve.
   const [verTabla, setVerTabla] = useState(false);
 
+  // CU64 — Visualizando dashboard de monitoreo de KPIs: cargar los indicadores del periodo
   const cargar = useCallback(
     async (dias, esRefresco = false) => {
       if (esRefresco) setRefrescando(true);
@@ -204,6 +209,7 @@ export default function PanelAdminScreen({ navigation }) {
         />
       </View>
 
+      {/* CU64: pendientes que enlazan a CU62, CU61, CU56, CU41 y CU50 */}
       {/* Lo que exige atención: son enlaces, no solo números. */}
       <View style={estilos.tarjeta}>
         <Text style={estilos.tituloTarjeta}>Pendientes de gestión</Text>
@@ -285,6 +291,7 @@ export default function PanelAdminScreen({ navigation }) {
         )}
       </View>
 
+      {/* CU79: menú del administrador (CU75, CU72, CU63, CU59, CU56, CU62, CU57, CU07 y CU08) */}
       <Text style={estilos.seccion}>Herramientas</Text>
 
       {[
@@ -312,6 +319,7 @@ export default function PanelAdminScreen({ navigation }) {
         </TouchableOpacity>
       ))}
 
+      {/* CU08: cerrar la sesión */}
       <TouchableOpacity style={estilos.botonSalir} onPress={confirmarCierreSesion}>
         <Text style={estilos.botonSalirTexto}>CERRAR SESIÓN</Text>
       </TouchableOpacity>

@@ -1,3 +1,6 @@
+// Componente: C_API_REST
+// Casos de uso: CU33, CU34, CU35, CU53, CU78.
+//
 // Ruta: fro-controlador/src/controllers/clinico/documentoController.js
 //
 // Repositorio multimedia de la ficha clínica:
@@ -7,13 +10,13 @@
 //
 // El binario del archivo vive en Cloudinary; la base guarda URL y metadatos.
 
-const pool = require('../../config/database');
-const { profesionalTratante } = require('../../services/clinico/accesoClinicoService');
-const { cloudinary, cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
-const { leerParametroEntero } = require('../../services/agenda/agendaService');
-const { rechazarSiCerrado } = require('../../services/clinico/episodioService');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Control_Acceso_Clinico = require('../../componentes/C_Control_Acceso_Clinico');
+const C_API_Adapter = require('../../componentes/C_API_Adapter');
+const C_Motor_Clinico = require('../../componentes/C_Motor_Clinico');
 
 /**
+ * CU35 — Visualizando archivos con visor embebido
  * Datos que la app necesita para mostrar un archivo sin descargarlo (CU35).
  * Lo usan el repositorio de documentos y los adjuntos del chat (CU53).
  *
@@ -40,7 +43,7 @@ async function prepararVisor(archivo, guardarPaginas = async () => {}) {
     visor === 'documento'
       ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(archivo.url_publica)}`
       : visor === 'imagen' && archivo.formato === 'heic' && archivo.public_id_cloud
-        ? cloudinary.url(archivo.public_id_cloud, { resource_type: 'image', format: 'jpg', secure: true })
+        ? C_API_Adapter.cloudinary.url(archivo.public_id_cloud, { resource_type: 'image', format: 'jpg', secure: true })
         : archivo.url_publica;
 
   const paginasUrls = [];
@@ -50,7 +53,7 @@ async function prepararVisor(archivo, guardarPaginas = async () => {}) {
     // una vez a Cloudinary y se persiste para no volver a preguntar.
     if (!paginas) {
       try {
-        const recurso = await cloudinary.api.resource(archivo.public_id_cloud, {
+        const recurso = await C_API_Adapter.cloudinary.api.resource(archivo.public_id_cloud, {
           resource_type: archivo.tipo_recurso || 'image', pages: true,
         });
         paginas = recurso.pages || 1;
@@ -62,7 +65,7 @@ async function prepararVisor(archivo, guardarPaginas = async () => {}) {
     }
     for (let n = 1; n <= Math.min(paginas, 60); n++) {
       paginasUrls.push(
-        cloudinary.url(archivo.public_id_cloud, {
+        C_API_Adapter.cloudinary.url(archivo.public_id_cloud, {
           resource_type: 'image', page: n, format: 'jpg',
           width: 1200, crop: 'limit', quality: 'auto', secure: true,
         })
@@ -73,7 +76,7 @@ async function prepararVisor(archivo, guardarPaginas = async () => {}) {
   // Enlace para abrir/descargar el archivo original en el navegador del
   // teléfono. Para PDF requiere habilitar en Cloudinary (Settings → Security)
   // "Allow delivery of PDF and ZIP files"; imágenes y videos salen siempre.
-  const urlDescarga = cloudinary.url(archivo.public_id_cloud, {
+  const urlDescarga = C_API_Adapter.cloudinary.url(archivo.public_id_cloud, {
     resource_type: archivo.tipo_recurso || 'image', flags: 'attachment', secure: true,
   });
 
@@ -100,6 +103,7 @@ const CATEGORIAS = [
 // RF33 (D5): se aceptan también documentos Word (DOCX).
 const EXTENSIONES_PERMITIDAS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'gif', 'pdf', 'docx', 'mp4', 'mov'];
 
+// Apoyo común: IP de origen para la bitácora
 function obtenerIP(req) {
   return (
     req.headers['x-forwarded-for']?.split(',')[0] ||
@@ -108,10 +112,11 @@ function obtenerIP(req) {
   );
 }
 
+// CU33, CU34, CU35 — registro en la bitácora de auditoría
 // Bitácora tolerante a fallos: un problema de auditoría no bota la operación.
 async function auditar(req, accion, datos = {}) {
   try {
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES (?, 'Documento_Clinico', ?, ?, ?)`,
       [accion, obtenerIP(req), JSON.stringify(datos), req.user?.usuario_id || null]
@@ -131,7 +136,7 @@ async function puedeAccederAPaciente(req, pacienteId) {
   if (rol === 'Administrador') return true;
 
   if (rol === 'Paciente') {
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT 1 FROM Paciente WHERE paciente_id = ? AND usuario_id = ? LIMIT 1`,
       [pacienteId, usuarioId]
     );
@@ -140,7 +145,7 @@ async function puedeAccederAPaciente(req, pacienteId) {
 
   if (rol === 'Profesional') {
     // Criterio único: episodio, cita vigente o derivación interna (CU65).
-    return profesionalTratante(pool, usuarioId, pacienteId);
+    return C_Control_Acceso_Clinico.profesionalTratante(C_Capa_de_Acceso_a_Datos, usuarioId, pacienteId);
   }
 
   return false;
@@ -149,6 +154,7 @@ async function puedeAccederAPaciente(req, pacienteId) {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/documentos/categorias — taxonomía para el menú (CU34)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU34 — Categorizando documentos mediante metadatos
 exports.listarCategorias = (req, res) => {
   res.json({ ok: true, categorias: CATEGORIAS });
 };
@@ -157,11 +163,12 @@ exports.listarCategorias = (req, res) => {
 // POST /clinica/pacientes/:pacienteId/documentos — carga multimedia (CU33)
 // multer deja el archivo en req.file (buffer en memoria).
 // ─────────────────────────────────────────────────────────────────────────────
+// CU33 — Almacenando archivos en repositorio multimedia
 exports.subirDocumento = async (req, res) => {
   try {
     const { pacienteId } = req.params;
 
-    if (!cloudinaryConfigurado()) {
+    if (!C_API_Adapter.cloudinaryConfigurado()) {
       return res.status(503).json({
         error: 'REPOSITORIO_NO_CONFIGURADO',
         mensaje: 'El repositorio multimedia no está configurado en el servidor. Avisa al administrador.',
@@ -199,7 +206,7 @@ exports.subirDocumento = async (req, res) => {
     }
 
     // Excepción 1: tamaño sobre el límite parametrizado (Parametro_Global).
-    const maxMB = await leerParametroEntero(pool, 'MAX_TAMANO_ARCHIVO_MB', 10);
+    const maxMB = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'MAX_TAMANO_ARCHIVO_MB', 10);
     if (req.file.size > maxMB * 1024 * 1024) {
       return res.status(413).json({
         error: 'ARCHIVO_MUY_GRANDE',
@@ -215,9 +222,9 @@ exports.subirDocumento = async (req, res) => {
     const episodioId = req.body?.episodio_clinico_id || null;
 
     // CU78 Exc.3 (D12): no se adjunta a un episodio cerrado.
-    if (await rechazarSiCerrado(pool, episodioId, res)) return;
+    if (await C_Motor_Clinico.rechazarSiCerrado(C_Capa_de_Acceso_a_Datos, episodioId, res)) return;
 
-    const [profesionales] = await pool.query(
+    const [profesionales] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1`,
       [req.user.usuario_id]
     );
@@ -232,7 +239,7 @@ exports.subirDocumento = async (req, res) => {
     // y el profesional puede reiniciar la carga.
     let subida;
     try {
-      subida = await subirBuffer(req.file.buffer, {
+      subida = await C_API_Adapter.subirBuffer(req.file.buffer, {
         folder: `fro-salud/paciente-${pacienteId}`,
         use_filename: true,
         filename_override: nombreOriginal,
@@ -248,7 +255,7 @@ exports.subirDocumento = async (req, res) => {
       });
     }
 
-    const [resultado] = await pool.query(
+    const [resultado] = await C_Capa_de_Acceso_a_Datos.query(
       `INSERT INTO Documento_Clinico
          (nombre_original, categoria, formato, tamano_bytes, tipo_recurso,
           url_publica, public_id_cloud, paginas, paciente_id, episodio_clinico_id, profesional_id)
@@ -281,6 +288,7 @@ exports.subirDocumento = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/pacientes/:pacienteId/documentos?categoria=X — listado (CU34/35)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU34, CU35 — listar los documentos del paciente, filtrables por categoría
 exports.listarDocumentos = async (req, res) => {
   try {
     const { pacienteId } = req.params;
@@ -302,7 +310,7 @@ exports.listarDocumentos = async (req, res) => {
       filtros.push(categoria);
     }
 
-    const [documentos] = await pool.query(
+    const [documentos] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT d.documento_id, d.nombre_original, d.categoria, d.formato,
               d.tamano_bytes, d.tipo_recurso, d.fecha_carga, d.episodio_clinico_id,
               CONCAT(COALESCE(u.nombres, ''), ' ', COALESCE(u.apellido_paterno, '')) AS cargado_por
@@ -324,9 +332,10 @@ exports.listarDocumentos = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/mis-documentos — el paciente ve su propio repositorio (CU35)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU35 — Visualizando archivos con visor embebido
 exports.misDocumentos = async (req, res) => {
   try {
-    const [pacientes] = await pool.query(
+    const [pacientes] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT paciente_id FROM Paciente WHERE usuario_id = ? LIMIT 1`,
       [req.user.usuario_id]
     );
@@ -347,6 +356,7 @@ exports.misDocumentos = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /clinica/documentos/:id/categoria — reclasificación (CU34)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU34 — Categorizando documentos mediante metadatos
 exports.cambiarCategoria = async (req, res) => {
   try {
     const { id } = req.params;
@@ -356,7 +366,7 @@ exports.cambiarCategoria = async (req, res) => {
       ? req.body.categoria
       : 'SIN_CLASIFICAR';
 
-    const [[documento]] = await pool.query(
+    const [[documento]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT paciente_id, categoria FROM Documento_Clinico WHERE documento_id = ? LIMIT 1`,
       [id]
     );
@@ -368,7 +378,7 @@ exports.cambiarCategoria = async (req, res) => {
       return res.status(403).json({ error: 'ACCESO_DENEGADO' });
     }
 
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Documento_Clinico SET categoria = ? WHERE documento_id = ?`,
       [categoria, id]
     );
@@ -387,11 +397,12 @@ exports.cambiarCategoria = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/documentos/:id/ver — datos para el visor embebido (CU35)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU35 — Visualizando archivos con visor embebido
 exports.verDocumento = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [[documento]] = await pool.query(
+    const [[documento]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT documento_id, nombre_original, categoria, formato, tipo_recurso,
               url_publica, public_id_cloud, paginas, tamano_bytes, fecha_carga, paciente_id
          FROM Documento_Clinico WHERE documento_id = ? LIMIT 1`,
@@ -411,7 +422,7 @@ exports.verDocumento = async (req, res) => {
     }
 
     const vista = await prepararVisor(documento, async (paginas) =>
-      pool.query(`UPDATE Documento_Clinico SET paginas = ? WHERE documento_id = ?`, [paginas, id])
+      C_Capa_de_Acceso_a_Datos.query(`UPDATE Documento_Clinico SET paginas = ? WHERE documento_id = ?`, [paginas, id])
     );
 
     await auditar(req, 'VISUALIZACION_DOCUMENTO', { documento_id: id });

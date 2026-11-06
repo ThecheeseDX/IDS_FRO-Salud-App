@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU55, CU56, CU58, CU57, CU62, CU52, CU13.
+ *
  * CU55 — Evaluación de satisfacción post-sesión.
  * CU56 — Moderación de testimonios públicos.
  * CU58 — Cálculo y visualización de la calificación del profesional.
@@ -17,14 +20,15 @@
  * tratamiento y las de sesión anteriores a este cambio, que se conservan).
  */
 
-const pool = require('./../config/database');
-const { revisar } = require('../services/clinico/filtroContenidoService');
-const { escalar } = require('../services/clinico/escalamientoService');
-const { notificarUsuario } = require('../services/agenda/agendaService');
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Filtro_Contenido = require('../componentes/C_Filtro_Contenido');
+const C_Escalador_Eventos_Criticos = require('../componentes/C_Escalador_Eventos_Criticos');
+const C_Despachador_Notificaciones = require('../componentes/C_Despachador_Notificaciones');
 
 const ESTADOS = { PENDIENTE: 'PENDIENTE', APROBADA: 'APROBADA', RECHAZADA: 'RECHAZADA' };
 
 /**
+ * CU56 — Moderando testimonios públicos
  * Quita caracteres de control y espacios raros que rompen el renderizado.
  * Excepción 2 del CU56: el texto con codificación no estándar se sanea antes
  * de mostrarse, en vez de ensuciar la consola del moderador.
@@ -46,7 +50,10 @@ function sanear(texto) {
     .trim();
 }
 
-/** Recalcula y persiste el promedio del profesional. */
+/**
+ * CU58 — Calculando y visualizando calificación profesional
+ * Recalcula y persiste el promedio del profesional.
+ */
 async function recalcularPromedio(conexion, profesionalId) {
   // Excepción 4 del CU55: dos evaluaciones simultáneas del mismo profesional
   // entrarían a la vez en el promedio. La fila se bloquea, el cálculo se
@@ -73,6 +80,7 @@ async function recalcularPromedio(conexion, profesionalId) {
 }
 
 /**
+ * CU55 — Evaluando satisfacción post-sesión
  * POST /api/citas/:id/evaluacion   { satisfecho: true|false, resena? }
  *
  * Evaluación de cada sesión: solo si el paciente quedó satisfecho con la
@@ -91,7 +99,7 @@ exports.registrarEvaluacion = async (req, res) => {
     });
   }
 
-  const conexion = await pool.getConnection();
+  const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
     const [[cita]] = await conexion.execute(
@@ -147,7 +155,7 @@ exports.registrarEvaluacion = async (req, res) => {
     let resena = resenaCruda;
     let resenaBloqueada = false;
     if (resena) {
-      const revision = await revisar(resena);
+      const revision = await C_Filtro_Contenido.revisar(resena);
       if (!revision.permitido) {
         resena = null;
         resenaBloqueada = true;
@@ -163,6 +171,7 @@ exports.registrarEvaluacion = async (req, res) => {
       [satisfecho, resena || null, resena ? ESTADOS.PENDIENTE : ESTADOS.APROBADA, id, cita.profesional_id]
     );
 
+    // CU13: queda en la bitácora de auditoría
     await conexion.execute(
       `INSERT INTO Bitacora_Auditoria
           (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
@@ -185,7 +194,7 @@ exports.registrarEvaluacion = async (req, res) => {
 
     // CU62: una reseña con términos críticos se escala al administrador.
     if (resena) {
-      escalar(pool, {
+      C_Escalador_Eventos_Criticos.escalar(C_Capa_de_Acceso_a_Datos, {
         texto: resena, origen: 'RESENA', entidad: 'Evaluacion_Satisfaccion', entidadId: evaluacionCreada.insertId,
         usuarioOrigenId: req.user.usuario_id,
       }).catch(() => {});
@@ -213,6 +222,7 @@ exports.registrarEvaluacion = async (req, res) => {
 };
 
 /**
+ * CU55, CU58 — calificación general del tratamiento y promedio del profesional
  * POST /api/clinica/episodio/:episodio_id/evaluacion   { puntuacion, resena? }  (Paciente)
  *
  * Calificación general del profesional, una sola vez por tratamiento, cuando
@@ -227,7 +237,7 @@ exports.registrarEvaluacionTratamiento = async (req, res) => {
     return res.status(400).json({ error: 'PUNTUACION_INVALIDA', mensaje: 'La calificación va de 1 a 5 estrellas.' });
   }
 
-  const conexion = await pool.getConnection();
+  const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
   try {
     const [[episodio]] = await conexion.execute(
       `SELECT ec.episodio_clinico_id, ec.estado, ec.profesional_id, pa.usuario_id AS usuario_paciente
@@ -252,10 +262,11 @@ exports.registrarEvaluacionTratamiento = async (req, res) => {
       return res.status(409).json({ error: 'YA_EVALUADA', mensaje: 'Ya calificaste este tratamiento. Gracias por tu respuesta.' });
     }
 
+    // CU57: la reseña pasa por el filtro de contenido
     let resena = resenaCruda;
     let resenaBloqueada = false;
     if (resena) {
-      const revision = await revisar(resena);
+      const revision = await C_Filtro_Contenido.revisar(resena);
       if (!revision.permitido) {
         resena = null;
         resenaBloqueada = true;
@@ -269,7 +280,9 @@ exports.registrarEvaluacionTratamiento = async (req, res) => {
        VALUES ('TRATAMIENTO', ?, ?, ?, ?, ?)`,
       [puntuacion, resena || null, resena ? ESTADOS.PENDIENTE : ESTADOS.APROBADA, episodio_id, episodio.profesional_id]
     );
+    // CU58: la nota entra al promedio del profesional
     const promedio = await recalcularPromedio(conexion, episodio.profesional_id);
+    // CU13: queda en la bitácora de auditoría
     await conexion.execute(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES ('EVALUACION_TRATAMIENTO', 'Evaluacion_Satisfaccion', ?, ?, ?)`,
@@ -277,8 +290,9 @@ exports.registrarEvaluacionTratamiento = async (req, res) => {
     );
     await conexion.commit();
 
+    // CU62: una reseña con términos críticos se escala al administrador
     if (resena) {
-      escalar(pool, {
+      C_Escalador_Eventos_Criticos.escalar(C_Capa_de_Acceso_a_Datos, {
         texto: resena, origen: 'RESENA', entidad: 'Evaluacion_Satisfaccion', entidadId: creada.insertId,
         usuarioOrigenId: req.user.usuario_id,
       }).catch(() => {});
@@ -305,12 +319,13 @@ exports.registrarEvaluacionTratamiento = async (req, res) => {
 };
 
 /**
+ * CU55 — Evaluando satisfacción post-sesión
  * GET /api/clinica/tratamientos/por-evaluar   (Paciente)
  * Tratamientos cerrados que el paciente todavía no califica.
  */
 exports.tratamientosPorEvaluar = async (req, res) => {
   try {
-    const [tratamientos] = await pool.query(
+    const [tratamientos] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT ec.episodio_clinico_id, ec.motivo_consulta, ec.fecha_inicio, ec.fecha_terminado,
               ec.profesional_id,
               COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno)), ''),
@@ -336,6 +351,7 @@ exports.tratamientosPorEvaluar = async (req, res) => {
 };
 
 /**
+ * CU55, CU52 — avisar al paciente que califique el tratamiento cerrado
  * Al cerrarse un episodio se le pide al paciente la calificación general del
  * tratamiento. Nunca lanza: el cierre no puede depender del aviso.
  */
@@ -352,7 +368,7 @@ exports.pedirEvaluacionTratamiento = async (conexion, episodioId) => {
       [episodioId]
     );
     if (!fila) return false;
-    return notificarUsuario(
+    return C_Despachador_Notificaciones.notificarUsuario(
       conexion,
       fila.usuario_id,
       'EVALUAR_TRATAMIENTO',
@@ -366,6 +382,7 @@ exports.pedirEvaluacionTratamiento = async (conexion, episodioId) => {
 };
 
 /**
+ * CU55 — Evaluando satisfacción post-sesión
  * GET /api/citas/evaluaciones/pendientes   (Paciente)
  *
  * Atenciones realizadas que todavía no se evalúan. Alimenta el acceso directo
@@ -374,7 +391,7 @@ exports.pedirEvaluacionTratamiento = async (conexion, episodioId) => {
  */
 exports.pendientesDeEvaluar = async (req, res) => {
   try {
-    const [citas] = await pool.query(
+    const [citas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT c.cita_id, c.fecha_hora_inicio,
               COALESCE(
                 NULLIF(TRIM(CONCAT_WS(' ', u.nombres, u.apellido_paterno)), ''),
@@ -400,6 +417,7 @@ exports.pendientesDeEvaluar = async (req, res) => {
 };
 
 /**
+ * CU58 — Calculando y visualizando calificación profesional
  * GET /api/profesionales/:profesional_id/resenas
  *
  * CU58: promedio, cantidad y los testimonios APROBADOS. Lo que está pendiente
@@ -408,14 +426,14 @@ exports.pendientesDeEvaluar = async (req, res) => {
 exports.resenasPublicas = async (req, res) => {
   const { profesional_id } = req.params;
   try {
-    const [[resumen]] = await pool.query(
+    const [[resumen]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT COUNT(e.puntuacion) AS total, COALESCE(AVG(e.puntuacion), 0) AS promedio
          FROM Evaluacion_Satisfaccion e
         WHERE e.profesional_id = ? AND e.puntuacion IS NOT NULL`,
       [profesional_id]
     );
 
-    const [resenas] = await pool.query(
+    const [resenas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT e.evaluacion_satisfaccion_id, e.tipo, e.satisfecho, e.puntuacion, e.resena, e.momento_creacion,
               -- Nombre y la inicial del apellido, salvo que el paciente haya
               -- pedido aparecer como anónimo (Seguridad y privacidad).
@@ -457,7 +475,10 @@ exports.resenasPublicas = async (req, res) => {
 //  CU56 — Moderación (Administrador)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** GET /api/evaluaciones/moderacion?estado=PENDIENTE */
+/**
+ * CU56 — Moderando testimonios públicos
+ * GET /api/evaluaciones/moderacion?estado=PENDIENTE
+ */
 exports.bandejaModeracion = async (req, res) => {
   const estado = String(req.query?.estado || ESTADOS.PENDIENTE).toUpperCase();
   if (!Object.values(ESTADOS).includes(estado)) {
@@ -465,7 +486,7 @@ exports.bandejaModeracion = async (req, res) => {
   }
 
   try {
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT e.evaluacion_satisfaccion_id, e.tipo, e.satisfecho, e.puntuacion, e.resena, e.estado_moderacion,
               e.motivo_rechazo, e.momento_creacion, e.momento_moderacion,
               c.cita_id, COALESCE(c.fecha_hora_inicio, ec.fecha_terminado) AS fecha_hora_inicio,
@@ -503,6 +524,7 @@ exports.bandejaModeracion = async (req, res) => {
 };
 
 /**
+ * CU56 — Moderando testimonios públicos
  * POST /api/evaluaciones/:id/moderar   { decision, motivo }
  *
  * Aprobar publica el testimonio; rechazar aplica el borrado lógico: la fila se
@@ -527,7 +549,7 @@ exports.moderarResena = async (req, res) => {
     });
   }
 
-  const conexion = await pool.getConnection();
+  const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
     await conexion.beginTransaction();
@@ -566,6 +588,7 @@ exports.moderarResena = async (req, res) => {
       });
     }
 
+    // CU13: queda en la bitácora de auditoría
     await conexion.execute(
       `INSERT INTO Bitacora_Auditoria
           (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
@@ -583,9 +606,10 @@ exports.moderarResena = async (req, res) => {
 
     await conexion.commit();
 
+    // CU52: aviso al profesional
     // Al profesional le interesa saber que tiene un testimonio publicado.
     if (nuevoEstado === ESTADOS.APROBADA) {
-      pool
+      C_Capa_de_Acceso_a_Datos
         .query(
           `SELECT u.usuario_id FROM Profesional p
              JOIN Usuario u ON u.usuario_id = p.usuario_id
@@ -594,8 +618,8 @@ exports.moderarResena = async (req, res) => {
         )
         .then(([filas]) => {
           if (filas[0]) {
-            notificarUsuario(
-              pool,
+            C_Despachador_Notificaciones.notificarUsuario(
+              C_Capa_de_Acceso_a_Datos,
               filas[0].usuario_id,
               'TESTIMONIO_PUBLICADO',
               'Un paciente dejó un comentario sobre tu atención y ya está publicado en tu perfil.'

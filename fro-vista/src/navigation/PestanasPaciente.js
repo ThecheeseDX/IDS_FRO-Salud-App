@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU79, CU39, CU52; abre las vistas de CU20, CU45, CU53 y CU14.
+ */
 // Ruta: fro-vista/src/navigation/PestanasPaciente.js
 //
 // Barra de navegación inferior del paciente (estilo Instagram), de izquierda a
@@ -29,6 +33,7 @@ const ICONOS = {
   Perfil: 'person-circle',
 };
 
+// CU07, CU08, CU09 — perfil y seguridad de la cuenta del paciente
 // "Mi perfil" parte de la antigua "Seguridad de la cuenta", reordenada.
 function PerfilPaciente(props) {
   return <SeguridadScreen {...props} comoPerfil />;
@@ -39,6 +44,7 @@ function SinContenido() {
   return null;
 }
 
+// CU14 — Buscando y seleccionando cita en el motor de agendamiento
 function BotonAgendar({ onPress }) {
   return (
     <View style={styles.celdaAgendar}>
@@ -55,6 +61,7 @@ function BotonAgendar({ onPress }) {
   );
 }
 
+// CU79 — Segregando interfaces según rol de acceso
 export default function PestanasPaciente({ navigation }) {
   // CU39: el día de una visita a domicilio, la ubicación se envía sola.
   useReporteUbicacion();
@@ -64,6 +71,7 @@ export default function PestanasPaciente({ navigation }) {
       backBehavior="firstRoute"
       screenOptions={opcionesDeBarra(ICONOS)}
     >
+      {/* CU20: Mis citas, inicio del paciente */}
       <Tab.Screen
         name="Inicio"
         component={MisCitasScreen}
@@ -74,11 +82,13 @@ export default function PestanasPaciente({ navigation }) {
           headerRight: () => <CampanaNotificaciones navigation={navigation} />,
         }}
       />
+      {/* CU45, CU48, CU50, CU23, CU51: Mi tratamiento */}
       <Tab.Screen
         name="Tratamiento"
         component={MiTratamientoScreen}
         options={{ title: 'Mi tratamiento', tabBarLabel: 'Tratamiento' }}
       />
+      {/* CU14: el botón central abre el buscador de horas */}
       <Tab.Screen
         name="Agendar"
         component={SinContenido}
@@ -87,11 +97,13 @@ export default function PestanasPaciente({ navigation }) {
           tabBarButton: () => <BotonAgendar onPress={() => navigation.navigate('BuscarCita')} />,
         }}
       />
+      {/* CU53: conversaciones con los profesionales */}
       <Tab.Screen
         name="Mensajes"
         component={ConversacionesScreen}
         options={{ title: 'Mensajes', tabBarLabel: 'Mensajes' }}
       />
+      {/* CU07, CU08, CU09: Mi perfil y seguridad */}
       <Tab.Screen
         name="Perfil"
         component={PerfilPaciente}

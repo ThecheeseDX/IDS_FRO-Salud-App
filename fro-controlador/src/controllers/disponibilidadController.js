@@ -1,5 +1,12 @@
-const pool = require('../config/database');
+/**
+ * Componente: C_API_REST
+ * Casos de uso: CU16.
+ *
+ * Bloqueos de agenda: el profesional inhabilita rangos de fechas.
+ */
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
 
+// Apoyo común: fecha DD/MM/AAAA a formato MySQL
 // Convierte DD/MM/AAAA a formato MySQL YYYY-MM-DD.
 // La fecha de inicio parte a las 00:00:00 y la de término cierra a las
 // 23:59:59: así el ÚLTIMO día del bloqueo también queda inhabilitado
@@ -16,7 +23,7 @@ const convertirFecha = (fechaStr, esFechaFin = false) => {
  */
 exports.listarBloqueos = async (req, res) => {
     try {
-        const [bloqueos] = await pool.query(
+        const [bloqueos] = await C_Capa_de_Acceso_a_Datos.query(
             `SELECT b.bloqueo_id, b.fecha_inicio, b.fecha_fin, b.motivo
                FROM Bloqueo_Agenda b
                JOIN Profesional p ON p.profesional_id = b.profesional_id
@@ -31,9 +38,10 @@ exports.listarBloqueos = async (req, res) => {
     }
 };
 
+// CU16 — Restringiendo disponibilidad administrativa
 exports.restringirDisponibilidad = async (req, res) => {
     const { profesional_id, fecha_inicio, fecha_fin, motivo } = req.body;
-    const connection = await pool.getConnection();
+    const connection = await C_Capa_de_Acceso_a_Datos.getConnection();
 
     try {
         await connection.beginTransaction();

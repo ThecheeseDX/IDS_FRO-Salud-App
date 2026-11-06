@@ -31,7 +31,33 @@ Para el Incremento 4, el Controlador suma seis componentes internos: Control de 
 
 ## Relación con los diagramas de secuencia
 
-Los diagramas de secuencia legibles del Incremento 4 agrupan los componentes del Controlador en la línea de vida "Servidor (C_API_REST y controladores)". Los componentes nuevos de esta figura son los que actúan dentro de esa línea de vida en cada CU.
+Los diagramas de secuencia del Incremento 4 dibujan cada componente con su propia línea de vida y con el mismo nombre de esta figura. Por ejemplo, C_API_REST, C_Control_Acceso_Clinico y C_Capa_de_Acceso_a_Datos.
+
+## Correspondencia con el código
+
+Cada componente del Controlador tiene en el servidor un archivo con su mismo nombre, en `fro-controlador/src/componentes/`. El resto del código llama a cada componente por ese nombre, igual que en las flechas de los diagramas de secuencia. Por ejemplo: `C_Gestor_Alta_Clinica.generarPdfInformeAlta(...)`.
+
+| Componente | Archivo de entrada | Dónde vive la lógica |
+|---|---|---|
+| API REST | `C_API_REST.js` | `src/routes/` y `src/controllers/` |
+| Seguridad JWT/BCrypt | `C_Seguridad_JWT_BCrypt.js` | `middlewares/`, `services/auth/`, `utils/encriptar_bcrypt.js`, parte OTP de `otpService.js` |
+| API Adapter | `C_API_Adapter.js` | `services/external/providerAdapter.js`, `services/audit/`, `config/cloudinary.js`, parte de correo de `otpService.js` |
+| Capa de Acceso a Datos | `C_Capa_de_Acceso_a_Datos.js` | `config/database.js` y `models/` |
+| Motor Agendamiento | `C_Motor_Agendamiento.js` | `services/agenda/agendaService.js` y `confirmacionService.js` |
+| Programador de Agenda | `C_Programador_Agenda.js` | `services/agenda/programador.js` |
+| Validador de Presencialidad | `C_Validador_Presencialidad.js` | `services/agenda/presencialidadService.js` |
+| Despachador de Notificaciones | `C_Despachador_Notificaciones.js` | `services/notifications/despachador.js` |
+| Motor Clínico | `C_Motor_Clinico.js` | `services/clinico/` triaje, preclínico, adherencia, alertas y episodio |
+| Motor de Refuerzos | `C_Motor_Refuerzos.js` | `services/clinico/refuerzoService.js` |
+| Escalador de Eventos Críticos | `C_Escalador_Eventos_Criticos.js` | `services/clinico/escalamientoService.js` |
+| Filtro de Contenido | `C_Filtro_Contenido.js` | `services/clinico/filtroContenidoService.js` |
+| Cifrado de Mensajería | `C_Cifrado_Mensajeria.js` | `services/clinico/cifradoService.js` |
+| Generador de Informes | `C_Generador_Informes.js` | `services/informes/exportadorInformes.js` y `services/clinico/fichaPdfService.js` |
+| Gestor de Alta Clínica | `C_Gestor_Alta_Clinica.js` | `services/clinico/altaService.js` |
+| Control de Acceso Clínico | `C_Control_Acceso_Clinico.js` | `services/clinico/accesoClinicoService.js` |
+| Gestor de Contingencia | `C_Gestor_Contingencia.js` | `services/external/contingenciaService.js` |
+
+En la Vista, todo `fro-vista/src` es el Cliente Móvil. El GPS del Dispositivo está en `src/utils/ubicacion.js` y `src/utils/useReporteUbicacion.js`. Cada archivo del código indica al inicio su componente y sus casos de uso, y cada función lleva el CU al que pertenece.
 
 ## Diagrama de despliegue
 

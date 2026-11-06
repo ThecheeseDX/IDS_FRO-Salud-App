@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU09.
+ */
 // Ruta: fro-vista/src/components/EncabezadoPerfilPaciente.js
 //
 // Encabezado de "Mi perfil" del paciente: su foto (opcional) y su nombre. Sin
@@ -20,6 +24,7 @@ export default function EncabezadoPerfilPaciente({ navigation }) {
   const [aviso, setAviso] = useState(null);
   const [confirmarQuitar, setConfirmarQuitar] = useState(false);
 
+  // CU09: cargar la foto del perfil
   useEffect(() => {
     apiClient
       .get('/auth/mi-foto')
@@ -27,6 +32,7 @@ export default function EncabezadoPerfilPaciente({ navigation }) {
       .catch(() => setPerfil({ foto_url: null, nombre: '' }));
   }, []);
 
+  // CU09: subir o cambiar la foto del perfil
   const elegirFoto = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) {
@@ -65,6 +71,7 @@ export default function EncabezadoPerfilPaciente({ navigation }) {
     }
   };
 
+  // CU09: quitar la foto del perfil
   const quitarFoto = async () => {
     setConfirmarQuitar(false);
     setSubiendo(true);

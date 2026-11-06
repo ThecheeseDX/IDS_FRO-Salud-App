@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Notificaciones"
+ * Casos de uso: CU52, CU54.
+ */
 // Ruta: fro-vista/src/screens/Comun/CentroNotificacionesScreen.js
 //
 // CU52 — Centro de notificaciones, común a los tres roles.
@@ -54,6 +58,7 @@ export default function CentroNotificacionesScreen({ navigation }) {
   const { userData } = useContext(AuthContext);
   const [guardando, setGuardando] = useState(false);
 
+  // CU52 — Emitiendo notificaciones multicanal: cargar la bandeja de avisos
   const cargar = useCallback(async (esRefresco = false) => {
     if (esRefresco) setRefrescando(true);
     else setCargando(true);
@@ -76,6 +81,7 @@ export default function CentroNotificacionesScreen({ navigation }) {
       .catch(() => {});
   }, [cargar]);
 
+  // CU52 — marcar el aviso como leído y saltar a su pantalla
   const abrir = async (item) => {
     if (!item.leida) {
       setAvisos((previos) =>
@@ -93,6 +99,7 @@ export default function CentroNotificacionesScreen({ navigation }) {
     if (ruta) navigation.navigate(...ruta);
   };
 
+  // CU52 — marcar todos los avisos como leídos
   const marcarTodas = async () => {
     try {
       await marcarTodasLeidas();
@@ -102,6 +109,7 @@ export default function CentroNotificacionesScreen({ navigation }) {
     }
   };
 
+  // CU52, CU54 — guardar los canales elegidos y el permiso de mensajes de ánimo
   const cambiarPreferencia = async (clave, valor) => {
     const nuevas = { ...preferencias, [clave]: valor };
     setPreferencias(nuevas);

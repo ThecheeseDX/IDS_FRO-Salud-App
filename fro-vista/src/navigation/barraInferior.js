@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: apoyo común, usado por CU79.
+ */
 // Ruta: fro-vista/src/navigation/barraInferior.js
 //
 // Estilo común de las barras de navegación inferior (paciente y profesional),

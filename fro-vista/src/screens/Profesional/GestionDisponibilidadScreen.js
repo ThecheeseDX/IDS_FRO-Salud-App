@@ -1,3 +1,10 @@
+/**
+ * Componente: Cliente Móvil — Vista "Gestión de agenda"
+ * Casos de uso: CU16.
+ *
+ * El profesional bloquea periodos de su agenda (vacaciones, licencias) y ve
+ * los bloqueos que ya tiene.
+ */
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import apiClient from '../../api/client';
@@ -23,6 +30,7 @@ export default function GestionDisponibilidadScreen() {
   const [bloqueos, setBloqueos] = useState([]);
   const [cargandoBloqueos, setCargandoBloqueos] = useState(true);
 
+  // CU16 — cargar los bloqueos de agenda vigentes
   const cargarBloqueos = useCallback(async () => {
     setCargandoBloqueos(true);
     try {
@@ -64,6 +72,7 @@ export default function GestionDisponibilidadScreen() {
     }
   };
 
+    // CU16 — Restringiendo disponibilidad administrativa
     const bloquearAgenda = async () => {
         if (!inicio || !fin || !motivo.trim()) {
             return setResultado({ tono: "error", titulo: "Campos incompletos", mensaje: "Indica las fechas y el motivo del bloqueo." });

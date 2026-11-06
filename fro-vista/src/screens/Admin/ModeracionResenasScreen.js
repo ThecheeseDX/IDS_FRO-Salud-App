@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Testimonios"
+ * Casos de uso: CU56.
+ */
 // Ruta: fro-vista/src/screens/Admin/ModeracionResenasScreen.js
 //
 // CU56 — Moderación de testimonios públicos.
@@ -37,6 +41,7 @@ export default function ModeracionResenasScreen() {
   const [procesando, setProcesando] = useState(null);
   const [porRechazar, setPorRechazar] = useState(null);
 
+  // CU56 — Moderando testimonios públicos: cargar la bandeja por estado
   const cargar = useCallback(
     async (cual = estado, esRefresco = false) => {
       if (esRefresco) setRefrescando(true);
@@ -59,6 +64,7 @@ export default function ModeracionResenasScreen() {
     cargar(estado);
   }, [cargar, estado]);
 
+  // CU56 — publicar o rechazar el testimonio
   const decidir = async (evaluacion, decision, motivo) => {
     setPorRechazar(null);
     setProcesando(evaluacion.evaluacion_satisfaccion_id);

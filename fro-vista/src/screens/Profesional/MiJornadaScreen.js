@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mi Jornada"
+ * Casos de uso: CU38, CU40, CU16.
+ */
 // Ruta: fro-vista/src/screens/Profesional/MiJornadaScreen.js
 //
 // La agenda del profesional, en tres formas de mirarla:
@@ -188,6 +192,7 @@ export default function MiJornadaScreen({ navigation }) {
   // flechas, una respuesta atrasada no pisa a la más reciente.
   const ultimoPedido = useRef(0);
 
+  // CU38 — cargar las citas del profesional en el rango que se muestra
   const cargar = useCallback(async (esRefresco = false) => {
     const cubierto = rangoCargado.current
       && rangoCargado.current.desde <= desde
@@ -309,6 +314,7 @@ export default function MiJornadaScreen({ navigation }) {
     setVista('dia');
   };
 
+  // CU38 — abrir la ficha del paciente para marcar y registrar la atención
   const abrirFicha = (cita) => {
     navigation.navigate('FichaClinica', {
       pacienteId: cita.paciente_id,
@@ -442,6 +448,7 @@ export default function MiJornadaScreen({ navigation }) {
     />
   );
 
+  // CU16 — Restringiendo disponibilidad administrativa
   // Bloquear horarios (vacaciones, licencias) se hace desde la jornada.
   const botonDisponibilidad = (
     <TouchableOpacity
@@ -455,6 +462,7 @@ export default function MiJornadaScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  // CU38: tarjeta de la cita con su hora de inicio y duración registradas.
   const tarjetaCita = (cita) => {
     const estado = normalizar(cita.estado);
     const enCurso = estado === 'EN_CURSO';
@@ -603,6 +611,7 @@ export default function MiJornadaScreen({ navigation }) {
 
   return (
     <View style={estilos.fondo}>
+      {/* CU38 Exc.3: aviso permanente de la atención en curso. */}
       <BarraAtencionEnCurso navigation={navigation} />
 
       {cabecera}
@@ -614,7 +623,7 @@ export default function MiJornadaScreen({ navigation }) {
           <RefreshControl refreshing={refrescando} onRefresh={() => cargar(true)} colors={[colores.primario]} />
         }
       >
-        {/* Punto 7: sesiones que quedaron para documentar al final de la jornada. */}
+        {/* CU40 (punto 7): sesiones que quedaron para documentar al final de la jornada. */}
         <PendientesDocumentar navigation={navigation} />
         {contenido}
       </ScrollView>

@@ -1,3 +1,7 @@
+/**
+ * Componente: GPS del Dispositivo
+ * Casos de uso: CU39.
+ */
 // Ruta: fro-vista/src/utils/ubicacion.js
 //
 // CU39 — Ubicación para la presencialidad de las visitas a domicilio. Desde
@@ -8,6 +12,7 @@
 import * as Location from 'expo-location';
 
 /**
+ * CU39 — Validando presencialidad mediante coordenadas GPS
  * Ubicación actual del teléfono como { latitud, longitud }, o null si el GPS
  * está apagado, falta el permiso o no responde a tiempo. Nunca lanza.
  */
@@ -34,6 +39,7 @@ export async function ubicacionActual({ pedirPermiso = true, esperaMs = 10000 } 
 }
 
 /**
+ * CU39, CU09 — respaldo por dirección, salvo que el paciente la oculte
  * Respaldo del GPS del paciente: su dirección registrada convertida a
  * coordenadas con el servicio del propio teléfono. Devuelve null si la
  * dirección está oculta (CU09) o no se pudo ubicar. Nunca lanza.

@@ -17,6 +17,7 @@ const { opcionesSSL, urlConexion, datosSueltos } = require('../src/config/dbOpti
 // ── Lista de migraciones ─────────────────────────────────────────────────────
 // Cada entrada dice cómo saber si ya está aplicada y qué ejecutar si no.
 const MIGRACIONES = [
+  // CU39, CU42, CU43 — evidencia de atención en la cita
   {
     nombre: 'Evidencia de atencion en Cita (CU39/CU42/CU43)',
     descripcion: 'Agrega modalidad, evidencia GPS y firma de conformidad a la cita',
@@ -38,6 +39,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU39, CU41 — parámetros de presencialidad y de certificación multi-factor
   {
     nombre: 'Parametros de evidencia de sesion (CU39/CU41)',
     descripcion: 'Radio de presencialidad y tolerancia del protocolo multi-factor',
@@ -55,6 +57,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU66 — Registrando y Validando Bonos de Cobertura
   {
     nombre: 'Financiadores con convenio (CU66)',
     descripcion: 'Siembra los financiadores simulados si la tabla esta vacia',
@@ -70,6 +73,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU23, CU24 — entrevista de triaje y su paso a la ficha
   {
     nombre: 'Tabla Triaje (CU23/CU24)',
     descripcion: 'Entrevista clínica automatizada con reanudación e integración a ficha',
@@ -96,6 +100,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU47 — Prescribiendo pautas de ejercicio técnico
   {
     nombre: 'Pauta_Ejercicio con parametros de carga (CU47)',
     descripcion: 'Agrega id propio, series, repeticiones, frecuencia y material a cada ejercicio',
@@ -180,6 +185,7 @@ const MIGRACIONES = [
       }
     },
   },
+  // CU48 — Registrando cumplimiento diario de tareas
   {
     nombre: 'Tabla Pauta_Cumplimiento (CU48)',
     descripcion: 'Registro diario de cumplimiento de ejercicios, con control anti-rebote',
@@ -204,6 +210,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU46 — Seleccionando material en biblioteca centralizada
   {
     nombre: 'Catalogo inicial de Material_Terapeutico (CU46)',
     descripcion: 'Siembra la biblioteca con recursos de ejemplo si esta vacia',
@@ -225,6 +232,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU08 — Gestionando sesiones y tokens de acceso
   {
     nombre: 'Tabla Sesion_Usuario (CU08)',
     descripcion: 'Registro de sesiones activas por dispositivo, revocables',
@@ -251,6 +259,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU09 — Configurando privacidad de datos de contacto
   {
     nombre: 'Paciente.privacidad_contacto (CU09)',
     descripcion: 'Preferencias de visibilidad de los datos de contacto',
@@ -269,6 +278,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU17, CU18 — plazos para reprogramar o cancelar
   {
     nombre: 'Parametros de anticipacion de agenda (CU17/CU18)',
     descripcion: 'Agrega los plazos mínimos para reprogramar y cancelar citas',
@@ -287,6 +297,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU10, CU14 — modalidad de cada bloque del horario del profesional
   {
     nombre: 'Profesional_Disponibilidad.modalidad',
     descripcion: 'Agrega la modalidad (DOMICILIO/ONLINE/AMBOS) a cada bloque horario',
@@ -314,6 +325,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU08 — Gestionando sesiones y tokens de acceso
   {
     nombre: 'Sesion_Usuario.dispositivo_id (CU08)',
     descripcion: 'Identifica cada instalacion para que reingresar no acumule sesiones duplicadas',
@@ -332,6 +344,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU31, CU33 — repositorio de documentos y versiones de evolución
   {
     nombre: 'Tablas de documentos y versiones (CU31/CU33)',
     descripcion: 'Crea Evolucion_Version (correcciones auditadas) y Documento_Clinico (repositorio multimedia)',
@@ -377,6 +390,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU31, CU33 — límites de archivos y de versiones
   {
     nombre: 'Parametros de multimedia y versionado (CU31/CU33)',
     descripcion: 'Limite de tamaño de archivos y tope de versiones de corrección',
@@ -395,6 +409,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU41 — Validando sesión mediante protocolo multi-factor
   {
     nombre: 'Cita.sesion_certificada_en (CU41)',
     descripcion: 'Persiste en la cita cuando y como se certifico la sesion',
@@ -415,6 +430,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU35 — Visualizando archivos con visor embebido
   {
     nombre: 'Documento_Clinico.paginas (CU35)',
     descripcion: 'Cantidad de paginas de los PDF para el visor pagina a pagina',
@@ -430,6 +446,7 @@ const MIGRACIONES = [
       await conexion.query(`ALTER TABLE Documento_Clinico ADD COLUMN paginas INT NULL`);
     },
   },
+  // CU78 — Agrupando registros bajo entidad episodio clínico
   {
     nombre: 'Cita.episodio_clinico_id (vinculo cita-episodio)',
     descripcion: 'Conecta cada cita con el episodio clinico que genero',
@@ -456,6 +473,7 @@ const MIGRACIONES = [
       }
     },
   },
+  // CU18, CU20 — cancelación separada por paciente o profesional
   {
     nombre: 'Cita.estado con cancelacion por actor (D2)',
     descripcion: 'Amplia la columna y separa CANCELADA en CANCELADA_PACIENTE / CANCELADA_PROFESIONAL',
@@ -490,6 +508,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU41 — Validando sesión mediante protocolo multi-factor
   {
     nombre: 'Cita: suspension de validacion multi-factor (D11)',
     descripcion: 'Guarda cuando y por que se suspendio la certificacion, para derivarla al Administrador',
@@ -509,6 +528,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU10 — Administrando catálogo de perfil profesional
   {
     nombre: 'Profesional.areas_experticia (CU10)',
     descripcion: 'Areas de experticia del catalogo publico del profesional',
@@ -524,6 +544,7 @@ const MIGRACIONES = [
       await conexion.query(`ALTER TABLE Profesional ADD COLUMN areas_experticia VARCHAR(255) NULL`);
     },
   },
+  // CU78 — Agrupando registros bajo entidad episodio clínico
   {
     nombre: 'Episodio_Clinico.estado ABIERTO por defecto (D12)',
     descripcion: 'Los episodios sin estado pasan a ABIERTO; los cerrados dejan de admitir registros',
@@ -545,6 +566,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU78 — Agrupando registros bajo entidad episodio clínico
   {
     nombre: 'Episodio_Clinico.fecha_terminado sin valor por defecto (CU78)',
     descripcion: 'El episodio abierto no tiene fecha de termino: antes nacia terminado en el mismo instante',
@@ -570,6 +592,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU10, CU14 — comunas que cubre el profesional a domicilio
   {
     nombre: 'Tabla Profesional_Comuna (CU10/CU14)',
     descripcion: 'Comunas en las que atiende cada profesional, para filtrar la busqueda del paciente',
@@ -593,6 +616,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU52 — Emitiendo notificaciones multicanal
   {
     nombre: 'Notificacion con titulo y datos (CU52)',
     descripcion: 'Titulo del aviso y carga util para abrir la pantalla correcta al tocarlo',
@@ -609,6 +633,7 @@ const MIGRACIONES = [
       await conexion.query(`ALTER TABLE Notificacion ADD COLUMN datos JSON NULL AFTER contenido`);
     },
   },
+  // CU52 — Emitiendo notificaciones multicanal
   {
     nombre: 'Tabla Preferencia_Notificacion (CU52)',
     descripcion: 'Canales de salida que acepta cada usuario: push y correo',
@@ -632,6 +657,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU52 — Emitiendo notificaciones multicanal
   {
     nombre: 'Tabla Dispositivo_Push (CU52)',
     descripcion: 'Tokens de notificacion push por dispositivo, listos para cuando exista build propia',
@@ -657,6 +683,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU21 — Confirmando asistencia a cita de forma distribuida
   {
     nombre: 'Tabla Solicitud_Confirmacion (CU21)',
     descripcion: 'Solicitud de confirmacion de asistencia con token de un solo uso y vencimiento',
@@ -684,6 +711,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU19 — Gestionando lista de espera secuencial
   {
     nombre: 'Lista_Espera secuencial con plazo (CU19)',
     descripcion: 'Estado del turno, momento de aviso y vencimiento para ofrecer el cupo de a uno',
@@ -729,6 +757,7 @@ const MIGRACIONES = [
       }
     },
   },
+  // CU19, CU21, CU52 — plazos de avisos, confirmación y lista de espera
   {
     nombre: 'Parametros de avisos, confirmacion y lista de espera (CU19/CU21/CU52)',
     descripcion: 'Plazos del bloque de notificaciones y agenda del Incremento 3',
@@ -748,6 +777,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU25, CU26 — reporte pre-clínico y especialidad sugerida
   {
     nombre: 'Tabla Reporte_Preclinico (CU25/CU26)',
     descripcion: 'Sintesis del triaje con banderas rojas y especialidad sugerida',
@@ -778,6 +808,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU50 — Generando y notificando alerta por deterioro clínico
   {
     nombre: 'Tabla Reporte_Sintoma (CU50)',
     descripcion: 'Reportes de evolucion que el paciente envia entre sesiones',
@@ -806,6 +837,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU50 — Generando y notificando alerta por deterioro clínico
   {
     nombre: 'Tabla Alerta_Clinica (CU50)',
     descripcion: 'Banderas rojas que llegan al panel del profesional',
@@ -838,6 +870,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU25, CU50 — parámetros del reporte pre-clínico y del deterioro
   {
     nombre: 'Parametros de triaje inteligente y deterioro (CU25/CU50)',
     descripcion: 'Umbrales del reporte pre-clinico y de las alertas por deterioro',
@@ -857,6 +890,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU44 — Actualizando indicadores de adherencia y síntomas
   {
     nombre: 'Tabla Indicador_Adherencia (CU44)',
     descripcion: 'Indice de adherencia por dia, base de la curva de progreso del paciente',
@@ -884,6 +918,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU44 — Actualizando indicadores de adherencia y síntomas
   {
     nombre: 'Parametros de adherencia (CU44)',
     descripcion: 'Umbral de adherencia critica y minimo de tareas para alertar',
@@ -901,6 +936,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU53 — Comunicando mediante mensajería clínica cifrada
   {
     nombre: 'Mensaje_Chat con remitente y lectura (CU53)',
     descripcion: 'Quien escribe cada mensaje del chat clinico y si la otra parte ya lo leyo',
@@ -927,6 +963,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU57 — Filtrando automáticamente contenido restringido
   {
     nombre: 'Tabla Palabra_Restringida (CU57)',
     descripcion: 'Diccionario de terminos no permitidos, con siembra inicial',
@@ -964,6 +1001,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU55, CU56 — evaluación post-sesión y moderación de reseñas
   {
     nombre: 'Evaluacion_Satisfaccion con moderacion (CU55/CU56)',
     descripcion: 'Estado de moderacion con causal y responsable, en vez de un booleano',
@@ -995,6 +1033,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU60, CU61 — solicitudes de soporte y su enrutamiento
   {
     nombre: 'Ticket_Soporte con enrutamiento y adjunto (CU60/CU61)',
     descripcion: 'Operador asignado, momento de enrutamiento, adjunto y resolucion',
@@ -1019,6 +1058,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU61 — Enrutando automáticamente solicitudes por categoría
   {
     nombre: 'Tabla Area_Soporte_Operador (CU61)',
     descripcion: 'Areas que atiende cada operador; sin operador, el ticket va a supervision general',
@@ -1041,6 +1081,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU60, CU63 — parámetros de soporte y de informes
   {
     nombre: 'Parametros de soporte y reportes (CU60/CU63)',
     descripcion: 'Limite del adjunto de un ticket y tope de filas por tomo de informe',
@@ -1058,6 +1099,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU75 — Liquidando ganancias en panel financiero
   {
     nombre: 'Tabla Liquidacion (CU75)',
     descripcion: 'Historial mensual de liquidaciones por profesional, inalterable',
@@ -1090,6 +1132,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU73, CU74, CU75 — parámetros de cobro, devoluciones y liquidación
   {
     nombre: 'Parametros de comercializacion y liquidacion (CU73/CU74/CU75)',
     descripcion: 'Descuento de los planes, ventana de actualizacion y honorario del profesional',
@@ -1109,6 +1152,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU47 — Prescribiendo pautas de ejercicio técnico (el material va por ejercicio)
   {
     nombre: 'Eliminar Pauta_Material (D8)',
     descripcion: 'La tabla no la usa ningun flujo: el material se asocia por ejercicio',
@@ -1124,6 +1168,7 @@ const MIGRACIONES = [
       await conexion.query(`DROP TABLE IF EXISTS Pauta_Material`);
     },
   },
+  // CU19 — Gestionando lista de espera secuencial
   {
     nombre: 'Lista_Espera.token_cupo (CU19 desde el correo)',
     descripcion: 'Enlace seguro para tomar el cupo liberado directamente desde el correo',
@@ -1143,6 +1188,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU58 — Calculando y visualizando calificación profesional
   {
     nombre: 'Paciente.resena_anonima (CU58)',
     descripcion: 'El paciente decide si su nombre aparece bajo sus calificaciones escritas',
@@ -1161,6 +1207,7 @@ const MIGRACIONES = [
     },
   },
   // ── Incremento 4 ──────────────────────────────────────────────────────────
+  // CU51, CU37 — preparación para el alta e informe de alta
   {
     nombre: 'Alta del tratamiento en Episodio_Clinico (CU51/CU37)',
     descripcion: 'Preparación para el alta, pautas de continuidad e informe de alta del episodio',
@@ -1183,6 +1230,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
   {
     nombre: 'Material_Terapeutico.proposito e imagen (CU51)',
     descripcion: 'Distingue el material de tratamiento del de prevención y mantenimiento post-alta',
@@ -1202,6 +1250,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
   {
     nombre: 'Catalogo de prevencion y mantenimiento (CU51)',
     descripcion: 'Siembra los contenidos que se habilitan al alcanzar el umbral de egreso',
@@ -1222,6 +1271,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU51, CU37 — umbral de avance para habilitar el alta
   {
     nombre: 'Parametro UMBRAL_EGRESO_CLINICO (CU51/CU37)',
     descripcion: 'Porcentaje de cumplimiento de metas que habilita la preparación para el alta',
@@ -1236,6 +1286,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU54 — Enviando Mensajes de Refuerzo Positivo
   {
     nombre: 'Preferencia_Notificacion.refuerzos (CU54)',
     descripcion: 'El paciente activa o desactiva los mensajes de refuerzo positivo',
@@ -1253,6 +1304,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
   {
     nombre: 'Tabla Evento_Critico (CU62)',
     descripcion: 'Eventos escalados a supervisión por términos críticos, con acuse de recibo',
@@ -1287,6 +1339,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
   {
     nombre: 'Terminos criticos del diccionario (CU62)',
     descripcion: 'Categoría CRITICO: no bloquea el texto, lo escala a supervisión',
@@ -1310,6 +1363,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU65 — Registrando y Siguiendo Derivaciones Internas
   {
     nombre: 'Derivacion_Interna: respuesta y cierre (CU65)',
     descripcion: 'Momento y comentario de la respuesta del profesional derivado, y momento de cierre',
@@ -1330,6 +1384,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU72 — Ingresando Datos mediante Interfaz de Contingencia
   {
     nombre: 'Bono: registro manual por contingencia (CU72)',
     descripcion: 'Bono PROVISORIO ingresado a mano: financiador escrito a mano, quién y cuándo lo registró, regularización',
@@ -1354,6 +1409,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU72 — Ingresando Datos mediante Interfaz de Contingencia
   {
     nombre: 'Parametros de contingencia del financiador (CU72)',
     descripcion: 'Modo de contingencia forzado y ventana de detección automática',
@@ -1371,6 +1427,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU53 — Comunicando mediante mensajería clínica cifrada
   {
     nombre: 'Chat general por paciente y profesional, con adjuntos (CU53)',
     descripcion: 'Una conversación por pareja en vez de una por episodio; imágenes, archivos y documentos de la ficha en el chat',
@@ -1412,6 +1469,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU09 — Configurando privacidad de datos de contacto (foto del perfil del paciente)
   {
     nombre: 'Paciente.foto_url (foto de perfil opcional)',
     descripcion: 'Fotografía del paciente; sin ella se muestran sus iniciales',
@@ -1427,6 +1485,7 @@ const MIGRACIONES = [
       await conexion.query(`ALTER TABLE Paciente ADD COLUMN foto_url VARCHAR(500) NULL`);
     },
   },
+  // CU38, CU40 — sesión finalizada que se documenta después
   {
     nombre: 'Cita.documentacion_pendiente (documentar al final de la jornada)',
     descripcion: 'Sesión finalizada cuyo registro clínico se completa después',
@@ -1442,6 +1501,7 @@ const MIGRACIONES = [
       await conexion.query(`ALTER TABLE Cita ADD COLUMN documentacion_pendiente BOOLEAN NOT NULL DEFAULT FALSE`);
     },
   },
+  // CU47 — Prescribiendo pautas de ejercicio técnico
   {
     nombre: 'Pautas: días de la semana y material de apoyo por ejercicio (CU47)',
     descripcion: 'Días específicos en que se realiza cada ejercicio y archivos de apoyo subidos al ejercicio',
@@ -1474,6 +1534,7 @@ const MIGRACIONES = [
       );
     },
   },
+  // CU39 — Validando presencialidad mediante coordenadas GPS
   {
     nombre: 'Presencialidad automática: radio 100 m y ventana de ubicación del paciente (CU39)',
     descripcion: 'Las marcas las dispara el profesional; la ubicación del paciente vale 30 minutos',
@@ -1493,7 +1554,7 @@ const MIGRACIONES = [
           WHERE clave = 'RADIO_PRESENCIALIDAD_METROS'`
       );
     },
-  },  {
+  },  /* CU55 — Evaluando satisfacción post-sesión */ {
     nombre: 'Evaluación por sesión (satisfacción) y por tratamiento (estrellas) (CU55)',
     descripcion: 'Por cita solo sí/no y comentario; la nota en estrellas se pide al cerrar el episodio',
     yaAplicada: async (conexion, baseDatos) => {
@@ -1527,7 +1588,7 @@ const MIGRACIONES = [
            ADD CONSTRAINT fk_eval_profesional FOREIGN KEY (profesional_id) REFERENCES Profesional(profesional_id)`
       );
     },
-  },  {
+  },  /* CU53, CU62 — el chat cifrado no se escala con extractos */ {
     nombre: 'Retirar del escalamiento los mensajes del chat cifrado (CU53/CU62)',
     descripcion: 'Borra los eventos críticos que guardaron un extracto de un mensaje del chat',
     yaAplicada: async (conexion) => {

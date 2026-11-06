@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Bonos por contingencia"
+ * Casos de uso: CU72, CU66.
+ */
 // Ruta: fro-vista/src/screens/Comun/ContingenciaBonosScreen.js
 //
 // CU72 — Ingreso de bonos por contingencia (Profesional y Administrador).
@@ -47,6 +51,7 @@ export default function ContingenciaBonosScreen() {
   const [financiadorRegularizar, setFinanciadorRegularizar] = useState({});
   const [aviso, setAviso] = useState(null);
 
+  // CU72 — cargar el estado del financiador, las citas sin bono y los provisorios
   const cargar = useCallback(async (refresco = false) => {
     if (refresco) setRefrescando(true);
     try {
@@ -78,6 +83,7 @@ export default function ContingenciaBonosScreen() {
     setErrores({});
   };
 
+  // CU72 — Ingresando Datos mediante Interfaz de Contingencia: registrar el bono provisorio
   const enviar = async () => {
     // Excepción 3: se marcan en la vista los campos que faltan antes de enviar.
     const nuevos = {};
@@ -127,6 +133,7 @@ export default function ContingenciaBonosScreen() {
     }
   };
 
+  // CU72 — el administrador fuerza o apaga el modo contingencia
   const cambiarModo = async (activo) => {
     setCambiandoModo(true);
     try {
@@ -140,6 +147,7 @@ export default function ContingenciaBonosScreen() {
     }
   };
 
+  // CU72, CU66 — regularizar el bono provisorio validándolo con el financiador
   const regularizar = async (bono) => {
     setRegularizando(bono.bono_id);
     try {

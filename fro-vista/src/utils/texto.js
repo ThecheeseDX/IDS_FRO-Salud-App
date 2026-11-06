@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: apoyo común, usado por CU56 y CU58.
+ */
 // Ruta: fro-vista/src/utils/texto.js
 //
 // Texto escrito por personas, listo para mostrarse: compone las tildes que

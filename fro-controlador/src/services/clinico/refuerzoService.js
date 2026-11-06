@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Motor_Refuerzos (puerta de entrada: src/componentes/C_Motor_Refuerzos.js)
+ * Casos de uso: CU54.
+ *
  * CU54 — Mensajes de refuerzo positivo (Incremento 4).
  *
  * Cuando el paciente marca un ejercicio y su índice de adherencia sube, se le
@@ -8,7 +11,7 @@
  * texto distinto cuando cruza un hito (25, 50, 75 o 100 %).
  */
 
-const { notificarUsuario } = require('../agenda/agendaService');
+const C_Despachador_Notificaciones = require('../../componentes/C_Despachador_Notificaciones');
 
 const HITOS = [
   { desde: 100, texto: '¡Completaste el 100 % de tus ejercicios! Tu constancia es la mejor parte del tratamiento.' },
@@ -17,6 +20,7 @@ const HITOS = [
   { desde: 25, texto: 'Ya llevas el {p} % de tus ejercicios. ¡Buen comienzo, sigue sumando!' },
 ];
 
+// CU54 — Enviando Mensajes de Refuerzo Positivo
 function textoRefuerzo(anterior, actual) {
   for (const h of HITOS) {
     const cruzado = actual >= h.desde && (anterior === null || anterior < h.desde);
@@ -26,6 +30,7 @@ function textoRefuerzo(anterior, actual) {
 }
 
 /**
+ * CU54 — Enviando Mensajes de Refuerzo Positivo
  * @returns {Promise<{ enviado: boolean, motivo?: string, mensaje?: string }>}  nunca lanza.
  */
 async function evaluarRefuerzo(conexion, { pacienteId, usuarioId, anterior, actual }) {
@@ -51,7 +56,8 @@ async function evaluarRefuerzo(conexion, { pacienteId, usuarioId, anterior, actu
     if (hoy) return { enviado: false, motivo: 'YA_ENVIADO_HOY' };
 
     const mensaje = textoRefuerzo(previo, Number(actual));
-    await notificarUsuario(conexion, usuarioId, 'REFUERZO_POSITIVO', mensaje, {
+    // CU52: el aviso sale por el despachador
+    await C_Despachador_Notificaciones.notificarUsuario(conexion, usuarioId, 'REFUERZO_POSITIVO', mensaje, {
       datos: { pantalla: 'MiProgreso', adherencia: Number(actual) },
     });
     await conexion.query(

@@ -1,6 +1,13 @@
-const pool = require('../config/database');
-const { porcentajeObjetivosEpisodio } = require('../services/clinico/episodioService');
+/**
+ * Componente: C_API_REST
+ * Casos de uso: CU30, CU36, CU13.
+ *
+ * Firma y cierre de evoluciones clínicas: una vez firmadas no se editan ni se borran.
+ */
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Motor_Clinico = require('../componentes/C_Motor_Clinico');
 
+// CU13 — Registrando bitácora de auditoría de seguridad
 const registrarAuditoria = async (connection, req, accion, entidad, datos) => {
   const usuarioId = req.user?.usuario_id || null;
   const ip = req.ip || req.connection?.remoteAddress || 'IP_NO_DETECTADA';
@@ -13,11 +20,12 @@ const registrarAuditoria = async (connection, req, accion, entidad, datos) => {
   );
 };
 
+// CU36, CU30 — firmar la evolución y dejarla inalterable
 exports.finalizarEvolucion = async (req, res) => {
   const { evolucionId } = req.params;
   const usuarioId = req.user?.usuario_id || null;
 
-  const connection = await pool.getConnection();
+  const connection = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
     await connection.beginTransaction();
@@ -77,7 +85,7 @@ exports.finalizarEvolucion = async (req, res) => {
       // El intento se anota después del rollback: dentro de la transacción
       // revertida se perdía (CU30, "registra el intento en el log inmutable").
       await connection.rollback();
-      await registrarAuditoria(pool, req, 'INTENTO_FINALIZAR_REGISTRO_INALTERABLE', 'evolucion_clinica', {
+      await registrarAuditoria(C_Capa_de_Acceso_a_Datos, req, 'INTENTO_FINALIZAR_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId
       });
       return res.status(409).json({
@@ -91,7 +99,7 @@ exports.finalizarEvolucion = async (req, res) => {
     // guardó despues del ultimo avance, el dato igual queda en el registro.
     const porcentajeEpisodio =
       rows[0].porcentaje_objetivo === null || rows[0].porcentaje_objetivo === undefined
-        ? await porcentajeObjetivosEpisodio(connection, rows[0].episodio_clinico_id)
+        ? await C_Motor_Clinico.porcentajeObjetivosEpisodio(connection, rows[0].episodio_clinico_id)
         : null;
 
     await connection.execute(
@@ -104,6 +112,7 @@ exports.finalizarEvolucion = async (req, res) => {
       [firmaDigitalGenerada, porcentajeEpisodio, evolucionId]
     );
 
+    // CU38: la sesión deja de figurar como pendiente de documentar
     // Corrección Inc 4 (punto 7): firmar el registro libera la sesión que
     // había quedado pendiente de documentar.
     await connection.execute(
@@ -141,6 +150,7 @@ exports.finalizarEvolucion = async (req, res) => {
   }
 };
 
+// CU30 — Asegurando inalterabilidad de registros clínicos
 exports.editarEvolucion = async (req, res) => {
   const { evolucionId } = req.params;
   const {
@@ -149,7 +159,7 @@ exports.editarEvolucion = async (req, res) => {
     tecnicas_aplicadas
   } = req.body;
 
-  const connection = await pool.getConnection();
+  const connection = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
     await connection.beginTransaction();
@@ -185,7 +195,7 @@ exports.editarEvolucion = async (req, res) => {
       // El intento se anota después del rollback: dentro de la transacción
       // revertida se perdía (CU30, "registra el intento en el log inmutable").
       await connection.rollback();
-      await registrarAuditoria(pool, req, 'INTENTO_EDICION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
+      await registrarAuditoria(C_Capa_de_Acceso_a_Datos, req, 'INTENTO_EDICION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId,
         intento: req.body
       });
@@ -232,10 +242,11 @@ exports.editarEvolucion = async (req, res) => {
   }
 };
 
+// CU30 — Asegurando inalterabilidad de registros clínicos
 exports.eliminarEvolucion = async (req, res) => {
   const { evolucionId } = req.params;
 
-  const connection = await pool.getConnection();
+  const connection = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
     await connection.beginTransaction();
@@ -271,7 +282,7 @@ exports.eliminarEvolucion = async (req, res) => {
       // El intento se anota después del rollback: dentro de la transacción
       // revertida se perdía (CU30, "registra el intento en el log inmutable").
       await connection.rollback();
-      await registrarAuditoria(pool, req, 'INTENTO_ELIMINACION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
+      await registrarAuditoria(C_Capa_de_Acceso_a_Datos, req, 'INTENTO_ELIMINACION_REGISTRO_INALTERABLE', 'evolucion_clinica', {
         evolucion_clinica_id: evolucionId
       });
 

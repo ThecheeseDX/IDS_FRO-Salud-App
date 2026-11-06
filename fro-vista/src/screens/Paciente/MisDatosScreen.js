@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mis datos"
+ * Casos de uso: CU09.
+ */
 // Ruta: fro-vista/src/screens/Paciente/MisDatosScreen.js
 //
 // Datos de contacto del paciente, editables desde "Mi perfil": dirección,
@@ -46,6 +50,7 @@ export default function MisDatosScreen({ navigation }) {
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
+  // CU09: carga los datos de contacto del paciente
   const cargar = async () => {
     setCargando(true);
     setErrorCarga(false);
@@ -83,6 +88,7 @@ export default function MisDatosScreen({ navigation }) {
     if (errores[campo]) setErrores((previos) => ({ ...previos, [campo]: null }));
   };
 
+  // CU09: guarda los datos de contacto editados
   const guardar = async () => {
     setGuardando(true);
     try {

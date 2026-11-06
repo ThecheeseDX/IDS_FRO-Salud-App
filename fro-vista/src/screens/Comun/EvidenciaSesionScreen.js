@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Evidencia de Sesión"
+ * Casos de uso: CU39, CU43.
+ */
 // Ruta: fro-vista/src/screens/Comun/EvidenciaSesionScreen.js
 //
 // Evidencia de la sesión, común a paciente y profesional:
@@ -44,6 +48,7 @@ export default function EvidenciaSesionScreen({ route }) {
   const [errorCarga, setErrorCarga] = useState(false);
   const [procesando, setProcesando] = useState(false);
 
+  // CU39, CU43 — cargar la evidencia de la sesión (GPS y teleconsulta)
   const cargar = async () => {
     setErrorCarga(false);
     try {
@@ -88,6 +93,7 @@ export default function EvidenciaSesionScreen({ route }) {
     return Math.round(mediciones.reduce((a, b) => a + b, 0) / mediciones.length);
   };
 
+  // CU43 — Registrando evidencia técnica de teleconsulta
   const registrarTeleconsulta = async (evento) => {
     setProcesando(true);
     try {

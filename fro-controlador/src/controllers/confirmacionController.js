@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU21, CU73.
+ *
  * CU21 — Confirmación de asistencia distribuida.
  *
  * Dos superficies sobre el mismo servicio:
@@ -6,14 +9,11 @@
  *   · el correo (sin sesión), cuyo enlace abre una página web con el resultado.
  */
 
-const pool = require('../config/database');
-const {
-  emitirSolicitud,
-  despacharSolicitudesPendientes,
-  leerSolicitud,
-  responderPorEnlace,
-} = require('../services/agenda/confirmacionService');
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Programador_Agenda = require('../componentes/C_Programador_Agenda');
+const C_Motor_Agendamiento = require('../componentes/C_Motor_Agendamiento');
 
+// CU21 — Confirmando asistencia a cita de forma distribuida
 // ── Página web que ve el paciente al volver desde el correo ────────────────
 function paginaHTML({ titulo, mensaje, detalle, tono }) {
   const color = tono === 'error' ? '#B3261E' : tono === 'aviso' ? '#A85A00' : '#003B4D';
@@ -36,6 +36,7 @@ function paginaHTML({ titulo, mensaje, detalle, tono }) {
 </body></html>`;
 }
 
+// Apoyo común: fecha DD/MM/AAAA y hora 24h para la página
 function fechaLegible(valor) {
   if (!valor) return '';
   const f = new Date(valor);
@@ -44,6 +45,7 @@ function fechaLegible(valor) {
 }
 
 /**
+ * CU21 — Confirmando asistencia a cita de forma distribuida
  * GET /api/citas/confirmacion/:token?accion=CONFIRMAR|CANCELAR   (público)
  *
  * Es el enlace del correo. Sin 'accion' muestra el detalle de la cita y los
@@ -55,7 +57,7 @@ exports.responderDesdeCorreo = async (req, res) => {
 
   try {
     if (!['CONFIRMAR', 'CANCELAR'].includes(accion)) {
-      const solicitud = await leerSolicitud(pool, token);
+      const solicitud = await C_Motor_Agendamiento.leerSolicitud(C_Capa_de_Acceso_a_Datos, token);
 
       if (!solicitud) {
         return res.status(404).send(paginaHTML({
@@ -94,7 +96,7 @@ exports.responderDesdeCorreo = async (req, res) => {
       }));
     }
 
-    const resultado = await responderPorEnlace(pool, token, accion, req);
+    const resultado = await C_Motor_Agendamiento.responderPorEnlace(C_Capa_de_Acceso_a_Datos, token, accion, req);
 
     if (!resultado.ok) {
       const codigoHttp = resultado.codigo === 'TOKEN_INVALIDO' ? 404
@@ -123,6 +125,7 @@ exports.responderDesdeCorreo = async (req, res) => {
 };
 
 /**
+ * CU21 — Confirmando asistencia a cita de forma distribuida
  * GET /api/citas/confirmaciones/pendientes   (paciente autenticado)
  *
  * Qué citas tienen una solicitud de confirmación abierta. La app la usa para
@@ -132,9 +135,9 @@ exports.pendientes = async (req, res) => {
   try {
     // Oportunista: aprovecha la visita para despachar lo que el temporizador no
     // alcanzó a mandar mientras el servidor dormía.
-    await despacharSolicitudesPendientes(pool);
+    await C_Programador_Agenda.despacharSolicitudesPendientes(C_Capa_de_Acceso_a_Datos);
 
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT s.cita_id, s.momento_envio, s.momento_expira,
               (s.momento_expira <= NOW()) AS vencida
          FROM Solicitud_Confirmacion s
@@ -154,6 +157,7 @@ exports.pendientes = async (req, res) => {
 };
 
 /**
+ * CU21 — Confirmando asistencia a cita de forma distribuida
  * POST /api/citas/:id/solicitar-confirmacion   (paciente autenticado)
  *
  * Excepción 2 del CU21: el paciente pide que le generen una clave nueva
@@ -161,7 +165,7 @@ exports.pendientes = async (req, res) => {
  */
 exports.reenviar = async (req, res) => {
   try {
-    const [[cita]] = await pool.query(
+    const [[cita]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT c.cita_id, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado,
               u_pac.usuario_id AS usuario_paciente,
               COALESCE(
@@ -183,7 +187,8 @@ exports.reenviar = async (req, res) => {
     if (cita.usuario_paciente !== req.user.usuario_id) {
       return res.status(403).json({ error: 'CITA_AJENA', mensaje: 'Esta cita no es tuya.' });
     }
-    const [[pago]] = await pool.query(
+    // CU73: solo se confirma una hora ya pagada
+    const [[pago]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT 1 AS ok FROM Transaccion
         WHERE cita_id = ? AND estado = 'PAGADA' AND tipo <> 'DEVOLUCION' LIMIT 1`,
       [cita.cita_id]
@@ -202,7 +207,7 @@ exports.reenviar = async (req, res) => {
       });
     }
 
-    await emitirSolicitud(pool, cita);
+    await C_Programador_Agenda.emitirSolicitud(C_Capa_de_Acceso_a_Datos, cita);
 
     return res.status(200).json({
       mensaje: 'Te enviamos una solicitud nueva. Revisa tus notificaciones y tu correo.',

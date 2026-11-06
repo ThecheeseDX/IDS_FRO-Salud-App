@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Escalador_Eventos_Criticos (puerta de entrada: src/componentes/C_Escalador_Eventos_Criticos.js)
+ * Casos de uso: CU62.
+ *
  * CU62 — Escalamiento de eventos críticos a supervisión (Incremento 4).
  *
  * El diccionario de términos restringidos (CU57) suma la categoría CRITICO:
@@ -12,9 +15,10 @@
  * su profesional (CU53). Un extracto suyo en la bandeja rompía esa promesa.
  */
 
-const { detectarCriticos } = require('./filtroContenidoService');
-const { notificarUsuario } = require('../agenda/agendaService');
+const C_Filtro_Contenido = require('../../componentes/C_Filtro_Contenido');
+const C_Despachador_Notificaciones = require('../../componentes/C_Despachador_Notificaciones');
 
+// CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
 const ORIGENES = {
   CHAT: 'Mensaje del chat clínico',
   SINTOMAS: 'Comentario de un reporte de síntomas',
@@ -22,6 +26,7 @@ const ORIGENES = {
   TICKET: 'Solicitud de soporte',
 };
 
+// CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
 /** Fragmento del texto alrededor del término, para la bandeja. */
 function extracto(texto, termino, largo = 280) {
   const limpio = String(texto || '').replace(/\s+/g, ' ').trim();
@@ -31,6 +36,7 @@ function extracto(texto, termino, largo = 280) {
   return `${inicio > 0 ? '…' : ''}${limpio.slice(inicio, inicio + largo)}…`;
 }
 
+// CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
 /** Administradores con sesión activa; si no hay ninguno, todos los administradores. */
 async function supervisores(conexion) {
   const [activos] = await conexion.query(
@@ -49,6 +55,7 @@ async function supervisores(conexion) {
 }
 
 /**
+ * CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
  * Revisa el texto y, si contiene términos críticos, registra el evento y
  * avisa. Nunca lanza: el escalamiento no puede romper la operación que lo
  * originó.
@@ -57,7 +64,7 @@ async function supervisores(conexion) {
  */
 async function escalar(conexion, { texto, origen, entidad, entidadId, usuarioOrigenId = null, pacienteId = null }) {
   try {
-    const criticos = await detectarCriticos(texto);
+    const criticos = await C_Filtro_Contenido.detectarCriticos(texto);
     if (criticos.length === 0) return null;
 
     // La reseña o el reporte los escribe el paciente: si no viene su id, se
@@ -87,10 +94,11 @@ async function escalar(conexion, { texto, origen, entidad, entidadId, usuarioOri
       [JSON.stringify({ evento_critico_id: eventoId, origen, entidad, entidad_id: entidadId, terminos: criticos }), usuarioOrigenId]
     ).catch(() => {});
 
+    // CU52: aviso a los administradores
     const { usuarios, con_sesion } = await supervisores(conexion);
     const descripcion = ORIGENES[origen] || origen;
     for (const usuarioId of usuarios) {
-      await notificarUsuario(
+      await C_Despachador_Notificaciones.notificarUsuario(
         conexion,
         usuarioId,
         'EVENTO_CRITICO',

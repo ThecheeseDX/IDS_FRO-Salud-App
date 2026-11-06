@@ -1,7 +1,16 @@
-const db = require('../config/database');
-const { profesionalTratante } = require('../services/clinico/accesoClinicoService');
+/**
+ * Componente: C_API_REST
+ * Casos de uso: CU10, CU11, CU28.
+ * También apoya CU14 (comunas y jornada que usa la búsqueda de horas).
+ *
+ * Endpoints del profesional: nómina de pacientes, historial consolidado del
+ * paciente, perfil público y jornada semanal.
+ */
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Control_Acceso_Clinico = require('../componentes/C_Control_Acceso_Clinico');
+const C_API_Adapter = require('../componentes/C_API_Adapter');
 
-// Un profesional solo puede pedir su propia nómina: el id de la URL tiene que
+// CU11, CU12 — un profesional solo puede pedir su propia nómina: el id de la URL tiene que
 // ser el suyo (el Administrador puede consultar la de cualquiera).
 const esAdministrador = (req) => req.user?.nombre_rol === 'Administrador';
 const NOMINA_AJENA = {
@@ -12,17 +21,18 @@ const NOMINA_AJENA = {
 // ─────────────────────────────────────────────────────────────────────────────
 // LISTAR PACIENTES ASIGNADOS (Por Profesional ID)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU11 — Visualizando panel interno de gestión profesional
 exports.listarPacientesAsignados = async (req, res) => {
   try {
     const { profesionalId } = req.params;
     if (!esAdministrador(req)) {
-      const [[propio]] = await db.query('SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1', [req.user.usuario_id]);
+      const [[propio]] = await C_Capa_de_Acceso_a_Datos.query('SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1', [req.user.usuario_id]);
       if (!propio || Number(propio.profesional_id) !== Number(profesionalId)) return res.status(403).json(NOMINA_AJENA);
     }
     const { buscar = '' } = req.query;
     const busqueda = `%${buscar}%`;
 
-    const [pacientes] = await db.query(
+    const [pacientes] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         p.paciente_id,
@@ -107,6 +117,7 @@ exports.listarPacientesAsignados = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // OBTENER HISTORIAL CONSOLIDADO
 // ─────────────────────────────────────────────────────────────────────────────
+// CU28 — Consolidando historial en ficha clínica electrónica
 exports.obtenerHistorialPaciente = async (req, res) => {
   try {
     const { pacienteId } = req.params;
@@ -115,7 +126,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
     const usuarioId = req.user?.usuario_id || req.query.usuarioId;
 
     // Criterio único de acceso: episodio, cita vigente o derivación interna (CU65).
-    const asignacion = await profesionalTratante(db, usuarioId, pacienteId);
+    const asignacion = await C_Control_Acceso_Clinico.profesionalTratante(C_Capa_de_Acceso_a_Datos, usuarioId, pacienteId);
 
     if (!asignacion) {
       return res.status(403).json({
@@ -124,7 +135,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       });
     }
 
-    const [[paciente]] = await db.query(
+    const [[paciente]] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         p.paciente_id,
@@ -152,7 +163,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       [pacienteId]
     );
 
-    const [historial] = await db.query(
+    const [historial] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         c.cita_id,
@@ -189,7 +200,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       [usuarioId, pacienteId]
     );
 
-    const [episodios] = await db.query(
+    const [episodios] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         ec.episodio_clinico_id,
@@ -216,10 +227,10 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       [usuarioId, pacienteId]
     );
 
-    // Las metas viven en el episodio y el avance de la evolución se calcula con
+    // CU32: las metas viven en el episodio y el avance de la evolución se calcula con
     // ellas: si el historial no las muestra, el porcentaje no se puede verificar
     // contra nada. Se adjuntan a su episodio.
-    const [metas] = await db.query(
+    const [metas] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         ot.objetivo_terapeutico_id,
@@ -242,7 +253,8 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       );
     }
 
-    const [evoluciones] = await db.query(
+    // CU40: evoluciones registradas, con su firma (CU36) y versiones (CU31).
+    const [evoluciones] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         ec.evolucion_clinica_id,
@@ -273,7 +285,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
       process.env.CLOUDINARY_API_SECRET
     );
 
-    const [[conteoDocumentos]] = await db.query(
+    const [[conteoDocumentos]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT COUNT(*) AS total FROM Documento_Clinico WHERE paciente_id = ?`,
       [pacienteId]
     );
@@ -302,6 +314,7 @@ exports.obtenerHistorialPaciente = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // LISTAR PACIENTES POR USUARIO PROFESIONAL (Basado en la Cuenta de Usuario)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU11 — Visualizando panel interno de gestión profesional
 exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
   try {
     const { usuarioId } = req.params;
@@ -311,7 +324,7 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
     const { buscar = '' } = req.query;
     const busqueda = `%${buscar}%`;
 
-    const [pacientes] = await db.query(
+    const [pacientes] = await C_Capa_de_Acceso_a_Datos.query(
       `
       SELECT
         p.paciente_id,
@@ -406,7 +419,6 @@ exports.listarPacientesPorUsuarioProfesional = async (req, res) => {
 // El profesional gestiona lo que el paciente ve al buscar hora: fotografía,
 // reseña curricular, áreas de experticia y modalidad general de atención.
 // ─────────────────────────────────────────────────────────────────────────────
-const { cloudinaryConfigurado, subirBuffer } = require('../config/cloudinary');
 
 const MODALIDADES = ['DOMICILIO', 'ONLINE', 'AMBOS'];
 const LIMITE_RESENA = 1000;
@@ -414,17 +426,19 @@ const LIMITE_AREAS = 255;
 const EXTENSIONES_FOTO = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
 const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
+// CU10 — perfil propio del profesional
 async function perfilDeUsuario(usuarioId) {
   return perfilDonde('p.usuario_id = ?', usuarioId);
 }
 
-// El mismo perfil, buscado por el profesional (lo que ve el paciente).
+// CU10, CU14 — el mismo perfil, buscado por el profesional (lo que ve el paciente).
 async function perfilDeProfesional(profesionalId) {
   return perfilDonde('p.profesional_id = ?', profesionalId);
 }
 
+// CU10 — leer el perfil con sus comunas y su calificación
 async function perfilDonde(condicion, valor) {
-  const [[perfil]] = await db.query(
+  const [[perfil]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT p.profesional_id, p.num_registro_salud, p.reseña_curricular AS resena_curricular,
             p.areas_experticia, p.tipo_sede, p.foto_url, p.calificacion_promedio,
             e.nombre AS especialidad,
@@ -442,7 +456,7 @@ async function perfilDonde(condicion, valor) {
   // CU10/CU14: comunas donde atiende a domicilio. Sin ninguna declarada el
   // profesional aparece en todas, para no dejar fuera a quien ya estaba
   // registrado antes de que existiera esta pantalla.
-  const [comunas] = await db.query(
+  const [comunas] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT c.comuna_id, c.nombre
        FROM Profesional_Comuna pc
        JOIN Comuna c ON c.comuna_id = pc.comuna_id
@@ -454,7 +468,7 @@ async function perfilDonde(condicion, valor) {
 
   // CU58: la calificación que ven los pacientes, para que el profesional sepa
   // cómo aparece. Sin evaluaciones el promedio no significa nada.
-  const [[evaluaciones]] = await db.query(
+  const [[evaluaciones]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT COUNT(es.puntuacion) AS total
        FROM Evaluacion_Satisfaccion es
       WHERE es.profesional_id = ? AND es.puntuacion IS NOT NULL`,
@@ -466,6 +480,7 @@ async function perfilDonde(condicion, valor) {
 }
 
 /**
+ * CU10, CU14 — comunas donde el profesional atiende a domicilio
  * Reemplaza las comunas de atención del profesional. Se usa al editar el perfil
  * y al registrarse: la lista que llega es la lista final, no un agregado.
  */
@@ -496,9 +511,10 @@ async function guardarComunasProfesional(conexion, profesionalId, comunas) {
 
 exports.guardarComunasProfesional = guardarComunasProfesional;
 
+// CU10, CU13 — el cambio de perfil queda en la bitácora
 async function auditarPerfil(req, accion, datos) {
   try {
-    await db.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES (?, 'Profesional', ?, ?, ?)`,
       [accion, req.ip || null, JSON.stringify(datos), req.user?.usuario_id ?? null]
@@ -508,7 +524,7 @@ async function auditarPerfil(req, accion, datos) {
   }
 }
 
-/** GET /profesionales/mi-perfil */
+/** CU10 — GET /profesionales/mi-perfil */
 exports.obtenerMiPerfil = async (req, res) => {
   try {
     const perfil = await perfilDeUsuario(req.user.usuario_id);
@@ -545,7 +561,7 @@ exports.obtenerPerfilPublico = async (req, res) => {
   }
 };
 
-/** PUT /profesionales/mi-perfil  { resena_curricular, areas_experticia, tipo_sede } */
+/** CU10 — Administrando catálogo de perfil profesional. PUT /profesionales/mi-perfil  { resena_curricular, areas_experticia, tipo_sede } */
 exports.actualizarMiPerfil = async (req, res) => {
   const resena = String(req.body?.resena_curricular ?? '').trim();
   const areas = String(req.body?.areas_experticia ?? '').trim();
@@ -573,7 +589,7 @@ exports.actualizarMiPerfil = async (req, res) => {
   }
 
   try {
-    const [resultado] = await db.query(
+    const [resultado] = await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Profesional
           SET reseña_curricular = ?, areas_experticia = ?, tipo_sede = ?
         WHERE usuario_id = ?`,
@@ -587,12 +603,12 @@ exports.actualizarMiPerfil = async (req, res) => {
     // tocan si el cuerpo las trae, para no borrarlas desde un cliente antiguo.
     let comunasGuardadas = null;
     if (Array.isArray(req.body?.comunas)) {
-      const [[fila]] = await db.query(
+      const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
         'SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1',
         [req.user.usuario_id]
       );
       if (fila) {
-        comunasGuardadas = await guardarComunasProfesional(db, fila.profesional_id, req.body.comunas);
+        comunasGuardadas = await guardarComunasProfesional(C_Capa_de_Acceso_a_Datos, fila.profesional_id, req.body.comunas);
       }
     }
 
@@ -612,9 +628,9 @@ exports.actualizarMiPerfil = async (req, res) => {
   }
 };
 
-/** POST /profesionales/mi-perfil/foto  (multipart, campo "foto") */
+/** CU10 — POST /profesionales/mi-perfil/foto  (multipart, campo "foto") */
 exports.subirFotoPerfil = async (req, res) => {
-  if (!cloudinaryConfigurado()) {
+  if (!C_API_Adapter.cloudinaryConfigurado()) {
     return res.status(503).json({
       error: 'REPOSITORIO_NO_CONFIGURADO',
       mensaje: 'El repositorio de imágenes no está configurado en el servidor.',
@@ -640,7 +656,7 @@ exports.subirFotoPerfil = async (req, res) => {
   }
 
   try {
-    const subida = await subirBuffer(req.file.buffer, {
+    const subida = await C_API_Adapter.subirBuffer(req.file.buffer, {
       folder: `fro-salud/perfiles`,
       public_id: `profesional-${req.user.usuario_id}`,
       overwrite: true,
@@ -648,7 +664,7 @@ exports.subirFotoPerfil = async (req, res) => {
       transformation: [{ width: 600, height: 600, crop: 'fill', gravity: 'face' }],
     });
 
-    const [resultado] = await db.query(
+    const [resultado] = await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Profesional SET foto_url = ? WHERE usuario_id = ?`,
       [subida.secure_url, req.user.usuario_id]
     );
@@ -677,21 +693,22 @@ const MODALIDADES_BLOQUE = ['DOMICILIO', 'ONLINE', 'AMBOS'];
 const PATRON_HORA_PUNTO = /^([01]\d|2[0-3]):00$/;
 const MAX_BLOQUES = 40;
 
+// Apoyo común: profesional asociado a la cuenta
 async function profesionalDeUsuario(usuarioId) {
-  const [[fila]] = await db.query(
+  const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT profesional_id, tipo_sede FROM Profesional WHERE usuario_id = ? LIMIT 1`,
     [usuarioId]
   );
   return fila || null;
 }
 
-/** GET /api/profesionales/mi-horario */
+/** CU10, CU14 — GET /api/profesionales/mi-horario */
 exports.obtenerMiHorario = async (req, res) => {
   try {
     const profesional = await profesionalDeUsuario(req.user.usuario_id);
     if (!profesional) return res.status(404).json({ error: 'Perfil profesional no encontrado.' });
 
-    const [bloques] = await db.query(
+    const [bloques] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT dia_semana,
               DATE_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
               DATE_FORMAT(hora_fin, '%H:%i') AS hora_fin,
@@ -709,6 +726,7 @@ exports.obtenerMiHorario = async (req, res) => {
 };
 
 /**
+ * CU10, CU14 — guardar la jornada semanal que usa la búsqueda de horas
  * PUT /api/profesionales/mi-horario   { bloques: [{dia_semana, hora_inicio, hora_fin, modalidad}] }
  *
  * La lista que llega es la jornada completa: reemplaza a la anterior. Las
@@ -768,7 +786,7 @@ exports.guardarMiHorario = async (req, res) => {
   const profesional = await profesionalDeUsuario(req.user.usuario_id).catch(() => null);
   if (!profesional) return res.status(404).json({ error: 'Perfil profesional no encontrado.' });
 
-  const conexion = await db.getConnection();
+  const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
   try {
     await conexion.beginTransaction();
     await conexion.execute(

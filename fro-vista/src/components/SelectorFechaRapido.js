@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: apoyo común, usado por CU38.
+ */
 // Ruta: fro-vista/src/components/SelectorFechaRapido.js
 //
 // Calendario desplegable para saltar de una vez a una fecha, sin recorrer la

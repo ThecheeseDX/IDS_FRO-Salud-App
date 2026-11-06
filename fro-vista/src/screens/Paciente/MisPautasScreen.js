@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mis ejercicios"
+ * Casos de uso: CU48, CU49, CU44, CU54, CU35.
+ */
 // Ruta: fro-vista/src/screens/Paciente/MisPautasScreen.js
 //
 // CU48: el paciente marca a diario los ejercicios que completó.
@@ -66,6 +70,7 @@ export default function MisPautasScreen({ navigation }) {
   // Fecha en que se guardó la copia local que se está mostrando (null = datos en vivo).
   const [desdeCache, setDesdeCache] = useState(null);
 
+  // CU48, CU49 — carga las pautas con su vigencia; sin señal usa la copia local
   const cargarPautas = useCallback(async (esRefresco = false) => {
     if (esRefresco) setRefrescando(true);
     else setCargando(true);
@@ -148,6 +153,7 @@ export default function MisPautasScreen({ navigation }) {
   };
 
   // El material se abre en el visor, que lo pide al servidor: sin señal no se puede.
+  // CU35 — Visualizando archivos con visor embebido
   const abrirMaterial = (material) => {
     if (desdeCache) {
       setAviso({ tono: 'error', titulo: 'Sin conexión', mensaje: 'Para ver el material de apoyo necesitas conexión. Recarga la lista cuando vuelva la señal.' });

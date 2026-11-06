@@ -1,3 +1,7 @@
+/**
+ * Componente: GPS del Dispositivo
+ * Casos de uso: CU39.
+ */
 // Ruta: fro-vista/src/utils/useReporteUbicacion.js
 //
 // CU39 (correcciones Inc 4): el día de una visita a domicilio, la app del
@@ -17,6 +21,7 @@ import { ubicacionActual } from './ubicacion';
 
 const CADA_MS = 2 * 60 * 1000;
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 export default function useReporteUbicacion(activo = true) {
   const enCurso = useRef(false);
 

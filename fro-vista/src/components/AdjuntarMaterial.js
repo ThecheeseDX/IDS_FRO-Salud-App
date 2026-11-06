@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU47.
+ */
 // Ruta: fro-vista/src/components/AdjuntarMaterial.js
 //
 // Botón "Adjuntar material de apoyo" de los ejercicios de una pauta. Al
@@ -53,6 +57,7 @@ function normalizar({ uri, nombre, tipo, tamano, esVideo }) {
   return { uri, name: base, type: mime, size: tamano || 0, extension };
 }
 
+// CU47 — Prescribiendo pautas de ejercicio técnico
 export default function AdjuntarMaterial({
   onElegidos,
   onAviso,

@@ -1,3 +1,10 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU05, CU08, CU52.
+ *
+ * Sesión del usuario en el teléfono: guarda el token, lo restaura al abrir la
+ * app y cierra la sesión (manual o por aviso del servidor).
+ */
 import React, { createContext, useState, useEffect } from 'react';
 import DialogoConfirmacion from '../components/DialogoConfirmacion';
 import DialogoAviso from '../components/DialogoAviso';
@@ -12,6 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // CU08 — Gestionando sesiones y tokens de acceso
   const checkToken = async () => {
     try {
       let token = await SecureStore.getItemAsync('userToken');
@@ -31,6 +39,7 @@ export const AuthProvider = ({ children }) => {
     checkToken();
   }, []);
 
+  // CU05, CU08 — guardar la sesión tras el inicio de sesión
   const loginSession = async (token, usuario) => {
     setUserToken(token);
     setUserData(usuario);
@@ -44,6 +53,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
+   * CU08 — Gestionando sesiones y tokens de acceso
    * Cierra la sesión localmente. Cuando el cierre lo provoca el servidor
    * (motivo presente), se explica por qué: CU08 exige avisar al usuario que su
    * sesión fue cerrada desde otro dispositivo, y antes se cerraba en silencio.
@@ -63,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     // CU08: se avisa al servidor para que la sesión deje de figurar como
     // activa. Mejor esfuerzo: si falla, el cierre local ocurre igual.
     apiClient.post('/auth/logout').catch(() => {});
-    // El token push deja de apuntar a esta cuenta: si otro usuario inicia
+    // CU52: el token push deja de apuntar a esta cuenta: si otro usuario inicia
     // sesión en el mismo teléfono, no debe recibir avisos del anterior.
     olvidarPush();
 
@@ -93,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   const [avisoSesion, setAvisoSesion] = useState(null);
   const confirmarCierreSesion = () => setPidiendoCierre(true);
 
-  // Registra logoutSession como handler del interceptor de Axios.
+  // CU08: registra logoutSession como handler del interceptor de Axios.
   // Si el servidor devuelve 401, se limpia estado + SecureStore juntos.
   useEffect(() => {
     setUnauthorizedHandler((motivo) => logoutSession(motivo));

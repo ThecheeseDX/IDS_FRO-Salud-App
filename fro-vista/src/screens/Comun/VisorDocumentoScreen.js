@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Visor de Documento"
+ * Casos de uso: CU35, CU53, CU48.
+ */
 // Ruta: fro-vista/src/screens/Comun/VisorDocumentoScreen.js
 //
 // CU35: visor embebido de documentos clínicos. Renderiza el contenido sin
@@ -33,6 +37,7 @@ import { colores, radio } from '../../theme';
 export default function VisorDocumentoScreen({ route }) {
   const { documentoId, mensajeId, materialId, nombre } = route?.params || {};
 
+  // CU35, CU53, CU48 — ruta según el origen: ficha, adjunto del chat o material del ejercicio
   const ruta = mensajeId
     ? `/clinica/chat/adjuntos/${mensajeId}/ver`
     : materialId
@@ -45,6 +50,7 @@ export default function VisorDocumentoScreen({ route }) {
   const [errorVisor, setErrorVisor] = useState(false);
   const [claveVisor, setClaveVisor] = useState(0);
 
+  // CU35 — Visualizando archivos con visor embebido: pedir la URL autorizada
   const cargar = async () => {
     setErrorCarga('');
     try {
@@ -101,6 +107,7 @@ export default function VisorDocumentoScreen({ route }) {
     );
   }
 
+  // CU35 — abrir o descargar el original fuera del visor.
   // Abrir/descargar el original con el navegador del teléfono. Para un PDF
   // depende de que Cloudinary tenga habilitada la entrega de PDF; si no, el
   // navegador mostrará un error de acceso.

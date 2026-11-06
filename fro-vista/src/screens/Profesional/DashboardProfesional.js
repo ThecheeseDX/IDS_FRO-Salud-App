@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Panel del profesional"
+ * Casos de uso: CU11, CU50, CU65, CU38.
+ */
 // Ruta: fro-vista/src/screens/Profesional/DashboardProfesional.js
 //
 // Panel principal del profesional. La lista de pacientes asignados es el núcleo
@@ -35,6 +39,7 @@ export default function DashboardProfesional({ navigation }) {
   const [alertas, setAlertas] = useState([]);
   const [derivacionesPendientes, setDerivacionesPendientes] = useState(0);
 
+  // CU11 — Visualizando panel interno de gestión profesional
   const cargarPacientes = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -70,6 +75,7 @@ export default function DashboardProfesional({ navigation }) {
     }
   };
 
+  // CU50, CU65 — cargar banderas rojas y derivaciones por responder
   const cargarAlertas = async () => {
     try {
       const { alertas: recibidas } = await getAlertasClinicas();
@@ -97,6 +103,7 @@ export default function DashboardProfesional({ navigation }) {
     return quitar;
   }, [navigation]);
 
+  // CU50 — marcar una alerta clínica como revisada
   const revisar = async (alerta) => {
     setAlertas((previas) => previas.filter((a) => a.alerta_clinica_id !== alerta.alerta_clinica_id));
     try {
@@ -106,6 +113,7 @@ export default function DashboardProfesional({ navigation }) {
     }
   };
 
+  // CU28: abre la ficha clínica del paciente
   const abrirFicha = (paciente) => {
     navigation.navigate('FichaClinica', {
       pacienteId: paciente.paciente_id,
@@ -172,6 +180,7 @@ export default function DashboardProfesional({ navigation }) {
         </View>
       )}
 
+      {/* CU65: acceso a las derivaciones internas recibidas */}
       <TouchableOpacity
         style={[styles.derivaciones, derivacionesPendientes > 0 && styles.derivacionesPendientes]}
         onPress={() => navigation.navigate('DerivacionesRecibidas')}
@@ -225,7 +234,7 @@ export default function DashboardProfesional({ navigation }) {
 
   return (
     <View style={styles.pantalla}>
-      {/* Opción C: si hay una atención abierta, se ve y se retoma desde aquí. */}
+      {/* CU38 — Opción C: si hay una atención abierta, se ve y se retoma desde aquí. */}
       <BarraAtencionEnCurso navigation={navigation} />
 
       <FlatList

@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: apoyo común, usado por CU09, CU11 y CU53.
+ */
 // Ruta: fro-vista/src/components/Avatar.js
 //
 // Foto de perfil redonda o, si la persona no subió una, sus iniciales sobre el

@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU55.
+ */
 // Ruta: fro-vista/src/components/DialogoEvaluacion.js
 //
 // CU55 — Formularios de evaluación (correcciones Inc 4), en dos modos:
@@ -20,6 +24,7 @@ import { colores, espacio, radio, sombra, tipografia, interaccion } from '../the
 
 const ETIQUETAS = ['', 'Muy mala', 'Mala', 'Aceptable', 'Buena', 'Excelente'];
 
+// CU55 — Evaluando satisfacción post-sesión
 export default function DialogoEvaluacion({
   visible,
   profesional,

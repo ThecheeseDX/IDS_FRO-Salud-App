@@ -1,3 +1,10 @@
+/**
+ * Componente: C_API_REST
+ * Casos de uso: apoyo común, usado por CU19, CU21.
+ *
+ * Arranque del servidor: variables de entorno, migraciones, escucha HTTP y
+ * programador de tareas de la agenda.
+ */
 const dotenv = require('dotenv');
 
 // Cargar variables de entorno antes que cualquier módulo que las use
@@ -23,9 +30,9 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'xxxxxxxxxxxxxxx') {
 const app = require('./src/app');
 
 // Requerir la configuración de la base de datos para forzar la validación de conexión al arrancar
-const pool = require('./src/config/database');
+const C_Capa_de_Acceso_a_Datos = require('./src/componentes/C_Capa_de_Acceso_a_Datos');
+const C_Programador_Agenda = require('./src/componentes/C_Programador_Agenda');
 const { ejecutarMigraciones } = require('./scripts/migrar-db');
-const { iniciarProgramador } = require('./src/services/agenda/programador');
 
 const PORT = process.env.PORT || 3000;
 // En la nube el servicio corre dentro de un contenedor: hay que escuchar en
@@ -36,7 +43,7 @@ async function iniciar() {
   // Las migraciones pendientes se aplican solas en cada arranque (son
   // idempotentes): así ningún despliegue queda con la base desactualizada.
   try {
-    await ejecutarMigraciones(pool);
+    await ejecutarMigraciones(C_Capa_de_Acceso_a_Datos);
   } catch (error) {
     console.error(`⚠️  No se pudieron aplicar las migraciones: ${error.message}`);
     console.error('   El servidor arranca igual, pero revisa la base de datos.');
@@ -45,7 +52,7 @@ async function iniciar() {
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Servidor backend escuchando en ${HOST}:${PORT}`);
     // CU19/CU21: solicitudes de confirmación y turnos de lista de espera.
-    iniciarProgramador(pool);
+    C_Programador_Agenda.iniciarProgramador(C_Capa_de_Acceso_a_Datos);
   });
 }
 

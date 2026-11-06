@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil
+ * Casos de uso: CU47, CU48, CU35.
+ */
 // Ruta: fro-vista/src/components/MaterialApoyo.js
 //
 // Material de apoyo propio de un ejercicio de la pauta (fotos, videos, PDF y
@@ -71,6 +75,7 @@ function Miniatura({ material, onAbrir, onEliminar, eliminando }) {
   );
 }
 
+// CU47, CU48 — material de apoyo del ejercicio; se abre en el visor (CU35)
 export default function MaterialApoyo({ materiales = [], onAbrir, onEliminar, eliminandoId = null, titulo = 'Material de apoyo' }) {
   if (!materiales.length) return null;
 

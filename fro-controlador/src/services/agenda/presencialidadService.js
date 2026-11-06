@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Validador_Presencialidad (puerta de entrada: src/componentes/C_Validador_Presencialidad.js)
+ * Casos de uso: CU38, CU39, CU41.
+ *
  * CU39 / CU41 — Presencialidad y factores de certificación de la sesión.
  *
  * Desde las correcciones del Incremento 4, las marcas de inicio y término las
@@ -18,8 +21,9 @@
  * En domicilio, ambos deben estar dentro de RADIO_PRESENCIALIDAD_METROS (100).
  */
 
-const { leerParametroEntero } = require('./agendaService');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 /** Distancia en metros entre dos coordenadas (fórmula de Haversine). */
 function distanciaMetros(a, b) {
   const R = 6371000;
@@ -32,12 +36,14 @@ function distanciaMetros(a, b) {
   return Math.round(2 * R * Math.asin(Math.sqrt(h)));
 }
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 function parsearJSON(valor) {
   if (valor === null || valor === undefined) return null;
   if (typeof valor === 'object') return valor;
   try { return JSON.parse(valor); } catch { return null; }
 }
 
+// CU39 — Validando presencialidad mediante coordenadas GPS
 /** {lat, lng} válidos a partir de lo que mande la app, o null. */
 function coordenadas(valor) {
   const lat = Number(valor?.latitud ?? valor?.lat);
@@ -55,6 +61,7 @@ const FUENTES = {
 };
 
 /**
+ * CU38, CU39 — marca de inicio o término con la ubicación de ambos
  * Registra la marca presencial (INICIO o TERMINO) dentro de la transacción de
  * inicio/término de la atención. Solo aplica a citas a domicilio; en las
  * online devuelve null y no toca la evidencia.
@@ -68,8 +75,8 @@ async function registrarMarcaPresencial(conexion, cita, momento, cuerpo = {}) {
 
   const clave = momento === 'TERMINO' ? 'termino' : 'inicio';
   const ahora = new Date();
-  const ventana = await leerParametroEntero(conexion, 'VENTANA_UBICACION_PACIENTE_MINUTOS', 30);
-  const radio = await leerParametroEntero(conexion, 'RADIO_PRESENCIALIDAD_METROS', 100);
+  const ventana = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, 'VENTANA_UBICACION_PACIENTE_MINUTOS', 30);
+  const radio = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, 'RADIO_PRESENCIALIDAD_METROS', 100);
   const evidencia = parsearJSON(cita.evidencia_presencial) || {};
   evidencia.profesional = evidencia.profesional || {};
   evidencia.paciente = evidencia.paciente || {};
@@ -124,6 +131,7 @@ async function registrarMarcaPresencial(conexion, cita, momento, cuerpo = {}) {
   };
 }
 
+// CU38 — Registrando marcas temporales de la prestación
 /** Texto corto para la app sobre la marca presencial recién registrada. */
 function resumenMarca(resultado) {
   if (!resultado) return null;
@@ -136,7 +144,8 @@ function resumenMarca(resultado) {
 }
 
 /**
- * CU41 — Factores cruzados de la sesión. Con las marcas automáticas ya no hay
+ * CU41 — Validando sesión mediante protocolo multi-factor
+ * Factores cruzados de la sesión. Con las marcas automáticas ya no hay
  * "marca del paciente" que esperar: lo que se verifica es que existan las
  * marcas del profesional y, en domicilio, que las ubicaciones coincidan.
  */

@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Gestor_Contingencia (puerta de entrada: src/componentes/C_Gestor_Contingencia.js)
+ * Casos de uso: CU72.
+ *
  * CU72 — ¿Está el financiador en contingencia? (Incremento 4, decisión D5)
  *
  * La interfaz de ingreso manual de bonos solo se habilita cuando la
@@ -14,11 +17,12 @@
  * Una transacción exitosa posterior apaga la contingencia automática.
  */
 
-const { leerParametroEntero } = require('../agenda/agendaService');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
 
 const CLAVE_MODO = 'MODO_CONTINGENCIA_FINANCIADOR';
 const CLAVE_VENTANA = 'VENTANA_CONTINGENCIA_MINUTOS';
 
+// CU72 — Ingresando Datos mediante Interfaz de Contingencia
 function esFalla(estado, codigoRespuesta) {
   if (estado === 'LIMITE_REINTENTOS') return true;
   // Un éxito lento también se anota como LATENCIA_CRITICA, pero con código
@@ -29,11 +33,12 @@ function esFalla(estado, codigoRespuesta) {
 }
 
 /**
+ * CU72 — Ingresando Datos mediante Interfaz de Contingencia
  * @returns {Promise<{activa:boolean, origen:'MANUAL'|'AUTOMATICA'|null, motivo:string, desde:Date|null, forzada:boolean, ventana_minutos:number}>}
  */
 async function estadoContingencia(conexion) {
-  const forzada = (await leerParametroEntero(conexion, CLAVE_MODO, 0)) === 1;
-  const ventana = Math.max(1, await leerParametroEntero(conexion, CLAVE_VENTANA, 30));
+  const forzada = (await C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, CLAVE_MODO, 0)) === 1;
+  const ventana = Math.max(1, await C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, CLAVE_VENTANA, 30));
 
   if (forzada) {
     const [[param]] = await conexion.query(

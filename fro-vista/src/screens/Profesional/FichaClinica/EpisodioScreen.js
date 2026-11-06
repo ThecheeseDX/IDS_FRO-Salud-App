@@ -1,3 +1,11 @@
+/**
+ * Componente: Cliente Móvil — Vista "Episodios clínicos"
+ * Casos de uso: CU78, CU28, CU13, CU37.
+ *
+ * El profesional consulta y crea los episodios clínicos del paciente (CU78),
+ * los busca en su historial (CU28) y pasa al informe de alta para cerrarlos
+ * (CU37). Cada consulta queda en la bitácora de auditoría (CU13).
+ */
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
@@ -30,6 +38,7 @@ export default function EpisodioScreen({ route, navigation }) {
   const [episodiosDisponibles, setEpisodiosDisponibles] = useState(null);
   const [cargandoLista, setCargandoLista] = useState(false);
 
+  // CU28 — Consolidando historial en ficha clínica electrónica
   const verEpisodiosDelPaciente = async () => {
     setCargandoLista(true);
     try {
@@ -78,6 +87,7 @@ export default function EpisodioScreen({ route, navigation }) {
 
   // ─ LECTURA: GET /api/clinica/episodio/:id ────────────────────────────────
   // ─ LECTURA_EPISODIO_CLINICO en Bitacora_Auditoria
+  // CU78, CU13 — consultar un episodio; la lectura queda auditada
   const buscarEpisodio = async () => {
     if (!episodioId) {
       setAviso({ tono: 'error', titulo: 'Error', mensaje: 'Ingresa el ID del episodio.' });
@@ -105,6 +115,7 @@ export default function EpisodioScreen({ route, navigation }) {
   };
 
   // ─ INICIAR ATENCIÓN (CREAR EVOLUCIÓN EN BLANCO) ──────────────────────────
+  // CU78 — abrir una evolución en blanco dentro del episodio
   const iniciarAtencion = async () => {
     setCargandoEvolucion(true);
     try {
@@ -125,6 +136,7 @@ export default function EpisodioScreen({ route, navigation }) {
 
   // ─ CREACIÓN: POST /api/clinica/episodio ──────────────────────────────────
   // Dispara: CREACION_EPISODIO_CLINICO en Bitacora_Auditoria
+  // CU78 — Agrupando registros bajo entidad episodio clínico
   const crearEpisodio = async () => {
     const { motivo_consulta } = nuevoEpisodio;
     const paciente_id = pacienteId;
@@ -225,6 +237,7 @@ export default function EpisodioScreen({ route, navigation }) {
                       : <Text style={styles.botonTexto}>+ Iniciar Nueva Atención</Text>}
                   </TouchableOpacity>
 
+                  {/* CU37: ir al informe de alta y cierre del episodio */}
                   <TouchableOpacity
                     style={styles.botonCerrar}
                     onPress={() =>

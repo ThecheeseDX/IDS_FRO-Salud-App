@@ -1,3 +1,7 @@
+/**
+ * Componente: Cliente Móvil — Vista "Mensajes"
+ * Casos de uso: CU53, CU57, CU35.
+ */
 // Ruta: fro-vista/src/screens/Comun/ChatClinicoScreen.js
 //
 // CU53 — Conversación clínica entre el paciente y su profesional. Hay UNA
@@ -116,6 +120,7 @@ export default function ChatClinicoScreen({ route, navigation }) {
   const esProfesional = conversacion?.papel === 'PROFESIONAL' && Boolean(conversacion?.paciente_id);
   const esPaciente = conversacion?.papel === 'PACIENTE' && Boolean(conversacion?.profesional_id);
 
+  // CU28, CU10 — ir a la ficha clínica del paciente o al perfil del profesional
   const abrirAcceso = () => {
     if (esProfesional) {
       navigation.navigate('FichaClinica', {
@@ -131,6 +136,7 @@ export default function ChatClinicoScreen({ route, navigation }) {
   };
 
   /**
+   * CU53 — Comunicando mediante mensajería clínica cifrada
    * Averigua la pareja cuando la pantalla no la trae completa:
    *  · aviso antiguo con episodioId → la ruta del episodio la informa;
    *  · profesional con solo pacienteId → el servidor dice cuál es su chat.
@@ -166,7 +172,10 @@ export default function ChatClinicoScreen({ route, navigation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Trae lo nuevo desde el último mensaje conocido. */
+  /**
+   * CU53 — Comunicando mediante mensajería clínica cifrada
+   * Trae lo nuevo desde el último mensaje conocido.
+   */
   const consultar = useCallback(
     async (primeraVez = false) => {
       if (!rutaChat) return;
@@ -203,7 +212,10 @@ export default function ChatClinicoScreen({ route, navigation }) {
     [rutaChat]
   );
 
-  /** Reintenta lo que quedó retenido en el teléfono (Excepción 2). */
+  /**
+   * CU53 — reenviar los mensajes retenidos
+   * Reintenta lo que quedó retenido en el teléfono (Excepción 2).
+   */
   const reintentarPendientes = useCallback(async () => {
     if (!pareja) return;
     const clave = clavePendientes(pareja.pacienteId, pareja.profesionalId);
@@ -260,7 +272,10 @@ export default function ChatClinicoScreen({ route, navigation }) {
     };
   }, [rutaChat, consultar, reintentarPendientes, navigation]);
 
-  /** Respuestas del servidor comunes al texto y a los adjuntos. */
+  /**
+   * CU53, CU57 — avisar si el filtro rechazó el mensaje o el chat es de solo lectura
+   * Respuestas del servidor comunes al texto y a los adjuntos.
+   */
   const avisarRechazo = (respuesta, tituloPorDefecto) => {
     if (respuesta?.error === 'CONTENIDO_RESTRINGIDO' || respuesta?.error === 'VACIO') {
       setAviso({ tono: 'alerta', titulo: 'Mensaje no permitido', mensaje: respuesta.mensaje });
@@ -280,6 +295,7 @@ export default function ChatClinicoScreen({ route, navigation }) {
     }
   };
 
+  // CU53, CU57 — enviar el mensaje; el servidor lo pasa por el filtro de contenido
   const enviar = async () => {
     const contenido = texto.trim();
     // Excepción 1 del CU57: sin texto imprimible no se llama al servidor.
@@ -322,7 +338,10 @@ export default function ChatClinicoScreen({ route, navigation }) {
   };
 
   // ── Adjuntos ──────────────────────────────────────────────────────────────
-  /** Sube el archivo elegido; si hay texto escrito, viaja junto con él. */
+  /**
+   * CU53 — enviar un archivo adjunto en el chat
+   * Sube el archivo elegido; si hay texto escrito, viaja junto con él.
+   */
   const subirAdjunto = async (archivo) => {
     if (!rutaChat) return;
     const contenido = texto.trim();
@@ -409,7 +428,10 @@ export default function ChatClinicoScreen({ route, navigation }) {
     });
   };
 
-  /** Documentos en modo selección: el profesional ve los del paciente. */
+  /**
+   * CU53 — compartir en el chat un documento ya guardado en la ficha
+   * Documentos en modo selección: el profesional ve los del paciente.
+   */
   const elegirDesdeDocumentos = () => {
     setMenuAdjunto(false);
     const enviarAChat = {
@@ -425,7 +447,10 @@ export default function ChatClinicoScreen({ route, navigation }) {
     );
   };
 
-  /** Documento de la ficha → su visor; archivo del chat → visor del adjunto. */
+  /**
+   * CU35 — Visualizando archivos con visor embebido
+   * Documento de la ficha → su visor; archivo del chat → visor del adjunto.
+   */
   const abrirAdjunto = (m) => {
     const { adjunto } = m;
     if (adjunto.origen === 'FICHA' && adjunto.documento_id) {

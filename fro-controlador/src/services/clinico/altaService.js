@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Gestor_Alta_Clinica (puerta de entrada: src/componentes/C_Gestor_Alta_Clinica.js)
+ * Casos de uso: CU37, CU51, CU78.
+ *
  * Alta del tratamiento (Incremento 4, CU51 y CU37).
  *
  * - CU51: cuando el promedio de avance de las metas del episodio alcanza el
@@ -12,19 +15,24 @@
  *   comparte el cierre simple del CU78.
  */
 
-const { leerParametroEntero, notificarUsuario } = require('../agenda/agendaService');
-const { porcentajeObjetivosEpisodio, estaCerrado } = require('./episodioService');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Despachador_Notificaciones = require('../../componentes/C_Despachador_Notificaciones');
+const C_Motor_Clinico = require('../../componentes/C_Motor_Clinico');
 
+// CU37 — Emitiendo informe de alta y cierre de episodio
 const LIMITE_PAUTAS_CONTINUIDAD = 1000;
 
+// CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
 // La biblioteca clasifica el material por especialidad, pero no con el mismo
 // nombre que la tabla Especialidad.
 const CATEGORIA_POR_ESPECIALIDAD = { Nutricionista: 'Nutrición' };
 
+// CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
 async function umbralEgreso(conexion) {
-  return leerParametroEntero(conexion, 'UMBRAL_EGRESO_CLINICO', 80);
+  return C_Capa_de_Acceso_a_Datos.leerParametroEntero(conexion, 'UMBRAL_EGRESO_CLINICO', 80);
 }
 
+// CU51, CU37 — metas del episodio con su porcentaje de avance
 async function metasDelEpisodio(conexion, episodioId) {
   const [filas] = await conexion.query(
     `SELECT objetivo_terapeutico_id, descripcion, meta_valor, valor_actual, unidad
@@ -46,6 +54,7 @@ async function metasDelEpisodio(conexion, episodioId) {
 }
 
 /**
+ * CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
  * CU51 Exc. 2: metas que no se pueden medir (sin valor objetivo, sin unidad
  * o con un avance que supera la meta). Con una sola de estas el cambio de
  * estado se aborta y queda anotado en la bitácora.
@@ -62,6 +71,7 @@ function reglasContradictorias(metas) {
   return motivos;
 }
 
+// CU37, CU51 — deja constancia en la bitácora de auditoría
 async function bitacora(conexion, accion, entidad, datos, usuarioId = null, ip = null) {
   try {
     await conexion.query(
@@ -75,6 +85,7 @@ async function bitacora(conexion, accion, entidad, datos, usuarioId = null, ip =
 }
 
 /**
+ * CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
  * Evalúa si el episodio alcanzó el umbral de egreso y, si corresponde,
  * habilita la preparación para el alta (una sola vez) avisándole al paciente.
  *
@@ -92,7 +103,7 @@ async function evaluarPreparacionAlta(conexion, episodioId, { registrar = false,
   if (!episodio) return null;
 
   const metas = await metasDelEpisodio(conexion, episodioId);
-  const porcentaje = await porcentajeObjetivosEpisodio(conexion, episodioId);
+  const porcentaje = await C_Motor_Clinico.porcentajeObjetivosEpisodio(conexion, episodioId);
   const umbral = await umbralEgreso(conexion);
   const resultado = {
     porcentaje,
@@ -114,7 +125,7 @@ async function evaluarPreparacionAlta(conexion, episodioId, { registrar = false,
     return resultado;
   }
 
-  if (resultado.habilitada || porcentaje === null || porcentaje < umbral || estaCerrado(episodio.estado)) {
+  if (resultado.habilitada || porcentaje === null || porcentaje < umbral || C_Motor_Clinico.estaCerrado(episodio.estado)) {
     return resultado;
   }
 
@@ -134,7 +145,8 @@ async function evaluarPreparacionAlta(conexion, episodioId, { registrar = false,
   resultado.recien_habilitada = true;
   await bitacora(conexion, 'PREPARACION_ALTA_HABILITADA', 'Episodio_Clinico',
     { episodio_clinico_id: Number(episodioId), porcentaje, umbral }, usuarioId, ip);
-  await notificarUsuario(
+  // CU52: aviso al paciente
+  await C_Despachador_Notificaciones.notificarUsuario(
     conexion,
     episodio.usuario_paciente,
     'PREPARACION_ALTA',
@@ -144,6 +156,7 @@ async function evaluarPreparacionAlta(conexion, episodioId, { registrar = false,
   return resultado;
 }
 
+// CU51 — Habilitando Automáticamente Contenidos de Preparación para el Alta
 /** Recursos de prevención de la biblioteca, priorizando los de la especialidad. */
 async function recursosPrevencion(conexion, especialidad) {
   const categoria = CATEGORIA_POR_ESPECIALIDAD[especialidad] || especialidad || null;
@@ -166,6 +179,7 @@ async function recursosPrevencion(conexion, especialidad) {
 }
 
 /**
+ * CU37, CU78 — datos del episodio para el informe de alta y el cierre
  * Todo lo que el informe de alta y el cierre necesitan saber del episodio.
  */
 async function resumenCierre(conexion, episodioId) {
@@ -189,7 +203,7 @@ async function resumenCierre(conexion, episodioId) {
   if (!episodio) return null;
 
   const metas = await metasDelEpisodio(conexion, episodioId);
-  const porcentaje = await porcentajeObjetivosEpisodio(conexion, episodioId);
+  const porcentaje = await C_Motor_Clinico.porcentajeObjetivosEpisodio(conexion, episodioId);
   const umbral = await umbralEgreso(conexion);
 
   const [evoluciones] = await conexion.query(
@@ -227,11 +241,12 @@ async function resumenCierre(conexion, episodioId) {
 }
 
 /**
+ * CU37, CU78 — validaciones antes de cerrar el episodio
  * Qué impide cerrar el episodio (Exc. 2 y 4 del CU37). Devuelve null si se
  * puede cerrar, o el cuerpo de la respuesta 409.
  */
 function impedimentoDeCierre(resumen) {
-  if (estaCerrado(resumen.episodio.estado)) {
+  if (C_Motor_Clinico.estaCerrado(resumen.episodio.estado)) {
     return { error: 'EPISODIO_CERRADO', mensaje: 'Este episodio ya está cerrado.' };
   }
   if (resumen.evoluciones_pendientes.length > 0) {
@@ -251,6 +266,7 @@ function impedimentoDeCierre(resumen) {
   return null;
 }
 
+// Apoyo común: fecha DD/MM/AAAA para el PDF
 function fechaLegible(valor) {
   if (!valor) return '—';
   const d = new Date(valor);
@@ -258,6 +274,7 @@ function fechaLegible(valor) {
   return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// CU37 — Emitiendo informe de alta y cierre de episodio
 /** El informe de alta como PDF (pdfkit se carga solo cuando hace falta). */
 function generarPdfInformeAlta(resumen, pautas, emitidoPor) {
   const PDFDocument = require('pdfkit');

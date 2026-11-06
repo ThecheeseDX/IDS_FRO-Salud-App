@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU53, CU57, CU52, CU33, CU35.
+ *
  * CU53 — Mensajería clínica cifrada entre paciente y profesional.
  * CU57 — Filtro de contenido restringido aplicado a cada envío.
  *
@@ -20,11 +23,11 @@
  * recupera sola.
  */
 
-const pool = require('../../config/database');
-const { cifrar, descifrar } = require('../../services/clinico/cifradoService');
-const { revisar } = require('../../services/clinico/filtroContenidoService');
-const { notificarUsuario, leerParametroEntero } = require('../../services/agenda/agendaService');
-const { cloudinaryConfigurado, subirBuffer } = require('../../config/cloudinary');
+const C_Capa_de_Acceso_a_Datos = require('../../componentes/C_Capa_de_Acceso_a_Datos');
+const C_Cifrado_Mensajeria = require('../../componentes/C_Cifrado_Mensajeria');
+const C_Filtro_Contenido = require('../../componentes/C_Filtro_Contenido');
+const C_Despachador_Notificaciones = require('../../componentes/C_Despachador_Notificaciones');
+const C_API_Adapter = require('../../componentes/C_API_Adapter');
 const {
   EXTENSIONES_PERMITIDAS, prepararVisor, puedeAccederAPaciente,
 } = require('./documentoController');
@@ -33,8 +36,10 @@ const LIMITE_MENSAJE = 1000;
 const EXTENSIONES_IMAGEN = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'gif'];
 const EXTENSIONES_VIDEO = ['mp4', 'mov'];
 
+// Apoyo común: identificador de la pareja paciente–profesional, para agrupar sus avisos
 const claveConversacion = (pacienteId, profesionalId) => `${Number(pacienteId)}-${Number(profesionalId)}`;
 
+// CU53: clasifica el adjunto por su formato (imagen, video o documento)
 function tipoAdjunto(formato) {
   if (EXTENSIONES_IMAGEN.includes(formato)) return 'IMAGEN';
   if (EXTENSIONES_VIDEO.includes(formato)) return 'VIDEO';
@@ -42,11 +47,12 @@ function tipoAdjunto(formato) {
 }
 
 /**
+ * CU53 — Comunicando mediante mensajería clínica cifrada
  * La pareja y el papel de quien pregunta. Devuelve null si el usuario no es
  * parte de la conversación o si nunca hubo un vínculo clínico entre ambos.
  */
 async function contextoConversacion(pacienteId, profesionalId, usuarioId) {
-  const [[fila]] = await pool.query(
+  const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT pa.paciente_id, pr.profesional_id,
             pac_u.usuario_id AS usuario_paciente,
             pro_u.usuario_id AS usuario_profesional,
@@ -97,6 +103,7 @@ async function contextoConversacion(pacienteId, profesionalId, usuarioId) {
   };
 }
 
+// CU53: respuestas de rechazo (conversación ajena o de solo lectura)
 function rechazarAjena(res) {
   return res.status(403).json({
     error: 'CONVERSACION_AJENA',
@@ -111,9 +118,9 @@ function rechazarSoloLectura(res) {
   });
 }
 
-/** Convierte una fila cifrada en algo mostrable. */
+/** CU53 — Convierte una fila cifrada en algo mostrable. */
 function aMensaje(fila, usuarioId) {
-  const { ok, texto } = descifrar(fila.contenido_cifrado);
+  const { ok, texto } = C_Cifrado_Mensajeria.descifrar(fila.contenido_cifrado);
   let adjunto = null;
   if (fila.documento_id) {
     adjunto = {
@@ -152,6 +159,7 @@ function aMensaje(fila, usuarioId) {
 }
 
 /**
+ * CU52 — Emitiendo notificaciones multicanal (aviso de mensaje nuevo del CU53)
  * Un solo aviso por conversación: si el destinatario ya tiene uno sin leer de
  * este chat, se actualiza con la cantidad de mensajes pendientes y sube al
  * principio, en vez de sumar un aviso (y un push) por cada mensaje.
@@ -159,7 +167,7 @@ function aMensaje(fila, usuarioId) {
 async function avisarMensajeNuevo({ destinatario, quien, contexto }) {
   const clave = claveConversacion(contexto.paciente_id, contexto.profesional_id);
 
-  const [[previo]] = await pool.query(
+  const [[previo]] = await C_Capa_de_Acceso_a_Datos.query(
     `SELECT notificacion_id FROM Notificacion
       WHERE usuario_id = ? AND tipo = 'MENSAJE_CLINICO' AND leida = FALSE
         AND JSON_UNQUOTE(JSON_EXTRACT(datos, '$.conversacion')) = ?
@@ -168,14 +176,14 @@ async function avisarMensajeNuevo({ destinatario, quien, contexto }) {
   );
 
   if (previo) {
-    const [[pendientes]] = await pool.query(
+    const [[pendientes]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT COUNT(*) AS total FROM Mensaje_Chat
         WHERE paciente_id = ? AND profesional_id = ? AND remitente_usuario_id <> ?
           AND leido = FALSE AND bloqueado = FALSE`,
       [contexto.paciente_id, contexto.profesional_id, destinatario]
     );
     const total = Math.max(2, Number(pendientes.total) || 0);
-    await pool.query(
+    await C_Capa_de_Acceso_a_Datos.query(
       `UPDATE Notificacion
           SET titulo = ?, contenido = ?, momento_envio = CURRENT_TIMESTAMP
         WHERE notificacion_id = ?`,
@@ -184,7 +192,7 @@ async function avisarMensajeNuevo({ destinatario, quien, contexto }) {
     return;
   }
 
-  await notificarUsuario(pool, destinatario, 'MENSAJE_CLINICO', `${quien} te escribió un mensaje.`, {
+  await C_Despachador_Notificaciones.notificarUsuario(C_Capa_de_Acceso_a_Datos, destinatario, 'MENSAJE_CLINICO', `${quien} te escribió un mensaje.`, {
     datos: {
       pantalla: 'ChatClinico',
       conversacion: clave,
@@ -195,16 +203,16 @@ async function avisarMensajeNuevo({ destinatario, quien, contexto }) {
   });
 }
 
-/** Guarda un mensaje (con o sin adjunto) y avisa a la otra parte. */
+/** CU53 — Guarda un mensaje cifrado (con o sin adjunto) y avisa a la otra parte. */
 async function guardarMensaje(req, contexto, { contenido, adjunto = null, documentoId = null }) {
-  const [resultado] = await pool.query(
+  const [resultado] = await C_Capa_de_Acceso_a_Datos.query(
     `INSERT INTO Mensaje_Chat
         (contenido_cifrado, remitente_usuario_id, paciente_id, profesional_id, episodio_clinico_id,
          adjunto_url, adjunto_public_id, adjunto_nombre, adjunto_formato, adjunto_tipo_recurso,
          adjunto_bytes, documento_id)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      cifrar(contenido), req.user.usuario_id, contexto.paciente_id, contexto.profesional_id,
+      C_Cifrado_Mensajeria.cifrar(contenido), req.user.usuario_id, contexto.paciente_id, contexto.profesional_id,
       contexto.episodio_abierto_id || null,
       adjunto?.url || null, adjunto?.public_id || null, adjunto?.nombre || null,
       adjunto?.formato || null, adjunto?.tipo_recurso || null, adjunto?.bytes || null,
@@ -235,12 +243,12 @@ async function textoPermitido(req, res, contexto, contenido, { opcional = false 
   }
   if (opcional && !contenido.trim()) return true;
 
-  const revision = await revisar(contenido);
+  const revision = await C_Filtro_Contenido.revisar(contenido);
   if (revision.permitido) return true;
 
   // El intento queda en la bitácora (sin el texto: la poscondición del CU57
   // es que el contenido restringido no se almacene).
-  pool
+  C_Capa_de_Acceso_a_Datos
     .query(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES ('BLOQUEO_CONTENIDO_RESTRINGIDO', 'Mensaje_Chat', ?, ?, ?)`,
@@ -263,6 +271,7 @@ async function textoPermitido(req, res, contexto, contenido, { opcional = false 
   return false;
 }
 
+// CU53: valida que quien llama sea parte de la conversación de la ruta
 async function contextoDeRuta(req, res) {
   const contexto = await contextoConversacion(req.params.paciente_id, req.params.profesional_id, req.user.usuario_id);
   if (!contexto) {
@@ -277,6 +286,7 @@ async function contextoDeRuta(req, res) {
 // Con desde_id devuelve solo lo nuevo: es lo que consulta la app cada pocos
 // segundos mientras la conversación está abierta.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53 — Comunicando mediante mensajería clínica cifrada
 exports.listarMensajes = async (req, res) => {
   const desdeId = Number.parseInt(req.query?.desde_id, 10) || 0;
 
@@ -284,7 +294,7 @@ exports.listarMensajes = async (req, res) => {
     const contexto = await contextoDeRuta(req, res);
     if (!contexto) return;
 
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT m.mensaje_id, m.contenido_cifrado, m.momento_envio, m.remitente_usuario_id, m.leido,
               m.adjunto_url, m.adjunto_nombre, m.adjunto_formato, m.adjunto_bytes, m.documento_id,
               d.nombre_original AS doc_nombre, d.formato AS doc_formato, d.url_publica AS doc_url,
@@ -302,7 +312,7 @@ exports.listarMensajes = async (req, res) => {
 
     // Lo que llega del otro queda marcado como leído al abrirlo.
     if (filas.some((f) => Number(f.remitente_usuario_id) !== Number(req.user.usuario_id) && !f.leido)) {
-      pool
+      C_Capa_de_Acceso_a_Datos
         .query(
           `UPDATE Mensaje_Chat SET leido = TRUE
             WHERE paciente_id = ? AND profesional_id = ? AND remitente_usuario_id <> ? AND leido = FALSE`,
@@ -313,7 +323,7 @@ exports.listarMensajes = async (req, res) => {
 
     // Abrir la conversación equivale a ver su aviso: se marca leído para que
     // el próximo mensaje genere uno nuevo en vez de sumarse a uno ya visto.
-    pool
+    C_Capa_de_Acceso_a_Datos
       .query(
         `UPDATE Notificacion SET leida = TRUE
           WHERE usuario_id = ? AND tipo = 'MENSAJE_CLINICO' AND leida = FALSE
@@ -351,6 +361,7 @@ exports.listarMensajes = async (req, res) => {
 // Filtra (CU57), cifra y guarda. Si el filtro bloquea, el texto no toca la
 // base: se responde 422 y el autor lo reescribe.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53, CU57 — filtrar, cifrar y enviar un mensaje de texto
 exports.enviarMensaje = async (req, res) => {
   const contenido = String(req.body?.contenido ?? '');
 
@@ -377,6 +388,7 @@ exports.enviarMensaje = async (req, res) => {
 // Imagen o archivo desde el teléfono. Mismos formatos y tope que el
 // repositorio de la ficha (CU33).
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53, CU57 — enviar una imagen o archivo por el chat
 exports.enviarAdjunto = async (req, res) => {
   const contenido = String(req.body?.contenido ?? '');
 
@@ -385,7 +397,7 @@ exports.enviarAdjunto = async (req, res) => {
     if (!contexto) return;
     if (!contexto.puede_escribir) return rechazarSoloLectura(res);
 
-    if (!cloudinaryConfigurado()) {
+    if (!C_API_Adapter.cloudinaryConfigurado()) {
       return res.status(503).json({ error: 'REPOSITORIO_NO_DISPONIBLE', mensaje: 'El almacenamiento de archivos no está configurado en el servidor.' });
     }
     if (!req.file) {
@@ -400,7 +412,7 @@ exports.enviarAdjunto = async (req, res) => {
         mensaje: `El formato .${formato || '?'} no está permitido. Formatos aceptados: ${EXTENSIONES_PERMITIDAS.join(', ')}.`,
       });
     }
-    const maxMB = await leerParametroEntero(pool, 'MAX_TAMANO_ARCHIVO_MB', 10);
+    const maxMB = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'MAX_TAMANO_ARCHIVO_MB', 10);
     if (req.file.size > maxMB * 1024 * 1024) {
       return res.status(413).json({
         error: 'ARCHIVO_MUY_GRANDE',
@@ -409,9 +421,10 @@ exports.enviarAdjunto = async (req, res) => {
     }
     if (!(await textoPermitido(req, res, contexto, contenido, { opcional: true }))) return;
 
+    // CU33: mismo repositorio en la nube que la ficha
     let subida;
     try {
-      subida = await subirBuffer(req.file.buffer, {
+      subida = await C_API_Adapter.subirBuffer(req.file.buffer, {
         folder: `fro-salud/chat-${contexto.paciente_id}-${contexto.profesional_id}`,
         use_filename: true,
         filename_override: nombreOriginal,
@@ -444,6 +457,7 @@ exports.enviarAdjunto = async (req, res) => {
 // Comparte un documento que ya está en la ficha del paciente (CU35): se
 // referencia, no se duplica.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53, CU57 — compartir por el chat un documento de la ficha
 exports.compartirDocumento = async (req, res) => {
   const documentoId = Number(req.body?.documento_id);
   const contenido = String(req.body?.contenido ?? '');
@@ -453,7 +467,7 @@ exports.compartirDocumento = async (req, res) => {
     if (!contexto) return;
     if (!contexto.puede_escribir) return rechazarSoloLectura(res);
 
-    const [[documento]] = await pool.query(
+    const [[documento]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT documento_id, paciente_id, nombre_original FROM Documento_Clinico WHERE documento_id = ? LIMIT 1`,
       [documentoId]
     );
@@ -475,9 +489,10 @@ exports.compartirDocumento = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /clinica/chat/adjuntos/:mensaje_id/ver — visor del adjunto (mismo formato que CU35)
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53, CU35 — ver un adjunto del chat con el visor embebido
 exports.verAdjunto = async (req, res) => {
   try {
-    const [[fila]] = await pool.query(
+    const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT mensaje_id, paciente_id, profesional_id, adjunto_url, adjunto_public_id, adjunto_nombre,
               adjunto_formato, adjunto_tipo_recurso, adjunto_bytes, adjunto_paginas, momento_envio
          FROM Mensaje_Chat WHERE mensaje_id = ? AND adjunto_url IS NOT NULL LIMIT 1`,
@@ -493,7 +508,7 @@ exports.verAdjunto = async (req, res) => {
         public_id_cloud: fila.adjunto_public_id, tipo_recurso: fila.adjunto_tipo_recurso,
         paginas: fila.adjunto_paginas,
       },
-      async (paginas) => pool.query(`UPDATE Mensaje_Chat SET adjunto_paginas = ? WHERE mensaje_id = ?`, [paginas, fila.mensaje_id])
+      async (paginas) => C_Capa_de_Acceso_a_Datos.query(`UPDATE Mensaje_Chat SET adjunto_paginas = ? WHERE mensaje_id = ?`, [paginas, fila.mensaje_id])
     );
     return res.json({
       ok: true,
@@ -518,10 +533,11 @@ exports.verAdjunto = async (req, res) => {
 // Una conversación por cada paciente/profesional con el que hay vínculo, con
 // el último movimiento y los no leídos. Es la bandeja desde la que se entra.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53 — Comunicando mediante mensajería clínica cifrada
 exports.misConversaciones = async (req, res) => {
   try {
     const usuarioId = req.user.usuario_id;
-    const [filas] = await pool.query(
+    const [filas] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT v.paciente_id, v.profesional_id,
               (pac_u.usuario_id = ?) AS soy_paciente,
               COALESCE(NULLIF(TRIM(CONCAT_WS(' ', pac_u.nombres, pac_u.apellido_paterno)), ''),
@@ -592,9 +608,10 @@ exports.misConversaciones = async (req, res) => {
 // abrían la conversación por episodio. Se traduce el episodio a su pareja.
 // GET/POST /clinica/episodio/:episodio_id/mensajes
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53 — Comunicando mediante mensajería clínica cifrada (acceso antiguo por episodio)
 async function conParejaDelEpisodio(req, res, siguiente) {
   try {
-    const [[episodio]] = await pool.query(
+    const [[episodio]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT paciente_id, profesional_id FROM Episodio_Clinico WHERE episodio_clinico_id = ? LIMIT 1`,
       [req.params.episodio_id]
     );
@@ -614,9 +631,10 @@ exports.enviarMensajeEpisodio = (req, res) => conParejaDelEpisodio(req, res, exp
 // GET /clinica/chat/con/:paciente_id  (Profesional)
 // Desde la ficha, el profesional abre SU conversación con ese paciente.
 // ─────────────────────────────────────────────────────────────────────────────
+// CU53 — Comunicando mediante mensajería clínica cifrada
 exports.conversacionConPaciente = async (req, res) => {
   try {
-    const [[profesional]] = await pool.query(
+    const [[profesional]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT profesional_id FROM Profesional WHERE usuario_id = ? LIMIT 1`,
       [req.user.usuario_id]
     );

@@ -1,4 +1,7 @@
 /**
+ * Componente: C_API_REST
+ * Casos de uso: CU09; la foto de perfil es apoyo común.
+ *
  * Foto de perfil del paciente (opcional).
  *
  * Mientras no suba una, la app muestra sus iniciales. Se guarda en Cloudinary
@@ -6,24 +9,26 @@
  * persona que se sobreescribe, recortado a cuadrado centrado en la cara.
  */
 
-const pool = require('../config/database');
-const { cloudinary, cloudinaryConfigurado, subirBuffer } = require('../config/cloudinary');
+const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Datos');
+const C_API_Adapter = require('../componentes/C_API_Adapter');
 
 const EXTENSIONES_FOTO = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
 const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
+// CU13: deja el cambio de foto en la bitácora de auditoría
 async function auditar(req, accion) {
-  pool.query(
+  C_Capa_de_Acceso_a_Datos.query(
     `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
      VALUES (?, 'Paciente', ?, NULL, ?)`,
     [accion, req.ip || null, req.user.usuario_id]
   ).catch(() => {});
 }
 
+// Apoyo común: ver la foto de perfil del paciente
 // GET /api/auth/mi-foto — nombre y foto (o null) para el encabezado de "Mi perfil".
 exports.obtener = async (req, res) => {
   try {
-    const [[fila]] = await pool.query(
+    const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT p.foto_url, u.nombres, u.apellido_paterno, u.apellido_materno
          FROM Paciente p JOIN Usuario u ON u.usuario_id = p.usuario_id
         WHERE p.usuario_id = ? LIMIT 1`,
@@ -40,9 +45,10 @@ exports.obtener = async (req, res) => {
   }
 };
 
+// Apoyo común: subir la foto de perfil del paciente
 // POST /api/auth/mi-foto  (multipart: foto)
 exports.subir = async (req, res) => {
-  if (!cloudinaryConfigurado()) {
+  if (!C_API_Adapter.cloudinaryConfigurado()) {
     return res.status(503).json({ error: 'REPOSITORIO_NO_CONFIGURADO', mensaje: 'El repositorio de imágenes no está configurado en el servidor.' });
   }
   if (!req.file) {
@@ -56,7 +62,7 @@ exports.subir = async (req, res) => {
     return res.status(413).json({ error: 'FOTO_MUY_PESADA', mensaje: `La fotografía pesa ${(req.file.size / 1024 / 1024).toFixed(1)} MB; el máximo es 5 MB.` });
   }
   try {
-    const subida = await subirBuffer(req.file.buffer, {
+    const subida = await C_API_Adapter.subirBuffer(req.file.buffer, {
       folder: 'fro-salud/perfiles',
       public_id: `paciente-${req.user.usuario_id}`,
       overwrite: true,
@@ -64,7 +70,7 @@ exports.subir = async (req, res) => {
       resource_type: 'image',
       transformation: [{ width: 600, height: 600, crop: 'fill', gravity: 'face' }],
     });
-    const [resultado] = await pool.query(`UPDATE Paciente SET foto_url = ? WHERE usuario_id = ?`, [subida.secure_url, req.user.usuario_id]);
+    const [resultado] = await C_Capa_de_Acceso_a_Datos.query(`UPDATE Paciente SET foto_url = ? WHERE usuario_id = ?`, [subida.secure_url, req.user.usuario_id]);
     if (resultado.affectedRows === 0) return res.status(404).json({ error: 'PACIENTE_NO_ENCONTRADO' });
     auditar(req, 'ACTUALIZACION_FOTO_PACIENTE');
     return res.json({ mensaje: 'Fotografía actualizada.', foto_url: subida.secure_url });
@@ -74,12 +80,13 @@ exports.subir = async (req, res) => {
   }
 };
 
+// Apoyo común: quitar la foto de perfil del paciente
 // DELETE /api/auth/mi-foto — vuelve a las iniciales.
 exports.quitar = async (req, res) => {
   try {
-    await pool.query(`UPDATE Paciente SET foto_url = NULL WHERE usuario_id = ?`, [req.user.usuario_id]);
-    if (cloudinaryConfigurado()) {
-      cloudinary.uploader.destroy(`fro-salud/perfiles/paciente-${req.user.usuario_id}`, { invalidate: true }).catch(() => {});
+    await C_Capa_de_Acceso_a_Datos.query(`UPDATE Paciente SET foto_url = NULL WHERE usuario_id = ?`, [req.user.usuario_id]);
+    if (C_API_Adapter.cloudinaryConfigurado()) {
+      C_API_Adapter.cloudinary.uploader.destroy(`fro-salud/perfiles/paciente-${req.user.usuario_id}`, { invalidate: true }).catch(() => {});
     }
     auditar(req, 'ELIMINACION_FOTO_PACIENTE');
     return res.json({ mensaje: 'Fotografía eliminada. Se mostrarán tus iniciales.', foto_url: null });
@@ -99,9 +106,10 @@ exports.quitar = async (req, res) => {
 const PATRON_TELEFONO = /^\+?[\d\s-]{8,20}$/;
 const digitos = (t) => String(t || '').replace(/\D/g, '');
 
+// CU09 — Configurando privacidad de datos de contacto
 exports.obtenerDatos = async (req, res) => {
   try {
-    const [[fila]] = await pool.query(
+    const [[fila]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT u.rut, u.email, u.nombres, u.apellido_paterno, u.apellido_materno,
               p.calle, p.numero_calle, p.departamento, p.comuna_id, co.nombre AS comuna,
               (SELECT t.telefono FROM Usuario_Telefono t WHERE t.usuario_id = u.usuario_id LIMIT 1) AS telefono,
@@ -121,6 +129,7 @@ exports.obtenerDatos = async (req, res) => {
   }
 };
 
+// CU09 — Configurando privacidad de datos de contacto
 exports.actualizarDatos = async (req, res) => {
   const limpio = (v, max) => String(v ?? '').trim().slice(0, max);
   const datos = {
@@ -147,7 +156,7 @@ exports.actualizarDatos = async (req, res) => {
     return res.status(400).json({ error: 'DATOS_INVALIDOS', campos, mensaje: 'Revisa los campos marcados.' });
   }
 
-  const conexion = await pool.getConnection();
+  const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
   try {
     const [[comuna]] = await conexion.query(`SELECT comuna_id FROM Comuna WHERE comuna_id = ? LIMIT 1`, [datos.comuna_id]);
     if (!comuna) return res.status(400).json({ error: 'DATOS_INVALIDOS', campos: { comuna_id: 'Esa comuna no existe.' } });
@@ -185,6 +194,7 @@ exports.actualizarDatos = async (req, res) => {
     await conexion.query(`DELETE FROM Usuario_Telefono WHERE usuario_id = ?`, [req.user.usuario_id]);
     await conexion.query(`INSERT INTO Usuario_Telefono (usuario_id, telefono) VALUES (?, ?)`, [req.user.usuario_id, datos.telefono]);
 
+    // CU13: queda en la bitácora de auditoría
     await conexion.query(
       `INSERT INTO Bitacora_Auditoria (accion, entidad_afectada, ip_origen, datos_adicionales, usuario_id)
        VALUES ('ACTUALIZACION_DATOS_PACIENTE', 'Paciente', ?, ?, ?)`,

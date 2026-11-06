@@ -1,4 +1,7 @@
 /**
+ * Componente: C_Control_Acceso_Clinico (puerta de entrada: src/componentes/C_Control_Acceso_Clinico.js)
+ * Casos de uso: CU12, CU28, CU65.
+ *
  * Acceso clínico de un profesional a un paciente.
  *
  * Antes el mismo criterio estaba copiado en el historial, el repositorio de
@@ -14,8 +17,10 @@
  *      solo lectura (las escrituras ya exigen ser el responsable del episodio).
  */
 
+// CU65 — Registrando y Siguiendo Derivaciones Internas
 const ESTADOS_DERIVACION_CON_ACCESO = ['PENDIENTE'];
 
+// CU28, CU65 — pacientes cuya ficha puede ver el profesional
 // Pacientes a los que el profesional (identificado por usuario_id) tiene acceso.
 // Lleva cuatro marcadores: los cuatro son el usuario_id.
 const SQL_PACIENTES_CON_ACCESO = `
@@ -39,10 +44,12 @@ const SQL_PACIENTES_CON_ACCESO = `
    WHERE pr.usuario_id = ? AND di.momento_respuesta IS NOT NULL
      AND di.estado IN ('ACEPTADA', 'CERRADA')`;
 
+// CU28, CU65 — parámetros de la consulta de acceso
 function parametrosAcceso(usuarioId) {
   return [usuarioId, usuarioId, usuarioId, usuarioId];
 }
 
+// CU12, CU28, CU65 — decide si el profesional puede ver la ficha del paciente
 /** true si el profesional (usuario_id) puede consultar la información clínica del paciente. */
 async function profesionalTratante(conexion, usuarioId, pacienteId) {
   if (!usuarioId || !pacienteId) return false;
@@ -56,6 +63,7 @@ async function profesionalTratante(conexion, usuarioId, pacienteId) {
 }
 
 /**
+ * CU65 — Registrando y Siguiendo Derivaciones Internas
  * CU65: al cerrar un episodio, sus derivaciones abiertas pasan a CERRADA. Una
  * aceptada conserva momento_respuesta, así quien derivó sigue con su lectura.
  */
