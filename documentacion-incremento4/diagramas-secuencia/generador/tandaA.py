@@ -330,9 +330,9 @@ CU54 = dict(id='CU54', nombre='Enviando Mensajes de Refuerzo Positivo', actores=
 # Dos roles: el Paciente dispara el escalamiento con el comentario de su
 # reporte de sintomas (CU50; tambien lo disparan reseñas y tickets), y el
 # Administrador (D1: cumple el papel de supervisor) lo revisa y acusa recibo.
-# Exc. 1 ocurre en el escalamiento (pagina del Paciente) y tambien tiene su
-# pagina del Administrador (aviso por correo, revisa al ingresar); Exc. 2, 3 y
-# 4 ocurren en la bandeja (paginas del Administrador).
+# Cada excepcion tiene su pagina para ambos actores (regla de Pablo): la del
+# Paciente muestra lo que ocurre en el envio de su reporte y la del
+# Administrador lo que ocurre en la bandeja.
 CU62_PACIENTE = [
     'A -> V: enviar_reporte_de_sintomas(dolor, limitacion, comentario)',
     f'V -> {API}: POST /clinica/sintomas (dolor, limitacion, comentario, clave)',
@@ -410,6 +410,40 @@ CU62_EXC_PACIENTE = {
         *despachar(ESC, 'EVENTO_CRITICO', 'todos los administradores', correo='email, asunto evento critico',
                    retorno='return (administradores avisados por correo)')],
         reanudar='return (evento critico escalado)'),
+    # Exc. 2, 3 y 4 ocurren en la bandeja del Administrador; del lado del
+    # Paciente se dibuja su equivalente en el envio del reporte que origina el
+    # evento (MiSeguimientoScreen guarda el reporte en el telefono con una
+    # clave propia y lo reenvia solo al volver; la clave evita duplicarlo).
+    2: dict(cortar='enviar_reporte_de_sintomas', lineas=[
+        'V ->> V: guardar_reporte_en_el_telefono(clave_envio)',
+        '! Sin conexion el envio no llega al servidor: todavia no hay evento que escalar',
+        'V --> A: avisar_que_quedo_guardado_y_se_enviara_solo()',
+        'A -> V: volver_a_mi_seguimiento_con_conexion()',
+        'V ->> V: leer_reporte_pendiente_del_telefono()'],
+        reanudar='POST /clinica/sintomas'),
+    3: dict(cortar='return (evento critico escalado)', lineas=[
+        '! La red se corta antes de la respuesta: el reporte y el evento ya quedaron registrados',
+        f'{API} --> V: return (sin respuesta: se corto la conexion)',
+        'V --> A: avisar_que_quedo_guardado_y_se_enviara_solo()',
+        'A -> V: volver_a_mi_seguimiento()',
+        'V ->> V: leer_reporte_pendiente_del_telefono()',
+        f'V -> {API}: POST /clinica/sintomas (misma clave_envio)',
+        *leer('leer_paciente(usuario_id)', 'Paciente', 'paciente_id', '1 paciente', 'return (paciente_id)'),
+        *leer('verificar_clave_de_envio(clave_envio)', 'Reporte_Sintoma', 'reporte_sintoma_id, clave_envio',
+              '1 envio previo', 'return (reporte ya registrado)'),
+        *insertar('registrar(REENVIO_REPORTE_SINTOMA)', 'Bitacora_Auditoria'),
+        '! No se duplica el reporte ni se vuelve a escalar: el evento sigue en la bandeja',
+        f'{API} --> V: return (HTTP 200 OK: el reporte ya habia quedado registrado)'],
+        reanudar='confirmar_reporte_registrado'),
+    4: dict(cortar='INSERT INTO Reporte_Sintoma', lineas=[
+        *fallo_bd('Reporte_Sintoma'),
+        *rollback(),
+        '! No se guarda el reporte ni se escala nada: el reporte sigue guardado en el telefono',
+        f'{API} --> V: return (HTTP 500 NO_SE_PUDO_REGISTRAR)',
+        'V --> A: avisar_que_quedo_guardado_y_se_enviara_solo()',
+        'A -> V: volver_a_mi_seguimiento()',
+        'V ->> V: leer_reporte_pendiente_del_telefono()'],
+        reanudar='POST /clinica/sintomas'),
 }
 
 CU62_EXC_ADMINISTRADOR = {

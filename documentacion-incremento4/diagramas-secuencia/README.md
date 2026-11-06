@@ -1,11 +1,11 @@
 # Diagramas de secuencia: Incremento 4
 
-Son **98 páginas de 16 CU** en el mismo formato y con las mismas reglas del Incremento 3:
+Son **106 páginas de 16 CU** en el mismo formato y con las mismas reglas del Incremento 3:
 - todos los componentes y las tablas como líneas de vida;
 - mensajes técnicos, con el SQL sin `?` ni `WHERE`;
 - ningún mensaje se salta una línea de vida y cada llamada vuelve por el mismo camino;
-- una página por excepción, que retoma el flujo principal;
-- páginas separadas por actor cuando el CU tiene más de uno.
+- una página por excepción, que retoma el flujo principal y lo completa (si el actor reintenta y la app vuelve a consultar al servidor, se repite desde esa consulta);
+- páginas separadas por actor cuando el CU tiene más de uno, con **todas** las excepciones para cada actor.
 
 **Para que se lean bien, se resume lo menos importante** (formato aprobado por Pablo con el diagrama de prueba del CU65, 04-11-2026):
 - las tablas no son líneas de vida: el mensaje a `C_MYSQL` nombra la operación y las tablas (por ejemplo `SELECT Episodio_Clinico, Profesional`);
@@ -20,8 +20,8 @@ Cada carpeta trae un `.drawio` con una página por diagrama (se abre en app.diag
 | Grupo | CU | Páginas |
 |---|---|---|
 | CU del Incremento 4 | CU37 · CU51 · CU54 · CU47 | 5 cada uno |
-| | CU62 (Paciente que dispara + Administrador) | 7 |
-| | CU65 (Profesional que deriva + Profesional que recibe) | 7 |
+| | CU62 (Paciente que dispara + Administrador, cada excepción para ambos) | 10 |
+| | CU65 (Profesional que deriva + Profesional que recibe, cada excepción para ambos) | 12 |
 | | CU72 (Profesional + Administrador, cada excepción para ambos) | 10 |
 | Rehechos: reemplazan **todas** las páginas anteriores del CU | CU38 · CU40 | 5 cada uno |
 | | CU39 · CU41 (dos actores, cada excepción para ambos) | 10 cada uno |

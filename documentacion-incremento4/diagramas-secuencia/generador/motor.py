@@ -172,9 +172,11 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
             rn = renglones(m['nota'], RENGLON_NOTA)
             nw = max(330, LETRA * 0.95 * max(len(r) for r in rn) + 40)
             hn = 52 + (len(rn) - 1) * ALTO_RENGLON
-            # la nota se centra en la vista (segundo participante)
+            # la nota se centra en la vista (segundo participante) y queda
+            # sobre todos los renglones de la etiqueta del mensaje
+            extra = (len(renglones(m['texto'], RENGLON_MENSAJE)) - 1) * ALTO_RENGLON
             nx = parts[1]['cx'] - nw / 2
-            celdas.append(f'<mxCell id="{nuevo()}" value="{br(rn)}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#9E916F;fontColor=light-dark(#333333,#cccccc);fontSize=16;" vertex="1" parent="1"><mxGeometry x="{nx:.0f}" y="{yy - 36 - hn}" width="{nw:.0f}" height="{hn}" as="geometry"/></mxCell>')
+            celdas.append(f'<mxCell id="{nuevo()}" value="{br(rn)}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#9E916F;fontColor=light-dark(#333333,#cccccc);fontSize=16;" vertex="1" parent="1"><mxGeometry x="{nx:.0f}" y="{yy - 36 - hn - extra}" width="{nw:.0f}" height="{hn}" as="geometry"/></mxCell>')
         src = id_barra.get((m['de'], barra_en(m['de'], yy))) or id_ll[m['de']]
         tgt = id_barra.get((m['a'], barra_en(m['a'], yy))) or id_ll[m['a']]
         if m['tipo'] == 'self':
@@ -213,9 +215,10 @@ def construir_pagina(nombre_pagina, participantes, msgs, actor, vista=None):
             rn = renglones(m['nota'], RENGLON_NOTA)
             nw = max(330, LETRA * 0.95 * max(len(r) for r in rn) + 40); nx = parts[1]['cx'] - nw / 2
             hn = 52 + (len(rn) - 1) * ALTO_RENGLON
-            s.append(f'<rect x="{nx:.0f}" y="{yy - 36 - hn}" width="{nw:.0f}" height="{hn}" fill="#ffff88" stroke="#9E916F"/>')
+            extra = (len(renglones(m['texto'], RENGLON_MENSAJE)) - 1) * ALTO_RENGLON
+            s.append(f'<rect x="{nx:.0f}" y="{yy - 36 - hn - extra}" width="{nw:.0f}" height="{hn}" fill="#ffff88" stroke="#9E916F"/>')
             for k, r in enumerate(rn):
-                s.append(f'<text x="{nx+nw/2:.0f}" y="{yy - 36 - hn + 32 + k * ALTO_RENGLON}" text-anchor="middle" fill="#333" font-size="16">{html.escape(r)}</text>')
+                s.append(f'<text x="{nx+nw/2:.0f}" y="{yy - 36 - hn - extra + 32 + k * ALTO_RENGLON}" text-anchor="middle" fill="#333" font-size="16">{html.escape(r)}</text>')
         if m['tipo'] == 'self':
             x1 = de['cx'] + 5
             s.append(f'<path d="M{x1},{yy} C{x1+60},{yy-10} {x1+60},{yy+ALTO_SELF+10} {x1},{yy+ALTO_SELF}" fill="none" stroke="#000" marker-end="url(#flecha)"/>')
