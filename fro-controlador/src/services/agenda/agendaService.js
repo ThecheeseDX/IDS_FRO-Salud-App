@@ -209,6 +209,28 @@ async function descontarSesionPaquete(connection, paciente_id, motivo) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  CU16 — Bloqueos de agenda
+// ─────────────────────────────────────────────────────────────────────────────
+
+// CU16 — Restringiendo disponibilidad administrativa (C_Motor_Agendamiento)
+/**
+ * ¿El bloque cae dentro de un periodo que el profesional bloqueó (vacaciones,
+ * licencia)? Un bloque así no existe para nadie: no se reserva, no se valida
+ * como libre y no se toma desde la lista de espera.
+ */
+async function agendaBloqueada(conexion, profesional_id, fecha_hora_inicio, fecha_hora_fin) {
+  const [bloqueos] = await conexion.execute(
+    `SELECT bloqueo_id FROM Bloqueo_Agenda
+      WHERE profesional_id = ?
+        AND fecha_inicio <= ?
+        AND fecha_fin    >= ?
+      LIMIT 1`,
+    [profesional_id, fecha_hora_fin, fecha_hora_inicio]
+  );
+  return bloqueos.length > 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  CU19 — Lista de espera secuencial
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -392,4 +414,5 @@ module.exports = {
   revisarVencimientosListaEspera,
   datosDelBloque,
   describirBloque,
+  agendaBloqueada,
 };

@@ -168,6 +168,16 @@ exports.obtenerArbol = async (req, res) => {
   }
 };
 
+// CU27 — precondición del CU23 y CU24: sin el descargo aceptado para este
+// ciclo no se guardan ni se completan respuestas (antes solo se exigía para
+// ver las preguntas).
+function rechazarSinDisclaimer(res) {
+  return res.status(403).json({
+    error: 'DISCLAIMER_PENDIENTE',
+    mensaje: 'Debes aceptar el descargo de responsabilidad antes de responder la entrevista.',
+  });
+}
+
 /** CU23 — PUT /clinica/triaje/respuestas — guarda avance parcial (Exc.3 del CU23). */
 exports.guardarRespuestasParciales = async (req, res) => {
   const respuestas = req.body?.respuestas;
@@ -181,6 +191,7 @@ exports.guardarRespuestasParciales = async (req, res) => {
     if (!pacienteId) {
       return res.status(404).json({ error: 'No se encontró tu registro de paciente.' });
     }
+    if (!(await disclaimerAceptadoParaCiclo(pacienteId))) return rechazarSinDisclaimer(res);
 
     const [abiertos] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT triaje_id FROM Triaje
@@ -224,11 +235,15 @@ exports.completarTriaje = async (req, res) => {
   const connection = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
+    // Las salidas tempranas no liberan la conexión: lo hace el finally (antes
+    // se liberaba dos veces).
     const pacienteId = await pacienteDeUsuario(req.user.usuario_id);
     if (!pacienteId) {
       // Excepción 1 del CU24: registro no localizado.
-      connection.release();
       return res.status(404).json({ error: 'No se encontró tu registro de paciente.' });
+    }
+    if (!(await disclaimerAceptadoParaCiclo(pacienteId))) {
+      return rechazarSinDisclaimer(res);
     }
 
     // Excepción 2 del CU24: formato incompatible aborta el proceso.
@@ -236,7 +251,6 @@ exports.completarTriaje = async (req, res) => {
     try {
       estructura = C_Motor_Clinico.estructurarTriaje(respuestas);
     } catch (errorFormato) {
-      connection.release();
       return res.status(400).json({
         error: 'FALLA_INTEGRIDAD',
         mensaje: errorFormato.message,

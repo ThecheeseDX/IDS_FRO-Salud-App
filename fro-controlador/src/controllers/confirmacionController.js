@@ -13,9 +13,18 @@ const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Dato
 const C_Programador_Agenda = require('../componentes/C_Programador_Agenda');
 const C_Motor_Agendamiento = require('../componentes/C_Motor_Agendamiento');
 
+// Apoyo común: neutraliza los caracteres especiales de HTML, para que un
+// nombre o un dato de la base no pueda inyectar código en la página.
+const escaparHTML = (t) =>
+  String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // CU21 — Confirmando asistencia a cita de forma distribuida
 // ── Página web que ve el paciente al volver desde el correo ────────────────
+// El título y el mensaje se escapan siempre. El detalle puede traer los
+// botones (HTML armado aquí mismo, con sus datos ya escapados).
 function paginaHTML({ titulo, mensaje, detalle, tono }) {
+  titulo = escaparHTML(titulo);
+  mensaje = escaparHTML(mensaje);
   const color = tono === 'error' ? '#B3261E' : tono === 'aviso' ? '#A85A00' : '#003B4D';
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
@@ -83,7 +92,11 @@ exports.responderDesdeCorreo = async (req, res) => {
         }));
       }
 
-      const base = `${req.protocol}://${req.get('host')}/api/citas/confirmacion/${token}`;
+      // El token viene de la URL y el host de la petición: se escapan antes de
+      // ponerlos en los enlaces.
+      const base = escaparHTML(
+        `${req.protocol}://${req.get('host')}/api/citas/confirmacion/${encodeURIComponent(token)}`
+      );
       return res.status(200).send(paginaHTML({
         titulo: 'Confirma tu asistencia',
         mensaje: `Cita del ${fechaLegible(solicitud.fecha_hora_inicio)} con ${solicitud.profesional} (${solicitud.especialidad}).`,

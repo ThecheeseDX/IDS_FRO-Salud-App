@@ -168,6 +168,9 @@ exports.comprarPrestacion = async (req, res) => {
   const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
+    // La transacción abre ANTES de leer la cita: así el FOR UPDATE de abajo
+    // sí la bloquea y dos pagos simultáneos de la misma hora no se pisan.
+    await conexion.beginTransaction();
     const pacienteId = await pacienteDe(conexion, req.user.usuario_id);
     const [[cita]] = await conexion.execute(
       `SELECT cita_id, estado, paciente_id FROM Cita WHERE cita_id = ? LIMIT 1 FOR UPDATE`,
@@ -206,7 +209,6 @@ exports.comprarPrestacion = async (req, res) => {
       [req.params.id]
     );
     if (enTransito) {
-      await conexion.beginTransaction();
       await conexion.execute(
         `UPDATE Transaccion SET estado = 'PAGADA' WHERE transaccion_id = ?`,
         [enTransito.transaccion_id]
@@ -261,7 +263,6 @@ exports.comprarPrestacion = async (req, res) => {
 
     // ── Camino A: usar una sesión de un plan ya comprado ────────────────
     if (modalidad === 'USAR_PAQUETE') {
-      await conexion.beginTransaction();
 
       const [[paquete]] = await conexion.execute(
         `SELECT paquete_sesiones_id, sesiones_total, sesiones_usadas
@@ -322,7 +323,6 @@ exports.comprarPrestacion = async (req, res) => {
 
     // Excepciones 3 y 4: la entidad rechaza y la reserva temporal se revoca.
     if (metodo === 'TARJETA_RECHAZADA') {
-      await conexion.beginTransaction();
       await conexion.execute(
         `INSERT INTO Transaccion (monto_total, tipo, estado, metodo_pago, cita_id)
          VALUES (?, ?, 'RECHAZADA', ?, ?)`,
@@ -348,8 +348,6 @@ exports.comprarPrestacion = async (req, res) => {
         reserva_revocada: true,
       });
     }
-
-    await conexion.beginTransaction();
 
     const estadoPago = metodo === 'TARJETA_LENTA' ? 'EN_TRANSITO' : 'PAGADA';
     await conexion.execute(
@@ -419,6 +417,9 @@ exports.comprarPrestacion = async (req, res) => {
       mensaje: 'No pudimos procesar el pago. Tu reserva sigue vigente: inténtalo otra vez.',
     });
   } finally {
+    // Cierra cualquier transacción que haya quedado abierta por una salida
+    // temprana (tras un commit no hace nada).
+    await conexion.rollback().catch(() => {});
     conexion.release();
   }
 };
@@ -452,6 +453,9 @@ exports.actualizarAPaquete = async (req, res) => {
   const conexion = await C_Capa_de_Acceso_a_Datos.getConnection();
 
   try {
+    // La transacción abre ANTES de leer la cita: así el FOR UPDATE de abajo
+    // sí la bloquea y dos pagos simultáneos de la misma hora no se pisan.
+    await conexion.beginTransaction();
     const pacienteId = await pacienteDe(conexion, req.user.usuario_id);
     const [[cita]] = await conexion.execute(
       `SELECT cita_id, estado, fecha_hora_inicio, paciente_id
@@ -504,6 +508,7 @@ exports.actualizarAPaquete = async (req, res) => {
           req.user.usuario_id,
         ]
       );
+      await conexion.commit(); // la alerta de auditoría debe quedar guardada
       return res.status(409).json({
         error: 'PAGO_PREVIO_INCONSISTENTE',
         mensaje:
@@ -520,7 +525,6 @@ exports.actualizarAPaquete = async (req, res) => {
       (new Date(cita.fecha_hora_inicio).getTime() - Date.now()) / 3600000;
 
     if (horasHastaLaCita > horasVentana) {
-      await conexion.beginTransaction();
       await conexion.execute(
         `INSERT INTO Transaccion (monto_total, tipo, estado, metodo_pago, cita_id)
          VALUES (?, 'DEVOLUCION', 'PAGADA', ?, ?)`,
@@ -559,14 +563,13 @@ exports.actualizarAPaquete = async (req, res) => {
          VALUES (?, 'ACTUALIZACION', 'RECHAZADA', ?, ?)`,
         [diferencia, metodo, req.params.id]
       );
+      await conexion.commit(); // el intento rechazado queda registrado
       return res.status(402).json({
         error: 'PAGO_RECHAZADO',
         mensaje:
           'El pago del diferencial no se completó. Tu prestación sigue vigente como sesión unitaria.',
       });
     }
-
-    await conexion.beginTransaction();
 
     await conexion.execute(
       `INSERT INTO Transaccion (monto_total, tipo, estado, metodo_pago, cita_id)
@@ -617,6 +620,9 @@ exports.actualizarAPaquete = async (req, res) => {
       mensaje: 'La red tardó demasiado al registrar la actualización. Inténtalo nuevamente.',
     });
   } finally {
+    // Cierra cualquier transacción que haya quedado abierta por una salida
+    // temprana (tras un commit no hace nada).
+    await conexion.rollback().catch(() => {});
     conexion.release();
   }
 };

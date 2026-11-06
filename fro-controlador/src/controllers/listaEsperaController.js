@@ -325,6 +325,20 @@ async function tomarTurno({ listaEsperaId, usuarioId, token, ip }) {
       };
     }
 
+    // CU16: si el profesional bloqueó ese periodo después de ofrecer el cupo,
+    // el bloque ya no existe.
+    if (await C_Motor_Agendamiento.agendaBloqueada(conexion, bloque.profesional_id, bloque.fecha_hora_inicio, bloque.fecha_hora_fin)) {
+      await conexion.execute(
+        `UPDATE Lista_Espera SET estado = 'VENCIDO' WHERE lista_espera_id = ?`,
+        [turno.lista_espera_id]
+      );
+      await conexion.commit();
+      return {
+        status: 409,
+        body: { error: 'AGENDA_BLOQUEADA', mensaje: 'El profesional ya no atiende en ese horario. Busca otro horario disponible.' },
+      };
+    }
+
     const [creada] = await conexion.execute(
       `INSERT INTO Cita
          (fecha_hora_inicio, fecha_hora_fin, estado, modalidad, paciente_id, profesional_id, sede_id)

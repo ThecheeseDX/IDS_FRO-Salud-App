@@ -301,7 +301,12 @@ exports.validarBloque = async (req, res) => {
       [profesional_id, fechaHoraFin, fecha_hora_inicio]
     );
 
-    return res.status(200).json({ disponible: ocupadas.length === 0 });
+    // CU16: un periodo bloqueado por el profesional tampoco está disponible.
+    const bloqueada = await C_Motor_Agendamiento.agendaBloqueada(
+      C_Capa_de_Acceso_a_Datos, profesional_id, fecha_hora_inicio, fechaHoraFin
+    );
+
+    return res.status(200).json({ disponible: ocupadas.length === 0 && !bloqueada });
   } catch (error) {
     console.error('[validarBloque]', error);
     return res.status(500).json({ error: 'Error interno al validar el bloque.' });
@@ -412,6 +417,15 @@ exports.bloquearHorario = async (req, res) => {
       return res.status(409).json({
         error:   'BLOQUE_OCUPADO',
         mensaje: 'Este horario acaba de ser reservado por otro paciente. Por favor selecciona un bloque alternativo.',
+      });
+    }
+
+    // CU16: el profesional bloqueó ese periodo (vacaciones, licencia).
+    if (await C_Motor_Agendamiento.agendaBloqueada(connection, profesional_id, fecha_hora_inicio, fecha_hora_fin)) {
+      await connection.rollback();
+      return res.status(409).json({
+        error:   'AGENDA_BLOQUEADA',
+        mensaje: 'El profesional no atiende en la fecha elegida. Elige otro bloque.',
       });
     }
 

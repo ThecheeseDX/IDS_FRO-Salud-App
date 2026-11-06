@@ -7,7 +7,7 @@
  * respuesta a la confirmación de asistencia y solicitud de evaluación al
  * terminar la sesión.
  *
- * Casos de uso: CU09, CU18, CU19, CU21, CU22, CU55, CU76.
+ * Casos de uso: CU09, CU16, CU18, CU19, CU21, CU22, CU55, CU76.
  *
  * Este archivo es la puerta de entrada al componente: el resto del servidor
  * lo llama siempre por este nombre, igual que en los diagramas de secuencia.
@@ -40,6 +40,8 @@ module.exports = {
   describirBloque: (...args) => agenda().describirBloque(...args),
   // CU18, CU19
   ofrecerCupoListaEspera: (...args) => agenda().ofrecerCupoListaEspera(...args),
+  // CU16 — Restringiendo disponibilidad administrativa
+  agendaBloqueada: (...args) => agenda().agendaBloqueada(...args),
 
   // ── confirmacionService.js
   // CU21 — Confirmando asistencia a cita de forma distribuida
