@@ -442,7 +442,6 @@ exports.solicitarOTP = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.verificarOTP = async (req, res) => {
     const { usuario_id, codigo } = req.body;
-    console.log("verificarOTP recibido:", { usuario_id, codigo });
 
     if (!usuario_id || !codigo) {
         return res.status(400).json({ error: 'usuario_id y codigo son requeridos.' });

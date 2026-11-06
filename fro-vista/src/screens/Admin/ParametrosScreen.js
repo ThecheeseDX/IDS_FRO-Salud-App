@@ -125,7 +125,7 @@ export default function ParametrosScreen({ navigation }) {
       });
       
       setIsSaving(false);
-      setAviso({ tono: 'info', titulo: "Cambio Aplicado", mensaje: "La modificación arancelaria ya está activa en la red." });
+      setAviso({ tono: 'ok', titulo: "Cambio aplicado", mensaje: "El parámetro quedó guardado y ya rige en el sistema." });
       cargarParametros();
 
     } catch (error) {
@@ -157,11 +157,15 @@ export default function ParametrosScreen({ navigation }) {
 // CU16 — Restringiendo disponibilidad administrativa
 const aplicarRestriccion = async () => {
     if (!inicio || !fin) return setAviso({ tono: 'error', titulo: "Error", mensaje: "Complete fechas (DD/MM/AAAA)" });
+    // Sin número de profesional no se bloquea nada (antes caía en el profesional 1).
+    if (!(parseInt(profesionalId, 10) > 0)) {
+        return setAviso({ tono: 'error', titulo: "Falta el profesional", mensaje: "Indica el número del profesional cuya agenda quieres bloquear." });
+    }
 
     try {
         // El backend recibe el ID del profesional
         await apiClient.post('/clinica/disponibilidad/restringir', {
-            profesional_id: profesionalId || 1, 
+            profesional_id: parseInt(profesionalId, 10),
             fecha_inicio: inicio, 
             fecha_fin: fin, 
             motivo: 'Inactividad administrativa'
@@ -269,9 +273,10 @@ const aplicarRestriccion = async () => {
 
             <TextInput 
               style={styles.input} 
-              placeholder="ID Profesional (Admin)" 
+              placeholder="Número del profesional" 
               value={profesionalId} 
               onChangeText={setProfesionalId} 
+              keyboardType="numeric"
             />
 
             <TouchableOpacity style={styles.input} onPress={() => { setModo('inicio'); setShow(true); }}>

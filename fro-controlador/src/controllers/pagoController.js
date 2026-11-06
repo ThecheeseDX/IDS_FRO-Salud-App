@@ -496,7 +496,10 @@ exports.comprarPaquete = async (req, res) => {
     }
 
     const arancel = await arancelVigente();
-    const precio = Math.round(arancel * sesiones * 0.9); // 10% de descuento por plan
+    // CU59: el descuento del plan es el parámetro global, el mismo que usa
+    // finanzas al ofrecer y cobrar planes (antes estaba fijo en 10 %).
+    const descuento = await C_Capa_de_Acceso_a_Datos.leerParametroEntero(C_Capa_de_Acceso_a_Datos, 'DESCUENTO_PAQUETE_PORCENTAJE', 10);
+    const precio = Math.round(arancel * sesiones * (1 - descuento / 100));
 
     if (metodo === 'TARJETA_RECHAZADA') {
       return res.status(402).json({

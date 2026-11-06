@@ -198,7 +198,7 @@ export default function HistorialPacienteScreen({ route, navigation }) {
       const respuesta = err.response?.data;
       // Excepciones CU31: sin autoría (403), tope de versiones o registro
       // abierto (409), corrección vacía (400) y fallo de vinculación (500).
-      setAviso({ tono: 'ok', titulo: 'Corrección no guardada', mensaje: respuesta?.mensaje || respuesta?.error || 'Reintenta el guardado.' });
+      setAviso({ tono: 'error', titulo: 'Corrección no guardada', mensaje: respuesta?.mensaje || respuesta?.error || 'Reintenta el guardado.' });
     }
   };
 

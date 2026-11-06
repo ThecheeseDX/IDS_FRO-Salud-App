@@ -131,11 +131,11 @@ export default function PagosScreen() {
       const { data } = await apiClient.post(`/pagos/citas/${cita.cita_id}/pagar`, {
         metodo_pago: metodoPago,
       });
-      setAviso({ tono: 'alerta', titulo: data.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : 'Pago realizado', mensaje: data.mensaje });
+      setAviso({ tono: data.estado === 'EN_TRANSITO' ? 'alerta' : 'ok', titulo: data.estado === 'EN_TRANSITO' ? 'Pago en tránsito' : 'Pago realizado', mensaje: data.mensaje });
       await cargar(true);
     } catch (err) {
       const respuesta = err.response?.data;
-      setAviso({ tono: 'ok', titulo: 'Pago no completado', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
+      setAviso({ tono: 'error', titulo: 'Pago no completado', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
       await cargar(true);
     } finally {
       setProcesandoId(null);
@@ -154,7 +154,7 @@ export default function PagosScreen() {
       await cargar(true);
     } catch (err) {
       const respuesta = err.response?.data;
-      setAviso({ tono: 'ok', titulo: 'Compra no completada', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
+      setAviso({ tono: 'error', titulo: 'Compra no completada', mensaje: respuesta?.mensaje || respuesta?.error || 'Intenta nuevamente.' });
     } finally {
       setComprandoPlan(false);
     }

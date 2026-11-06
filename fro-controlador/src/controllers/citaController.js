@@ -10,6 +10,7 @@ const C_Capa_de_Acceso_a_Datos = require('../componentes/C_Capa_de_Acceso_a_Dato
 const C_Motor_Agendamiento = require('../componentes/C_Motor_Agendamiento');
 const C_Despachador_Notificaciones = require('../componentes/C_Despachador_Notificaciones');
 const C_Motor_Clinico = require('../componentes/C_Motor_Clinico');
+const C_Control_Acceso_Clinico = require('../componentes/C_Control_Acceso_Clinico');
 const { devolverPorCancelacion } = require('./finanzasController');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -762,6 +763,31 @@ exports.transicionarEstadoCita = async (req, res) => {
 //   CU17 — Reprogramación de cita
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CU12 — ¿Quien pide es parte de la cita? El paciente y el profesional de la
+// cita siempre lo son. Con `lectura`, además el administrador y el profesional
+// con acceso clínico al paciente (por ejemplo, por una derivación, CU65).
+async function puedeVerOGestionarCita(conexion, cita, req, { lectura = false } = {}) {
+  const rol = req.user?.nombre_rol || '';
+  const usuarioId = req.user?.usuario_id;
+  if (rol === 'Administrador') return lectura;
+  if (rol === 'Paciente') {
+    const [[fila]] = await conexion.execute(
+      `SELECT 1 AS ok FROM Paciente WHERE paciente_id = ? AND usuario_id = ? LIMIT 1`,
+      [cita.paciente_id, usuarioId]
+    );
+    return Boolean(fila);
+  }
+  if (rol === 'Profesional') {
+    const [[fila]] = await conexion.execute(
+      `SELECT 1 AS ok FROM Profesional WHERE profesional_id = ? AND usuario_id = ? LIMIT 1`,
+      [cita.profesional_id, usuarioId]
+    );
+    if (fila) return true;
+    return lectura && C_Control_Acceso_Clinico.profesionalTratante(conexion, usuarioId, cita.paciente_id);
+  }
+  return false;
+}
+
 /**
  * CU17 — Gestionando reprogramación de cita
  * POST /citas/:id/reprogramar   { fecha_hora_inicio, fecha_hora_fin, motivo }
@@ -801,6 +827,12 @@ exports.reprogramarCita = async (req, res) => {
     }
 
     const cita = rows[0];
+
+    // CU12: solo el paciente o el profesional de la cita pueden reprogramarla.
+    if (!(await puedeVerOGestionarCita(connection, cita, req))) {
+      await connection.rollback();
+      return res.status(403).json({ error: 'CITA_AJENA', mensaje: 'Solo puedes reprogramar tus propias citas.' });
+    }
 
     // Excepción 1 (CU17): una cita terminal no se puede modificar.
     if (ESTADOS_TERMINALES.has(cita.estado)) {
@@ -939,6 +971,15 @@ exports.reprogramarCita = async (req, res) => {
 exports.trazabilidadCita = async (req, res) => {
   const { id } = req.params;
   try {
+    // CU12: la trazabilidad la ve quien tiene acceso a la cita o el administrador.
+    const [[cita]] = await C_Capa_de_Acceso_a_Datos.execute(
+      `SELECT cita_id, paciente_id, profesional_id FROM Cita WHERE cita_id = ? LIMIT 1`,
+      [id]
+    );
+    if (!cita) return res.status(404).json({ error: `Cita con id "${id}" no encontrada.` });
+    if (!(await puedeVerOGestionarCita(C_Capa_de_Acceso_a_Datos, cita, req, { lectura: true }))) {
+      return res.status(403).json({ error: 'CITA_AJENA', mensaje: 'No tienes acceso a esta cita.' });
+    }
     const eventos = await C_Motor_Agendamiento.obtenerTrazabilidadCita(C_Capa_de_Acceso_a_Datos, id);
     return res.status(200).json({ cita_id: Number(id), eventos });
   } catch (error) {
@@ -955,13 +996,17 @@ exports.obtenerEstadoCita = async (req, res) => {
   const { id } = req.params;
   try {
     const [rows] = await C_Capa_de_Acceso_a_Datos.query(
-      `SELECT cita_id, estado FROM Cita WHERE cita_id = ? LIMIT 1`,
+      `SELECT cita_id, estado, paciente_id, profesional_id FROM Cita WHERE cita_id = ? LIMIT 1`,
       [id]
     );
     if (rows.length === 0) {
       return res.status(404).json({ error: `Cita con id "${id}" no encontrada.` });
     }
-    return res.status(200).json(rows[0]);
+    // CU12: el estado solo se informa a quien tiene acceso a la cita.
+    if (!(await puedeVerOGestionarCita(C_Capa_de_Acceso_a_Datos, rows[0], req, { lectura: true }))) {
+      return res.status(403).json({ error: 'CITA_AJENA', mensaje: 'No tienes acceso a esta cita.' });
+    }
+    return res.status(200).json({ cita_id: rows[0].cita_id, estado: rows[0].estado });
   } catch (error) {
     console.error('[obtenerEstadoCita]', error);
     return res.status(500).json({ error: 'Error interno al consultar el estado.' });

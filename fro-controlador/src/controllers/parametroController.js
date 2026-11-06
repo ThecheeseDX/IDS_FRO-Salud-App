@@ -46,7 +46,9 @@ exports.actualizarParametro = async (req, res) => {
     
     const administradorId = req.user?.usuario_id; 
 
-    if (!clave || !valor || !ultima_modificacion) {
+    // Un valor 0 es válido (por ejemplo, un descuento en 0 %); solo falta si viene vacío.
+    const valorVacio = valor === undefined || valor === null || String(valor).trim() === '';
+    if (!clave || valorVacio || !ultima_modificacion) {
         return res.status(400).json({ error: 'Faltan datos obligatorios para la actualización.' });
     }
 
