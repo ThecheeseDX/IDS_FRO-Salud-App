@@ -42,6 +42,11 @@ python3 portear-al-oficial/generador/generar_partes.py --config portear-al-ofici
 Probado el 04-11-2026 sobre un clon del oficial, con los seis bloques en orden:
 el código queda idéntico al del fork.
 
+Regenerado y probado de nuevo el 06-11-2026, después de agregar la carpeta
+`src/componentes/` y los comentarios por CU en todo el código. El bloque 1 pasó
+de 66 a 181 archivos, porque lleva todos los archivos comentados; los demás
+bloques no cambian de tamaño. El resultado sigue idéntico al fork.
+
 ## Qué corrige respecto del Incremento 2
 
 En el Incremento 2 faltaron seis archivos en el oficial. Eran renombres que
