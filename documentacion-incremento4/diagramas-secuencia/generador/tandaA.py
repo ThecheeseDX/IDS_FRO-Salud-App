@@ -206,12 +206,16 @@ CU51 = dict(id='CU51', nombre='Habilitando Automáticamente Contenidos de Prepar
         '! El destino del aviso no existe para el rol del paciente',
         'V ->> V: ignorar_el_salto()',
         'V --> A: mantener_la_pantalla_actual()',
-        'A -> V: entrar_desde_mi_tratamiento(Prevencion y alta)'],
-        reanudar='cargar_imagen_de_cada_recurso'),
+        'A -> V: entrar_desde_mi_tratamiento(Prevencion y alta)',
+        '! Al entrar, la sección vuelve a consultar al servidor: se repite el flujo principal'],
+        reanudar='GET /clinica/mi-alta'),
     4: dict(cortar='cargar_imagen_de_cada_recurso', lineas=[
-        '! La imagen no carga desde el repositorio (deslizar hacia abajo recarga)',
-        'V ->> V: reemplazar_por_icono_segun_tipo(tipo)'],
-        reanudar='mostrar_avance_y_recursos_de_prevencion'),
+        '! La imagen de un recurso no carga desde el repositorio',
+        'V ->> V: reemplazar_por_icono_segun_tipo(tipo)',
+        'V --> A: mostrar_recursos_con_icono_en_lugar_de_imagen()',
+        'A -> V: recargar_la_seccion(deslizar hacia abajo)',
+        '! Al recargar, la sección vuelve a consultar al servidor: se repite el flujo principal'],
+        reanudar='GET /clinica/mi-alta'),
   })
 
 # ──────────────────────────── CU54 ────────────────────────────
