@@ -25,8 +25,8 @@ export default function Icono({ name, size = 24, color = '#000', style }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 512 512" style={style}>
       {figuras.map((f, i) => {
+        // La key va aparte: React no la acepta dentro de un objeto esparcido.
         const comun = {
-          key: i,
           fill: f.sinRelleno ? 'none' : color,
           stroke: f.trazo ? color : undefined,
           strokeWidth: f.trazo ? Number(f.trazo) : undefined,
@@ -34,9 +34,9 @@ export default function Icono({ name, size = 24, color = '#000', style }) {
           strokeLinejoin: f.join,
           strokeMiterlimit: f.miter ? Number(f.miter) : undefined,
         };
-        if (f.t === 'circle') return <Circle {...comun} cx={f.cx} cy={f.cy} r={f.r} />;
-        if (f.t === 'rect') return <Rect {...comun} x={f.x} y={f.y} width={f.width} height={f.height} rx={f.rx} ry={f.ry} />;
-        return <Path {...comun} d={f.d} />;
+        if (f.t === 'circle') return <Circle key={i} {...comun} cx={f.cx} cy={f.cy} r={f.r} />;
+        if (f.t === 'rect') return <Rect key={i} {...comun} x={f.x} y={f.y} width={f.width} height={f.height} rx={f.rx} ry={f.ry} />;
+        return <Path key={i} {...comun} d={f.d} />;
       })}
     </Svg>
   );
