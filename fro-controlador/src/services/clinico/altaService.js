@@ -267,11 +267,19 @@ function impedimentoDeCierre(resumen) {
 }
 
 // Apoyo común: fecha DD/MM/AAAA para el PDF
+// Las fechas de la base llegan como texto 'AAAA-MM-DD[ hh:mm:ss]' (dateStrings):
+// se toman tal cual para no correrlas un día. "Hoy" se calcula en hora de Chile.
 function fechaLegible(valor) {
   if (!valor) return '—';
+  const texto = typeof valor === 'string' ? valor.match(/^(\d{4})-(\d{2})-(\d{2})/) : null;
+  if (texto) return `${texto[3]}/${texto[2]}/${texto[1]}`;
   const d = new Date(valor);
   if (Number.isNaN(d.getTime())) return String(valor);
-  return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric' })
+      .formatToParts(d).map((p) => [p.type, p.value])
+  );
+  return `${partes.day}/${partes.month}/${partes.year}`;
 }
 
 // CU37 — Emitiendo informe de alta y cierre de episodio

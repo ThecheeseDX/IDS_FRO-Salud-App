@@ -162,8 +162,8 @@ exports.emitirInformeAlta = async (req, res) => {
       subida = await C_API_Adapter.subirBuffer(pdf, {
         folder: `fro-salud/paciente-${resumen.episodio.paciente_id}`,
         public_id: `informe-alta-${episodio_id}-${Date.now()}`,
-        resource_type: 'raw',
-        format: 'pdf',
+        // Sin 'raw': se sube como los PDF de CU33, para que el visor (CU35)
+        // pueda mostrar sus páginas. Como 'raw' el informe no se podía abrir.
       });
     } catch (errorNube) {
       console.error('[emitirInformeAlta] fallo Cloudinary:', errorNube.message);
@@ -180,8 +180,9 @@ exports.emitirInformeAlta = async (req, res) => {
         `INSERT INTO Documento_Clinico
            (nombre_original, categoria, formato, tamano_bytes, tipo_recurso, url_publica, public_id_cloud,
             paginas, paciente_id, episodio_clinico_id, profesional_id)
-         VALUES (?, 'INFORME_ALTA', 'pdf', ?, ?, ?, ?, NULL, ?, ?, ?)`,
-        [nombreArchivo, pdf.length, subida.resource_type || 'raw', subida.secure_url, subida.public_id,
+         VALUES (?, 'INFORME_ALTA', 'pdf', ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nombreArchivo, pdf.length, subida.resource_type || 'image', subida.secure_url, subida.public_id,
+         subida.pages || null,
          resumen.episodio.paciente_id, episodio_id, emisor?.profesional_id || resumen.episodio.profesional_id]
       );
       await conexion.query(

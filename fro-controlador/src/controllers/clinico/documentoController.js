@@ -86,6 +86,56 @@ async function prepararVisor(archivo, guardarPaginas = async () => {}) {
   };
 }
 
+/**
+ * CU37, CU35 — informes de alta emitidos antes del 09-11-2026
+ * Esos informes se subían a Cloudinary como archivo 'raw'. Un 'raw' no se
+ * puede convertir en imágenes por página, así que el visor mostraba error.
+ * La primera vez que se abre uno, el servidor lo baja por la API firmada
+ * (no depende de la entrega pública de PDF), lo vuelve a subir como los PDF
+ * de CU33 y actualiza la fila. Si algo falla, devuelve el documento tal cual.
+ */
+async function repararPdfRaw(documento) {
+  if (documento.formato !== 'pdf' || documento.tipo_recurso !== 'raw' || !documento.public_id_cloud) {
+    return documento;
+  }
+  try {
+    const { cloudinary } = C_API_Adapter;
+    let pdf = null;
+    // Un 'raw' puede guardar la extensión dentro del public_id o aparte.
+    for (const formato of ['', 'pdf']) {
+      const url = cloudinary.utils.private_download_url(documento.public_id_cloud, formato, {
+        resource_type: 'raw', type: 'upload',
+      });
+      const respuesta = await fetch(url);
+      if (!respuesta.ok) continue;
+      const contenido = Buffer.from(await respuesta.arrayBuffer());
+      if (contenido.subarray(0, 4).toString() === '%PDF') { pdf = contenido; break; }
+    }
+    if (!pdf) throw new Error('no se pudo bajar el PDF original');
+
+    const subida = await C_API_Adapter.subirBuffer(pdf, {
+      public_id: `${documento.public_id_cloud.replace(/\.pdf$/i, '')}-visor`,
+    });
+    await C_Capa_de_Acceso_a_Datos.query(
+      `UPDATE Documento_Clinico
+          SET tipo_recurso = ?, url_publica = ?, public_id_cloud = ?, paginas = ?
+        WHERE documento_id = ?`,
+      [subida.resource_type, subida.secure_url, subida.public_id, subida.pages || null, documento.documento_id]
+    );
+    cloudinary.uploader.destroy(documento.public_id_cloud, { resource_type: 'raw' }).catch(() => {});
+    return {
+      ...documento,
+      tipo_recurso: subida.resource_type,
+      url_publica: subida.secure_url,
+      public_id_cloud: subida.public_id,
+      paginas: subida.pages || null,
+    };
+  } catch (errorNube) {
+    console.error('[repararPdfRaw] documento', documento.documento_id, errorNube.message);
+    return documento;
+  }
+}
+
 // ── Taxonomía de categorías (CU34) ───────────────────────────────────────────
 const CATEGORIAS = [
   { clave: 'EXAMEN_IMAGENOLOGICO', nombre: 'Examen imagenológico' },
@@ -402,12 +452,13 @@ exports.verDocumento = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [[documento]] = await C_Capa_de_Acceso_a_Datos.query(
+    const [[encontrado]] = await C_Capa_de_Acceso_a_Datos.query(
       `SELECT documento_id, nombre_original, categoria, formato, tipo_recurso,
               url_publica, public_id_cloud, paginas, tamano_bytes, fecha_carga, paciente_id
          FROM Documento_Clinico WHERE documento_id = ? LIMIT 1`,
       [id]
     );
+    let documento = encontrado;
     if (!documento) {
       return res.status(404).json({ error: 'DOCUMENTO_NO_ENCONTRADO' });
     }
@@ -420,6 +471,9 @@ exports.verDocumento = async (req, res) => {
         mensaje: 'No tienes autorización para visualizar este documento. El intento quedó registrado.',
       });
     }
+
+    // CU37: informe de alta antiguo guardado como 'raw' → se repara una vez.
+    documento = await repararPdfRaw(documento);
 
     const vista = await prepararVisor(documento, async (paginas) =>
       C_Capa_de_Acceso_a_Datos.query(`UPDATE Documento_Clinico SET paginas = ? WHERE documento_id = ?`, [paginas, id])
