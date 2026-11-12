@@ -8,14 +8,16 @@
  *   - quién la hizo (rol y número de usuario, nunca datos personales);
  *   - el caso de uso que atiende, sacado del comentario `// CUxx — …` que
  *     está sobre cada ruta en src/routes;
- *   - los componentes del Diagrama de Componentes que participaron, en el
- *     orden en que se usaron (el mismo recorrido que los diagramas de secuencia);
+ *   - la conexión completa: desde la Vista (Cliente Móvil o Navegador Web),
+ *     la API REST, cada componente del Diagrama de Componentes en el orden en
+ *     que se usó, la base MySQL y los servicios externos (API Cloudinary, API
+ *     Brevo…), el mismo recorrido que los diagramas de secuencia;
  *   - los eventos que esos componentes anunciaron (aviso enviado, archivo
  *     subido, evento crítico escalado…).
  *
  * Ejemplo:
  *   [14:03:22] POST /api/clinica/derivaciones → 201 · 140 ms · Profesional #4 · CU65 — Derivando…
- *              componentes: C_Seguridad_JWT_BCrypt → C_Control_Acceso_Clinico → C_Capa_de_Acceso_a_Datos → C_Despachador_Notificaciones
+ *              conexión: Cliente Móvil → C_API_REST → C_Seguridad_JWT_BCrypt → C_Control_Acceso_Clinico → C_Capa_de_Acceso_a_Datos → C_MYSQL → C_Despachador_Notificaciones
  *              ↳ C_Despachador_Notificaciones: aviso DERIVACION_RECIBIDA → usuario #9 (APP)
  *
  * Nunca se registran cuerpos de petición, contraseñas, RUT, correos ni
@@ -44,12 +46,12 @@ const IGNORADAS = [/^\/api\/diagnostico/, /^\/api\/health/, /^\/favicon/];
 // Se lee una vez, al arrancar, desde los mismos archivos de rutas: así el
 // registro nunca queda desactualizado cuando se agrega una ruta nueva.
 function limpiarComentario(linea) {
-  return linea
+  const texto = linea
     .replace(/^\s*\/\/\s*/, '')
     .replace(/[─━-]{2,}/g, '')
     .replace(/^[─\s]+|[─\s]+$/g, '')
-    .replace(/\s+/g, ' ')
-    .slice(0, 90);
+    .replace(/\s+/g, ' ');
+  return texto.length <= 90 ? texto : `${texto.slice(0, 90).replace(/\s+\S*$/, '')}…`;
 }
 
 function leerCasosDeUso() {
@@ -101,6 +103,44 @@ function marcarComponente(nombre) {
   if (ctx && !ctx.componentes.includes(nombre)) ctx.componentes.push(nombre);
 }
 
+// Servicios externos con el mismo nombre que en el Diagrama de Componentes.
+const SERVICIOS_EXTERNOS = {
+  OPENAI: 'API OpenAI',
+  IMED: 'API Bonos Electrónicos',
+  FINANCIADOR: 'API Bonos Electrónicos',
+  PASARELA_PAGO: 'API Transacciones',
+  CLOUDINARY: 'API Cloudinary',
+  BREVO: 'API Brevo',
+  SMTP: 'API Brevo',
+  EXPO_PUSH: 'API Expo Push',
+};
+/** Anota la conexión del API Adapter (o del Despachador) con un servicio externo. */
+function marcarServicioExterno(clave) {
+  marcarComponente(SERVICIOS_EXTERNOS[clave] || clave);
+}
+
+// Quién inició la conexión: la app, un navegador (enlaces del correo) o el
+// propio servidor (el financiador simulado lo llama el API Adapter).
+function origen(req) {
+  const agente = String(req.headers['user-agent'] || '');
+  if (/^node|undici/i.test(agente)) return 'Servidor (llamada interna)';
+  if (/Mozilla/.test(agente) && !/Expo|okhttp|Dalvik|CFNetwork/.test(agente)) return 'Navegador Web';
+  return 'Cliente Móvil';
+}
+
+/**
+ * Recorrido completo de la petición, de la Vista a la base de datos y a los
+ * servicios externos: el mismo orden de los diagramas de secuencia.
+ */
+function cadenaDeConexion(req, ctx) {
+  const cadena = [origen(req), 'C_API_REST'];
+  for (const nombre of ctx.componentes) {
+    cadena.push(nombre);
+    if (nombre === 'C_Capa_de_Acceso_a_Datos') cadena.push('C_MYSQL');
+  }
+  return cadena;
+}
+
 /**
  * Envuelve las funciones de un componente (src/componentes/C_*.js) para que
  * cada uso quede anotado en la petición en curso. No cambia lo que hacen.
@@ -127,6 +167,7 @@ function registrar(componente, mensaje) {
   if (!ACTIVO) return;
   const ctx = contexto.getStore();
   if (ctx && !ctx.terminada) {
+    marcarComponente(componente);
     ctx.eventos.push(`${componente}: ${mensaje}`);
   } else {
     console.log(`[${hora()}] ↳ ${componente}: ${mensaje}`);
@@ -159,7 +200,14 @@ function registrarPeticiones(req, res, next) {
       ctx.codigoError = cuerpo.error;
     }
     const cu = casoDeUso(req);
-    if (cu && !res.headersSent) res.setHeader('X-Caso-Uso', (cu.match(/CU\d{2}/) || [''])[0]);
+    if (!res.headersSent) {
+      if (cu) res.setHeader('X-Caso-Uso', (cu.match(/CU\d{2}/) || [''])[0]);
+      // La app muestra en su terminal los componentes con que se conectó.
+      // (Las cabeceras solo admiten letras sin tilde.)
+      const componentes = cadenaDeConexion(req, ctx).slice(1).join(' > ')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      res.setHeader('X-Componentes', componentes);
+    }
     return jsonOriginal(cuerpo);
   };
 
@@ -191,7 +239,7 @@ function registrarPeticiones(req, res, next) {
     ];
     if (cu) partes.push(cu);
     const lineas = [partes.join(' · ')];
-    if (ctx.componentes.length) lineas.push(`           componentes: ${ctx.componentes.join(' → ')}`);
+    lineas.push(`           conexión: ${cadenaDeConexion(req, ctx).join(' → ')}`);
     for (const evento of ctx.eventos) lineas.push(`           ↳ ${evento}`);
     console.log(lineas.join('\n'));
   });
@@ -199,4 +247,4 @@ function registrarPeticiones(req, res, next) {
   return contexto.run(ctx, next);
 }
 
-module.exports = { registrarPeticiones, trazarComponente, registrar, marcarComponente, ACTIVO };
+module.exports = { registrarPeticiones, trazarComponente, registrar, marcarComponente, marcarServicioExterno, ACTIVO };

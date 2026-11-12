@@ -39,6 +39,7 @@ function subirBuffer(buffer, opciones = {}) {
       (error, resultado) => {
         if (error) return reject(error);
         // Registro de actividad: tamaño y tipo, nunca el nombre del archivo.
+        require('../services/registro/registroActividad').marcarServicioExterno('CLOUDINARY');
         require('../services/registro/registroActividad').registrar(
           'C_API_Adapter',
           `Cloudinary: archivo guardado (${Math.max(1, Math.round((resultado.bytes || buffer.length) / 1024))} KB, ${resultado.format || resultado.resource_type})`

@@ -8,7 +8,7 @@
 // Ruta: fro-vista/src/navigation/AppNavigator.js
 import React, { useContext, useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { registrarPantalla } from '../utils/registroApp';
+import { registrarVista } from '../utils/registroApp';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -147,12 +147,12 @@ export default function AppNavigator() {
       onUnhandledAction={alFallarNavegacion}
       onReady={() => {
         actualizarBarra();
-        registrarPantalla(refNavegacion.getCurrentRoute()?.name);
+        registrarVista(refNavegacion.getCurrentRoute()?.name);
       }}
       onStateChange={(estado) => {
         setEstiloBarra(estiloBarraDeEstado(estado));
         // Registro de actividad: la pantalla que quedó a la vista.
-        registrarPantalla(refNavegacion.getCurrentRoute()?.name);
+        registrarVista(refNavegacion.getCurrentRoute()?.name);
       }}
     >
       <StatusBar style={estiloBarra} />

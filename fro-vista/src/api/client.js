@@ -9,7 +9,7 @@
  */
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { registrarLlamada } from '../utils/registroApp';
+import { registrarLlamada, registrarSalida } from '../utils/registroApp';
 
 // ── Dirección del backend ────────────────────────────────────────────────────
 // En la nube se define EXPO_PUBLIC_API_URL en el archivo .env de fro-vista
@@ -43,6 +43,7 @@ apiClient.interceptors.request.use(
   async (config) => {
     // Registro de actividad: hora de salida para medir la duración.
     config.metadata = { inicio: Date.now() };
+    registrarSalida({ metodo: config.method, url: config.url });
     try {
       const token = await SecureStore.getItemAsync('userToken');
       if (token) {
@@ -67,6 +68,7 @@ function anotarLlamada(config, response, sinConexion = false) {
     estado: response?.status,
     ms: config?.metadata ? Date.now() - config.metadata.inicio : 0,
     casoDeUso: response?.headers?.['x-caso-uso'] || null,
+    componentes: response?.headers?.['x-componentes'] || null,
     codigoError: datos && typeof datos.error === 'string' && /^[A-Z_]+$/.test(datos.error) ? datos.error : null,
     sinConexion,
   });

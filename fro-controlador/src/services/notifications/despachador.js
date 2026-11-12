@@ -236,7 +236,7 @@ async function despachar(conexion, aviso) {
     }
 
     if (usados.length) {
-      registrar('C_Despachador_Notificaciones', `aviso ${tipo || 'GENERAL'} → usuario #${usuario_id} también por ${usados.join(' y ').replace('PUSH', 'push').replace('EMAIL', 'correo')}`);
+      registrar('C_Despachador_Notificaciones', `aviso ${tipo || 'GENERAL'} → usuario #${usuario_id} también por ${usados.join(' y ').replace('PUSH', 'push (API Expo Push)').replace('EMAIL', 'correo (API Brevo)')}`);
     }
 
     // Excepción 2 del CU52: queda escrito por dónde salió realmente el aviso.

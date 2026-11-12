@@ -113,6 +113,7 @@ async function ejecutarTransaccion({
   }
 
   // Registro de actividad: proveedor, operación, respuesta e intentos.
+  require('../registro/registroActividad').marcarServicioExterno(proveedor);
   require('../registro/registroActividad').registrar(
     'C_API_Adapter',
     `${proveedor} · ${operacion}: respondió ${respuesta.status} en ${respuesta.latencia} ms (${respuesta.intentos} intento${respuesta.intentos === 1 ? '' : 's'})`
