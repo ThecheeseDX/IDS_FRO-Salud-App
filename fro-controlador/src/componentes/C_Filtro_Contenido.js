@@ -33,3 +33,6 @@ module.exports = {
   // CU57 — Filtrando automáticamente contenido restringido
   normalizar: (...args) => filtro().normalizar(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Filtro_Contenido', module.exports);

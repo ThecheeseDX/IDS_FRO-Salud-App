@@ -31,3 +31,15 @@ pool.leerParametroEntero = (...args) =>
   require('../services/agenda/agendaService').leerParametroEntero(...args);
 
 module.exports = pool;
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+{
+  const { marcarComponente } = require('../services/registro/registroActividad');
+  for (const metodo of ['query', 'execute', 'getConnection']) {
+    const original = pool[metodo].bind(pool);
+    pool[metodo] = (...args) => {
+      marcarComponente('C_Capa_de_Acceso_a_Datos');
+      return original(...args);
+    };
+  }
+}

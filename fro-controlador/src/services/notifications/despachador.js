@@ -165,6 +165,8 @@ function cuerpoCorreo({ titulo, contenido, nombre, accion }) {
  *   correo      opcional { asunto, accion } para enviar también por correo
  * @returns {Promise<{ canales: string[] }>}  nunca lanza.
  */
+const { registrar } = require('../registro/registroActividad');
+
 async function despachar(conexion, aviso) {
   const { usuario_id, tipo, contenido } = aviso;
   if (!usuario_id || !contenido) return { canales: [] };
@@ -183,6 +185,7 @@ async function despachar(conexion, aviso) {
       [tipo || 'GENERAL', titulo, contenido, JSON.stringify(datos), usuario_id]
     );
     canales.push('APP');
+    registrar('C_Despachador_Notificaciones', `aviso ${tipo || 'GENERAL'} → usuario #${usuario_id} (centro de notificaciones de la app)`);
   } catch (error) {
     console.error('[despachar] no se pudo guardar el aviso en la app:', error.message);
   }
@@ -230,6 +233,10 @@ async function despachar(conexion, aviso) {
       } catch (error) {
         console.error('[despachar] correo no entregado:', error.message);
       }
+    }
+
+    if (usados.length) {
+      registrar('C_Despachador_Notificaciones', `aviso ${tipo || 'GENERAL'} → usuario #${usuario_id} también por ${usados.join(' y ').replace('PUSH', 'push').replace('EMAIL', 'correo')}`);
     }
 
     // Excepción 2 del CU52: queda escrito por dónde salió realmente el aviso.

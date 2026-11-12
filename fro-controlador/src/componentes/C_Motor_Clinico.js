@@ -87,3 +87,6 @@ module.exports = {
   // CU32, CU51
   porcentajeObjetivosEpisodio: (...args) => episodio().porcentajeObjetivosEpisodio(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Motor_Clinico', module.exports);

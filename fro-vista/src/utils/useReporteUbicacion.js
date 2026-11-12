@@ -19,6 +19,7 @@ import { AppState } from 'react-native';
 import apiClient from '../api/client';
 import { ubicacionActual } from './ubicacion';
 
+import { registrar } from './registroApp';
 const CADA_MS = 2 * 60 * 1000;
 
 // CU39 — Validando presencialidad mediante coordenadas GPS
@@ -36,7 +37,12 @@ export default function useReporteUbicacion(activo = true) {
         const citas = data?.citas || [];
         if (citas.length === 0) return;
         const punto = await ubicacionActual();
-        if (!punto) return;
+        if (!punto) {
+          registrar('📍 visita a domicilio hoy, pero no se pudo leer el GPS del teléfono');
+          return;
+        }
+        // Registro de actividad: cuántas visitas, nunca las coordenadas.
+        registrar(`📍 ubicación del paciente enviada para ${citas.length} visita(s) a domicilio`);
         await Promise.all(
           citas.map((c) => apiClient.post(`/citas/${c.cita_id}/ubicacion`, punto).catch(() => {}))
         );

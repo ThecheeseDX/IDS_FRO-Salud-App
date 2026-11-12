@@ -35,3 +35,6 @@ module.exports = {
   // CU41 — Validando sesión mediante protocolo multi-factor
   analizarFactores: (...args) => presencialidad().analizarFactores(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Validador_Presencialidad', module.exports);

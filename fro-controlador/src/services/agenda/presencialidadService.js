@@ -180,11 +180,25 @@ function analizarFactores(cita, radio) {
   return factores;
 }
 
+const { registrar } = require('../registro/registroActividad');
+
+// Registro de actividad: distancia medida en cada marca de una visita a domicilio.
+async function registrarMarcaPresencialRegistrada(conexion, cita, momento, cuerpo) {
+  const resultado = await registrarMarcaPresencial(conexion, cita, momento, cuerpo);
+  if (resultado) {
+    const texto = resultado.distancia_metros === null
+      ? `sin ubicación del ${resultado.sin_ubicacion_profesional ? 'profesional' : 'paciente'}: el cierre pedirá justificación`
+      : `${resultado.distancia_metros} m entre profesional y paciente (radio ${resultado.radio_metros} m) → ${resultado.dentro_del_radio ? 'presencialidad validada' : 'fuera del radio'}`;
+    registrar('C_Validador_Presencialidad', `marca de ${momento === 'TERMINO' ? 'término' : 'inicio'} de la cita #${cita.cita_id}: ${texto}`);
+  }
+  return resultado;
+}
+
 module.exports = {
   distanciaMetros,
   parsearJSON,
   coordenadas,
-  registrarMarcaPresencial,
+  registrarMarcaPresencial: registrarMarcaPresencialRegistrada,
   resumenMarca,
   analizarFactores,
 };

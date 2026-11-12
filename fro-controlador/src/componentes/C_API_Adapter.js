@@ -47,3 +47,6 @@ module.exports = {
   // CU04 — Verificando identidad mediante código OTP
   explicarErrorSMTP: (...args) => correo().explicarErrorSMTP(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_API_Adapter', module.exports);

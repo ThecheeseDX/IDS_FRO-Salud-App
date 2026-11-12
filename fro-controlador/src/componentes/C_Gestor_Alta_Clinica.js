@@ -41,3 +41,6 @@ module.exports = {
   // CU37 — Emitiendo informe de alta y cierre de episodio
   generarPdfInformeAlta: (...args) => alta().generarPdfInformeAlta(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Gestor_Alta_Clinica', module.exports);

@@ -29,3 +29,6 @@ module.exports = {
   // CU62 — Escalando Automáticamente Eventos Críticos a Supervisión
   extracto: (...args) => escalamiento().extracto(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Escalador_Eventos_Criticos', module.exports);

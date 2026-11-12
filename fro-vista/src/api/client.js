@@ -9,6 +9,7 @@
  */
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { registrarLlamada } from '../utils/registroApp';
 
 // ── Dirección del backend ────────────────────────────────────────────────────
 // En la nube se define EXPO_PUBLIC_API_URL en el archivo .env de fro-vista
@@ -40,6 +41,8 @@ export const setUnauthorizedHandler = (handler) => {
 // Interceptor de peticiones: inyecta el token en cada llamada.
 apiClient.interceptors.request.use(
   async (config) => {
+    // Registro de actividad: hora de salida para medir la duración.
+    config.metadata = { inicio: Date.now() };
     try {
       const token = await SecureStore.getItemAsync('userToken');
       if (token) {
@@ -55,9 +58,27 @@ apiClient.interceptors.request.use(
 
 // CU08, CU70 — sesión vencida y proveedor externo caído
 // Interceptor de respuestas.
+// Registro de actividad: cada respuesta (o error) queda en la terminal de Expo.
+function anotarLlamada(config, response, sinConexion = false) {
+  const datos = response?.data;
+  registrarLlamada({
+    metodo: config?.method,
+    url: config?.url,
+    estado: response?.status,
+    ms: config?.metadata ? Date.now() - config.metadata.inicio : 0,
+    casoDeUso: response?.headers?.['x-caso-uso'] || null,
+    codigoError: datos && typeof datos.error === 'string' && /^[A-Z_]+$/.test(datos.error) ? datos.error : null,
+    sinConexion,
+  });
+}
+
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    anotarLlamada(response.config, response);
+    return response;
+  },
   (error) => {
+    anotarLlamada(error.config, error.response, !error.response);
     const status = error.response?.status;
 
     // CU08: 401: token expirado/inválido → logout global (vía AuthContext).

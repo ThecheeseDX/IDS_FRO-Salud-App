@@ -72,4 +72,22 @@ async function evaluarRefuerzo(conexion, { pacienteId, usuarioId, anterior, actu
   }
 }
 
-module.exports = { evaluarRefuerzo, textoRefuerzo };
+const { registrar } = require('../registro/registroActividad');
+
+// Registro de actividad: deja a la vista si salió o no el mensaje de ánimo y por qué.
+const MOTIVOS_SIN_REFUERZO = {
+  SIN_INDICE: 'aún no hay índice de adherencia',
+  NO_SUBIO: 'la adherencia no subió',
+  PREFERENCIA: 'el paciente desactivó los mensajes de ánimo',
+  YA_ENVIADO_HOY: 'ya recibió uno hoy',
+  ERROR: 'error al evaluar',
+};
+async function evaluarRefuerzoRegistrado(conexion, datos) {
+  const resultado = await evaluarRefuerzo(conexion, datos);
+  registrar('C_Motor_Refuerzos', resultado.enviado
+    ? `mensaje de ánimo enviado (adherencia ${datos.anterior ?? '—'} % → ${datos.actual} %)`
+    : `sin mensaje de ánimo: ${MOTIVOS_SIN_REFUERZO[resultado.motivo] || resultado.motivo}`);
+  return resultado;
+}
+
+module.exports = { evaluarRefuerzo: evaluarRefuerzoRegistrado, textoRefuerzo };

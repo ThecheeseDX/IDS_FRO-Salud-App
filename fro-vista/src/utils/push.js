@@ -27,6 +27,7 @@ import Constants from 'expo-constants';
 
 import { registrarDispositivoPush, olvidarDispositivoPush } from '../api/client';
 
+import { registrar } from './registroApp';
 /** ¿Estamos corriendo dentro de Expo Go (el cliente de pruebas) o en una build propia? */
 function esExpoGo() {
   return (
@@ -114,6 +115,7 @@ export async function registrarPush() {
       concedido = pedido.granted;
     }
     if (!concedido) {
+      registrar('🔔 notificaciones push: el usuario no dio permiso');
       return { estado: 'SIN_PERMISO' };
     }
 
@@ -125,10 +127,12 @@ export async function registrarPush() {
 
     await registrarDispositivoPush(token, Platform.OS);
     tokenActual = token;
+    registrar('🔔 notificaciones push: teléfono registrado en el servidor');
     return { estado: 'REGISTRADO' };
   } catch (error) {
     // Sin build propia esto cae siempre, y es lo esperado: no es un fallo que
     // deba molestar al usuario, así que se informa sin alarmar.
+    registrar('🔔 notificaciones push no disponibles en esta versión de la app (normal en Expo Go)');
     return { estado: 'NO_DISPONIBLE', detalle: error?.message };
   }
 }

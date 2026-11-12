@@ -31,6 +31,10 @@ app.use(
 );
 app.use(express.json());
 
+// Registro de actividad: una línea por petición con su caso de uso y los
+// componentes que participan (ver services/registro/registroActividad.js).
+app.use(require('./services/registro/registroActividad').registrarPeticiones);
+
 // Apoyo común: chequeo de vida del servidor
 app.get('/api/health', (req, res) => {
     res.status(200).json({

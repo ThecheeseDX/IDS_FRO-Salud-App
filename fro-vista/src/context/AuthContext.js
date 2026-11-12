@@ -11,6 +11,7 @@ import DialogoAviso from '../components/DialogoAviso';
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { setUnauthorizedHandler } from '../api/client';
 import { registrarPush, olvidarPush } from '../utils/push';
+import { registrar } from '../utils/registroApp';
 
 export const AuthContext = createContext();
 
@@ -73,6 +74,7 @@ export const AuthProvider = ({ children }) => {
     // CU08: se avisa al servidor para que la sesión deje de figurar como
     // activa. Mejor esfuerzo: si falla, el cierre local ocurre igual.
     apiClient.post('/auth/logout').catch(() => {});
+    registrar(`🔒 sesión cerrada${motivo ? ` por el servidor (${motivo.codigo || 'sesión vencida'})` : ' por el usuario'}`);
     // CU52: el token push deja de apuntar a esta cuenta: si otro usuario inicia
     // sesión en el mismo teléfono, no debe recibir avisos del anterior.
     olvidarPush();

@@ -167,10 +167,13 @@ async function enviarPorSMTP({ destinatario, asunto, html }) {
 // CU52 — Emitiendo notificaciones multicanal (C_API_Adapter)
 // ─ Punto único de salida: elige el camino disponible ─
 async function entregarCorreo({ destinatario, asunto, html }) {
-  if (hayBrevo()) {
-    return enviarPorBrevo({ destinatario, asunto, html });
-  }
-  return enviarPorSMTP({ destinatario, asunto, html });
+  const proveedor = hayBrevo() ? 'Brevo' : 'SMTP';
+  const resultado = hayBrevo()
+    ? await enviarPorBrevo({ destinatario, asunto, html })
+    : await enviarPorSMTP({ destinatario, asunto, html });
+  // Registro de actividad: el asunto y el proveedor, nunca la dirección.
+  require('../registro/registroActividad').registrar('C_API_Adapter', `${proveedor}: correo enviado ("${String(asunto).replace(/ - Punto Paz Salud$/, "")}")`);
+  return resultado;
 }
 
 // CU52 — Emitiendo notificaciones multicanal (C_API_Adapter)

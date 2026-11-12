@@ -28,3 +28,6 @@ module.exports = {
   // CU53 — Comunicando mediante mensajería clínica cifrada
   estadoClave: (...args) => cifrado().estadoClave(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Cifrado_Mensajeria', module.exports);

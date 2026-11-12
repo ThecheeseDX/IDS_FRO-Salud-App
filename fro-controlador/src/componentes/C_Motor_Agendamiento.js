@@ -53,3 +53,6 @@ module.exports = {
   // CU21 — Confirmando asistencia a cita de forma distribuida
   urlPublica: (...args) => confirmacion().urlPublica(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Motor_Agendamiento', module.exports);

@@ -10,7 +10,7 @@ const router = express.Router();
 const C_Seguridad_JWT_BCrypt = require('../componentes/C_Seguridad_JWT_BCrypt');
 const notificacionController = require('../controllers/notificacionController');
 
-// CU52 — El centro de notificaciones es común a los tres roles.
+// CU52 — Emitiendo notificaciones multicanal (centro de notificaciones, común a los tres roles)
 router.get('/', C_Seguridad_JWT_BCrypt.verifyToken, notificacionController.listar);
 router.get('/resumen', C_Seguridad_JWT_BCrypt.verifyToken, notificacionController.resumen);
 router.post('/leer-todas', C_Seguridad_JWT_BCrypt.verifyToken, notificacionController.marcarTodasLeidas);

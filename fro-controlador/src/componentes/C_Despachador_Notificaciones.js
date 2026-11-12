@@ -34,3 +34,6 @@ module.exports = {
   // CU52 — Emitiendo notificaciones multicanal
   notificarUsuario: (...args) => agenda().notificarUsuario(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Despachador_Notificaciones', module.exports);

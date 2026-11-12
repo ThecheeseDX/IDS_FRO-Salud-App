@@ -36,7 +36,15 @@ function subirBuffer(buffer, opciones = {}) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { resource_type: 'auto', ...opciones },
-      (error, resultado) => (error ? reject(error) : resolve(resultado))
+      (error, resultado) => {
+        if (error) return reject(error);
+        // Registro de actividad: tamaño y tipo, nunca el nombre del archivo.
+        require('../services/registro/registroActividad').registrar(
+          'C_API_Adapter',
+          `Cloudinary: archivo guardado (${Math.max(1, Math.round((resultado.bytes || buffer.length) / 1024))} KB, ${resultado.format || resultado.resource_type})`
+        );
+        return resolve(resultado);
+      }
     );
     stream.end(buffer);
   });

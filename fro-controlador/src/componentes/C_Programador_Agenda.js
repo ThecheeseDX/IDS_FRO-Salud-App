@@ -39,3 +39,6 @@ module.exports = {
   // CU19 — Gestionando lista de espera secuencial
   revisarVencimientosListaEspera: (...args) => agenda().revisarVencimientosListaEspera(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Programador_Agenda', module.exports);

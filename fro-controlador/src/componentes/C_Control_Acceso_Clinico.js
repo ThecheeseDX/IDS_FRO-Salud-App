@@ -33,3 +33,6 @@ module.exports = {
   // CU65 — Registrando y Siguiendo Derivaciones Internas
   cerrarDerivacionesDelEpisodio: (...args) => acceso().cerrarDerivacionesDelEpisodio(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Control_Acceso_Clinico', module.exports);

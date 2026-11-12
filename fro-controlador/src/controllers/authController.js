@@ -11,7 +11,7 @@ const C_Seguridad_JWT_BCrypt = require('../componentes/C_Seguridad_JWT_BCrypt');
 const C_API_Adapter = require('../componentes/C_API_Adapter');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
+const { registrar } = require('../services/registro/registroActividad');
 // CU01, CU02 — rechazar una contraseña débil al registrarse
 // D4: la política de contraseña (8+, letra, número y símbolo) se exige
 // también al registrarse; antes el registro aceptaba "11111111".
@@ -449,7 +449,7 @@ exports.verificarOTP = async (req, res) => {
 
     try {
         const resultado = await C_Seguridad_JWT_BCrypt.validarOTP(usuario_id, codigo);
-        console.log("resultado validarOTP:", resultado);
+        registrar('C_Seguridad_JWT_BCrypt', resultado.valido ? `código OTP válido (usuario #${usuario_id})` : `código OTP rechazado: ${resultado.error || 'inválido'}`);
 
         if (!resultado.valido) {
             return res.status(400).json({ error: resultado.error, mensaje: resultado.mensaje });
@@ -500,6 +500,7 @@ exports.login = async (req, res) => {
 
         if (!usuario) {
             await registrarLoginFallido(req, rut, 'USUARIO_INEXISTENTE_O_INACTIVO');
+            registrar('C_Seguridad_JWT_BCrypt', 'inicio de sesión rechazado: no existe una cuenta activa con ese RUT');
             return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
         }
 
@@ -507,6 +508,7 @@ exports.login = async (req, res) => {
 
         if (!contrasenaCorrecta) {
             await registrarLoginFallido(req, rut, 'CONTRASENA_INCORRECTA', usuario.usuario_id);
+            registrar('C_Seguridad_JWT_BCrypt', `inicio de sesión rechazado: contraseña incorrecta (usuario #${usuario.usuario_id})`);
             return res.status(401).json({ error: 'Credenciales inválidas. Verifique su RUT y contraseña.' });
         }
 
@@ -528,6 +530,7 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: `${C_Seguridad_JWT_BCrypt.DURACION_SESION_HORAS}h` });
 
+        registrar('C_Seguridad_JWT_BCrypt', `inicio de sesión correcto: ${usuario.nombre_rol} #${usuario.usuario_id} (token y sesión del dispositivo creados)`);
         res.status(200).json({
             mensaje: 'Autenticación exitosa.',
             token,

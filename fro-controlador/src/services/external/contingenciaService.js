@@ -88,4 +88,16 @@ async function estadoContingencia(conexion) {
   };
 }
 
-module.exports = { estadoContingencia, esFalla, CLAVE_MODO, CLAVE_VENTANA };
+// Registro de actividad: solo se anota cuando la contingencia está activa.
+async function estadoContingenciaRegistrado(conexion) {
+  const estado = await estadoContingencia(conexion);
+  if (estado.activa) {
+    require('../registro/registroActividad').registrar(
+      'C_Gestor_Contingencia',
+      `modo de contingencia activo (${estado.origen === 'MANUAL' ? 'activado por un administrador' : 'el financiador no responde'}): los bonos se registran como provisorios`
+    );
+  }
+  return estado;
+}
+
+module.exports = { estadoContingencia: estadoContingenciaRegistrado, esFalla, CLAVE_MODO, CLAVE_VENTANA };

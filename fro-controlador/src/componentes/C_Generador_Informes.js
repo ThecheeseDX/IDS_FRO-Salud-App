@@ -35,3 +35,6 @@ module.exports = {
   // CU28 — Consolidando historial en ficha clínica electrónica
   generarPdfFicha: (...args) => fichaPdf().generarPdfFicha(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Generador_Informes', module.exports);

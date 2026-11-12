@@ -27,3 +27,6 @@ module.exports = {
   // CU54 — Enviando Mensajes de Refuerzo Positivo
   textoRefuerzo: (...args) => refuerzo().textoRefuerzo(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Motor_Refuerzos', module.exports);

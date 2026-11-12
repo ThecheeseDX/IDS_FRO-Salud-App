@@ -63,3 +63,6 @@ module.exports = {
   // CU04, CU06
   validarOTP: (...args) => otp().validarOTP(...args),
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Seguridad_JWT_BCrypt', module.exports);

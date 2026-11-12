@@ -112,6 +112,12 @@ async function ejecutarTransaccion({
     throw err;
   }
 
+  // Registro de actividad: proveedor, operación, respuesta e intentos.
+  require('../registro/registroActividad').registrar(
+    'C_API_Adapter',
+    `${proveedor} · ${operacion}: respondió ${respuesta.status} en ${respuesta.latencia} ms (${respuesta.intentos} intento${respuesta.intentos === 1 ? '' : 's'})`
+  );
+
   // 5. Transformar al modelo interno y retornar el éxito al núcleo
   return {
     datos: mapper.entrada(respuesta.data),

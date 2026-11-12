@@ -26,6 +26,7 @@ import LogoMarca from '../../components/LogoMarca';
 import { obtenerDispositivoId, nombreDispositivo } from '../../utils/dispositivo';
 import CampoContrasena from '../../components/CampoContrasena';
 import { colores, espacio, radio, sombra, tipografia, piezas } from '../../theme';
+import { registrar } from '../../utils/registroApp';
 
 export default function LoginScreen({ navigation }) {
   // --- ESTADOS LOCALES ---
@@ -76,7 +77,7 @@ export default function LoginScreen({ navigation }) {
 
       // CU08: guarda el token y abre la sesión en el dispositivo
       await loginSession(token, usuario);
-      console.log("✅ Sesión guardada globalmente para el rol:", usuario.rol);
+      registrar(`✅ sesión iniciada y guardada en el teléfono (rol ${usuario.rol})`);
       
     } catch (error) {
       // 3. BLOQUE DE CAPTURA DE ERRORES

@@ -31,3 +31,6 @@ module.exports = {
   // CU72 — Ingresando Datos mediante Interfaz de Contingencia
   get CLAVE_VENTANA() { return contingencia().CLAVE_VENTANA; },
 };
+
+// Registro de actividad: anota este componente en la línea de cada petición.
+require('../services/registro/registroActividad').trazarComponente('C_Gestor_Contingencia', module.exports);

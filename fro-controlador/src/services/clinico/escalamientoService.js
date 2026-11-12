@@ -118,4 +118,13 @@ async function escalar(conexion, { texto, origen, entidad, entidadId, usuarioOri
   }
 }
 
-module.exports = { escalar, ORIGENES, extracto };
+const { registrar } = require('../registro/registroActividad');
+
+// Registro de actividad: solo se anota cuando de verdad se escaló algo.
+async function escalarRegistrado(conexion, datos) {
+  const eventoId = await escalar(conexion, datos);
+  if (eventoId) registrar('C_Escalador_Eventos_Criticos', `evento crítico #${eventoId} escalado desde ${datos.origen}; aviso a los administradores`);
+  return eventoId;
+}
+
+module.exports = { escalar: escalarRegistrado, ORIGENES, extracto };
