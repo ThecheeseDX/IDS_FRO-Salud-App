@@ -1,0 +1,660 @@
+# -*- coding: utf-8 -*-
+"""
+Levantamiento de Procesos Final (To-Be) de Punto Paz Salud.
+
+Cada proceso describe cómo queda trabajando la empresa con la aplicación
+terminada. Se mantiene el formato del levantamiento inicial (Documento 0):
+un pool por proceso, una calle por participante y tres fases por pool.
+La calle nueva "Sistema Punto Paz Salud" muestra lo que hace la aplicación.
+
+Cada figura se anota así:
+    (clave, tipo, nombre, calle, columna, fila, descripción)
+Tipos: start, end, gw (decisión), user (tarea en la app), manual (sin
+sistema), send / receive (mensaje), service (automática del sistema),
+rule (regla que evalúa el sistema), sub (subproceso).
+Cada flecha: (desde, hasta, etiqueta, {opciones de recorrido}).
+"""
+from motor_bpm import Proceso, uid
+
+P = 'Paciente'
+R = 'Profesional'
+S = 'Sistema Punto Paz Salud'
+A = 'Administrador'
+
+D1 = 'Diagrama 1'
+D2 = 'Diagrama 2'
+D3 = 'Diagrama 3'
+SUB_CREAR = 'Subproceso de creación de ficha clínica'
+SUB_ACTUALIZAR = 'Subproceso de actualización de ficha clínica'
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 1. Registro y acceso
+# ═════════════════════════════════════════════════════════════════════════════
+U = 'Paciente / Profesional'
+registro = Proceso(
+    'Proceso de Registro y Acceso',
+    calles=[(U, 1), (S, 2), (A, 1)],
+    fases=[('Registro de la cuenta', 4), ('Verificación de identidad y acreditación', 5), ('Inicio de sesión según el rol', 6)],
+    nodos=[
+        ('ini', 'start', '', U, 0, 0),
+        ('formulario', 'user', 'Completar formulario de registro', U, 1, 0,
+         'La persona se registra en la app como paciente o como profesional de salud, con su RUT, correo y contraseña. (CU01, CU02)'),
+        ('corregir', 'user', 'Corregir datos del formulario', U, 2, 0,
+         'La app indica qué dato está mal (RUT, correo repetido o contraseña débil) y la persona lo corrige.'),
+        ('validar', 'rule', 'Validar datos, RUT y cuenta única', S, 1, 0,
+         'El sistema revisa el formato de los datos, el dígito verificador del RUT y que no exista otra cuenta con el mismo RUT o correo. (CU01, CU03)'),
+        ('g_datos', 'gw', '¿Datos válidos?', S, 2, 0),
+        ('enviar_otp', 'send', 'Enviar código de verificación al correo', S, 3, 0,
+         'El sistema envía un código de un solo uso al correo registrado. (CU04, CU52)'),
+        ('ingresar_otp', 'user', 'Ingresar el código recibido', U, 4, 0,
+         'La persona escribe en la app el código que llegó a su correo. (CU04)'),
+        ('verificar_otp', 'rule', 'Verificar el código ingresado', S, 4, 0,
+         'El sistema compara el código y revisa que no esté vencido. (CU04)'),
+        ('g_otp', 'gw', '¿Código correcto?', S, 5, 0),
+        ('reenviar', 'send', 'Enviar un código nuevo', S, 5, 1,
+         'Si el código es incorrecto o venció, el sistema envía uno nuevo. (CU04)'),
+        ('g_prof', 'gw', '¿Es profesional?', S, 6, 0),
+        ('acreditar', 'user', 'Revisar el registro de salud del profesional', A, 7, 0,
+         'El administrador revisa el número de registro de salud y los antecedentes del profesional antes de habilitarlo. (CU02)'),
+        ('g_acredita', 'gw', '¿Acredita?', A, 8, 0),
+        ('rechazo', 'send', 'Avisar el rechazo de la acreditación', S, 9, 1,
+         'El sistema informa al profesional que su cuenta no fue acreditada. (CU02, CU52)'),
+        ('fin_rechazo', 'end', '', S, 10, 1),
+        ('activar', 'service', 'Activar la cuenta y asignar el rol', S, 9, 0,
+         'El sistema deja la cuenta activa con su rol: paciente, profesional o administrador. (CU12)'),
+        ('login', 'user', 'Iniciar sesión con RUT y contraseña', U, 10, 0,
+         'La persona entra a la app con su RUT y su contraseña. (CU05)'),
+        ('credenciales', 'service', 'Verificar credenciales y abrir la sesión', S, 10, 0,
+         'El sistema compara la contraseña cifrada, crea la sesión del dispositivo y anota el acceso en la bitácora de auditoría. (CU05, CU08, CU13)'),
+        ('g_login', 'gw', '¿Credenciales correctas?', S, 11, 0),
+        ('recuperar', 'user', 'Recuperar la contraseña con un código', U, 11, 0,
+         'La persona pide un código a su correo y crea una contraseña nueva. (CU06, CU07)'),
+        ('panel', 'service', 'Mostrar el panel según el rol', S, 12, 0,
+         'El sistema abre solo las vistas que corresponden al rol de la persona. (CU11, CU12, CU79)'),
+        ('perfil', 'user', 'Completar perfil y privacidad', U, 13, 0,
+         'El paciente define qué datos de contacto comparte; el profesional completa su perfil, especialidad y horario de atención. (CU09, CU10)'),
+        ('fin', 'end', '', U, 14, 0),
+    ],
+    flujos=[
+        ('ini', 'formulario'), ('formulario', 'validar'), ('validar', 'g_datos'),
+        ('g_datos', 'corregir', 'No'), ('corregir', 'formulario'),
+        ('g_datos', 'enviar_otp', 'Sí'),
+        ('enviar_otp', 'ingresar_otp', '', {'p': 't>l'}), ('ingresar_otp', 'verificar_otp'), ('verificar_otp', 'g_otp'),
+        ('g_otp', 'reenviar', 'No'), ('reenviar', 'ingresar_otp', '', {'p': 'l>l', 'd': 12}),
+        ('g_otp', 'g_prof', 'Sí'),
+        ('g_prof', 'acreditar', 'Sí', {'p': 'b>l'}), ('acreditar', 'g_acredita'),
+        ('g_acredita', 'rechazo', 'No', {'p': 'r>b'}), ('rechazo', 'fin_rechazo'),
+        ('g_acredita', 'activar', 'Sí', {'p': 't>l'}),
+        ('g_prof', 'activar', 'No'),
+        ('activar', 'login', '', {'p': 't>l'}), ('login', 'credenciales'), ('credenciales', 'g_login'),
+        ('g_login', 'recuperar', 'No'), ('recuperar', 'login'),
+        ('g_login', 'panel', 'Sí'), ('panel', 'perfil', '', {'p': 't>l'}), ('perfil', 'fin'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 2. Agendamiento
+# ═════════════════════════════════════════════════════════════════════════════
+agendamiento = Proceso(
+    'Proceso de Agendamiento',
+    calles=[(P, 2), (S, 2), (R, 1)],
+    fases=[('Búsqueda de hora', 4), ('Reserva, pago o lista de espera', 5), ('Confirmación de la cita', 5)],
+    nodos=[
+        ('ini', 'start', '', P, 0, 1),
+        ('buscar', 'user', 'Buscar especialidad, profesional y modalidad', P, 1, 1,
+         'El paciente busca en la app por especialidad y elige profesional y modalidad: a domicilio o virtual. (CU14)'),
+        ('horas', 'service', 'Mostrar las horas libres de la agenda', S, 1, 0,
+         'El sistema muestra solo las horas realmente disponibles, descontando citas, bloqueos del profesional y restricciones administrativas. (CU14, CU16)'),
+        ('elegir', 'user', 'Elegir día y hora', P, 2, 1,
+         'El paciente selecciona el día y la hora que le acomodan. (CU14)'),
+        ('g_hora', 'gw', '¿La hora sigue libre?', S, 3, 0),
+        ('espera', 'user', 'Inscribirse en la lista de espera', P, 4, 0,
+         'Si otra persona tomó la hora primero, el sistema ofrece la lista de espera de ese bloque. El paciente queda en la fila por orden de llegada; si la hora se libera, el sistema le ofrece el cupo con un plazo para tomarlo. (CU15, CU19)'),
+        ('fin_espera', 'end', '', P, 5, 0),
+        ('bloquear', 'service', 'Bloquear la hora y crear la reserva temporal', S, 4, 0,
+         'El sistema bloquea la hora para que nadie más la tome mientras se paga y deja la cita en estado agendada. (CU15, CU20, CU22)'),
+        ('pagar', 'user', 'Pagar la sesión o registrar su bono', P, 5, 1,
+         'El paciente paga la sesión o un plan de sesiones, o registra su bono de cobertura. El detalle está en el Proceso de Pago y Bonos. (CU66, CU67, CU73)'),
+        ('procesar', 'service', 'Verificar que el pago entró completo', S, 6, 0,
+         'El sistema confirma con la pasarela de pago o con el financiador que el pago quedó registrado. (CU67, CU68, CU73)'),
+        ('g_pago', 'gw', '¿Pago aprobado?', S, 7, 0),
+        ('liberar', 'service', 'Liberar la hora reservada', S, 7, 1,
+         'Si el pago no prospera, el sistema revoca la reserva temporal y la hora vuelve a quedar disponible. (CU15, CU73)'),
+        ('fin_sin_pago', 'end', '', S, 8, 1),
+        ('pagada', 'service', 'Dejar la cita agendada y pagada', S, 8, 0,
+         'El sistema registra el cambio de estado de la cita y su trazabilidad. (CU20, CU22, CU76)'),
+        ('avisar_prof', 'send', 'Avisar al profesional la hora pagada', S, 9, 0,
+         'El sistema avisa al profesional, en la app y por notificación, que tiene una hora pagada por confirmar. (CU52)'),
+        ('confirmar', 'user', 'Confirmar la cita desde su jornada', R, 10, 0,
+         'El profesional revisa la solicitud en su jornada y la confirma. El sistema no deja confirmar una hora sin pago. (CU11, CU20, CU73)'),
+        ('registrar', 'service', 'Registrar la confirmación y avisar al paciente', S, 11, 0,
+         'El sistema deja la cita confirmada, guarda quién y cuándo la confirmó y avisa al paciente. (CU20, CU22, CU52)'),
+        ('recibir', 'receive', 'Recibir la confirmación de la cita', P, 12, 1,
+         'El paciente ve su cita confirmada en Mis Citas y recibe la notificación.'),
+        ('fin', 'end', '', P, 13, 1),
+    ],
+    flujos=[
+        ('ini', 'buscar'), ('buscar', 'horas', '', {'p': 'b>t'}),
+        ('horas', 'elegir', '', {'p': 'r>b'}), ('elegir', 'g_hora', '', {'p': 'r>l'}),
+        ('g_hora', 'bloquear', 'Sí'),
+        ('g_hora', 'espera', 'No', {'p': 't>l'}), ('espera', 'fin_espera'),
+        ('bloquear', 'pagar', '', {'p': 'r>b'}), ('pagar', 'procesar', '', {'p': 'r>t'}), ('procesar', 'g_pago'),
+        ('g_pago', 'liberar', 'No'), ('liberar', 'fin_sin_pago'),
+        ('g_pago', 'pagada', 'Sí'), ('pagada', 'avisar_prof'),
+        ('avisar_prof', 'confirmar', '', {'p': 'r>t'}), ('confirmar', 'registrar', '', {'p': 'r>b'}),
+        ('registrar', 'recibir', '', {'p': 'r>b'}), ('recibir', 'fin'),
+    ],
+    datos=[('Agenda de citas', S, 1, 1, 'horas', 't>b')],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 3. Confirmación de sesión
+# ═════════════════════════════════════════════════════════════════════════════
+confirmacion = Proceso(
+    'Proceso de Confirmación de Sesión',
+    calles=[(P, 2), (S, 2), (R, 1)],
+    fases=[('Solicitud automática de confirmación', 4), ('Respuesta del paciente', 4), ('Cierre: asistencia, cambio o cancelación', 5)],
+    nodos=[
+        ('ini', 'start', '', S, 0, 0),
+        ('detectar', 'service', 'Detectar la cita pagada próxima a su fecha', S, 1, 0,
+         'El programador de agenda del sistema detecta, sin intervención de nadie, las citas que entran al plazo de anticipación definido por el administrador. (CU21, CU59)'),
+        ('solicitar', 'send', 'Enviar la solicitud por app, notificación y correo', S, 2, 0,
+         'El sistema pide al paciente que confirme su asistencia. El correo trae un enlace de un solo uso para responder sin iniciar sesión. (CU21, CU52)'),
+        ('recibir', 'receive', 'Recibir la solicitud de confirmación', P, 3, 1,
+         'El paciente ve la solicitud en Mis Citas, en la notificación del teléfono o en su correo.'),
+        ('g_asiste', 'gw', '¿Puede asistir?', P, 4, 1),
+        ('confirmar', 'user', 'Confirmar la asistencia en la app o en el correo', P, 5, 1,
+         'El paciente confirma con un toque en la app o desde el enlace del correo. (CU21)'),
+        ('no_asiste', 'user', 'Indicar que no puede asistir', P, 5, 0,
+         'El paciente informa que no asistirá y decide si cambia la hora o cancela.'),
+        ('g_reagenda', 'gw', '¿Reprograma?', P, 6, 0),
+        ('nueva_hora', 'user', 'Elegir una hora nueva', P, 7, 0,
+         'El paciente elige otra hora disponible del mismo profesional. (CU17)'),
+        ('registrar', 'service', 'Registrar la confirmación de asistencia', S, 5, 1,
+         'El sistema guarda la confirmación con su fecha y su origen (app o correo). (CU21, CU22)'),
+        ('avisar_prof', 'send', 'Avisar al profesional', S, 6, 1,
+         'El sistema avisa al profesional que el paciente confirmó. (CU52)'),
+        ('aviso', 'receive', 'Recibir el aviso de cita confirmada', R, 7, 0,
+         'El profesional ve la cita confirmada en su jornada. (CU11)'),
+        ('fin_ok', 'end', '', R, 8, 0),
+        ('cancelar', 'service', 'Cancelar la cita y liberar la hora', S, 6, 0,
+         'El sistema cancela la cita, libera el bloque en la agenda y deja el cambio registrado. (CU18, CU20, CU22)'),
+        ('cupo', 'send', 'Ofrecer el cupo al primero de la lista de espera', S, 7, 0,
+         'El sistema ofrece la hora liberada a una sola persona, la primera de la fila, con un plazo para tomarla; si vence, pasa a la siguiente. (CU19, CU52)'),
+        ('devolver', 'service', 'Aplicar la devolución del pago', S, 8, 0,
+         'El sistema calcula y registra la devolución que corresponde según las reglas definidas. (CU74)'),
+        ('fin_cancela', 'end', '', S, 9, 0),
+        ('mover', 'service', 'Mover la cita y liberar la hora anterior', S, 10, 0,
+         'El sistema reprograma la cita conservando el pago y libera el bloque anterior. (CU17, CU22)'),
+        ('avisar_cambio', 'send', 'Avisar el cambio a paciente y profesional', S, 11, 0,
+         'Ambos reciben el aviso con la nueva fecha y hora. (CU52)'),
+        ('fin_cambio', 'end', '', S, 12, 0),
+    ],
+    flujos=[
+        ('ini', 'detectar'), ('detectar', 'solicitar'),
+        ('solicitar', 'recibir', '', {'p': 'r>b'}), ('recibir', 'g_asiste'),
+        ('g_asiste', 'confirmar', 'Sí'),
+        ('g_asiste', 'no_asiste', 'No', {'p': 't>l'}), ('no_asiste', 'g_reagenda'),
+        ('confirmar', 'registrar', '', {'p': 'b>t'}), ('registrar', 'avisar_prof'),
+        ('avisar_prof', 'aviso', '', {'p': 'r>t'}), ('aviso', 'fin_ok'),
+        ('g_reagenda', 'nueva_hora', 'Sí'),
+        ('g_reagenda', 'cancelar', 'No', {'p': 'b>t'}), ('cancelar', 'cupo'), ('cupo', 'devolver'), ('devolver', 'fin_cancela'),
+        ('nueva_hora', 'mover', '', {'p': 'r>t'}), ('mover', 'avisar_cambio'), ('avisar_cambio', 'fin_cambio'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 4. Atención clínica y gestión de ficha clínica
+# ═════════════════════════════════════════════════════════════════════════════
+atencion = Proceso(
+    'Proceso de Atención Clínica y Gestión de Ficha Clínica',
+    calles=[(P, 1), (S, 2), (R, 2)],
+    fases=[('Preparación de la sesión', 6), ('Inicio y validación de presencia', 4), ('Ejecución, registro y cierre', 8)],
+    nodos=[
+        ('ini', 'start', '', P, 0, 0),
+        ('triaje', 'user', 'Responder la entrevista previa (triaje)', P, 1, 0,
+         'Antes de la sesión el paciente acepta el aviso legal y responde la entrevista guiada sobre su motivo de consulta y sus síntomas. (CU23, CU27)'),
+        ('preclinico', 'service', 'Generar el reporte pre-clínico', S, 2, 0,
+         'El sistema ordena las respuestas en la ficha, marca las banderas rojas y sugiere la especialidad más adecuada. (CU24, CU25, CU26)'),
+        ('revisar', 'user', 'Revisar el reporte pre-clínico del paciente', R, 3, 0,
+         'El profesional lee en su panel el resumen del triaje antes de atender. (CU11, CU25)'),
+        ('g_primera', 'gw', '¿Es primera sesión?', R, 4, 0),
+        ('crear_ficha', 'sub', 'Crear ficha clínica', R, 5, 0,
+         'Primera atención: se abre la ficha clínica electrónica del paciente. Ver el Subproceso de creación de ficha clínica. (CU28, CU29, CU78)',
+         {'sub': uid(D2, SUB_CREAR, 'proceso')}),
+        ('abrir_ficha', 'user', 'Abrir la ficha clínica del paciente', R, 5, 1,
+         'El profesional abre la ficha existente con su historial, documentos y metas. El sistema solo lo permite si el paciente está a su cargo. (CU12, CU28)'),
+        ('iniciar', 'user', 'Iniciar la atención en la app', R, 6, 0,
+         'El profesional aprieta "Comenzar" al empezar la sesión. (CU38)'),
+        ('marca_inicio', 'service', 'Registrar la hora de inicio y la ubicación', S, 7, 0,
+         'El sistema guarda la marca de inicio y, en las visitas a domicilio, la ubicación del profesional y la del paciente. (CU38, CU39)'),
+        ('g_modalidad', 'gw', '¿Modalidad?', S, 8, 0),
+        ('gps', 'rule', 'Validar la presencia por GPS', S, 9, 0,
+         'A domicilio: el sistema mide la distancia entre profesional y paciente y la compara con el radio permitido. (CU39)'),
+        ('teleconsulta', 'service', 'Registrar la evidencia de la teleconsulta', S, 9, 1,
+         'Virtual: el sistema guarda la evidencia técnica de la conexión de la videollamada. (CU43)'),
+        ('intervenir', 'manual', 'Realizar la intervención clínica', R, 10, 0,
+         'El profesional atiende al paciente y aplica el tratamiento definido para la sesión.'),
+        ('documentar', 'user', 'Documentar la intervención y la respuesta', R, 11, 0,
+         'El profesional registra en la app las técnicas aplicadas y la respuesta del paciente; puede hacerlo al terminar o al final de su jornada. (CU40)'),
+        ('finalizar', 'user', 'Finalizar la atención en la app', R, 12, 0,
+         'El profesional aprieta "Finalizar"; el sistema guarda la marca de término. (CU38)'),
+        ('firmar', 'user', 'Firmar la conformidad de la atención', P, 12, 0,
+         'El paciente firma con el dedo en el teléfono su conformidad con la atención recibida. (CU42)'),
+        ('validar', 'rule', 'Validar la sesión con sus evidencias', S, 13, 0,
+         'El sistema cruza las marcas de tiempo, la ubicación o la evidencia de teleconsulta y la firma, para certificar la sesión. (CU41)'),
+        ('g_valida', 'gw', '¿Sesión válida?', S, 14, 0),
+        ('revision', 'service', 'Dejar la sesión en revisión del administrador', S, 14, 1,
+         'Si faltan evidencias, la sesión queda pendiente y el profesional debe justificar el cierre. (CU41)'),
+        ('fin_revision', 'end', '', S, 13, 1),
+        ('actualizar', 'sub', 'Actualizar ficha clínica', R, 15, 0,
+         'La evolución de la sesión queda en la ficha, firmada e inalterable. Ver el Subproceso de actualización de ficha clínica. (CU30, CU31, CU36)',
+         {'sub': uid(D3, SUB_ACTUALIZAR, 'proceso')}),
+        ('evaluar', 'user', 'Evaluar la sesión recibida', P, 16, 0,
+         'El sistema da la sesión por realizada y pide al paciente que la califique con una pauta de evaluación. (CU55, CU76, CU77)'),
+        ('fin', 'end', '', P, 17, 0),
+    ],
+    flujos=[
+        ('ini', 'triaje'), ('triaje', 'preclinico', '', {'p': 'r>t'}), ('preclinico', 'revisar', '', {'p': 'r>t'}),
+        ('revisar', 'g_primera'),
+        ('g_primera', 'crear_ficha', 'Sí'), ('g_primera', 'abrir_ficha', 'No', {'p': 'b>l'}),
+        ('crear_ficha', 'iniciar'), ('abrir_ficha', 'iniciar', '', {'p': 'r>b'}),
+        ('iniciar', 'marca_inicio', '', {'p': 'r>b'}), ('marca_inicio', 'g_modalidad'),
+        ('g_modalidad', 'gps', 'A domicilio'), ('g_modalidad', 'teleconsulta', 'Virtual', {'p': 'b>l'}),
+        ('gps', 'intervenir', '', {'p': 'r>t'}), ('teleconsulta', 'intervenir', '', {'p': 'r>t'}),
+        ('intervenir', 'documentar'), ('documentar', 'finalizar'),
+        ('finalizar', 'firmar', '', {'p': 't>b'}), ('firmar', 'validar', '', {'p': 'r>t'}), ('validar', 'g_valida'),
+        ('g_valida', 'revision', 'No'), ('revision', 'fin_revision'),
+        ('g_valida', 'actualizar', 'Sí', {'p': 'r>t'}),
+        ('actualizar', 'evaluar', '', {'p': 'r>b'}), ('evaluar', 'fin'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 5. Comunicación
+# ═════════════════════════════════════════════════════════════════════════════
+comunicacion = Proceso(
+    'Proceso de Comunicación',
+    calles=[(P, 1), (S, 1), (R, 1)],
+    fases=[('Envío de la consulta', 4), ('Entrega y respuesta', 4), ('Resolución de la consulta', 4)],
+    nodos=[
+        ('ini', 'start', '', P, 0, 0),
+        ('escribir', 'user', 'Escribir el mensaje o adjuntar un archivo', P, 1, 0,
+         'El paciente escribe su duda en el chat de la app; puede adjuntar una foto o un documento de su ficha. (CU53, CU33)'),
+        ('filtro', 'rule', 'Revisar si hay contenido restringido', S, 1, 0,
+         'El sistema compara el texto con el diccionario de términos restringidos antes de guardarlo. (CU57)'),
+        ('g_permitido', 'gw', '¿Contenido permitido?', S, 2, 0),
+        ('corregir', 'user', 'Corregir el mensaje bloqueado', P, 2, 0,
+         'El sistema no envía el mensaje e indica el motivo; el paciente lo corrige. (CU57)'),
+        ('cifrar', 'service', 'Cifrar y guardar el mensaje', S, 3, 0,
+         'El mensaje queda cifrado y con respaldo formal en la conversación entre el paciente y su profesional. (CU53)'),
+        ('notificar', 'send', 'Notificar al profesional', S, 4, 0,
+         'El profesional recibe el aviso en la app y en su teléfono. (CU52)'),
+        ('leer', 'receive', 'Leer el mensaje en el chat', R, 5, 0,
+         'El profesional abre la conversación y ve el mensaje y los adjuntos en el visor de la app. (CU35, CU53)'),
+        ('responder', 'user', 'Responder la consulta', R, 6, 0,
+         'El profesional responde por el mismo chat; su respuesta pasa por el mismo filtro. (CU53, CU57)'),
+        ('entregar', 'service', 'Cifrar, guardar y avisar la respuesta', S, 7, 0,
+         'El sistema guarda la respuesta cifrada y avisa al paciente. (CU52, CU53)'),
+        ('recibir', 'receive', 'Leer la respuesta en el chat', P, 8, 0,
+         'El paciente lee la respuesta, que queda guardada en el historial de la conversación.'),
+        ('g_resuelto', 'gw', '¿Se resolvió la duda?', P, 9, 0),
+        ('resuelto', 'user', 'Continuar con el tratamiento', P, 10, 0,
+         'El paciente queda conforme con la respuesta y sigue con sus indicaciones.'),
+        ('fin', 'end', '', P, 11, 0),
+    ],
+    flujos=[
+        ('ini', 'escribir'), ('escribir', 'filtro'), ('filtro', 'g_permitido'),
+        ('g_permitido', 'corregir', 'No'), ('corregir', 'escribir'),
+        ('g_permitido', 'cifrar', 'Sí'), ('cifrar', 'notificar'),
+        ('notificar', 'leer', '', {'p': 'r>t'}), ('leer', 'responder'),
+        ('responder', 'entregar', '', {'p': 'r>b'}), ('entregar', 'recibir', '', {'p': 'r>b'}),
+        ('recibir', 'g_resuelto'), ('g_resuelto', 'resuelto', 'Sí'), ('resuelto', 'fin'),
+        ('g_resuelto', 'escribir', 'No', {'p': 't>t', 'd': 30}),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 6. Seguimiento
+# ═════════════════════════════════════════════════════════════════════════════
+seguimiento = Proceso(
+    'Proceso de Seguimiento',
+    calles=[(R, 2), (S, 1), (P, 1)],
+    fases=[('Prescripción de la pauta', 3), ('Cumplimiento y control automático', 8), ('Revisión y ajuste del tratamiento', 5)],
+    nodos=[
+        ('ini', 'start', '', R, 0, 0),
+        ('prescribir', 'user', 'Prescribir la pauta de ejercicios', R, 1, 0,
+         'El profesional arma la pauta con ejercicios de la biblioteca, sus días de la semana y material de apoyo. (CU46, CU47)'),
+        ('publicar', 'send', 'Publicar la pauta y avisar al paciente', S, 2, 0,
+         'El sistema deja la pauta vigente por el periodo indicado y avisa al paciente. (CU49, CU52)'),
+        ('cumplir', 'user', 'Marcar los ejercicios cumplidos cada día', P, 3, 0,
+         'El paciente revisa en la app sus tareas del día y marca las que hizo. (CU48)'),
+        ('adherencia', 'service', 'Calcular la adherencia y el progreso', S, 4, 0,
+         'El sistema recalcula el índice de adherencia y actualiza los gráficos de progreso. (CU44, CU45)'),
+        ('g_mejora', 'gw', '¿Subió la adherencia?', S, 5, 0),
+        ('refuerzo', 'send', 'Enviar un mensaje de ánimo', S, 6, 0,
+         'El sistema envía como máximo un mensaje de refuerzo positivo al día, si el paciente los tiene activados. (CU54)'),
+        ('sintomas', 'user', 'Reportar síntomas y evolución', P, 7, 0,
+         'El paciente informa en la app cómo se ha sentido: dolor, molestias y comentarios. (CU50)'),
+        ('deterioro', 'rule', 'Evaluar si hay deterioro clínico', S, 8, 0,
+         'El sistema compara el reporte con los anteriores y con las banderas rojas definidas. (CU50)'),
+        ('g_deterioro', 'gw', '¿Hay deterioro?', S, 9, 0),
+        ('alerta', 'send', 'Alertar al profesional', S, 10, 0,
+         'El sistema avisa de inmediato al profesional tratante; si el texto trae un término crítico, también se escala a supervisión. (CU50, CU52, CU62)'),
+        ('revisar', 'user', 'Revisar el progreso y las alertas del paciente', R, 11, 0,
+         'El profesional revisa en su panel la adherencia, los síntomas reportados y las alertas. (CU11, CU45)'),
+        ('g_ajuste', 'gw', '¿Ajustar el tratamiento?', R, 12, 0),
+        ('ajustar', 'user', 'Ajustar la pauta de ejercicios', R, 13, 0,
+         'El profesional modifica la pauta; la anterior queda cerrada y la nueva pasa a estar vigente. (CU47, CU49)'),
+        ('actualizar', 'sub', 'Actualizar ficha clínica', R, 14, 0,
+         'El ajuste queda registrado en la ficha del paciente. Ver el Subproceso de actualización de ficha clínica. (CU28, CU31)',
+         {'sub': uid(D3, SUB_ACTUALIZAR, 'proceso')}),
+        ('fin', 'end', '', R, 15, 0),
+        ('mantener', 'user', 'Mantener el tratamiento sin cambios', R, 13, 1,
+         'El profesional deja registrado que el paciente sigue con la misma pauta.'),
+        ('fin_sin_cambios', 'end', '', R, 14, 1),
+    ],
+    flujos=[
+        ('ini', 'prescribir'), ('prescribir', 'publicar', '', {'p': 'r>t'}),
+        ('publicar', 'cumplir', '', {'p': 'r>t'}), ('cumplir', 'adherencia', '', {'p': 'r>b'}),
+        ('adherencia', 'g_mejora'), ('g_mejora', 'refuerzo', 'Sí'),
+        ('refuerzo', 'sintomas', '', {'p': 'r>t'}), ('g_mejora', 'sintomas', 'No', {'p': 'b>l'}),
+        ('sintomas', 'deterioro', '', {'p': 'r>b'}), ('deterioro', 'g_deterioro'),
+        ('g_deterioro', 'alerta', 'Sí'), ('alerta', 'revisar', '', {'p': 'r>b'}),
+        ('g_deterioro', 'revisar', 'No', {'p': 't>l'}),
+        ('revisar', 'g_ajuste'), ('g_ajuste', 'ajustar', 'Sí'), ('ajustar', 'actualizar'), ('actualizar', 'fin'),
+        ('g_ajuste', 'mantener', 'No', {'p': 'b>l'}), ('mantener', 'fin_sin_cambios'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 7. Pago y bonos
+# ═════════════════════════════════════════════════════════════════════════════
+F = 'Proveedores externos'
+PA = 'Administrador'
+pagos = Proceso(
+    'Proceso de Pago y Bonos',
+    calles=[(P, 2), (S, 2), (F, 1), (PA, 1)],
+    fases=[('Elección del medio de pago', 4), ('Validación del bono y contingencia', 5), ('Cobro y registro del pago', 6)],
+    nodos=[
+        ('ini', 'start', '', P, 0, 1),
+        ('opciones', 'user', 'Revisar el valor y elegir sesión o plan', P, 1, 1,
+         'El paciente ve el valor de la sesión y de los planes de varias sesiones con descuento, y elige. (CU73)'),
+        ('g_bono', 'gw', '¿Tiene bono de cobertura?', P, 2, 1),
+        ('bono', 'user', 'Registrar el bono en la app', P, 3, 1,
+         'El paciente ingresa los datos de su bono de cobertura. (CU66)'),
+        ('enviar_bono', 'send', 'Enviar el bono al financiador', S, 4, 0,
+         'El sistema envía el bono a validación a través de su adaptador; si no hay respuesta reintenta, y cada intento queda en la bitácora de transacciones. (CU68, CU69, CU70)'),
+        ('validar_bono', 'service', 'Validar el bono de cobertura', F, 5, 0,
+         'El financiador responde si el bono es válido y cuánto cubre. (CU66, CU68)'),
+        ('g_responde', 'gw', '¿Respondió el financiador?', S, 6, 0),
+        ('g_valido', 'gw', '¿Bono válido?', S, 7, 0),
+        ('copago', 'service', 'Calcular el copago', S, 8, 0,
+         'El sistema descuenta la cobertura del bono y calcula lo que debe pagar el paciente. (CU67)'),
+        ('contingencia', 'service', 'Activar la contingencia de bonos', S, 7, 1,
+         'Agotados los reintentos, o si el administrador activó el modo manual, el sistema habilita el registro provisorio de bonos. (CU70, CU72)'),
+        ('provisorio', 'user', 'Registrar el bono como provisorio', PA, 8, 0,
+         'El administrador, o el profesional tratante, ingresa el bono a mano en la interfaz de contingencia; la atención no se detiene. (CU72)'),
+        ('regularizar', 'user', 'Regularizar el bono con el financiador', PA, 9, 0,
+         'Cuando el financiador vuelve a responder, el administrador valida el bono provisorio y cuadra las sesiones realizadas con las cubiertas. (CU71, CU72)'),
+        ('fin_contingencia', 'end', '', PA, 10, 0),
+        ('pagar', 'user', 'Pagar el copago o el valor total', P, 9, 0,
+         'El paciente paga desde la app el copago o, si no tiene bono, el valor completo. (CU67, CU73)'),
+        ('cobrar', 'send', 'Enviar el cobro a la pasarela de pago', S, 10, 0,
+         'El sistema envía la transacción a la pasarela y la deja registrada. (CU67, CU68, CU69)'),
+        ('transaccion', 'service', 'Procesar la transacción', F, 11, 0,
+         'La pasarela de pago aprueba o rechaza el cobro.'),
+        ('g_cobro', 'gw', '¿Cobro aprobado?', S, 12, 0),
+        ('registrar', 'service', 'Registrar el pago y dejar la hora pagada', S, 13, 0,
+         'El sistema guarda la transacción y la cita queda pagada, lista para que el profesional la confirme. (CU67, CU73, CU76)'),
+        ('fin', 'end', '', S, 14, 0),
+        ('anular', 'send', 'Anular la reserva y avisar al paciente', S, 12, 1,
+         'Si el cobro no se aprueba, el sistema revoca la reserva temporal y avisa al paciente. (CU52, CU73)'),
+        ('fin_rechazo', 'end', '', S, 13, 1),
+    ],
+    flujos=[
+        ('ini', 'opciones'), ('opciones', 'g_bono'),
+        ('g_bono', 'bono', 'Sí'), ('g_bono', 'pagar', 'No', {'p': 't>l'}),
+        ('bono', 'enviar_bono', '', {'p': 'r>t'}), ('enviar_bono', 'validar_bono', '', {'p': 'r>t'}),
+        ('validar_bono', 'g_responde'),
+        ('g_responde', 'g_valido', 'Sí'), ('g_responde', 'contingencia', 'No', {'p': 'b>l'}),
+        ('g_valido', 'copago', 'Sí'), ('g_valido', 'pagar', 'No', {'p': 't>l'}),
+        ('copago', 'pagar', '', {'p': 'r>b'}),
+        ('contingencia', 'provisorio', '', {'p': 'r>t'}), ('provisorio', 'regularizar'), ('regularizar', 'fin_contingencia'),
+        ('pagar', 'cobrar', '', {'p': 'r>t'}), ('cobrar', 'transaccion', '', {'p': 'r>t'}),
+        ('transaccion', 'g_cobro'),
+        ('g_cobro', 'registrar', 'Sí'), ('registrar', 'fin'),
+        ('g_cobro', 'anular', 'No'), ('anular', 'fin_rechazo'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 8. Alta y derivación
+# ═════════════════════════════════════════════════════════════════════════════
+R2 = 'Profesional receptor'
+alta = Proceso(
+    'Proceso de Alta y Derivación',
+    calles=[(P, 1), (S, 2), (R, 2), (R2, 1)],
+    fases=[('Preparación para el alta', 5), ('Decisión clínica', 3), ('Cierre del episodio o traspaso', 6)],
+    nodos=[
+        ('ini', 'start', '', S, 0, 0),
+        ('medir', 'rule', 'Medir el avance de las metas del tratamiento', S, 1, 0,
+         'El sistema compara el avance de las metas terapéuticas con el umbral de egreso definido. (CU32, CU51)'),
+        ('g_umbral', 'gw', '¿Alcanzó el umbral?', S, 2, 0),
+        ('fin_sigue', 'end', 'Sigue en tratamiento', S, 2, 1),
+        ('habilitar', 'service', 'Habilitar los contenidos de preparación para el alta', S, 3, 0,
+         'El sistema abre al paciente los contenidos de prevención y autocuidado, y avisa al profesional. (CU51, CU52)'),
+        ('contenidos', 'user', 'Revisar los contenidos de prevención', P, 4, 0,
+         'El paciente revisa en la app el material de preparación para su alta. (CU51)'),
+        ('evaluar', 'user', 'Evaluar el cierre del tratamiento', R, 5, 0,
+         'El profesional revisa las metas, la evolución y las citas pendientes del episodio. (CU28, CU37)'),
+        ('g_decision', 'gw', '¿Qué corresponde?', R, 6, 0),
+        ('emitir', 'user', 'Redactar las pautas de continuidad y emitir el alta', R, 7, 0,
+         'El profesional escribe las indicaciones de continuidad y emite el informe de alta. (CU37)'),
+        ('derivar', 'user', 'Derivar a otro profesional', R, 7, 1,
+         'El profesional elige la especialidad y el profesional que recibirá al paciente, y explica el motivo. (CU65)'),
+        ('informe', 'service', 'Generar el informe de alta y cerrar el episodio', S, 8, 0,
+         'El sistema genera el informe en PDF, lo guarda en los documentos del paciente y cierra el episodio: sus registros quedan inalterables. (CU30, CU33, CU37, CU78)'),
+        ('avisar_alta', 'send', 'Avisar el alta al paciente', S, 9, 0,
+         'El paciente recibe el aviso de que su informe de alta está disponible. (CU52)'),
+        ('descargar', 'user', 'Ver el informe de alta y evaluar el tratamiento', P, 10, 0,
+         'El paciente abre su informe en Mis Documentos y califica el tratamiento completo. (CU35, CU55, CU58)'),
+        ('fin_alta', 'end', '', P, 11, 0),
+        ('registrar_der', 'send', 'Registrar la derivación y avisar al receptor', S, 9, 1,
+         'El sistema deja la derivación pendiente, da al receptor acceso de solo lectura a la ficha y le avisa. (CU12, CU52, CU65)'),
+        ('revisar_ficha', 'user', 'Revisar la ficha en solo lectura', R2, 10, 0,
+         'El profesional que recibe revisa la ficha del paciente para decidir si lo toma. (CU28, CU65)'),
+        ('g_acepta', 'gw', '¿Acepta la derivación?', R2, 11, 0),
+        ('traspasar', 'service', 'Traspasar el episodio al receptor', S, 12, 1,
+         'El episodio pasa al profesional que recibe; quien derivó queda con acceso de solo lectura y se le avisa. (CU52, CU65)'),
+        ('fin_traspaso', 'end', '', S, 13, 1),
+        ('rechazar', 'service', 'Mantener el episodio con quien derivó', S, 11, 1,
+         'El sistema retira el acceso del receptor, avisa a quien derivó y el paciente sigue con su profesional. (CU52, CU65)'),
+        ('fin_rechazo', 'end', '', S, 11, 0),
+    ],
+    flujos=[
+        ('ini', 'medir'), ('medir', 'g_umbral'),
+        ('g_umbral', 'fin_sigue', 'No'), ('g_umbral', 'habilitar', 'Sí'),
+        ('habilitar', 'contenidos', '', {'p': 'r>b'}), ('contenidos', 'evaluar', '', {'p': 'r>t'}),
+        ('evaluar', 'g_decision'),
+        ('g_decision', 'emitir', 'Alta'), ('g_decision', 'derivar', 'Derivación', {'p': 'b>l'}),
+        ('emitir', 'informe', '', {'p': 'r>b'}), ('informe', 'avisar_alta'),
+        ('avisar_alta', 'descargar', '', {'p': 'r>b'}), ('descargar', 'fin_alta'),
+        ('derivar', 'registrar_der', '', {'p': 'r>b'}),
+        ('registrar_der', 'revisar_ficha', '', {'p': 'r>t'}), ('revisar_ficha', 'g_acepta'),
+        ('g_acepta', 'traspasar', 'Sí', {'p': 'r>b'}), ('traspasar', 'fin_traspaso'),
+        ('g_acepta', 'rechazar', 'No', {'p': 't>b'}), ('rechazar', 'fin_rechazo', '', {'p': 't>b'}),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 9. Soporte y eventos críticos
+# ═════════════════════════════════════════════════════════════════════════════
+soporte = Proceso(
+    'Proceso de Soporte y Eventos Críticos',
+    calles=[(U, 1), (S, 2), (A, 2)],
+    fases=[('Ingreso de la solicitud', 3), ('Clasificación y escalamiento', 3), ('Resolución y respuesta', 4)],
+    nodos=[
+        ('ini', 'start', '', U, 0, 0),
+        ('solicitud', 'user', 'Levantar una solicitud de soporte', U, 1, 0,
+         'El paciente o el profesional describe su problema en la app y puede adjuntar una imagen. (CU60)'),
+        ('revisar', 'rule', 'Revisar si el texto trae términos críticos', S, 2, 0,
+         'El sistema busca términos críticos del diccionario en el texto. Lo mismo hace con los reportes de síntomas y las reseñas. (CU57, CU62)'),
+        ('g_critico', 'gw', '¿Trae un término crítico?', S, 3, 0),
+        ('enrutar', 'service', 'Enrutar la solicitud por categoría', S, 4, 0,
+         'El sistema asigna la solicitud al área que corresponde según su categoría. (CU61)'),
+        ('escalar', 'send', 'Escalar el evento crítico a supervisión', S, 3, 1,
+         'El sistema registra el evento crítico y avisa de inmediato a los administradores, por la app y por correo si no tienen sesión abierta. (CU52, CU62)'),
+        ('tomar', 'user', 'Tomar la solicitud en su bandeja', A, 5, 0,
+         'El administrador ve la solicitud en la bandeja del área que cubre. (CU60, CU61)'),
+        ('acusar', 'user', 'Acusar recibo del evento crítico', A, 3, 1,
+         'El administrador abre la bandeja de eventos críticos y acusa recibo; queda registrado quién y cuándo. (CU62)'),
+        ('contactar', 'manual', 'Contactar a la persona afectada', A, 4, 1,
+         'El administrador se comunica con el paciente o con el profesional para atender la situación.'),
+        ('resolver', 'user', 'Resolver y responder la solicitud', A, 6, 0,
+         'El administrador responde y cierra la solicitud. (CU60)'),
+        ('avisar', 'send', 'Avisar la respuesta a quien la pidió', S, 7, 0,
+         'El sistema notifica la respuesta. (CU52)'),
+        ('ver', 'receive', 'Revisar la respuesta en la app', U, 8, 0,
+         'La persona ve el estado y la respuesta de su solicitud. (CU60)'),
+        ('fin', 'end', '', U, 9, 0),
+    ],
+    flujos=[
+        ('ini', 'solicitud'), ('solicitud', 'revisar', '', {'p': 'r>t'}), ('revisar', 'g_critico'),
+        ('g_critico', 'enrutar', 'No'), ('g_critico', 'escalar', 'Sí'),
+        ('enrutar', 'tomar', '', {'p': 'r>t'}), ('tomar', 'resolver'),
+        ('escalar', 'acusar', '', {'p': 'b>t'}), ('acusar', 'contactar'),
+        ('contactar', 'resolver', '', {'p': 'r>b'}),
+        ('resolver', 'avisar', '', {'p': 'r>b'}), ('avisar', 'ver', '', {'p': 'r>b'}), ('ver', 'fin'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 10. Gestión y supervisión administrativa
+# ═════════════════════════════════════════════════════════════════════════════
+gestion = Proceso(
+    'Proceso de Gestión y Supervisión Administrativa',
+    calles=[(A, 2), (S, 2), (R, 1)],
+    fases=[('Supervisión y moderación', 5), ('Informes y liquidaciones', 4), ('Ajuste de las reglas del sistema', 4)],
+    nodos=[
+        ('ini', 'start', '', A, 0, 0),
+        ('tablero', 'user', 'Revisar el tablero de indicadores', A, 1, 0,
+         'El administrador revisa los indicadores de la operación, los pendientes y la bitácora de auditoría. (CU13, CU64)'),
+        ('moderar', 'user', 'Moderar los testimonios pendientes', A, 2, 0,
+         'El administrador revisa las reseñas que dejaron los pacientes antes de que se publiquen. (CU56)'),
+        ('g_aprueba', 'gw', '¿Aprueba el testimonio?', A, 3, 0),
+        ('publicar', 'service', 'Publicar el testimonio y recalcular la calificación', S, 4, 0,
+         'El testimonio aparece en el perfil público del profesional y su calificación se actualiza. (CU56, CU58)'),
+        ('ocultar', 'service', 'Dejar el testimonio sin publicar', S, 4, 1,
+         'El testimonio rechazado no se muestra y queda registrado el motivo. (CU56)'),
+        ('informes', 'user', 'Generar y exportar los informes operativos', A, 5, 0,
+         'El administrador genera los informes del periodo y los exporta en Excel, PDF o CSV. (CU63)'),
+        ('liquidar', 'user', 'Calcular la liquidación del periodo', A, 6, 0,
+         'El administrador calcula lo que corresponde pagar a cada profesional por las sesiones realizadas y cobradas. (CU75)'),
+        ('registrar_liq', 'send', 'Registrar la liquidación y avisar a los profesionales', S, 7, 0,
+         'El sistema guarda la liquidación y avisa a cada profesional. (CU52, CU75)'),
+        ('ver_liq', 'user', 'Revisar su liquidación en el panel financiero', R, 8, 0,
+         'Cada profesional revisa el detalle de sus ganancias. (CU75)'),
+        ('g_reglas', 'gw', '¿Hay que ajustar reglas?', A, 9, 0),
+        ('fin_sin_ajuste', 'end', '', A, 10, 1),
+        ('parametros', 'user', 'Actualizar parámetros y restricciones', A, 10, 0,
+         'El administrador ajusta aranceles, plazos, radio de presencialidad, términos restringidos o bloqueos de agenda. (CU16, CU57, CU59)'),
+        ('aplicar', 'service', 'Aplicar los cambios y dejarlos en auditoría', S, 11, 0,
+         'Los parámetros rigen de inmediato en toda la app y el cambio queda en la bitácora. (CU13, CU59)'),
+        ('fin', 'end', '', S, 12, 0),
+    ],
+    flujos=[
+        ('ini', 'tablero'), ('tablero', 'moderar'), ('moderar', 'g_aprueba'),
+        ('g_aprueba', 'publicar', 'Sí', {'p': 'r>t'}), ('g_aprueba', 'ocultar', 'No', {'p': 'b>l'}),
+        ('publicar', 'informes', '', {'p': 'r>b'}), ('ocultar', 'informes', '', {'p': 'r>b'}),
+        ('informes', 'liquidar'), ('liquidar', 'registrar_liq', '', {'p': 'r>t'}),
+        ('registrar_liq', 'ver_liq', '', {'p': 'r>t'}), ('ver_liq', 'g_reglas'),
+        ('g_reglas', 'parametros', 'Sí'), ('g_reglas', 'fin_sin_ajuste', 'No', {'p': 'b>l'}),
+        ('parametros', 'aplicar', '', {'p': 'r>t'}), ('aplicar', 'fin'),
+    ],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Subproceso: creación de ficha clínica
+# ═════════════════════════════════════════════════════════════════════════════
+crear_ficha = Proceso(
+    SUB_CREAR,
+    calles=[(R, 1), (S, 1)],
+    fases=[('Apertura de la ficha', 3), ('Registro clínico inicial', 2), ('Verificación, firma y resguardo', 5)],
+    nodos=[
+        ('ini', 'start', '', S, 0, 0),
+        ('crear', 'service', 'Crear la ficha con los datos del registro y del triaje', S, 1, 0,
+         'El sistema crea la ficha clínica electrónica con formato único y la llena con los datos del paciente y las respuestas de su entrevista previa. (CU24, CU28)'),
+        ('episodio', 'service', 'Abrir el episodio clínico', S, 2, 0,
+         'El sistema abre un episodio que agrupa todas las sesiones, documentos y pautas de este tratamiento. (CU78)'),
+        ('anamnesis', 'user', 'Registrar la anamnesis y los antecedentes', R, 3, 0,
+         'El profesional registra la evaluación inicial y los antecedentes del paciente en campos estructurados. (CU29)'),
+        ('metas', 'user', 'Definir metas terapéuticas medibles', R, 4, 0,
+         'El profesional define las metas del tratamiento con su unidad y su valor objetivo. (CU32)'),
+        ('verificar', 'rule', 'Verificar los campos obligatorios', S, 5, 0,
+         'El sistema revisa que la ficha tenga los datos mínimos antes de guardarla.'),
+        ('g_completa', 'gw', '¿Datos completos?', S, 6, 0),
+        ('completar', 'user', 'Completar los datos que faltan', R, 6, 0,
+         'La app marca los campos pendientes y el profesional los completa.'),
+        ('firmar', 'user', 'Firmar digitalmente el registro', R, 7, 0,
+         'El profesional firma el registro inicial con su firma digital. (CU36)'),
+        ('guardar', 'service', 'Guardar la ficha con sello de inalterabilidad', S, 8, 0,
+         'El registro firmado queda sellado: no se puede modificar ni borrar, y el acceso queda en la bitácora. (CU13, CU30)'),
+        ('fin', 'end', '', S, 9, 0),
+    ],
+    flujos=[
+        ('ini', 'crear'), ('crear', 'episodio'), ('episodio', 'anamnesis', '', {'p': 'r>b'}),
+        ('anamnesis', 'metas'), ('metas', 'verificar', '', {'p': 'b>l'}), ('verificar', 'g_completa'),
+        ('g_completa', 'completar', 'No'), ('completar', 'verificar', '', {'p': 'l>t'}),
+        ('g_completa', 'firmar', 'Sí', {'p': 'r>b'}), ('firmar', 'guardar', '', {'p': 'r>l'}), ('guardar', 'fin'),
+    ],
+    datos=[('Ficha clínica electrónica', R, 9, 0, 'guardar', 'l>t')],
+)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Subproceso: actualización de ficha clínica
+# ═════════════════════════════════════════════════════════════════════════════
+actualizar_ficha = Proceso(
+    SUB_ACTUALIZAR,
+    calles=[(R, 2), (S, 1)],
+    fases=[('Revisión de la ficha', 2), ('Registro de la nueva información', 4), ('Sello, versiones e indicadores', 6)],
+    nodos=[
+        ('ini', 'start', '', R, 0, 0),
+        ('historial', 'user', 'Revisar el historial y la evolución', R, 1, 0,
+         'El profesional revisa la ficha consolidada: sesiones anteriores, documentos, metas y progreso. (CU28, CU45)'),
+        ('evolucion', 'user', 'Registrar la evolución de la sesión', R, 2, 0,
+         'El profesional registra la intervención realizada y la respuesta del paciente. (CU40)'),
+        ('g_adjunta', 'gw', '¿Adjunta documentos?', R, 3, 0),
+        ('documentos', 'user', 'Cargar y clasificar los documentos', R, 4, 1,
+         'El profesional sube exámenes o informes, les asigna una categoría y los puede ver en el visor de la app. (CU33, CU34, CU35)'),
+        ('firmar', 'user', 'Firmar digitalmente la evolución', R, 5, 0,
+         'El profesional firma el registro de la sesión. (CU36)'),
+        ('sellar', 'service', 'Sellar el registro como inalterable', S, 6, 0,
+         'El registro firmado ya no se puede editar ni eliminar. (CU30)'),
+        ('g_corrige', 'gw', '¿Corrige un registro firmado?', S, 7, 0),
+        ('correccion', 'user', 'Registrar la corrección con su motivo', R, 8, 0,
+         'Si hay un error en un registro firmado, el profesional escribe la corrección y explica el motivo. (CU31)'),
+        ('version', 'service', 'Guardar la versión nueva y conservar la anterior', S, 10, 0,
+         'El sistema crea una nueva versión del registro y mantiene la anterior a la vista, con quién y cuándo la cambió. (CU13, CU31)'),
+        ('fin_version', 'end', '', S, 11, 0),
+        ('indicadores', 'service', 'Actualizar los indicadores del paciente', S, 8, 0,
+         'El sistema actualiza el avance de las metas y los gráficos de progreso con la nueva información. (CU44, CU45)'),
+        ('fin', 'end', '', S, 9, 0),
+    ],
+    flujos=[
+        ('ini', 'historial'), ('historial', 'evolucion'), ('evolucion', 'g_adjunta'),
+        ('g_adjunta', 'documentos', 'Sí', {'p': 'b>l'}), ('g_adjunta', 'firmar', 'No'),
+        ('documentos', 'firmar', '', {'p': 'r>b'}),
+        ('firmar', 'sellar', '', {'p': 'r>t'}), ('sellar', 'g_corrige'),
+        ('g_corrige', 'correccion', 'Sí', {'p': 't>l'}), ('correccion', 'version', '', {'p': 'r>t'}), ('version', 'fin_version'),
+        ('g_corrige', 'indicadores', 'No'), ('indicadores', 'fin'),
+    ],
+    datos=[('Ficha clínica electrónica', R, 1, 1, 'historial', 't>b')],
+)
+
+DIAGRAMAS = [
+    (D1, [registro, agendamiento, confirmacion, atencion, comunicacion, seguimiento, pagos, alta, soporte, gestion]),
+    (D2, [crear_ficha]),
+    (D3, [actualizar_ficha]),
+]
